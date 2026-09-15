@@ -15,6 +15,7 @@ import fastifyMultipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
 
 import { connectDB } from './config/db.js';
+import { assertRequiredEnv } from './config/env.js';
 
 // Route imports
 import authRoutes from './routes/auth.js';
@@ -31,6 +32,8 @@ import adsRoutes from './routes/ads.js';
 import adminRoutes from './routes/admin.js';
 import uploadRoutes from './routes/upload.js';
 import paymentRoutes from './routes/payment.js';
+import favoriteRoutes from './routes/favorites.js';
+import rewardRoutes from './routes/rewards.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -79,6 +82,8 @@ fastify.register(adsRoutes, { prefix: '/api/ads' });
 fastify.register(adminRoutes, { prefix: '/api/admin' });
 fastify.register(uploadRoutes, { prefix: '/api/upload' });
 fastify.register(paymentRoutes, { prefix: '/api/payment' });
+fastify.register(favoriteRoutes, { prefix: '/api/favorites' });
+fastify.register(rewardRoutes, { prefix: '/api/rewards' });
 
 // Global error handler
 fastify.setErrorHandler((error, request, reply) => {
@@ -94,12 +99,14 @@ fastify.setErrorHandler((error, request, reply) => {
 // Start server
 const start = async () => {
   try {
+    assertRequiredEnv();
     await connectDB();
     fastify.log.info('MongoDB connected successfully');
 
     const port = process.env.PORT || 3000;
-    await fastify.listen({ port, host: '0.0.0.0' });
-    console.log(`🚀 AFROSTORY Backend running on port ${port}`);
+    const host = process.env.HOST || 'localhost';
+    await fastify.listen({ port, host });
+    console.log(`🚀 AFROSTORY Backend running at http://localhost:${port}`);
   } catch (error) {
     fastify.log.error('Startup failed:', error);
     process.exit(1);

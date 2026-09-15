@@ -14,7 +14,7 @@ const transactionSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['FUND', 'SPEND', 'AD_REWARD', 'PAYOUT', 'REFUND'],
+      enum: ['FUND', 'SPEND', 'AD_REWARD', 'BONUS', 'PAYOUT', 'REFUND'],
       required: true,
     },
     amount: {
@@ -39,13 +39,20 @@ const transactionSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.Mixed,
       default: {},
     },
+    balanceBefore: {
+      type: mongoose.Decimal128,
+      default: null,
+    },
+    balanceAfter: {
+      type: mongoose.Decimal128,
+      default: null,
+    },
   },
   { timestamps: true }
 );
 
 // Index for better query performance
 transactionSchema.index({ userId: 1, createdAt: -1 });
-transactionSchema.index({ reference: 1 });
 transactionSchema.index({ type: 1 });
 
 export default mongoose.model('Transaction', transactionSchema);

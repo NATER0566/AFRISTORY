@@ -1,5 +1,21 @@
 import mongoose from 'mongoose';
 
+export const EPISODE_GENRES = [
+  'Action', 'Drama', 'Comedy', 'Romance', 'Thriller', 'Horror', 'Adventure',
+  'Family', 'Historical', 'Traditional', 'Documentary', 'Educational',
+  'Faith', 'Mystery', 'Other',
+];
+
+export const CULTURAL_CATEGORIES = [
+  'Tiv', 'Igbo', 'Yoruba', 'Hausa', 'Idoma', 'Nupe', 'Fulani', 'Edo',
+  'Efik', 'Ibibio', 'Kanuri', 'Ijaw', 'Other African culture',
+];
+
+export const EPISODE_LANGUAGES = [
+  'English', 'Tiv', 'Igbo', 'Yoruba', 'Hausa', 'Idoma', 'Edo', 'Efik',
+  'Ibibio', 'Nupe', 'Fulfulde', 'Kanuri', 'Ijaw', 'Other',
+];
+
 const episodeSchema = new mongoose.Schema(
   {
     seriesId: {
@@ -28,6 +44,29 @@ const episodeSchema = new mongoose.Schema(
     thumbnailUrl: {
       type: String,
       default: null,
+    },
+    genre: {
+      type: String,
+      enum: EPISODE_GENRES,
+      required: true,
+      index: true,
+    },
+    culturalCategory: {
+      type: String,
+      enum: CULTURAL_CATEGORIES,
+      required: true,
+      index: true,
+    },
+    language: {
+      type: String,
+      enum: EPISODE_LANGUAGES,
+      required: true,
+      index: true,
+    },
+    tags: {
+      type: [String],
+      default: [],
+      index: true,
     },
     duration: {
       type: Number,
@@ -84,5 +123,7 @@ const episodeSchema = new mongoose.Schema(
 // Index for better query performance
 episodeSchema.index({ seriesId: 1, episodeNumber: 1 });
 episodeSchema.index({ seriesId: 1, isPublished: 1 });
+episodeSchema.index({ isPublished: 1, genre: 1, culturalCategory: 1, language: 1, createdAt: -1 });
+episodeSchema.index({ isPublished: 1, totalViews: -1, createdAt: -1 });
 
 export default mongoose.model('Episode', episodeSchema);

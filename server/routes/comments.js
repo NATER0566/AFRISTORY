@@ -81,7 +81,7 @@ export default async function commentRoutes(fastify, opts) {
         return sendError(reply, 'Episode ID and text are required', 400);
       }
 
-      if (text.length > 1000) {
+      if (text.trim().length > 1000) {
         return sendError(reply, 'Comment too long (max 1000 characters)', 400);
       }
 

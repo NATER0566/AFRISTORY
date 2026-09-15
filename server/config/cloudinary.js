@@ -8,6 +8,7 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
   secure: true,
+  timeout: Number(process.env.CLOUDINARY_UPLOAD_TIMEOUT_MS || 600000),
 });
 
 export default cloudinary;

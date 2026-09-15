@@ -17,6 +17,8 @@ const notificationSchema = new mongoose.Schema(
         'PAYOUT_READY',
         'SUBSCRIPTION_EXPIRING',
         'NEW_FOLLOWER',
+        'REWARD_AVAILABLE',
+        'REWARD_EARNED',
         'SYSTEM',
       ],
       required: true,

@@ -42,6 +42,10 @@ export default async function adsRoutes(fastify, opts) {
 
   // Verify ad completion and unlock episode
   fastify.post('/verify-completion', async (request, reply) => {
+    // AD NETWORK NOT CONFIGURED - No real ads available yet
+    return sendError(reply, 'Ad unlocks are not available yet. Please use coins to unlock.', 400);
+    
+    /* Real ad verification code below - enable when ads are configured
     const session = await mongoose.startSession();
     session.startTransaction();
 
@@ -102,7 +106,7 @@ export default async function adsRoutes(fastify, opts) {
         return sendError(reply, 'Episode already unlocked', 400);
       }
 
-      // TODO: Validate adPayload with actual ad network (Google AdSense, Unity Ads)
+      // TODO: Validate adPayload with the configured Monetag integration.
       // For now, we trust the payload is valid. In production:
       // - Verify signature with ad network API
       // - Check timestamp is recent
@@ -174,9 +178,10 @@ export default async function adsRoutes(fastify, opts) {
     } finally {
       session.endSession();
     }
+    */
   });
 
-  // Webhook for ad network (Google AdSense, Unity Ads, etc.)
+  // Webhook for the configured Monetag integration.
   // Implement idempotency with reference IDs
   fastify.post('/webhook', async (request, reply) => {
     const session = await mongoose.startSession();

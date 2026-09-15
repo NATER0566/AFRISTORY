@@ -82,42 +82,59 @@ export default async function uploadRoutes(fastify, opts) {
       if (!data.mimetype.startsWith('video/')) {
         return sendError(reply, 'Only video files are allowed', 400);
       }
-      const buffer = await data.toBuffer();
       const timestamp = Date.now();
-      const filename = `${request.user._id}_${timestamp}.upload`;
-      const filepath = path.join(uploadDir, filename);
+      const result = await new Promise((resolve, reject) => {
+        let settled = false;
+        const finish = (error, uploadResult) => {
+          if (settled) return;
+          settled = true;
+          if (error) reject(error);
+          else resolve(uploadResult);
+        };
 
-      let result;
-      try {
-        fs.writeFileSync(filepath, buffer, { flag: 'wx' });
-        result = await cloudinary.uploader.upload(filepath, {
-          resource_type: 'video',
-          folder: 'afrostory/videos',
-          public_id: `${request.user._id}_${timestamp}`,
-          eager: [{ streaming_profile: 'hd', format: 'm3u8' }],
-          eager_async: true,
-        });
-      } finally {
-        if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
-      }
+        const uploadStream = cloudinary.uploader.upload_chunked_stream(
+          {
+            resource_type: 'video',
+            folder: 'afrostory/videos',
+            public_id: `${request.user._id}_${timestamp}`,
+            chunk_size: Number(process.env.CLOUDINARY_UPLOAD_CHUNK_SIZE || 20000000),
+            eager: [{ streaming_profile: 'hd', format: 'm3u8' }],
+            eager_async: true,
+          },
+          finish
+        );
+
+        uploadStream.on('error', error => finish(error));
+        data.file.on('error', error => finish(error));
+        request.raw.once('aborted', () => finish(new Error('Client aborted video upload')));
+        data.file.pipe(uploadStream);
+      });
 
       // Get HLS URL
       const hslUrl = cloudinary.url(result.public_id, {
         streaming_profile: 'hd',
         format: 'm3u8',
       });
+      const mediaUrl = result.secure_url || cloudinary.url(result.public_id, {
+        resource_type: 'video',
+        format: 'mp4',
+        secure: true,
+      });
 
-      sendSuccess(
-        reply,
-        {
-          url: result.secure_url,
-          hlsUrl: hslUrl,
-          publicId: result.public_id,
-          duration: result.duration,
-        },
-        'Video uploaded successfully',
-        201
-      );
+      sendSuccess(reply, {
+        url: mediaUrl,
+        mediaUrl,
+        secure_url: mediaUrl,
+        hlsUrl: hslUrl,
+        publicId: result.public_id,
+        public_id: result.public_id,
+        resource_type: result.resource_type,
+        format: result.format,
+        bytes: result.bytes,
+        duration: result.duration,
+        width: result.width,
+        height: result.height,
+      }, 'Video uploaded successfully', 201);
     } catch (error) {
       fastify.log.error(error);
 

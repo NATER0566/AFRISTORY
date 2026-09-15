@@ -79,14 +79,29 @@ export default async function searchRoutes(fastify, opts) {
 
       if (!type || type === 'episodes') {
         const episodes = await Episode.find({
-          $or: [{ title: searchRegex }, { description: searchRegex }],
+          $or: [
+            { title: searchRegex },
+            { description: searchRegex },
+            { genre: searchRegex },
+            { culturalCategory: searchRegex },
+            { language: searchRegex },
+            { tags: searchRegex },
+          ],
           isPublished: true,
         })
+          .populate({ path: 'seriesId', populate: { path: 'creatorId', select: 'brandName profileImage' } })
           .skip(skip)
           .limit(l);
 
         const total = await Episode.countDocuments({
-          $or: [{ title: searchRegex }, { description: searchRegex }],
+          $or: [
+            { title: searchRegex },
+            { description: searchRegex },
+            { genre: searchRegex },
+            { culturalCategory: searchRegex },
+            { language: searchRegex },
+            { tags: searchRegex },
+          ],
           isPublished: true,
         });
 
@@ -217,15 +232,15 @@ export default async function searchRoutes(fastify, opts) {
     try {
       const { limit = 10 } = request.query;
 
-      const trendingSeries = await Series.find({ isPublished: true })
-        .sort({ totalViews: -1 })
+      const trendingEpisodes = await Episode.find({ isPublished: true })
+        .populate({ path: 'seriesId', populate: { path: 'creatorId', select: 'brandName profileImage' } })
+        .sort({ totalViews: -1, createdAt: -1 })
         .limit(parseInt(limit))
-        .populate('creatorId', 'brandName profileImage');
 
       sendSuccess(reply, {
-        trending: trendingSeries.map(s => ({
-          ...s.toObject(),
-          rating: formatDecimal(s.rating),
+        trending: trendingEpisodes.map(episode => ({
+          ...episode.toObject(),
+          rating: formatDecimal(episode.rating),
         })),
       });
     } catch (error) {

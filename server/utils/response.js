@@ -21,5 +21,7 @@ export function sendSuccess(reply, data = null, message = 'Success', statusCode 
 }
 
 export function sendError(reply, message = 'Error', statusCode = 500, details = null) {
+  if (reply.sent || reply.afrostoryErrorSent) return reply;
+  reply.afrostoryErrorSent = true;
   return reply.status(statusCode).send(error(message, statusCode, details));
 }

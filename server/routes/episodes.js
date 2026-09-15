@@ -1,4 +1,4 @@
-import Episode from '../models/Episode.js';
+import Episode, { EPISODE_GENRES, CULTURAL_CATEGORIES, EPISODE_LANGUAGES } from '../models/Episode.js';
 import Series from '../models/Series.js';
 import Creator from '../models/Creator.js';
 import Unlock from '../models/Unlock.js';
@@ -8,6 +8,27 @@ import { sendSuccess, sendError } from '../utils/response.js';
 import { formatDecimal } from '../utils/helpers.js';
 
 export default async function episodeRoutes(fastify, opts) {
+  // Database-backed episode feed used by Watch, Discover, and recommendations.
+  fastify.get('/feed', async (request, reply) => {
+    try {
+      if (request.cookies?.token && !(await verifyAuth(request, reply))) return;
+      const { genre, culturalCategory, language, sort = 'trending', limit = 12 } = request.query || {};
+      const query = { isPublished: true };
+      if (genre) query.genre = genre;
+      if (culturalCategory) query.culturalCategory = culturalCategory;
+      if (language) query.language = language;
+      const sortBy = sort === 'latest' ? { createdAt: -1 } : { totalViews: -1, createdAt: -1 };
+      const episodes = await Episode.find(query)
+        .populate({ path: 'seriesId', populate: { path: 'creatorId', select: 'brandName profileImage' } })
+        .sort(sortBy)
+        .limit(Math.min(Number(limit) || 12, 50));
+      sendSuccess(reply, { episodes: episodes.map(episode => ({ ...episode.toObject(), rating: formatDecimal(episode.rating) })) });
+    } catch (error) {
+      fastify.log.error(error);
+      sendError(reply, 'Failed to fetch episode feed', 500, error.message);
+    }
+  });
+
   // Get episode
   fastify.get('/:episodeId', async (request, reply) => {
     try {
@@ -70,10 +91,22 @@ export default async function episodeRoutes(fastify, opts) {
         isFree,
         coinCost,
         adUnlockable,
+        isPublished,
+        genre,
+        culturalCategory,
+        language,
+        tags,
       } = request.body || {};
 
-      if (!title || !mediaUrl) {
-        return sendError(reply, 'Title and media URL are required', 400);
+      if (!title || !mediaUrl || !genre || !culturalCategory || !language) {
+        return sendError(reply, 'Title, media URL, genre, cultural category, and language are required', 400);
+      }
+      if (!EPISODE_GENRES.includes(genre) || !CULTURAL_CATEGORIES.includes(culturalCategory) || !EPISODE_LANGUAGES.includes(language)) {
+        return sendError(reply, 'Invalid genre, cultural category, or language', 400);
+      }
+
+      if (!/^https?:\/\/.+\.(mp4|m3u8)(?:\?.*)?$/i.test(mediaUrl)) {
+        return sendError(reply, 'Media URL must point to an MP4 or M3U8 video', 400);
       }
 
       const series = await Series.findById(seriesId);
@@ -100,10 +133,16 @@ export default async function episodeRoutes(fastify, opts) {
         description: description || '',
         mediaUrl,
         thumbnailUrl: thumbnailUrl || null,
+        genre,
+        culturalCategory,
+        language,
+        tags: Array.isArray(tags) ? tags : [],
         duration: duration || 0,
         isFree: false,
         coinCost: coinCost || 10,
         adUnlockable: adUnlockable !== undefined ? adUnlockable : true,
+        isPublished: isPublished === true,
+        publishedAt: isPublished === true ? new Date() : null,
       });
 
       await episode.save();
@@ -139,6 +178,10 @@ export default async function episodeRoutes(fastify, opts) {
         coinCost,
         adUnlockable,
         isPublished,
+        genre,
+        culturalCategory,
+        language,
+        tags,
       } = request.body || {};
 
       const episode = await Episode.findById(episodeId);
@@ -159,8 +202,17 @@ export default async function episodeRoutes(fastify, opts) {
 
       if (title) episode.title = title;
       if (description !== undefined) episode.description = description;
-      if (mediaUrl) episode.mediaUrl = mediaUrl;
+      if (mediaUrl) {
+        if (!/^https?:\/\/.+\.(mp4|m3u8)(?:\?.*)?$/i.test(mediaUrl)) {
+          return sendError(reply, 'Media URL must point to an MP4 or M3U8 video', 400);
+        }
+        episode.mediaUrl = mediaUrl;
+      }
       if (thumbnailUrl !== undefined) episode.thumbnailUrl = thumbnailUrl;
+      if (genre !== undefined) episode.genre = genre;
+      if (culturalCategory !== undefined) episode.culturalCategory = culturalCategory;
+      if (language !== undefined) episode.language = language;
+      if (tags !== undefined) episode.tags = Array.isArray(tags) ? tags : [];
       if (duration !== undefined) episode.duration = duration;
       if (isFree === true) {
         return sendError(reply, 'Free episodes are no longer supported', 400);

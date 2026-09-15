@@ -26,11 +26,14 @@ export default async function walletRoutes(fastify, opts) {
         return sendError(reply, 'Wallet not found', 404);
       }
 
+      const user = await User.findById(request.user._id);
+
       sendSuccess(reply, {
         storyCoins: formatDecimal(wallet.storyCoins),
         lockedEarnings: formatDecimal(wallet.lockedEarnings),
         totalWithdrawn: formatDecimal(wallet.totalWithdrawn),
         totalEarned: formatDecimal(wallet.totalEarned),
+        adUnlocks: user?.adUnlocksRemaining || 0,
       });
     } catch (error) {
       fastify.log.error(error);

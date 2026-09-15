@@ -19,7 +19,11 @@ export default async function seriesRoutes(fastify, opts) {
       if (!hasActiveSubscription) query.isPremiumExclusive = { $ne: true };
 
       if (genre) {
-        query.genre = genre;
+        query.$or = [
+          { primaryGenre: genre },
+          { secondaryGenres: genre },
+          { genre },
+        ];
       }
 
       let sortBy = { createdAt: -1 };
@@ -100,7 +104,7 @@ export default async function seriesRoutes(fastify, opts) {
         return sendError(reply, 'Unauthorized', 401);
       }
 
-      const { title, description, coverImage, tags, genre, language, isPremiumExclusive } = request.body || {};
+      const { title, description, coverImage, tags, genre, language, isPublished, isPremiumExclusive } = request.body || {};
 
       if (!title || !coverImage) {
         return sendError(reply, 'Title and cover image are required', 400);
@@ -121,6 +125,7 @@ export default async function seriesRoutes(fastify, opts) {
         genre: genre || '',
         language: language || 'English',
         status: 'ONGOING',
+        isPublished: isPublished === true,
         isPremiumExclusive: isPremiumExclusive === true,
       });
 

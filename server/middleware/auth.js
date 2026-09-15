@@ -47,6 +47,7 @@ export async function verifyAdmin(request, reply) {
   if (!(await verifyAuth(request, reply))) return false;
 
   if (!request.user || request.user.role !== 'ADMIN') {
+    if (reply.sent) return false;
     sendError(reply, 'Forbidden - admin access required', 403);
     return false;
   }
@@ -57,6 +58,7 @@ export async function verifyCreator(request, reply) {
   if (!(await verifyAuth(request, reply))) return false;
 
   if (!request.user || (request.user.role !== 'CREATOR' && request.user.role !== 'ADMIN')) {
+    if (reply.sent) return false;
     sendError(reply, 'Forbidden - creator access required', 403);
     return false;
   }

@@ -11,7 +11,7 @@ export default async function creatorRoutes(fastify, opts) {
     try {
       const { creatorId } = request.params;
 
-      const creator = await Creator.findById(creatorId).populate('userId', '-passwordHash -pinHash');
+      const creator = await Creator.findById(creatorId).populate('userId', 'username profileImage profile');
 
       if (!creator) {
         return sendError(reply, 'Creator not found', 404);
@@ -115,13 +115,19 @@ export default async function creatorRoutes(fastify, opts) {
       const { creatorId } = request.params;
       const { page = 1, limit = 10 } = request.query;
       const { skip, limit: l, page: p } = paginate(page, limit);
+      let includeDrafts = false;
+      if (request.cookies?.token && await verifyAuth(request, reply)) {
+        const currentCreator = await Creator.findOne({ userId: request.user._id });
+        includeDrafts = currentCreator?._id.toString() === creatorId;
+      }
+      const query = includeDrafts ? { creatorId } : { creatorId, isPublished: true };
 
-      const series = await Series.find({ creatorId, isPublished: true })
+      const series = await Series.find(query)
         .skip(skip)
         .limit(l)
         .sort({ createdAt: -1 });
 
-      const total = await Series.countDocuments({ creatorId, isPublished: true });
+      const total = await Series.countDocuments(query);
 
       sendSuccess(reply, {
         series: series.map(s => ({
@@ -149,7 +155,7 @@ export default async function creatorRoutes(fastify, opts) {
       const creators = await Creator.find({ isVerified: true })
         .sort({ totalViews: -1 })
         .limit(parseInt(limit))
-        .populate('userId', 'username email profileImage');
+        .populate('userId', 'username profileImage profile');
 
       sendSuccess(reply, creators.map(c => ({
         ...c.toObject(),

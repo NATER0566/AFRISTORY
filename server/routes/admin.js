@@ -11,7 +11,7 @@ export default async function adminRoutes(fastify, opts) {
   // Get admin dashboard stats
   fastify.get('/dashboard/stats', async (request, reply) => {
     try {
-      await verifyAdmin(request, reply);
+      if (!(await verifyAdmin(request, reply))) return;
 
       const totalUsers = await User.countDocuments();
       const totalCreators = await Creator.countDocuments();
@@ -35,7 +35,7 @@ export default async function adminRoutes(fastify, opts) {
   // Get all users (admin)
   fastify.get('/users', async (request, reply) => {
     try {
-      await verifyAdmin(request, reply);
+      if (!(await verifyAdmin(request, reply))) return;
 
       const { page = 1, limit = 10, role } = request.query;
       const { skip, limit: l, page: p } = paginate(page, limit);
@@ -71,7 +71,7 @@ export default async function adminRoutes(fastify, opts) {
   // Suspend user
   fastify.put('/users/:userId/suspend', async (request, reply) => {
     try {
-      await verifyAdmin(request, reply);
+      if (!(await verifyAdmin(request, reply))) return;
 
       const { userId } = request.params;
 
@@ -94,7 +94,7 @@ export default async function adminRoutes(fastify, opts) {
   // Unsuspend user
   fastify.put('/users/:userId/unsuspend', async (request, reply) => {
     try {
-      await verifyAdmin(request, reply);
+      if (!(await verifyAdmin(request, reply))) return;
 
       const { userId } = request.params;
 
@@ -117,7 +117,7 @@ export default async function adminRoutes(fastify, opts) {
   // Get reports
   fastify.get('/reports', async (request, reply) => {
     try {
-      await verifyAdmin(request, reply);
+      if (!(await verifyAdmin(request, reply))) return;
 
       const { page = 1, limit = 10, status = 'PENDING' } = request.query;
       const { skip, limit: l, page: p } = paginate(page, limit);
