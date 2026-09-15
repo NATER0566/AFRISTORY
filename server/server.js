@@ -104,9 +104,9 @@ const start = async () => {
     fastify.log.info('MongoDB connected successfully');
 
     const port = process.env.PORT || 3000;
-    const host = process.env.HOST || 'localhost';
+    const host = process.env.HOST || '0.0.0.0';
     await fastify.listen({ port, host });
-    console.log(`🚀 AFROSTORY Backend running at http://localhost:${port}`);
+    console.log(`🚀 AFROSTORY Backend running at http://${host}:${port}`);
   } catch (error) {
     fastify.log.error('Startup failed:', error);
     process.exit(1);
