@@ -9,8 +9,6 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
       trim: true,
-      minlength: 3,
-      maxlength: 30,
     },
     email: {
       type: String,
@@ -24,9 +22,9 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
     authProviders: {
-      googleId: { type: String, default: null, unique: true, sparse: true },
-      githubId: { type: String, default: null, unique: true, sparse: true },
-      appleSub: { type: String, default: null, unique: true, sparse: true },
+      googleId: { type: String, unique: true, sparse: true },
+      githubId: { type: String, unique: true, sparse: true },
+      appleSub: { type: String, unique: true, sparse: true },
     },
     isVerified: {
       type: Boolean,
