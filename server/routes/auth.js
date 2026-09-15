@@ -169,6 +169,7 @@ export default async function authRoutes(fastify, opts) {
       });
 
       await newUser.save();
+      
       try {
         await sendVerificationCodeEmail({ email: newUser.email, code: newUser.verificationCode });
       } catch (emailError) {
@@ -186,7 +187,7 @@ export default async function authRoutes(fastify, opts) {
 
       reply.setCookie('token', token, authCookieOptions);
 
-      sendSuccess(
+      return sendSuccess(
         reply,
         {
           userId: newUser._id,
@@ -198,8 +199,13 @@ export default async function authRoutes(fastify, opts) {
         201
       );
     } catch (error) {
+      // 🚨 WE ADDED THIS TO CATCH THE EXACT DATABASE ERROR 🚨
+      console.error('\n🚨🚨🚨 REGISTRATION SERVER CRASH TRACE 🚨🚨🚨');
+      console.error(error);
+      console.error('🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨\n');
+      
       fastify.log.error(error);
-      sendError(reply, 'Registration failed', 500, error.message);
+      return sendError(reply, 'Registration failed', 500, error.message);
     }
   });
 
@@ -259,7 +265,7 @@ export default async function authRoutes(fastify, opts) {
 
       reply.setCookie('token', token, authCookieOptions);
 
-      sendSuccess(
+      return sendSuccess(
         reply,
         {
           userId: user._id,
@@ -270,15 +276,17 @@ export default async function authRoutes(fastify, opts) {
         'Login successful'
       );
     } catch (error) {
+      console.error('\n🚨🚨🚨 LOGIN SERVER CRASH TRACE 🚨🚨🚨');
+      console.error(error);
       fastify.log.error(error);
-      sendError(reply, 'Login failed', 500, error.message);
+      return sendError(reply, 'Login failed', 500, error.message);
     }
   });
 
   // Logout
   fastify.post('/logout', async (request, reply) => {
     reply.clearCookie('token');
-    sendSuccess(reply, null, 'Logout successful');
+    return sendSuccess(reply, null, 'Logout successful');
   });
 
   // Get current user
@@ -290,7 +298,7 @@ export default async function authRoutes(fastify, opts) {
         return sendError(reply, 'Unauthorized', 401);
       }
 
-      sendSuccess(reply, {
+      return sendSuccess(reply, {
         userId: request.user._id,
         username: request.user.username,
         email: request.user.email,
@@ -312,7 +320,7 @@ export default async function authRoutes(fastify, opts) {
       });
     } catch (error) {
       fastify.log.error(error);
-      sendError(reply, 'Failed to fetch user', 500, error.message);
+      return sendError(reply, 'Failed to fetch user', 500, error.message);
     }
   });
 
@@ -328,7 +336,6 @@ export default async function authRoutes(fastify, opts) {
       const user = await User.findOne({ email: email.trim().toLowerCase() });
 
       if (!user) {
-        // Don't reveal if email exists
         return sendSuccess(reply, null, 'If email exists, reset link has been sent', 200);
       }
 
@@ -345,10 +352,12 @@ export default async function authRoutes(fastify, opts) {
         fastify.log.error({ err: emailError }, 'Password reset email delivery failed');
         return sendError(reply, 'Password reset email could not be delivered. Configure a valid Resend sender and API key before continuing.', 503);
       }
-      sendSuccess(reply, null, 'If email exists, reset link has been sent', 200);
+      return sendSuccess(reply, null, 'If email exists, reset link has been sent', 200);
     } catch (error) {
+      console.error('\n🚨🚨🚨 FORGOT PASSWORD CRASH TRACE 🚨🚨🚨');
+      console.error(error);
       fastify.log.error(error);
-      sendError(reply, 'Failed to process request', 500, error.message);
+      return sendError(reply, 'Failed to process request', 500, error.message);
     }
   });
 
@@ -372,10 +381,10 @@ export default async function authRoutes(fastify, opts) {
 
       const token = generateToken(user._id);
       reply.setCookie('token', token, authCookieOptions);
-      sendSuccess(reply, null, 'Email verified successfully');
+      return sendSuccess(reply, null, 'Email verified successfully');
     } catch (error) {
       fastify.log.error(error);
-      sendError(reply, 'Failed to verify email', 500, error.message);
+      return sendError(reply, 'Failed to verify email', 500, error.message);
     }
   });
 
@@ -403,10 +412,10 @@ export default async function authRoutes(fastify, opts) {
         fastify.log.error({ err: emailError }, 'Verification email delivery failed');
         return sendError(reply, 'Verification email could not be delivered. Configure a valid Resend sender and API key before continuing.', 503);
       }
-      sendSuccess(reply, null, 'Verification code sent');
+      return sendSuccess(reply, null, 'Verification code sent');
     } catch (error) {
       fastify.log.error(error);
-      sendError(reply, 'Failed to resend verification code', 500, error.message);
+      return sendError(reply, 'Failed to resend verification code', 500, error.message);
     }
   });
 
@@ -427,10 +436,10 @@ export default async function authRoutes(fastify, opts) {
       user.resetPasswordCode = null;
       user.resetPasswordExpires = null;
       await user.save();
-      sendSuccess(reply, null, 'Password reset successfully');
+      return sendSuccess(reply, null, 'Password reset successfully');
     } catch (error) {
       fastify.log.error(error);
-      sendError(reply, 'Failed to reset password', 500, error.message);
+      return sendError(reply, 'Failed to reset password', 500, error.message);
     }
   });
 
@@ -523,10 +532,10 @@ export default async function authRoutes(fastify, opts) {
       user.pinHash = pin;
       await user.save();
 
-      sendSuccess(reply, null, 'PIN set successfully');
+      return sendSuccess(reply, null, 'PIN set successfully');
     } catch (error) {
       fastify.log.error(error);
-      sendError(reply, 'Failed to set PIN', 500, error.message);
+      return sendError(reply, 'Failed to set PIN', 500, error.message);
     }
   });
 }
