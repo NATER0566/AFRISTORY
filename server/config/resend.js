@@ -67,21 +67,31 @@ function getRegistrationHTML(otp) {
                     <p style="color: #555555; font-size: 14px; line-height: 1.6; margin-bottom: 30px;">
                         Thank you for joining AFROSTORY. To complete your account setup and join the community, please use the verification code below.
                     </p>
-                    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; width: 80%; margin: 0 auto;">
+                    
+                    <!-- 🛠️ MOBILE FIX: white-space: nowrap and adjusted sizing -->
+                    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px 10px; width: 100%; max-width: 280px; margin: 0 auto; text-align: center;">
                         <p style="color: #64748b; font-size: 10px; margin: 0 0 8px 0; text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">Verification Code</p>
-                        <h1 style="margin: 0; font-size: 38px; letter-spacing: 8px; color: #0f172a; font-weight: 800; user-select: all; -webkit-user-select: all; cursor: pointer;">
+                        <h1 style="margin: 0; font-size: 32px; letter-spacing: 6px; color: #0f172a; font-weight: 800; white-space: nowrap; user-select: all; -webkit-user-select: all; cursor: pointer;">
                             ${safeHighlight}
                         </h1>
                     </div>
+
                     <p style="color: #888888; font-size: 12px; line-height: 1.5; margin-top: 30px;">
                         This code is valid for <strong>15 minutes</strong>.<br>
                         If you did not request this email, please safely ignore it.
                     </p>
                 </td>
             </tr>
+            <!-- 🛡️ ANTI-SPAM FOOTER -->
             <tr>
                 <td align="center" style="padding: 20px; background-color: #f8fafc; border-top: 1px solid #e2e8f0;">
-                    <p style="color: #94a3b8; font-size: 10px; margin: 0; font-weight: 600;">&copy; ${new Date().getFullYear()} AFROSTORY. ALL RIGHTS RESERVED.</p>
+                    <p style="color: #94a3b8; font-size: 10px; margin: 0 0 10px 0; font-weight: 600;">
+                        This message was sent to you because you requested to register on AFROSTORY.
+                    </p>
+                    <p style="color: #94a3b8; font-size: 10px; margin: 0; font-weight: 600;">
+                        &copy; ${new Date().getFullYear()} AFROSTORY.<br>
+                        [INSERT YOUR CITY/STATE HERE]
+                    </p>
                 </td>
             </tr>
         </table>
@@ -120,21 +130,31 @@ function getResetHTML(otp) {
                     <p style="color: #cccccc; font-size: 14px; line-height: 1.7; margin-bottom: 35px; font-weight: 500;">
                         A request was made to override your account security. Use the secure code below to authorize the password reset.
                     </p>
-                    <div style="background-color: #000000; border: 1px dashed #ef4444; border-radius: 8px; padding: 25px; width: 85%; margin: 0 auto; box-shadow: inset 0 0 15px rgba(239, 68, 68, 0.05);">
+                    
+                    <!-- 🛠️ MOBILE FIX: white-space: nowrap and adjusted sizing -->
+                    <div style="background-color: #000000; border: 1px dashed #ef4444; border-radius: 8px; padding: 25px 10px; width: 100%; max-width: 280px; margin: 0 auto; text-align: center; box-shadow: inset 0 0 15px rgba(239, 68, 68, 0.05);">
                         <p style="color: #ef4444; font-size: 10px; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 2px; font-weight: 700;">Secure Auth Code</p>
-                        <h1 style="margin: 0; font-size: 40px; letter-spacing: 10px; color: #ffffff; font-weight: 900; user-select: all; -webkit-user-select: all; cursor: pointer;">
+                        <h1 style="margin: 0; font-size: 32px; letter-spacing: 6px; color: #ffffff; font-weight: 900; white-space: nowrap; user-select: all; -webkit-user-select: all; cursor: pointer;">
                             ${safeHighlight}
                         </h1>
                     </div>
+
                     <p style="color: #888888; font-size: 11px; line-height: 1.6; margin-top: 40px; font-weight: 600;">
                         <span style="color: #ef4444;">SECURITY ALERT:</span> This code expires in 15 minutes.<br>
                         If you did not initiate this request, change your password immediately.
                     </p>
                 </td>
             </tr>
+            <!-- 🛡️ ANTI-SPAM FOOTER -->
             <tr>
                 <td align="center" style="padding: 20px; background-color: #050505; border-top: 1px solid #1a1a1a;">
-                    <p style="color: #444444; font-size: 9px; margin: 0; font-weight: 800; letter-spacing: 1.5px;">SYSTEM MONITORED BY AFROSTORY</p>
+                    <p style="color: #444444; font-size: 9px; margin: 0 0 10px 0; font-weight: 800; letter-spacing: 1px;">
+                        You received this because a password reset was requested for your account.
+                    </p>
+                    <p style="color: #444444; font-size: 9px; margin: 0; font-weight: 800; letter-spacing: 1px;">
+                        SYSTEM MONITORED BY AFROSTORY<br>
+                        [MARKUDI BEHIND OlD ASSEMBLY QUARTERS]
+                    </p>
                 </td>
             </tr>
         </table>
@@ -158,7 +178,8 @@ export async function sendVerificationCodeEmail({ email, code }) {
             from: `${RESEND_FROM_NAME} <${RESEND_FROM_EMAIL}>`,
             to: safeEmail,
             subject: 'Welcome to AFROSTORY - Verification Code',
-            html: getRegistrationHTML(code)
+            html: getRegistrationHTML(code),
+            text: `Welcome to AFROSTORY. Your community registration verification code is: ${code}. This code expires in 15 minutes. If you did not request this, please ignore this email.` // 🛡️ CRITICAL SPAM FIX
         }));
         logger.info(`[EMAIL] OTP sent successfully to ${safeEmail}`);
         return true;
@@ -179,7 +200,8 @@ export async function sendPasswordResetEmail({ email, code }) {
             from: `${RESEND_FROM_NAME} SECURITY <${RESEND_FROM_EMAIL}>`,
             to: safeEmail,
             subject: 'Security Alert: Password Reset Requested',
-            html: getResetHTML(code)
+            html: getResetHTML(code),
+            text: `AFROSTORY Security Alert. A password reset was requested. Your secure auth code is: ${code}. This code expires in 15 minutes. If you did not request this, secure your account immediately.` // 🛡️ CRITICAL SPAM FIX
         }));
         logger.info(`[EMAIL] Password reset OTP sent to ${safeEmail}`);
         return true;
