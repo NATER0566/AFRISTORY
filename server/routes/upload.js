@@ -1,21 +1,48 @@
 import cloudinary from '../config/cloudinary.js';
 import { verifyAuth, verifyCreator } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const uploadDir = path.join(__dirname, '..', 'uploads');
-
-// Ensure upload directory exists
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
 
 export default async function uploadRoutes(fastify, opts) {
-  // Upload image
+
+  // 1. MODERN FAST PATH: Generate signed credentials for direct client-side upload
+  fastify.get('/sign', async (request, reply) => {
+    try {
+      await verifyCreator(request, reply);
+
+      if (!request.user) {
+        return sendError(reply, 'Unauthorized', 401);
+      }
+
+      const { type = 'video' } = request.query;
+      const timestamp = Math.round(new Date().getTime() / 1000);
+      const folder = type === 'image' ? 'afrostory/images' : 'afrostory/videos';
+
+      // Parameters signed for Cloudinary
+      const paramsToSign = {
+        timestamp,
+        folder,
+      };
+
+      const signature = cloudinary.utils.api_sign_request(
+        paramsToSign,
+        process.env.CLOUDINARY_API_SECRET
+      );
+
+      sendSuccess(reply, {
+        signature,
+        timestamp,
+        folder,
+        apiKey: process.env.CLOUDINARY_API_KEY,
+        cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+      }, 'Signature generated successfully');
+
+    } catch (error) {
+      fastify.log.error(error);
+      sendError(reply, 'Failed to generate upload signature', 500, error.message);
+    }
+  });
+
+  // 2. SERVER FALLBACK: Upload image through server (if direct upload is not used)
   fastify.post('/image', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
@@ -25,46 +52,28 @@ export default async function uploadRoutes(fastify, opts) {
       }
 
       const data = await request.file();
+      if (!data) return sendError(reply, 'No file provided', 400);
 
-      if (!data) {
-        return sendError(reply, 'No file provided', 400);
-      }
-
-      if (!data.mimetype.startsWith('image/')) {
-        return sendError(reply, 'Only image files are allowed', 400);
-      }
       const buffer = await data.toBuffer();
-      const timestamp = Date.now();
-      const filename = `${request.user._id}_${timestamp}.upload`;
-      const filepath = path.join(uploadDir, filename);
+      const base64 = `data:${data.mimetype};base64,${buffer.toString('base64')}`;
 
-      let result;
-      try {
-        fs.writeFileSync(filepath, buffer, { flag: 'wx' });
-        result = await cloudinary.uploader.upload(filepath, {
-          resource_type: 'image',
-          folder: 'afrostory/images',
-          public_id: `${request.user._id}_${timestamp}`,
-        });
-      } finally {
-        if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
-      }
+      const result = await cloudinary.uploader.upload(base64, {
+        resource_type: 'image',
+        folder: 'afrostory/images',
+        secure: true,
+      });
 
-      sendSuccess(
-        reply,
-        {
-          url: result.secure_url,
-          publicId: result.public_id,
-        },
-        'Image uploaded successfully'
-      );
+      sendSuccess(reply, {
+        url: result.secure_url,
+        publicId: result.public_id,
+      }, 'Image uploaded successfully');
     } catch (error) {
       fastify.log.error(error);
       sendError(reply, 'Image upload failed', 500, error.message);
     }
   });
 
-  // Upload video
+  // 3. SERVER FALLBACK: Upload video through server (Fixed with proper resource_type & HTTPS)
   fastify.post('/video', async (request, reply) => {
     try {
       await verifyCreator(request, reply);
@@ -74,50 +83,27 @@ export default async function uploadRoutes(fastify, opts) {
       }
 
       const data = await request.file();
+      if (!data) return sendError(reply, 'No file provided', 400);
 
-      if (!data) {
-        return sendError(reply, 'No file provided', 400);
-      }
-
-      if (!data.mimetype.startsWith('video/')) {
-        return sendError(reply, 'Only video files are allowed', 400);
-      }
-      const timestamp = Date.now();
       const result = await new Promise((resolve, reject) => {
-        let settled = false;
-        const finish = (error, uploadResult) => {
-          if (settled) return;
-          settled = true;
-          if (error) reject(error);
-          else resolve(uploadResult);
-        };
-
         const uploadStream = cloudinary.uploader.upload_chunked_stream(
           {
             resource_type: 'video',
             folder: 'afrostory/videos',
-            public_id: `${request.user._id}_${timestamp}`,
-            chunk_size: Number(process.env.CLOUDINARY_UPLOAD_CHUNK_SIZE || 20000000),
-            eager: [{ streaming_profile: 'hd', format: 'm3u8' }],
-            eager_async: true,
+            secure: true,
           },
-          finish
+          (error, uploadResult) => {
+            if (error) reject(error);
+            else resolve(uploadResult);
+          }
         );
 
-        uploadStream.on('error', error => finish(error));
-        data.file.on('error', error => finish(error));
-        request.raw.once('aborted', () => finish(new Error('Client aborted video upload')));
         data.file.pipe(uploadStream);
       });
 
-      // Get HLS URL
-      const hslUrl = cloudinary.url(result.public_id, {
-        streaming_profile: 'hd',
-        format: 'm3u8',
-      });
+      // FIXED: Strictly specify resource_type: 'video' and secure: true
       const mediaUrl = result.secure_url || cloudinary.url(result.public_id, {
         resource_type: 'video',
-        format: 'mp4',
         secure: true,
       });
 
@@ -125,70 +111,26 @@ export default async function uploadRoutes(fastify, opts) {
         url: mediaUrl,
         mediaUrl,
         secure_url: mediaUrl,
-        hlsUrl: hslUrl,
         publicId: result.public_id,
-        public_id: result.public_id,
-        resource_type: result.resource_type,
-        format: result.format,
-        bytes: result.bytes,
-        duration: result.duration,
-        width: result.width,
-        height: result.height,
+        duration: result.duration || 0,
       }, 'Video uploaded successfully', 201);
     } catch (error) {
       fastify.log.error(error);
-
       sendError(reply, 'Video upload failed', 500, error.message);
     }
   });
 
-  // Delete asset from Cloudinary
+  // 4. Delete asset
   fastify.delete('/asset/:publicId', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
+      if (!request.user) return sendError(reply, 'Unauthorized', 401);
 
-      if (!request.user) {
-        return sendError(reply, 'Unauthorized', 401);
-      }
-
-      const { publicId } = request.params;
-
-      await cloudinary.uploader.destroy(publicId);
-
+      await cloudinary.uploader.destroy(request.params.publicId);
       sendSuccess(reply, null, 'Asset deleted successfully');
     } catch (error) {
       fastify.log.error(error);
       sendError(reply, 'Failed to delete asset', 500, error.message);
-    }
-  });
-
-  // Get upload token (for client-side uploads)
-  fastify.get('/token', async (request, reply) => {
-    try {
-      await verifyAuth(request, reply);
-
-      if (!request.user) {
-        return sendError(reply, 'Unauthorized', 401);
-      }
-
-      const timestamp = Math.floor(Date.now() / 1000);
-      const signature = cloudinary.utils.api_sign_request(
-        {
-          timestamp,
-          folder: 'afrostory/uploads',
-        },
-        process.env.CLOUDINARY_API_SECRET
-      );
-
-      sendSuccess(reply, {
-        timestamp,
-        signature,
-        cloudName: process.env.CLOUDINARY_CLOUD_NAME,
-        apiKey: process.env.CLOUDINARY_API_KEY,
-      });
-    } catch (error) {
-      fastify.log.error(error);
-      sendError(reply, 'Failed to generate upload token', 500, error.message);
     }
   });
 }
