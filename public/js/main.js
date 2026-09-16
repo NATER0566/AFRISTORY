@@ -143,7 +143,10 @@ function renderRewardCard(reward) {
 async function loadRewards() { try { const result = await api('/rewards/me'); state.rewards = result; $('#rewards-balance').textContent = Number(result.balance || 0).toLocaleString(); $('#reward-current-streak').textContent = Number(result.streak?.currentStreak || 0); $('#reward-best-streak').textContent = Number(result.streak?.bestStreak || 0); const daily = result.daily; const rewards = result.rewards || []; $('#daily-reward-card').innerHTML = daily ? `<p class="eyebrow">DAILY CHECK-IN</p><h2>${daily.claimed ? 'Check-in complete' : 'Your daily reward is ready'}</h2><p class="muted">${esc(daily.description || 'Return each day to keep your streak alive.')}</p><div class="reward-meta">+${Number(daily.rewardAmount).toLocaleString()} coins</div>${daily.claimed ? '<div class="reward-state">Come back after the next calendar day.</div>' : `<button class="button button-accent reward-action" data-reward-id="${esc(daily._id)}">Claim today</button>`}` : '<div class="profile-empty">Daily check-in is not available right now.</div>'; const social = rewards.filter(reward => reward.type === 'SOCIAL' || reward.category === 'social'); $('#social-rewards-grid').innerHTML = social.map(renderRewardCard).join('') || '<div class="profile-empty">No active social missions right now.</div>'; $('#rewards-grid').innerHTML = rewards.filter(reward => !social.includes(reward) && (!daily || reward._id !== daily._id)).map(renderRewardCard).join('') || '<div class="profile-empty">No active missions right now. New opportunities will appear here.</div>'; $('#rewards-history').innerHTML = (result.history || []).map(item => `<div class="data-row"><div><strong>${esc(item.description || 'Reward activity')}</strong><p>${new Date(item.createdAt).toLocaleDateString()}</p></div><span class="data-value ${item.type === 'SPEND' ? '' : 'reward-positive'}">${item.type === 'SPEND' ? '-' : '+'}${Number(item.amount || 0).toLocaleString()}</span></div>`).join('') || '<div class="profile-empty">Your reward history will appear here.</div>'; } catch (error) { toast(error.message, 'error'); } }
 async function loadCreator() { try { const creator = await api('/creators/me/profile'); const series = await api(`/creators/${creator._id}/series?limit=100`); $('#creator-stats').innerHTML = [['TOTAL VIEWS', creator.totalViews], ['TOTAL EARNINGS', creator.totalEarnings], ['FOLLOWERS', creator.totalFollowers], ['SERIES', series.series?.length || 0]].map(item => `<div class="stat-card"><span class="eyebrow">${item[0]}</span><strong>${Number(item[1] || 0).toLocaleString()}</strong></div>`).join(''); $('#my-series-grid').innerHTML = (series.series || []).map(card).join('') || '<div class="empty-state">Create your first series.</div>'; $('#upload-series').innerHTML = (series.series || []).map(item => `<option value="${esc(item._id)}">${esc(item.title)}</option>`).join(''); } catch (error) { if (error.message.includes('creator')) { $('#section-creator').innerHTML = '<div class="creator-onboarding"><p class="eyebrow">SHARE YOUR VOICE</p><h1>Become a creator</h1><p>Create a home for your stories and upload episodes.</p><button class="button button-primary" data-action="become-creator">Start creating</button></div>'; } else toast(error.message, 'error'); } }
 
-$('#creator-signup-form')?.addEventListener('submit', async (event) => { 
+// ----------------------------------------------------
+// FIXED: This ID was wrong! It is now #become-creator-form
+// ----------------------------------------------------
+$('#become-creator-form')?.addEventListener('submit', async (event) => { 
   event.preventDefault(); 
   const form = event.target;
   const brandName = form.querySelector('[name="brandName"]').value.trim();
@@ -167,7 +170,9 @@ $('#creator-signup-form')?.addEventListener('submit', async (event) => {
     $('#become-creator-modal').classList.add('hidden'); // Close modal
     
     toast('Welcome to Creator Studio!', 'success');
-    setSection('creator'); 
+    
+    // Automatically switch to the creator studio page tab after reload
+    window.location.hash = 'creator';
     window.location.reload(); 
   } catch (error) { 
     toast(error.message, 'error'); 
@@ -208,7 +213,12 @@ document.addEventListener('click', event => {
   if (event.target.closest('[data-action="become-creator"]')) {
       const modal = $('#become-creator-modal');
       if(modal) modal.classList.remove('hidden');
-  } 
+  }
+  
+  // FIXED: Properly close the become creator modal when X is clicked
+  if (event.target.closest('[data-action="close-become-creator"]')) {
+      $('#become-creator-modal')?.classList.add('hidden');
+  }
   
   if (event.target.closest('[data-action="logout"]')) api('/auth/logout', { method: 'POST' }).finally(() => window.location.replace('/')); 
 });
