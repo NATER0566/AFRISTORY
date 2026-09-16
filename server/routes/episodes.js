@@ -11,25 +11,58 @@ export default async function episodeRoutes(fastify, opts) {
   // Database-backed episode feed used by Watch, Discover, and recommendations.
   fastify.get('/feed', async (request, reply) => {
     try {
-      if (request.cookies?.token && !(await verifyAuth(request, reply))) return;
+      let userIsAuthenticated = false;
+      if (request.cookies?.token) {
+         userIsAuthenticated = await verifyAuth(request, reply, false); // Pass false or handle so it doesn't hard-reject if invalid
+      }
+
       const { genre, culturalCategory, language, sort = 'trending', limit = 12 } = request.query || {};
       const query = { isPublished: true };
       if (genre) query.genre = genre;
       if (culturalCategory) query.culturalCategory = culturalCategory;
       if (language) query.language = language;
       const sortBy = sort === 'latest' ? { createdAt: -1 } : { totalViews: -1, createdAt: -1 };
+      
       const episodes = await Episode.find(query)
         .populate({ path: 'seriesId', populate: { path: 'creatorId', select: 'brandName profileImage' } })
         .sort(sortBy)
         .limit(Math.min(Number(limit) || 12, 50));
-      sendSuccess(reply, { episodes: episodes.map(episode => ({ ...episode.toObject(), rating: formatDecimal(episode.rating) })) });
+
+      // --- NEW LOGIC: Calculate hasAccess for EVERY episode in the feed ---
+      const hasActiveSubscription = request.user && request.user.subscriptionExpiresAt && new Date(request.user.subscriptionExpiresAt) > new Date();
+      
+      // Fetch all unlocks for this user in one query for performance
+      let userUnlocks = [];
+      if (request.user) {
+        const episodeIds = episodes.map(ep => ep._id);
+        const unlocks = await Unlock.find({
+          userId: request.user._id,
+          episodeId: { $in: episodeIds },
+          isActive: true
+        });
+        userUnlocks = unlocks.map(u => u.episodeId.toString());
+      }
+
+      const processedEpisodes = episodes.map(episode => {
+        let hasAccess = episode.isFree;
+        if (hasActiveSubscription) hasAccess = true;
+        if (request.user && userUnlocks.includes(episode._id.toString())) hasAccess = true;
+
+        return { 
+            ...episode.toObject(), 
+            rating: formatDecimal(episode.rating),
+            hasAccess // Feed now sends hasAccess correctly
+        };
+      });
+
+      sendSuccess(reply, { episodes: processedEpisodes });
     } catch (error) {
       fastify.log.error(error);
       sendError(reply, 'Failed to fetch episode feed', 500, error.message);
     }
   });
 
-  // Get episode
+  // Get single episode
   fastify.get('/:episodeId', async (request, reply) => {
     try {
       const { episodeId } = request.params;
@@ -47,8 +80,11 @@ export default async function episodeRoutes(fastify, opts) {
       // Check if user has access
       let hasAccess = episode.isFree;
 
-      if (request.cookies?.token && !(await verifyAuth(request, reply))) return;
-      const hasActiveSubscription = request.user?.subscriptionExpiresAt > new Date();
+      if (request.cookies?.token) {
+          await verifyAuth(request, reply);
+      }
+      
+      const hasActiveSubscription = request.user && request.user.subscriptionExpiresAt && new Date(request.user.subscriptionExpiresAt) > new Date();
       if (hasActiveSubscription) hasAccess = true;
 
       if (request.user && !episode.isFree) {
