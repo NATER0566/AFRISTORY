@@ -10,8 +10,14 @@ import { sendVerificationCodeEmail, sendPasswordResetEmail, isResendReady } from
 
 const generateCode = () => String(Math.floor(100000 + Math.random() * 900000));
 const codeExpiry = (minutes) => new Date(Date.now() + minutes * 60 * 1000);
-const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-const oauthCallback = provider => process.env[`${provider.toUpperCase()}_CALLBACK_URL`] || `${frontendUrl}/api/auth/${provider}/callback`;
+
+// 🛠️ FIX: Automatically use Render URL in production, localhost in testing
+const serverUrl = process.env.NODE_ENV === 'production' 
+  ? 'https://afristory.onrender.com' 
+  : 'http://localhost:3000';
+
+const oauthCallback = provider => `${serverUrl}/api/auth/${provider}/callback`;
+
 const oauthError = (reply, message) => reply.redirect(`/?authError=${encodeURIComponent(message)}`);
 const createState = () => crypto.randomBytes(24).toString('hex');
 const createCodeVerifier = () => crypto.randomBytes(32).toString('base64url');
@@ -199,7 +205,6 @@ export default async function authRoutes(fastify, opts) {
         201
       );
     } catch (error) {
-      // 🚨 WE ADDED THIS TO CATCH THE EXACT DATABASE ERROR 🚨
       console.error('\n🚨🚨🚨 REGISTRATION SERVER CRASH TRACE 🚨🚨🚨');
       console.error(error);
       console.error('🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨\n');
