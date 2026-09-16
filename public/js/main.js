@@ -12,8 +12,8 @@ const api = async (path, options = {}) => {
   if (cached && Date.now() - cached.time < CACHE_DURATION && options.method !== 'POST') return cached.data; 
   
   try { 
-    // MASSIVE FIX: We now allow much larger timeouts so video uploads don't get cancelled!
-    const timeoutMs = options.timeout || 25000; // default 25 seconds
+    // Massive 10 minute timeout so video uploads don't freeze and cancel!
+    const timeoutMs = options.timeout || 25000; 
     const response = await fetch(`${API}${path}`, { 
       credentials: 'include', 
       signal: AbortSignal.timeout(timeoutMs), 
@@ -70,7 +70,6 @@ function renderHeaderUser(user = state.user) {
   
   if (avatarUrl) {
     const cacheBust = `${avatarUrl}${avatarUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
-    // Inline perfect circle style
     avatarWrap.innerHTML = `<img src="${image(cacheBust)}" alt="${esc(displayName)} profile picture" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"/>`;
   } else {
     const initial = (displayName || 'A').trim().charAt(0).toUpperCase() || 'A';
@@ -79,6 +78,7 @@ function renderHeaderUser(user = state.user) {
   avatarWrap.parentElement.setAttribute('aria-label', `${displayName} profile menu`);
   avatarWrap.parentElement.setAttribute('title', displayName);
 }
+
 function toast(message, type = 'info') { 
   const el = document.createElement('div'); 
   el.className = `toast ${type}`; 
@@ -87,12 +87,14 @@ function toast(message, type = 'info') {
   const container = $('#toast-region'); 
   if (!container) return; 
   container.appendChild(el); 
+  
+  // Custom timeout to fade out the centered toast
   setTimeout(() => { 
-    // UPDATED to fade out properly for centered toast
     el.style.animation = 'fadeOutToast 0.4s ease-out forwards'; 
     setTimeout(() => el.remove(), 400); 
-  }, 4500); 
+  }, 4000); 
 }
+
 // Performance: Lazy load images
 function setupLazyLoading() { if ('IntersectionObserver' in window) { const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting && entry.target.dataset.src) { entry.target.src = entry.target.dataset.src; delete entry.target.dataset.src; observer.unobserve(entry.target); } }); }, { rootMargin: '50px' }); $$('[data-src]').forEach(el => observer.observe(el)); } }
 function setSection(name) { $$('.app-section').forEach(section => section.classList.toggle('hidden', section.id !== `section-${name}`)); $$('.nav-item[data-section]').forEach(item => item.classList.toggle('active', item.dataset.section === name)); $('#genre-filter')?.closest('.discover-filters')?.classList.toggle('hidden', name !== 'discover'); $('#save-current')?.classList.toggle('hidden', name !== 'watch'); location.hash = name; if (name === 'wallet') loadWallet(); if (name === 'rewards') loadRewards(); if (name === 'creator') loadCreator(); if (name === 'admin') loadAdmin(); if (name === 'history') loadHistory(); if (name === 'continue') loadContinue(); if (name === 'favorites') loadFavorites(); if (name === 'trending') loadTrending(); if (name === 'settings') loadSettings(); if (name === 'watch') loadWatchRecommended(); }
@@ -103,9 +105,39 @@ function options(values) { return values.map(value => `<option value="${esc(valu
 function ensureClassificationControls() { const filters = $('.discover-filters'); if (filters && !$('#cultural-filter')) filters.insertAdjacentHTML('beforeend', `<label>Cultural category<select id="cultural-filter"><option value="">All cultures</option>${options(culturalCategories)}</select></label><label>Language<select id="language-filter"><option value="">All languages</option>${options(episodeLanguages)}</select></label>`); const form = $('#upload-form'); if (form && !$('#upload-genre')) { const access = form.querySelector('[name="access"]'); access.insertAdjacentHTML('beforebegin', `<label>Genre<select id="upload-genre" name="genre" required><option value="">Choose genre</option>${options(episodeGenres)}</select></label><label>Cultural category<select id="upload-cultural-category" name="culturalCategory" required><option value="">Choose culture</option>${options(culturalCategories)}</select></label><label>Language<select id="upload-language" name="language" required><option value="">Choose language</option>${options(episodeLanguages)}</select></label><label>Tags<input name="tags" maxlength="300" placeholder="family, tradition, village"></label>`); } }
 function card(series) { return `<article class="series-card" data-series-id="${esc(series._id)}"><div class="card-image" style="background-image:url('${image(series.coverImage)}')"><span class="card-tag">${esc(series.genre || 'SERIES')}</span></div><div class="card-body"><h3>${esc(series.title)}</h3><p>★ ${Number(series.rating || 0).toFixed(1)} &nbsp; · &nbsp; ${esc(series.language || 'English')}</p></div></article>`; }
 function episodeCard(episode) { const series = episode.seriesId || {}; const creator = series.creatorId || {}; return `<article class="series-card episode-card" data-episode-id="${esc(episode._id)}"><div class="card-image" style="background-image:url('${image(episode.thumbnailUrl || series.coverImage)}')"><span class="card-tag">${esc(episode.genre || 'EPISODE')}</span></div><div class="card-body"><h3>${esc(episode.title)}</h3><p>${esc(series.title || 'Story')} · ${esc(episode.culturalCategory || 'African story')}</p><p>${esc(creator.brandName || '')} · ${esc(episode.language || 'English')} · ${Math.round(Number(episode.duration || 0) / 60)} min</p></div></article>`; }
-async function loadDiscover() { try { const genre = $('#genre-filter')?.value || ''; const sort = $('#sort-filter')?.value || 'trending'; const result = await api(`/series/discover/all?page=1&limit=12&sort=${encodeURIComponent(sort)}${genre ? `&genre=${encodeURIComponent(genre)}` : ''}`); state.series = result.series || []; const featured = state.series[0]; $('#featured-series').innerHTML = featured ? `<article class="featured-card" style="background-image:url('${image(featured.coverImage)}')" data-series-id="${esc(featured._id)}"><p class="eyebrow">FEATURED SERIES</p><h2>${esc(featured.title)}</h2><p>${esc(featured.description || 'A new story is waiting.')}</p></article>` : '<div class="empty-state">No stories match this filter.</div>'; $('#series-grid').innerHTML = state.series.map(card).join('') || '<div class="empty-state">No stories match this filter.</div>'; const creators = await api('/creators/top/creators?limit=6'); $('#creator-grid').innerHTML = (creators || []).map(creator => `<div class="creator-pill"><span class="creator-avatar">${creator.userId?.profileImage ? `<img src="${image(creator.userId.profileImage)}" alt="">` : esc((creator.brandName || 'C')[0])}</span><span><strong>${esc(creator.brandName)}</strong><br><small class="muted">${Number(creator.totalViews || 0).toLocaleString()} views</small></span></div>`).join('') || '<div class="empty-state">No creators found.</div>'; } catch (error) { toast(error.message, 'error'); } }
+
+async function loadDiscover() { 
+  try { 
+    const genre = $('#genre-filter')?.value || ''; 
+    const sort = $('#sort-filter')?.value || 'trending'; 
+    const result = await api(`/series/discover/all?page=1&limit=12&sort=${encodeURIComponent(sort)}${genre ? `&genre=${encodeURIComponent(genre)}` : ''}`); 
+    state.series = result.series || []; 
+    const featured = state.series[0]; 
+    $('#featured-series').innerHTML = featured ? `<article class="featured-card" style="background-image:url('${image(featured.coverImage)}')" data-series-id="${esc(featured._id)}"><p class="eyebrow">FEATURED SERIES</p><h2>${esc(featured.title)}</h2><p>${esc(featured.description || 'A new story is waiting.')}</p></article>` : '<div class="empty-state">No stories match this filter.</div>'; 
+    $('#series-grid').innerHTML = state.series.map(card).join('') || '<div class="empty-state">No stories match this filter.</div>'; 
+    
+    // MASSIVE FIX: Catch the error so it doesn't break the page, and handle any nested data structure
+    let creatorsList = [];
+    try {
+        const cRes = await api('/creators/top/creators?limit=6').catch(() => null) || await api('/creators?limit=6').catch(() => null);
+        creatorsList = cRes?.creators || cRes?.data || cRes || [];
+        if (!Array.isArray(creatorsList)) creatorsList = [];
+    } catch(e) {
+        console.warn('Top creators could not be loaded', e);
+    }
+    
+    $('#creator-grid').innerHTML = creatorsList.length > 0 
+      ? creatorsList.map(creator => `<div class="creator-pill"><span class="creator-avatar">${creator.userId?.profileImage ? `<img src="${image(creator.userId.profileImage)}" alt="">` : esc((creator.brandName || 'C')[0])}</span><span><strong>${esc(creator.brandName)}</strong><br><small class="muted">${Number(creator.totalViews || 0).toLocaleString()} views</small></span></div>`).join('') 
+      : '<div class="empty-state">No creators found yet.</div>'; 
+      
+  } catch (error) { 
+    toast(error.message, 'error'); 
+  } 
+}
+
 async function loadDiscoverEpisodes() { try { ensureClassificationControls(); const genre = $('#genre-filter')?.value || ''; const culturalCategory = $('#cultural-filter')?.value || ''; const language = $('#language-filter')?.value || ''; const query = new URLSearchParams({ sort: 'trending', limit: '12' }); if (genre) query.set('genre', genre); if (culturalCategory) query.set('culturalCategory', culturalCategory); if (language) query.set('language', language); const result = await api(`/episodes/feed?${query}`); $('#series-grid').innerHTML = (result.episodes || []).map(episodeCard).join('') || '<div class="empty-state">No episodes match these filters.</div>'; } catch (error) { toast(error.message, 'error'); } }
 async function openSeries(id) { try { const [series, episodes] = await Promise.all([api(`/series/${id}`), api(`/series/${id}/episodes?limit=100`)]); state.currentSeries = series; $('#watch-series-meta').innerHTML = `<h3>${esc(series.title)}</h3><p>${esc(series.description || '')}</p>`; $('#watch-title').textContent = series.title; $('#episode-list').innerHTML = (episodes.episodes || []).map((episode, index) => `<button class="episode-row ${index === 0 ? 'active' : ''}" data-episode-id="${esc(episode._id)}"><strong>${String(episode.episodeNumber).padStart(2, '0')}</strong><span>${esc(episode.title)}${episode.isFree ? ' · Free' : ''}</span></button>`).join(''); setSection('watch'); if (episodes.episodes?.[0]) openEpisode(episodes.episodes[0]._id); } catch (error) { toast(error.message, 'error'); } }
+
 async function openEpisode(id) {
   try {
     const episode = await api(`/episodes/${id}`);
@@ -125,22 +157,36 @@ async function openEpisode(id) {
       state.hls = null;
     }
 
-    const mediaUrl = episode.mediaUrl || episode.hlsUrl;
-    if (!mediaUrl) throw new Error('This episode has no video URL');
+    // MASSIVE FIX: Check for hlsUrl, but keep the standard mediaUrl as a raw fallback
+    const mediaUrl = episode.hlsUrl || episode.mediaUrl || episode.videoUrl;
+    const fallbackUrl = episode.mediaUrl || episode.videoUrl;
+    
+    if (!mediaUrl) throw new Error('This episode has no video URL yet.');
+    
     const isHls = /\.m3u8(?:\?|$)/i.test(mediaUrl);
     if (isHls && window.Hls?.isSupported()) {
       state.hls = new Hls({ enableWorker: true, lowLatencyMode: true });
       state.hls.on(Hls.Events.ERROR, (_event, data) => {
         if (data.fatal) {
-          video.classList.add('video-error');
-          toast('The video stream could not be loaded', 'error');
+          console.warn('HLS encountered a fatal error. Attempting fallback...', data);
+          
+          // If HLS fails (e.g. still processing on Cloudinary), switch to raw mp4
+          if (fallbackUrl && fallbackUrl !== mediaUrl && !fallbackUrl.includes('.m3u8')) {
+              state.hls.destroy();
+              video.src = fallbackUrl;
+              video.load();
+              video.play().catch(e => console.error('Fallback play failed:', e));
+          } else {
+              video.classList.add('video-error');
+              toast('Video is processing or temporarily unavailable. Try again soon.', 'error');
+          }
         }
       });
       state.hls.loadSource(mediaUrl);
       state.hls.attachMedia(video);
     } else {
       video.preload = 'auto';
-      video.src = mediaUrl;
+      video.src = fallbackUrl || mediaUrl;
       video.load();
     }
 
@@ -167,6 +213,7 @@ async function openEpisode(id) {
     toast(error.message, 'error');
   }
 }
+
 async function unlockEpisode() { if (!state.currentEpisode) return; try { const hasActiveSubscription = state.user?.subscriptionExpiresAt && new Date(state.user.subscriptionExpiresAt) > new Date(); if (hasActiveSubscription) { toast('✓ This episode is included in your VIP subscription!', 'success'); return; } const hasAds = state.currentEpisode.adUnlockable && window.AfroStoryAds?.isEnabled; const userAdBalance = state.user?.adUnlocksRemaining || 0; const canUseAd = hasAds && userAdBalance > 0; let choice = 'coins'; if (canUseAd) { if (window.Swal) { const result = await Swal.fire({ title: '🎬 Unlock this episode', html: `<div style="text-align:left; font-size:14px;"><p><strong>📺 Watch Ad (Free)</strong></p><p style="color:#76a86b; font-weight:bold;">${userAdBalance} ad unlock${userAdBalance !== 1 ? 's' : ''} available today</p><hr style="border-color:#343434; margin:15px 0;"><p><strong>💰 Use Coins</strong></p><p style="color:#d4a017; font-weight:bold;">${state.currentEpisode.coinCost || 10} coins</p></div>`, showDenyButton: true, showCancelButton: true, confirmButtonText: '📺 Watch Ad Now', denyButtonText: `💰 Use ${state.currentEpisode.coinCost || 10} Coins`, cancelButtonText: 'Cancel', confirmButtonColor: '#76a86b', denyButtonColor: '#d4a017', background: '#1b1b1b', color: '#f5f5f5', allowOutsideClick: false, allowEscapeKey: false }); if (result.isDismissed) return; choice = result.isDenied ? 'coins' : 'ad'; } } else { if (window.Swal) { const result = await Swal.fire({ title: '🎬 Unlock this episode', html: `<p style="font-size:15px; line-height:1.6;"><strong style="color:#d4a017;">💰 Only coins available now</strong></p><p style="font-size:13px; color:#999; margin-top:10px;">Ad unlocks are coming soon!</p><p style="font-size:15px; margin-top:15px;">Use <strong style="color:#d4a017;">${state.currentEpisode.coinCost || 10} coins</strong> to unlock and continue</p>`, showCancelButton: true, confirmButtonText: `💰 Unlock with ${state.currentEpisode.coinCost || 10} Coins`, cancelButtonText: 'Cancel', confirmButtonColor: '#d4a017', background: '#1b1b1b', color: '#f5f5f5', allowOutsideClick: false, allowEscapeKey: false }); if (result.isDismissed) return; choice = 'coins'; } } if (choice === 'ad') await window.AfroStoryAds.showRewarded(state.currentEpisode._id); else await api('/wallet/unlock-episode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ episodeId: state.currentEpisode._id }) }); await openEpisode(state.currentEpisode._id); toast('✨ Episode unlocked! Enjoy the story!', 'success'); } catch (error) { toast(error.message, 'error'); } }
 async function loadComments(id) { try { const result = await api(`/comments/episode/${id}?limit=50`); const render = comment => `<article class="comment"><span class="comment-meta">${esc(comment.userId?.username || 'Story lover')}</span><p>${esc(comment.text)}</p><button class="text-button" data-reply-comment="${esc(comment._id)}">Reply</button>${comment.replies?.length ? `<div class="comment-replies">${comment.replies.map(render).join('')}</div>` : ''}</article>`; $('#comments-list').innerHTML = (result.comments || []).map(render).join('') || '<p class="muted">Be the first to share a thought.</p>'; $('#comment-input').placeholder = 'Share what this story brought up for you...'; $('#comment-input').disabled = false; $('#comment-submit').disabled = false; } catch (error) { toast(error.message, 'error'); } }
 async function loadWallet() { try { const [wallet, transactions] = await Promise.all([api('/wallet/me/balance'), api('/wallet/me/transactions?limit=10')]); $('#wallet-balance').textContent = Number(wallet.storyCoins || 0).toLocaleString(); $('#wallet-earned').textContent = Number(wallet.totalEarned || 0).toLocaleString(); state.user.adUnlocksRemaining = wallet.adUnlocks || 0; const adBalanceEl = $('#ad-balance'); if (adBalanceEl) adBalanceEl.textContent = Math.max(0, wallet.adUnlocks || 0); if (adBalanceEl?.closest('.wallet-stat')) adBalanceEl.closest('.wallet-stat').style.display = 'block'; $('#transactions-list').innerHTML = (transactions.transactions || []).map(item => `<div class="data-row"><div><strong>${esc(item.description || item.type)}</strong><p>${new Date(item.createdAt).toLocaleDateString()}</p></div><span class="data-value">${esc(item.type === 'SPEND' ? '-' : '+')}${Number(item.amount || 0).toLocaleString()}</span></div>`).join('') || '<div class="empty-state">No transactions yet.</div>'; await window.AfroStoryAds.refresh(); } catch (error) { toast(error.message, 'error'); } }
@@ -192,9 +239,6 @@ function renderRewardCard(reward) {
 async function loadRewards() { try { const result = await api('/rewards/me'); state.rewards = result; $('#rewards-balance').textContent = Number(result.balance || 0).toLocaleString(); $('#reward-current-streak').textContent = Number(result.streak?.currentStreak || 0); $('#reward-best-streak').textContent = Number(result.streak?.bestStreak || 0); const daily = result.daily; const rewards = result.rewards || []; $('#daily-reward-card').innerHTML = daily ? `<p class="eyebrow">DAILY CHECK-IN</p><h2>${daily.claimed ? 'Check-in complete' : 'Your daily reward is ready'}</h2><p class="muted">${esc(daily.description || 'Return each day to keep your streak alive.')}</p><div class="reward-meta">+${Number(daily.rewardAmount).toLocaleString()} coins</div>${daily.claimed ? '<div class="reward-state">Come back after the next calendar day.</div>' : `<button class="button button-accent reward-action" data-reward-id="${esc(daily._id)}">Claim today</button>`}` : '<div class="profile-empty">Daily check-in is not available right now.</div>'; const social = rewards.filter(reward => reward.type === 'SOCIAL' || reward.category === 'social'); $('#social-rewards-grid').innerHTML = social.map(renderRewardCard).join('') || '<div class="profile-empty">No active social missions right now.</div>'; $('#rewards-grid').innerHTML = rewards.filter(reward => !social.includes(reward) && (!daily || reward._id !== daily._id)).map(renderRewardCard).join('') || '<div class="profile-empty">No active missions right now. New opportunities will appear here.</div>'; $('#rewards-history').innerHTML = (result.history || []).map(item => `<div class="data-row"><div><strong>${esc(item.description || 'Reward activity')}</strong><p>${new Date(item.createdAt).toLocaleDateString()}</p></div><span class="data-value ${item.type === 'SPEND' ? '' : 'reward-positive'}">${item.type === 'SPEND' ? '-' : '+'}${Number(item.amount || 0).toLocaleString()}</span></div>`).join('') || '<div class="profile-empty">Your reward history will appear here.</div>'; } catch (error) { toast(error.message, 'error'); } }
 async function loadCreator() { try { const creator = await api('/creators/me/profile'); const series = await api(`/creators/${creator._id}/series?limit=100`); $('#creator-stats').innerHTML = [['TOTAL VIEWS', creator.totalViews], ['TOTAL EARNINGS', creator.totalEarnings], ['FOLLOWERS', creator.totalFollowers], ['SERIES', series.series?.length || 0]].map(item => `<div class="stat-card"><span class="eyebrow">${item[0]}</span><strong>${Number(item[1] || 0).toLocaleString()}</strong></div>`).join(''); $('#my-series-grid').innerHTML = (series.series || []).map(card).join('') || '<div class="empty-state">Create your first series.</div>'; $('#upload-series').innerHTML = (series.series || []).map(item => `<option value="${esc(item._id)}">${esc(item.title)}</option>`).join(''); } catch (error) { if (error.message.includes('creator')) { $('#section-creator').innerHTML = '<div class="creator-onboarding"><p class="eyebrow">SHARE YOUR VOICE</p><h1>Become a creator</h1><p>Create a home for your stories and upload episodes.</p><button class="button button-primary" data-action="become-creator">Start creating</button></div>'; } else toast(error.message, 'error'); } }
 
-// ----------------------------------------------------
-// CREATOR SIGNUP FIX: Dynamically Restore the HTML!
-// ----------------------------------------------------
 $('#become-creator-form')?.addEventListener('submit', async (event) => { 
   event.preventDefault(); 
   const form = event.target;
@@ -220,7 +264,6 @@ $('#become-creator-form')?.addEventListener('submit', async (event) => {
     
     toast('Welcome to Creator Studio!', 'success');
     
-    // RESTORE the Creator DOM that was wiped out by the "Onboarding Button"
     $('#section-creator').innerHTML = `
       <div class="section-heading">
         <div><p class="eyebrow">MAKE YOUR MARK</p><h1>Creator studio</h1></div>
@@ -235,7 +278,7 @@ $('#become-creator-form')?.addEventListener('submit', async (event) => {
     `;
 
     setSection('creator'); 
-    await loadCreator(); // Safely reload the layout WITHOUT refreshing the page
+    await loadCreator(); 
     
   } catch (error) { 
     toast(error.message, 'error'); 
@@ -245,7 +288,7 @@ $('#become-creator-form')?.addEventListener('submit', async (event) => {
   }
 });
 
-// MASSIVE FIX: We pass timeout: 600000 (10 minutes) so video uploads don't freeze and cancel!
+// Massive 10 minute timeout so video uploads don't freeze and cancel!
 async function uploadAsset(path, file) { 
     const data = new FormData(); 
     data.append('file', file); 
