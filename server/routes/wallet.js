@@ -84,7 +84,7 @@ export default async function walletRoutes(fastify, opts) {
     }
   });
 
-  // Unlock episode with coins
+  // Unlock episode with coins OR ads
   fastify.post('/unlock-episode', async (request, reply) => {
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -96,11 +96,20 @@ export default async function walletRoutes(fastify, opts) {
         return sendError(reply, 'Unauthorized', 401);
       }
 
-      const { episodeId } = request.body || {};
+      // We accept a method ('COIN' or 'AD'). Defaults to COIN.
+      const { episodeId, method = 'COIN' } = request.body || {};
 
       if (!episodeId) {
         await session.abortTransaction();
         return sendError(reply, 'Episode ID is required', 400);
+      }
+
+      const user = await User.findById(request.user._id).session(session);
+
+      // --- NEW: VIP GATE PASS PROTECTION ---
+      if (user.subscriptionExpiresAt && new Date(user.subscriptionExpiresAt) > new Date()) {
+        await session.abortTransaction();
+        return sendError(reply, 'You already have an active Gate Pass. No need to unlock!', 400);
       }
 
       const episode = await Episode.findById(episodeId).session(session);
@@ -124,9 +133,47 @@ export default async function walletRoutes(fastify, opts) {
 
       if (existingUnlock) {
         await session.abortTransaction();
-        return sendError(reply, 'Episode already unlocked', 400);
+        return sendError(reply, 'Episode is already unlocked', 400);
       }
 
+      // ============================================
+      // LOGIC 1: UNLOCK USING AN AD
+      // ============================================
+      if (method.toUpperCase() === 'AD') {
+        if (!episode.adUnlockable) {
+            await session.abortTransaction();
+            return sendError(reply, 'This episode cannot be unlocked with an ad.', 400);
+        }
+
+        if (!user.adUnlocksRemaining || user.adUnlocksRemaining <= 0) {
+            await session.abortTransaction();
+            return sendError(reply, 'You have no free ad unlocks remaining today.', 400);
+        }
+
+        // Deduct ad unlock from user profile
+        user.adUnlocksRemaining -= 1;
+        await user.save({ session });
+
+        // Create unlock record
+        const unlock = new Unlock({
+          userId: request.user._id,
+          episodeId,
+          seriesId: episode.seriesId,
+          method: 'AD',
+        });
+        await unlock.save({ session });
+
+        // Update episode stats
+        episode.totalUnlocks += 1;
+        await episode.save({ session });
+
+        await session.commitTransaction();
+        return sendSuccess(reply, { unlocked: true, method: 'AD' }, 'Episode unlocked successfully with an Ad');
+      }
+
+      // ============================================
+      // LOGIC 2: UNLOCK USING COINS
+      // ============================================
       const userWallet = await Wallet.findOne({ userId: request.user._id }).session(session);
 
       if (!userWallet) {
@@ -196,7 +243,7 @@ export default async function walletRoutes(fastify, opts) {
 
       await session.commitTransaction();
 
-      sendSuccess(reply, { unlocked: true }, 'Episode unlocked successfully');
+      sendSuccess(reply, { unlocked: true, method: 'COIN' }, 'Episode unlocked successfully with Coins');
     } catch (error) {
       await session.abortTransaction();
       fastify.log.error(error);
