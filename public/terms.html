@@ -1,35 +1,63 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terms of Service - AFROSTORY</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 40px 20px; }
-        h1 { color: #111; border-bottom: 2px solid #eaeaea; padding-bottom: 10px; }
-        h2 { color: #222; margin-top: 30px; }
-        .back-link { display: inline-block; margin-bottom: 20px; color: #2563eb; text-decoration: none; font-weight: bold; }
-        .back-link:hover { text-decoration: underline; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Terms of Service | AfroStory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif']},colors:{background:'#111111',surface:'#1B1B1B',accent:'#D4A017',action:'#E67E22',success:'#2ECC71',danger:'#E74C3C'}}}};</script>
 </head>
-<body>
-    <a href="/" class="back-link">← Back to AFROSTORY</a>
-    <h1>Terms of Service</h1>
-    <p><strong>Last Updated:</strong> September 2026</p>
+<body class="bg-background text-gray-300 font-sans min-h-screen p-6 lg:p-12">
+  
+  <header class="max-w-3xl mx-auto mb-10 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2 text-white hover:text-accent transition-colors font-black tracking-widest">
+      <span class="text-accent text-xl">A</span> AFROSTORY
+    </a>
+    <a href="/" class="text-sm font-semibold text-accent hover:underline flex items-center gap-1">
+      <i data-lucide="arrow-left" width="16" height="16"></i> Back
+    </a>
+  </header>
 
-    <h2>1. Acceptance of Terms</h2>
-    <p>By accessing and using AFROSTORY, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by these terms, please do not use this service.</p>
+  <main class="max-w-3xl mx-auto bg-surface p-8 md:p-12 rounded-2xl border border-gray-800 shadow-xl space-y-8">
+    <div class="border-b border-gray-800 pb-6">
+        <h1 class="text-3xl font-bold text-white mb-2">Terms of Service</h1>
+        <p class="text-sm text-gray-500 tracking-wide uppercase">Last Updated: September 2026</p>
+    </div>
 
-    <h2>2. User Accounts and Security</h2>
-    <p>To use certain features, you must register for an account. You are entirely responsible for maintaining the confidentiality of your password, PIN, and account. Furthermore, you are entirely responsible for any and all activities that occur under your account.</p>
+    <section class="space-y-4">
+        <h2 class="text-xl font-semibold text-white">1. Acceptance of Terms</h2>
+        <p class="leading-relaxed text-gray-400">By accessing and using AFROSTORY, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by these terms, please do not use this service.</p>
+    </section>
 
-    <h2>3. User Conduct</h2>
-    <p>You agree to use our platform only for lawful purposes. You are prohibited from posting or transmitting any material that infringes on any intellectual property rights, is defamatory, offensive, or otherwise violates the rights of third parties.</p>
+    <section class="space-y-4">
+        <h2 class="text-xl font-semibold text-white">2. User Accounts and Security</h2>
+        <p class="leading-relaxed text-gray-400">To use certain features, you must register for an account. You are entirely responsible for maintaining the confidentiality of your password, PIN, and account. Furthermore, you are entirely responsible for any and all activities that occur under your account.</p>
+    </section>
 
-    <h2>4. Termination</h2>
-    <p>We reserve the right to terminate or suspend your access to our platform immediately, without prior notice or liability, for any reason whatsoever, including without limitation if you breach the Terms.</p>
+    <section class="space-y-4">
+        <h2 class="text-xl font-semibold text-white">3. User Conduct</h2>
+        <p class="leading-relaxed text-gray-400">You agree to use our platform only for lawful purposes. You are prohibited from posting or transmitting any material that infringes on any intellectual property rights, is defamatory, offensive, or otherwise violates the rights of third parties.</p>
+    </section>
 
-    <h2>5. Changes to Terms</h2>
-    <p>AFROSTORY reserves the right, in its sole discretion, to change the Terms under which the platform is offered. The most current version of the Terms will supersede all previous versions.</p>
+    <section class="space-y-4">
+        <h2 class="text-xl font-semibold text-white">4. Termination</h2>
+        <p class="leading-relaxed text-gray-400">We reserve the right to terminate or suspend your access to our platform immediately, without prior notice or liability, for any reason whatsoever, including without limitation if you breach the Terms.</p>
+    </section>
+
+    <section class="space-y-4">
+        <h2 class="text-xl font-semibold text-white">5. Changes to Terms</h2>
+        <p class="leading-relaxed text-gray-400">AFROSTORY reserves the right, in its sole discretion, to change the Terms under which the platform is offered. The most current version of the Terms will supersede all previous versions.</p>
+    </section>
+  </main>
+  
+  <footer class="max-w-3xl mx-auto mt-8 text-center text-xs text-gray-600">
+      &copy; 2026 AFROSTORY. All rights reserved.
+  </footer>
+
+  <script>window.lucide?.createIcons?.();</script>
 </body>
 </html>
