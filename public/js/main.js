@@ -1,5 +1,5 @@
 const API = '/api';
-const PREVIEW_LIMIT = 30; // Seconds before the video locks
+const PREVIEW_LIMIT = 5; // Seconds before the video locks
 const state = { user: null, profile: null, rewards: null, series: [], currentSeries: null, currentEpisode: null, hls: null, recommendedEpisodes: [] };
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -69,6 +69,7 @@ function setSection(name) {
   $('#mobile-more-sheet')?.classList.add('hidden');
   location.hash = name; 
   
+  if (name === 'watch' && !state.currentEpisode) openDefaultFeed(); // FIX: Autoload video if going straight to watch
   if (name === 'wallet') loadWallet(); 
   if (name === 'rewards') loadRewards(); 
   if (name === 'creator') loadCreator(); 
@@ -151,6 +152,17 @@ const feedObserver = new IntersectionObserver((entries) => {
   });
 }, { threshold: 0.6 });
 
+async function openDefaultFeed() {
+    try {
+        const feedData = await api('/episodes/feed?sort=trending&limit=15');
+        if (feedData.episodes && feedData.episodes.length > 0) {
+            openEpisode(feedData.episodes[0]._id);
+        } else {
+            $('#tiktok-feed').innerHTML = '<div style="color:white; text-align:center; padding-top: 100px;">No stories available right now.</div>';
+        }
+    } catch (e) { toast('Could not load feed.', 'error'); }
+}
+
 async function openSeries(id) {
     try {
         const episodes = await api(`/series/${id}/episodes?limit=1`);
@@ -199,19 +211,22 @@ async function openEpisode(id) {
          `;
       }
 
+      // FIX: TikTok overlay layout and SVG action buttons
       card.innerHTML = `
         <video src="${mediaUrl}" poster="${image(episode.thumbnailUrl || episode.seriesId?.coverImage)}" loop playsinline ${episode.hasAccess ? 'controls' : ''}></video>
         ${lockScreen}
         <div class="feed-overlay">
-          <h3 style="margin:0; font-size:20px; font-weight:700;">${esc(episode.title)}</h3>
+          <h3 style="margin:0; font-size:18px; font-weight:700;">${esc(episode.title)}</h3>
           <p style="margin:4px 0 0 0; font-size:14px; opacity:0.9;">@${esc(episode.seriesId?.creatorId?.brandName || 'AfroStory')} · ${esc(episode.seriesId?.title || '')}</p>
         </div>
         <div class="feed-sidebar">
           <button class="feed-action-btn" data-action="save-current" title="Save to Favorites">
-            <i>♡</i>
+            <svg viewBox="0 0 24 24" width="30" height="30" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+            <span>Save</span>
           </button>
           <button class="feed-action-btn" onclick="document.getElementById('comments-sheet').classList.remove('hidden')" title="Comments">
-            <i>💬</i>
+            <svg viewBox="0 0 24 24" width="30" height="30" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+            <span>Reply</span>
           </button>
         </div>
       `;
@@ -353,11 +368,12 @@ async function loadAdmin() { try { const [stats, reports] = await Promise.all([a
 async function showPackages() { try { const plans = await api('/payment/packages'); const choices = Object.entries(plans).map(([key, plan]) => `<button class="plan-option" data-package="${key}"><strong>${key}</strong><span>${plan.coins} coins · ₦${Number(plan.naira).toLocaleString()}</span></button>`).join(''); $('#modal-root').innerHTML = `<div class="modal"><div class="modal-header"><div><p class="eyebrow">POWER YOUR WATCHLIST</p><h2>Choose your coins</h2></div><button class="modal-close" data-action="close-modal">×</button></div><div class="plan-grid">${choices}</div></div>`; $('#modal-root').classList.remove('hidden'); } catch (error) { toast(error.message, 'error'); } }
 async function showSubscriptionPlans() { try { const plans = await api('/vip/plans'); const choices = Object.entries(plans).map(([tier, plan]) => `<button class="plan-option" data-tier="${tier}"><strong>${tier}</strong><span>${plan.price} coins · ${plan.duration} day${plan.duration === 1 ? '' : 's'}</span></button>`).join(''); $('#modal-root').innerHTML = `<div class="modal"><div class="modal-header"><div><p class="eyebrow">UNLOCK EVERY STORY</p><h2>Choose a pass</h2></div><button class="modal-close" data-action="close-modal">×</button></div><div class="plan-grid">${choices}</div></div>`; $('#modal-root').classList.remove('hidden'); } catch (error) { toast(error.message, 'error'); } }
 
+// FIX: History loads safely and filters out deleted episodes
 async function loadHistory() { 
   try { 
     const result = await api('/users/history/watch?limit=50'); 
-    const list = result.history || result || [];
-    $('#history-list').innerHTML = list.map(item => `<button class="data-row history-row" data-history-episode="${esc(item.episodeId?._id)}" data-history-series="${esc(item.seriesId?._id)}"><div><strong>${esc(item.seriesId?.title || 'Series')}</strong><p>${esc(item.episodeId?.title || 'Episode')}</p></div><span class="data-value">${Math.round(Number(item.watchedPercentage || 0))}%</span></button>`).join('') || '<div class="empty-state">Your watched episodes will appear here.</div>'; 
+    const list = result.history || result.data || result || [];
+    $('#history-list').innerHTML = list.filter(item => item.episodeId).map(item => `<button class="data-row history-row" data-history-episode="${esc(item.episodeId._id)}" data-history-series="${esc(item.seriesId?._id)}"><div><strong>${esc(item.seriesId?.title || 'Series')}</strong><p>${esc(item.episodeId.title || 'Episode')}</p></div><span class="data-value">${Math.round(Number(item.watchedPercentage || 0))}%</span></button>`).join('') || '<div class="empty-state">Your watched episodes will appear here.</div>'; 
   } catch (error) { toast(error.message, 'error'); } 
 }
 async function openHistoryEpisode(seriesId, episodeId) { try { const [series, episode] = await Promise.all([api(`/series/${seriesId}`), api(`/episodes/${episodeId}`)]); state.currentSeries = series; setSection('watch'); await openEpisode(episode._id); } catch (error) { toast(error.message, 'error'); } }
@@ -384,11 +400,12 @@ async function searchEpisodes(event) { event.preventDefault(); const input = eve
 
 async function loadTrending() { try { const result = await api('/search/trending'); $('#trending-list').innerHTML = (result.trending || []).map(episodeCard).join('') || '<div class="empty-state">No trending episodes yet.</div>'; } catch (error) { toast(error.message, 'error'); } }
 
+// FIX: Continue list safely filters
 async function loadContinue() { 
   try { 
     const result = await api('/users/history/watch?limit=50'); 
-    const list = result.history || result || [];
-    $('#continue-list').innerHTML = list.filter(item => !item.completed).map(item => `<button class="data-row history-row" data-history-episode="${esc(item.episodeId?._id)}" data-history-series="${esc(item.seriesId?._id)}"><div><strong>${esc(item.seriesId?.title || 'Series')}</strong><p>${esc(item.episodeId?.title || 'Episode')}</p></div><span class="data-value">${Math.round(Number(item.watchedPercentage || 0))}%</span></button>`).join('') || '<div class="empty-state">Nothing to continue yet.</div>'; 
+    const list = result.history || result.data || result || [];
+    $('#continue-list').innerHTML = list.filter(item => !item.completed && item.episodeId).map(item => `<button class="data-row history-row" data-history-episode="${esc(item.episodeId._id)}" data-history-series="${esc(item.seriesId?._id)}"><div><strong>${esc(item.seriesId?.title || 'Series')}</strong><p>${esc(item.episodeId.title || 'Episode')}</p></div><span class="data-value">${Math.round(Number(item.watchedPercentage || 0))}%</span></button>`).join('') || '<div class="empty-state">Nothing to continue yet.</div>'; 
   } catch (error) { toast(error.message, 'error'); } 
 }
 
@@ -400,7 +417,7 @@ async function loadFavorites() {
   } catch (error) { toast(error.message, 'error'); } 
 }
 
-async function toggleFavorite() { if (!state.currentSeries) return toast('Open a story first', 'error'); try { const result = await api(`/favorites/${state.currentSeries._id}/toggle`, { method: 'POST' }); $('#save-current').textContent = result.saved ? 'Saved to favorites' : 'Save to favorites'; toast(result.saved ? 'Added to favorites' : 'Removed from favorites', 'success'); } catch (error) { toast(error.message, 'error'); } }
+async function toggleFavorite() { if (!state.currentSeries) return toast('Open a story first', 'error'); try { const result = await api(`/favorites/${state.currentSeries._id}/toggle`, { method: 'POST' }); toast(result.saved ? 'Added to favorites' : 'Removed from favorites', 'success'); } catch (error) { toast(error.message, 'error'); } }
 
 function loadSettings() { const settings = JSON.parse(localStorage.getItem('afrostory-settings') || '{}'); $('#settings-language').value = settings.language || 'en'; $('#settings-notifications').checked = settings.notifications !== false; }
 function saveSettings(event) { event.preventDefault(); localStorage.setItem('afrostory-settings', JSON.stringify({ language: $('#settings-language').value, notifications: $('#settings-notifications').checked })); toast('Settings saved', 'success'); }
