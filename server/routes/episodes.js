@@ -71,7 +71,7 @@ export default async function episodeRoutes(fastify, opts) {
     }
   });
 
-  // Create episode
+  // Create episode (FIXED: Modern URL handling for Direct-to-Cloudinary uploads)
   fastify.post('/series/:seriesId/create', async (request, reply) => {
     try {
       await verifyCreator(request, reply);
@@ -101,12 +101,14 @@ export default async function episodeRoutes(fastify, opts) {
       if (!title || !mediaUrl || !genre || !culturalCategory || !language) {
         return sendError(reply, 'Title, media URL, genre, cultural category, and language are required', 400);
       }
+      
       if (!EPISODE_GENRES.includes(genre) || !CULTURAL_CATEGORIES.includes(culturalCategory) || !EPISODE_LANGUAGES.includes(language)) {
         return sendError(reply, 'Invalid genre, cultural category, or language', 400);
       }
 
-      if (!/^https?:\/\/.+\.(mp4|m3u8)(?:\?.*)?$/i.test(mediaUrl)) {
-        return sendError(reply, 'Media URL must point to an MP4 or M3U8 video', 400);
+      // MODERN FIX: Relaxed regex. We trust the Cloudinary direct-upload URL instead of strictly demanding .mp4
+      if (!/^https?:\/\/.+/i.test(mediaUrl)) {
+        return sendError(reply, 'Media URL must be a valid secure web link', 400);
       }
 
       const series = await Series.findById(seriesId);
@@ -158,7 +160,7 @@ export default async function episodeRoutes(fastify, opts) {
     }
   });
 
-  // Update episode
+  // Update episode (FIXED: Modern URL handling for updates)
   fastify.put('/:episodeId/update', async (request, reply) => {
     try {
       await verifyCreator(request, reply);
@@ -202,12 +204,15 @@ export default async function episodeRoutes(fastify, opts) {
 
       if (title) episode.title = title;
       if (description !== undefined) episode.description = description;
+      
       if (mediaUrl) {
-        if (!/^https?:\/\/.+\.(mp4|m3u8)(?:\?.*)?$/i.test(mediaUrl)) {
-          return sendError(reply, 'Media URL must point to an MP4 or M3U8 video', 400);
+        // MODERN FIX: Relaxed regex
+        if (!/^https?:\/\/.+/i.test(mediaUrl)) {
+          return sendError(reply, 'Media URL must be a valid secure web link', 400);
         }
         episode.mediaUrl = mediaUrl;
       }
+      
       if (thumbnailUrl !== undefined) episode.thumbnailUrl = thumbnailUrl;
       if (genre !== undefined) episode.genre = genre;
       if (culturalCategory !== undefined) episode.culturalCategory = culturalCategory;
