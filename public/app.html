@@ -26,7 +26,7 @@
       ============================================================== */
       .toast-region {
         position: fixed !important; top: 50% !important; left: 50% !important;
-        transform: translate(-50%, -50%) !important; z-index: 999999 !important;
+        transform: translate(-50%, -50%) !important; z-index: 9999999 !important;
         display: flex !important; flex-direction: column !important; align-items: center !important;
         gap: 16px !important; pointer-events: none !important; width: 100% !important;
         padding: 20px !important; box-sizing: border-box !important;
@@ -53,13 +53,13 @@
       @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 10px rgba(118, 168, 107, 0.3); } 50% { box-shadow: 0 0 35px rgba(118, 168, 107, 0.7); } }
       
       /* ==============================================================
-         MODAL ROOT FIX (Allows scrolling when forms are long)
+         NATIVE MODAL ROOT FIX (Cleanest implementation for overlays)
       ============================================================== */
       .modal-root {
         position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
-        background: rgba(0,0,0,0.85) !important; z-index: 99999 !important;
+        background: rgba(0,0,0,0.85) !important; z-index: 999999 !important;
         display: flex !important; align-items: flex-start !important; justify-content: center !important;
-        padding: 90px 20px 130px 20px !important; /* Forces modal to clear the header & footer */
+        padding: 90px 20px 130px 20px !important; 
         overflow-y: auto !important; backdrop-filter: blur(5px);
       }
       .modal-root.hidden { display: none !important; }
@@ -67,6 +67,7 @@
         background: #111 !important; border: 1px solid #333 !important; border-radius: 16px !important;
         width: 100% !important; max-width: 500px !important; margin: auto !important;
         flex-shrink: 0 !important; box-shadow: 0 20px 50px rgba(0,0,0,0.5) !important; padding: 24px !important;
+        margin-top: 40px !important; margin-bottom: 80px !important; position: relative !important; z-index: 9999999 !important;
       }
       .modal-header h2 { font-size: 22px !important; margin: 0 0 16px !important; }
       
@@ -83,7 +84,7 @@
       /* MAIN PROFILE PAGE COVER */
       .profile-cover{background:linear-gradient(120deg,#2b2114,#171717 52%,#222);border:1px solid #343434;min-height:230px;padding:28px 32px;position:relative;overflow:hidden}.profile-cover[style]{background-position:center;background-size:cover}.profile-header{align-items:flex-end;display:flex;gap:22px;min-height:174px}.profile-avatar{align-items:center;background:#d4a017;color:#111;display:flex;flex:0 0 104px;font-family:Georgia,serif;font-size:48px;height:104px;justify-content:center;overflow:hidden;border-radius:50%;}.profile-avatar img{height:100%;object-fit:cover;width:100%}.profile-identity{max-width:650px}.profile-identity h1{font-size:clamp(30px,4vw,52px)}.profile-handle{margin:4px 0 10px}.profile-bio{color:#ddd;margin:0}.profile-location{color:#d4a017;font-size:13px;margin-top:10px}.profile-actions{display:flex;gap:10px;margin-left:auto}.profile-tabs{border-bottom:1px solid #343434;display:flex;gap:24px;overflow:auto;padding:0 4px}.profile-tab{background:none;border:0;border-bottom:2px solid transparent;color:#999;padding:16px 4px;white-space:nowrap}.profile-tab.active,.profile-tab:hover{border-color:#d4a017;color:#f5f5f5}.profile-panel{padding-top:30px}.profile-summary-grid{display:grid;gap:30px;grid-template-columns:1fr 1fr}.profile-section-heading{align-items:end;display:flex;justify-content:space-between;margin:28px 0 18px}.profile-section-heading h2{font-size:24px}.profile-list{display:grid;gap:10px}.profile-list-row{align-items:center;background:#1b1b1b;border:1px solid #343434;display:flex;gap:14px;padding:12px}.profile-list-row strong{display:block}.profile-list-row p{color:#999;font-size:13px;margin:2px 0 0}.profile-list-row .progress{background:#343434;height:4px;margin-top:8px;width:180px}.profile-list-row .progress i{background:#d4a017;display:block;height:100%}.profile-story-grid{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-story-grid .series-card{min-width:0}.interest-list{display:flex;flex-wrap:wrap;gap:8px}.interest-chip{background:#242424;border:1px solid #4a4a4a;color:#f5f5f5;padding:7px 11px}.profile-about{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr));max-width:680px}.profile-about div{background:#1b1b1b;border-bottom:1px solid #343434;padding:14px}.profile-about span{color:#999;display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase}.profile-edit-panel{border-top:1px solid #343434;margin-top:30px;padding-top:24px}.profile-edit-grid{display:grid;gap:14px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-form label{color:#bbb;display:grid;font-size:12px;gap:6px}.profile-form input,.profile-form textarea,.profile-form select{background:#111;border:1px solid #444;color:#f5f5f5;padding:11px}.profile-form select[multiple]{min-height:130px}.profile-privacy{display:flex;flex-wrap:wrap;gap:18px;margin:16px 0}.profile-privacy label{display:flex;display:flex;gap:8px}.profile-empty{border:1px dashed #444;color:#999;padding:24px}.profile-empty button{margin-top:12px}@media(max-width:700px){.profile-cover{padding:22px 18px}.profile-header{align-items:flex-start;flex-wrap:wrap}.profile-avatar{flex-basis:78px;font-size:36px;height:78px}.profile-actions{margin-left:0;width:100%}.profile-actions .button{flex:1}.profile-summary-grid,.profile-about,.profile-edit-grid{grid-template-columns:1fr}.profile-tabs{gap:16px}.profile-story-grid{grid-template-columns:1fr 1fr}}
       
-      .topbar { display: flex; justify-content: space-between; align-items: center; padding: 0 4vw; height: 80px; background: #111; border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 50; }
+      .topbar { display: flex; justify-content: space-between; align-items: center; padding: 0 4vw; height: 80px; background: #111; border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 50 !important; }
       .topbar-actions { display: flex; align-items: center; gap: 18px; }
       .notification-button { align-items: center; background: #242424; border: 1px solid #3b3b3b; border-radius: 50%; display: inline-flex; height: 44px; justify-content: center; transition: border-color .2s, transform .2s; width: 44px; position: relative; }
       .notification-button:hover { border-color: #d4a017; transform: translateY(-1px); }
@@ -110,7 +111,7 @@
         .topbar-actions { gap: 14px; }
         .app-layout { flex-direction: column; }
         
-        .sidebar { position: fixed; bottom: 0; left: 0; right: 0; transform: none; width: 100%; max-width: 100%; height: 80px; background: #111; border-top: 1px solid #222; border-radius: 30px 30px 0 0; z-index: 900; display: flex; padding: 10px 10px 20px; align-items: center; box-shadow: 0 -4px 30px rgba(0,0,0,0.9); }
+        .sidebar { position: fixed; bottom: 0; left: 0; right: 0; transform: none; width: 100%; max-width: 100%; height: 80px; background: #111; border-top: 1px solid #222; border-radius: 30px 30px 0 0; z-index: 900 !important; display: flex; padding: 10px 10px 20px; align-items: center; box-shadow: 0 -4px 30px rgba(0,0,0,0.9); }
         .side-nav { display: flex; flex-direction: row; justify-content: space-between; width: 100%; padding: 0; margin: 0; }
         .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1 1 0; gap: 4px; font-size: 10px; font-weight: 500; color: #999; padding: 8px 0; border: none; background: transparent; }
         .nav-icon { font-size: 22px; font-style: normal; margin-bottom: 2px; transition: transform 0.2s; }
@@ -249,7 +250,7 @@
   </div>
 
   <!-- ALL MODALS -->
-  <div id="upload-modal" class="modal-root hidden"><div class="modal"><div class="modal-header"><h2>Upload episode</h2><button class="modal-close" data-action="close-upload">×</button></div><form id="upload-form" class="stack-form"><label>Series<select id="upload-series" name="seriesId" required></select></label><label>Episode title<input name="title" required maxlength="200"></label><label>Description<textarea name="description" maxlength="2000"></textarea></label><label>Access<select name="access" required><option value="Ad">Ad-supported</option><option value="Premium">Premium</option></select></label><label>Coin cost<input name="coinCost" type="number" min="1" value="10" required></label><label>Video<input name="video" type="file" accept="video/mp4,video/webm" required></label><label>Thumbnail<input name="thumbnail" type="file" accept="image/*"></label><label class="checkbox-label"><input name="publish" type="checkbox" checked> Publish episode now</label><button class="button button-primary" type="submit">Upload episode</button></form></div></div>
+  <div id="upload-modal" class="modal-root hidden"><div class="modal"><div class="modal-header"><h2>Upload episode</h2><button class="modal-close" data-action="close-upload">×</button></div><form id="upload-form" class="stack-form"><label>Series<select id="upload-series" name="seriesId" required></select></label><label>Episode title<input name="title" required maxlength="200"></label><label>Description<textarea name="description" maxlength="2000"></textarea></label><label>Access<select name="access" required><option value="Ad">Ad-supported</option><option value="Premium">Premium</option></select></label><label>Coin cost<input name="coinCost" type="number" min="1" value="10" required></label><label>Video<input name="video" type="file" accept="video/*" required></label><label>Thumbnail<input name="thumbnail" type="file" accept="image/*"></label><label class="checkbox-label"><input name="publish" type="checkbox" checked> Publish episode now</label><button class="button button-primary" type="submit">Upload episode</button></form></div></div>
   <div id="series-modal" class="modal-root hidden"><div class="modal"><div class="modal-header"><div><p class="eyebrow">CREATOR STUDIO</p><h2>Create a series</h2></div><button class="modal-close" data-action="close-series">×</button></div><form id="series-form" class="stack-form"><label>Series title<input name="title" required maxlength="200"></label><label>Description<textarea name="description" maxlength="2000"></textarea></label><label>Genre<input name="genre" maxlength="80" placeholder="Drama, history, comedy..."></label><label>Language<input name="language" value="English" maxlength="40"></label><label>Tags<input name="tags" placeholder="culture, family, Lagos"></label><label>Cover image<input name="cover" type="file" accept="image/*" required></label><label class="checkbox-label"><input name="publish" type="checkbox" checked> Publish series now</label><label class="checkbox-label"><input name="premium" type="checkbox"> VIP subscribers only</label><button class="button button-primary" type="submit">Create series</button></form></div></div>
   <div id="notification-modal" class="modal-root hidden"><div class="modal notification-panel" role="dialog" aria-modal="true" aria-labelledby="notification-title"><div class="modal-header"><div><p class="eyebrow">YOUR INBOX</p><h2 id="notification-title">Notifications</h2></div><button class="modal-close" data-action="close-notifications" aria-label="Close notifications">×</button></div><div class="modal-actions"><button class="text-button" data-action="read-all">Mark all as read</button></div><div id="notification-list" class="data-list"></div></div></div>
   <div id="modal-root" class="modal-root hidden"></div><div id="toast-region" class="toast-region" aria-live="polite"></div>
