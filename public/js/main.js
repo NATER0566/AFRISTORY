@@ -1,21 +1,16 @@
 const API = '/api';
 const state = { user: null, profile: null, rewards: null, series: [], currentSeries: null, currentEpisode: null, hls: null, recommendedEpisodes: [] };
-const apiCache = new Map();
-const CACHE_DURATION = 5 * 60 * 1000;
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 
+// FIX 1: Removed Cache so new uploads appear instantly
 const api = async (path, options = {}) => { 
-  const cacheKey = `${path}:${JSON.stringify(options)}`; 
-  const cached = apiCache.get(cacheKey); 
-  if (cached && Date.now() - cached.time < CACHE_DURATION && options.method !== 'POST') return cached.data; 
   try { 
     const timeoutMs = options.timeout || 600000; 
     const response = await fetch(`${API}${path}`, { credentials: 'include', signal: AbortSignal.timeout(timeoutMs), ...options }); 
     const data = await response.json().catch(() => ({})); 
     if (response.status === 401) { window.location.replace('/'); throw new Error('Your session has expired'); } 
     if (!response.ok || data.success === false) throw new Error(data.message || 'Request failed');
-    if (options.method !== 'POST') apiCache.set(cacheKey, { data: data.data, time: Date.now() }); 
     return data.data; 
   } catch (error) { 
     if (error.name === 'AbortError') throw new Error('Request timeout'); 
@@ -218,17 +213,25 @@ async function openEpisode(id) {
 
       const videoEl = card.querySelector('video');
 
+      // FIX 3: Aggressive 30-Second Lock
       if (!episode.hasAccess) {
+         // Check constantly as the video plays
          videoEl.addEventListener('timeupdate', () => {
              if (videoEl.currentTime >= 30) {
                  videoEl.pause();
-                 videoEl.currentTime = 30; 
                  videoEl.removeAttribute('controls'); 
+                 if (videoEl.currentTime > 30.5) videoEl.currentTime = 30; // Snap back if they try to bypass
                  card.querySelector(`#lock-${episode._id}`).classList.remove('hidden');
              }
          });
-         videoEl.addEventListener('seeking', () => {
-             if (videoEl.currentTime > 30) videoEl.currentTime = 30;
+         // Check if they aggressively drag the seek bar past 30 seconds
+         videoEl.addEventListener('seeked', () => {
+             if (videoEl.currentTime >= 30) {
+                 videoEl.pause();
+                 videoEl.currentTime = 30;
+                 videoEl.removeAttribute('controls'); 
+                 card.querySelector(`#lock-${episode._id}`).classList.remove('hidden');
+             }
          });
       }
 
@@ -317,7 +320,7 @@ async function unlockEpisode() {
 // ============================================================================
 
 async function loadComments(id) { try { const result = await api(`/comments/episode/${id}?limit=50`); const render = comment => `<article class="comment"><span class="comment-meta">${esc(comment.userId?.username || 'Story lover')}</span><p>${esc(comment.text)}</p><button class="text-button" data-reply-comment="${esc(comment._id)}">Reply</button>${comment.replies?.length ? `<div class="comment-replies">${comment.replies.map(render).join('')}</div>` : ''}</article>`; $('#comments-list').innerHTML = (result.comments || []).map(render).join('') || '<p class="muted">Be the first to share a thought.</p>'; $('#comment-input').placeholder = 'Share what this story brought up for you...'; $('#comment-input').disabled = false; $('#comment-submit').disabled = false; } catch (error) { toast(error.message, 'error'); } }
-async function loadWallet() { try { const [wallet, transactions] = await Promise.all([api('/wallet/me/balance'), api('/wallet/me/transactions?limit=10')]); $('#wallet-balance').textContent = Number(wallet.storyCoins || 0).toLocaleString(); $('#wallet-earned').textContent = Number(wallet.totalEarned || 0).toLocaleString(); state.user.adUnlocksRemaining = wallet.adUnlocks || 0; const adBalanceEl = $('#ad-balance'); if (adBalanceEl) adBalanceEl.textContent = Math.max(0, wallet.adUnlocks || 0); if (adBalanceEl?.closest('.wallet-stat')) adBalanceEl.closest('.wallet-stat').style.display = 'block'; $('#transactions-list').innerHTML = (transactions.transactions || []).map(item => `<div class="data-row"><div><strong>${esc(item.description || item.type)}</strong><p>${new Date(item.createdAt).toLocaleDateString()}</p></div><span class="data-value">${esc(item.type === 'SPEND' ? '-' : '+')}${Number(item.amount || 0).toLocaleString()}</span></div>`).join('') || '<div class="empty-state">No transactions yet.</div>'; await window.AfroStoryAds?.refresh(); } catch (error) { toast(error.message, 'error'); } }
+async function loadWallet() { try { const [wallet, transactions] = await Promise.all([api('/wallet/me/balance'), api('/wallet/me/transactions?limit=10')]); $('#wallet-balance').textContent = Number(wallet.storyCoins || 0).toLocaleString(); $('#wallet-earned').textContent = Number(wallet.totalEarned || 0).toLocaleString(); if(state.user) state.user.adUnlocksRemaining = wallet.adUnlocks || 0; const adBalanceEl = $('#ad-balance'); if (adBalanceEl) adBalanceEl.textContent = Math.max(0, wallet.adUnlocks || 0); if (adBalanceEl?.closest('.wallet-stat')) adBalanceEl.closest('.wallet-stat').style.display = 'block'; $('#transactions-list').innerHTML = (transactions.transactions || []).map(item => `<div class="data-row"><div><strong>${esc(item.description || item.type)}</strong><p>${new Date(item.createdAt).toLocaleDateString()}</p></div><span class="data-value">${esc(item.type === 'SPEND' ? '-' : '+')}${Number(item.amount || 0).toLocaleString()}</span></div>`).join('') || '<div class="empty-state">No transactions yet.</div>'; await window.AfroStoryAds?.refresh(); } catch (error) { toast(error.message, 'error'); } }
 
 function renderRewardCard(reward) {
   const eligibility = reward.eligibility || { state: reward.claimed ? 'CLAIMED' : 'LOCKED', reason: 'Complete the required activity first.' };
@@ -487,8 +490,8 @@ async function boot() {
   try {
     state.user = await api('/auth/me');
     renderHeaderUser(state.user);
-    if (['CREATOR', 'ADMIN'].includes(state.user.role)) $$('.creator-only').forEach(el => el.classList.remove('hidden'));     
-    if (state.user.role === 'ADMIN') $$('.admin-only').forEach(el => el.classList.remove('hidden'));
+    if (state.user?.role && ['CREATOR', 'ADMIN'].includes(state.user.role)) $$('.creator-only').forEach(el => el.classList.remove('hidden'));     
+    if (state.user?.role === 'ADMIN') $$('.admin-only').forEach(el => el.classList.remove('hidden'));
     
     // Using independent catches so one failure doesn't break the whole app
     ensureClassificationControls();
