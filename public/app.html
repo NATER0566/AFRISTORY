@@ -48,15 +48,15 @@
         border-radius: 16px; 
         color: #f5f5f5; 
         display: flex; 
-        font-size: 19px !important; /* BIGGER */
+        font-size: 19px !important;
         font-weight: 700; 
         gap: 18px !important; 
         width: 100%;
-        max-width: 480px !important; /* WIDER */
-        padding: 28px 36px !important; /* TALLER */
+        max-width: 480px !important;
+        padding: 28px 36px !important;
         position: relative; 
         word-wrap: break-word; 
-        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.95) !important; /* MASSIVE SHADOW */
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.95) !important;
         animation: popInToast 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
         justify-content: center !important; 
         text-align: center !important;
@@ -89,6 +89,21 @@
       }
       @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 10px rgba(118, 168, 107, 0.3); } 50% { box-shadow: 0 0 35px rgba(118, 168, 107, 0.7); } }
       
+      /* ==============================================================
+         VIDEO PLAYER FIXES
+      ============================================================== */
+      .player-wrap video {
+        position: relative;
+        z-index: 2;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background-color: #000;
+        border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+      }
+      .player-lock { z-index: 3; }
+      .video-error { opacity: 0.5; }
+
       @media(max-width:700px) {
         .discover-filters { flex-wrap: wrap; }
         .discover-filters label { flex: 1; min-width: 130px; }
@@ -183,7 +198,7 @@
       .profile-initial { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
 
       /* ==============================================================
-         2. DESKTOP VS MOBILE NAV VISIBILITY
+         2. DESKTOP VS MOBILE NAV VISIBILITY & SCROLL OVERLAP FIX
       ============================================================== */
       .desktop-only { display: flex; }
       .mobile-only { display: none !important; }
@@ -195,7 +210,7 @@
         .topbar-actions { gap: 14px; }
         .app-layout { flex-direction: column; }
         
-        /* 3. FULL EDGE-TO-EDGE MOBILE BOTTOM NAV */
+        /* FULL EDGE-TO-EDGE MOBILE BOTTOM NAV */
         .sidebar {
           position: fixed; bottom: 0; left: 0; right: 0; transform: none;
           width: 100%; max-width: 100%; height: 80px; 
@@ -212,27 +227,36 @@
           width: 100%; padding: 0; margin: 0;
         }
         
-        /* Exactly 6 Even Items WITH TEXT VISIBLE */
         .nav-item {
           display: flex; flex-direction: column; align-items: center; justify-content: center;
           flex: 1 1 0; gap: 4px; font-size: 10px; font-weight: 500; 
           color: #999; padding: 8px 0; border: none; background: transparent;
         }
         .nav-icon { font-size: 22px; font-style: normal; margin-bottom: 2px; transition: transform 0.2s; }
-        
         .nav-item span { display: block; margin: 0; white-space: nowrap; }
         
-        /* Active State Glow */
         .nav-item.active { color: #d4a017; }
-        .nav-item.active .nav-icon { 
-          transform: translateY(-2px);
-          text-shadow: 0 0 15px rgba(212,160,23,0.8); /* Glowing icon effect */
-        }
+        .nav-item.active .nav-icon { transform: translateY(-2px); text-shadow: 0 0 15px rgba(212,160,23,0.8); }
         
         .sidebar-bottom { display: none; }
-        .main-content { padding-bottom: 100px; } /* Room for floating bar */
         
-        /* Adjust Hero on mobile */
+        /* 
+          =============================================
+          MASSIVE FIX: SCROLL OVERLAP PADDING 
+          ============================================= 
+        */
+        .main-content { padding-bottom: 130px !important; } 
+        .app-section { padding-bottom: 130px !important; }
+        .profile-panel { padding-bottom: 130px !important; }
+        
+        /* Ensure modals don't hide behind the bottom nav */
+        .modal { 
+            max-height: calc(100vh - 120px) !important; 
+            margin-bottom: 90px !important; 
+            overflow-y: auto !important;
+        }
+        .bottom-sheet { padding-bottom: 100px !important; }
+        
         .rewards-hero { align-items: flex-start; display: block; padding: 22px; }
         .rewards-balance { border-left: 0; border-top: 1px solid #6b5122; margin-top: 22px; padding: 16px 0 0; }
         .rewards-grid { grid-template-columns: 1fr; }
@@ -257,10 +281,7 @@
       }
       .bottom-sheet-overlay.hidden .bottom-sheet { transform: translateY(100%); }
       
-      .sheet-handle {
-        width: 40px; height: 4px; background: #444; border-radius: 4px;
-        margin: 0 auto 24px;
-      }
+      .sheet-handle { width: 40px; height: 4px; background: #444; border-radius: 4px; margin: 0 auto 24px; }
       .bottom-sheet h3 { text-align: center; color: #fff; margin: 0 0 24px; font-size: 18px; font-weight: 600; }
       
       .sheet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -283,7 +304,6 @@
       /* Notification & Rewards styles */
       .notification-panel{max-height:min(680px,calc(100vh - 40px));overflow:auto;position:relative;width:min(560px,calc(100vw - 32px))}.notification-item{align-items:flex-start;background:#1b1b1b;border:1px solid #343434;display:flex;gap:12px;padding:14px}.notification-item-icon{align-items:center;background:#2d2112;border-radius:50%;color:#d4a017;display:flex;flex:0 0 30px;height:30px;justify-content:center}.notification-item-content{min-width:0}.notification-item-content strong{display:block}.notification-item-content p{color:#bbb;font-size:13px;margin:3px 0}.notification-item-content time{color:#777;font-size:11px}.notification-item-actions{display:flex;flex-direction:column;gap:4px;margin-left:auto;white-space:nowrap}.notification-empty{align-items:center;color:#999;display:flex;flex-direction:column;gap:5px;padding:44px 20px;text-align:center}.notification-empty strong{color:#f5f5f5}.reward-card{transition:border-color .2s,opacity .2s}.reward-state-locked{opacity:.66}.reward-state-claimable{border-color:#d4a017}.reward-state-pending_verification{border-color:#765d21}.reward-state-claimed{opacity:.72}.reward-state-label{color:#999;font-size:11px;letter-spacing:1px;margin-top:12px;text-transform:uppercase}.reward-check{color:#76a86b;display:block;font-weight:700;margin-top:12px}.reward-pending{color:#d4a017;display:block;font-weight:700;margin-top:12px}.reward-locked{color:#999;display:block;font-size:12px;margin-top:12px}@media(max-width:700px){.notification-panel{width:calc(100vw - 20px)}.notification-item-actions{flex-direction:row;flex-wrap:wrap}.notification-item{gap:8px;padding:12px}.profile-header{gap:14px}}
       .profile-header{align-items:flex-start;gap:32px;min-height:220px;padding-top:20px}.profile-avatar{border:4px solid #d4a017;box-shadow:0 12px 32px rgba(212,160,23,0.4);flex-basis:180px;font-size:72px;height:180px;width:180px;border-radius:50%;overflow:hidden;object-fit:cover}.profile-identity{flex:1;min-width:0;text-align:left}.profile-identity h1{font-size:clamp(34px,5vw,58px);overflow-wrap:anywhere;margin-top:0}.profile-handle{font-size:14px;margin-top:4px}.profile-actions{align-self:center;flex:0 0 auto}.profile-header .profile-avatar img{display:block;height:100%;width:100%;object-fit:cover;border-radius:50%}@media(max-width:700px){.profile-header{align-items:flex-start;gap:16px;min-height:0}.profile-avatar{flex-basis:96px;font-size:42px;height:96px;width:96px}.profile-identity{flex-basis:calc(100% - 112px)}.profile-identity h1{font-size:32px}.profile-actions{flex:1;margin-top:4px}.profile-actions .button{flex:1}}
-      .player-wrap video{position:relative;z-index:2}.player-lock{z-index:3}.video-error{opacity:.35}
     </style>
 </head>
 <body class="app-page">
@@ -307,17 +327,13 @@
   <div class="app-layout">
     <aside class="sidebar">
       <nav class="side-nav" aria-label="Main navigation">
-        <!-- 6 Edge-to-Edge Mobile Items -->
         <button class="nav-item active" data-section="discover"><i class="nav-icon">⌂</i><span>Discover</span></button>
         <button class="nav-item" data-section="search"><i class="nav-icon">⌕</i><span>Search</span></button>
         <button class="nav-item" data-section="watch"><i class="nav-icon">▶</i><span>Watch</span></button>
         <button class="nav-item" data-section="wallet"><i class="nav-icon">◈</i><span>Wallet</span></button>
         <button class="nav-item" data-section="creator"><i class="nav-icon">✦</i><span>Studio</span></button>
-        
-        <!-- MOBILE ONLY: The "More" Menu Button -->
         <button class="nav-item mobile-only" id="mobile-more-btn" type="button"><i class="nav-icon">⋯</i><span>More</span></button>
         
-        <!-- Hidden on Mobile Bottom Nav, Visible on Desktop Sidebar -->
         <button class="nav-item desktop-only" data-section="trending"><i class="nav-icon">↗</i><span>Trending</span></button>
         <button class="nav-item desktop-only" data-section="continue"><i class="nav-icon">◷</i><span>Continue</span></button>
         <button class="nav-item desktop-only" data-section="favorites"><i class="nav-icon">♡</i><span>Favorites</span></button>
