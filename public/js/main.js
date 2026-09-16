@@ -1,3 +1,4 @@
+
 const API = '/api';
 const state = { user: null, profile: null, rewards: null, series: [], currentSeries: null, currentEpisode: null, hls: null, recommendedEpisodes: [] };
 // Performance optimization: Request caching
@@ -146,122 +147,147 @@ async function loadDiscover() {
 
 async function loadDiscoverEpisodes() { try { ensureClassificationControls(); const genre = $('#genre-filter')?.value || ''; const culturalCategory = $('#cultural-filter')?.value || ''; const language = $('#language-filter')?.value || ''; const query = new URLSearchParams({ sort: 'trending', limit: '12' }); if (genre) query.set('genre', genre); if (culturalCategory) query.set('culturalCategory', culturalCategory); if (language) query.set('language', language); const result = await api(`/episodes/feed?${query}`); $('#series-grid').innerHTML = (result.episodes || []).map(episodeCard).join('') || '<div class="empty-state">No episodes match these filters.</div>'; } catch (error) { toast(error.message, 'error'); } }
 
-// MODIFIED: Automatically jump to Watch Section when a series is clicked
-async function openSeries(id) { 
-    try { 
-        setSection('watch');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        
-        const [series, episodes] = await Promise.all([api(`/series/${id}`), api(`/series/${id}/episodes?limit=100`)]); 
-        state.currentSeries = series; 
-        $('#watch-series-meta').innerHTML = `<h3>${esc(series.title)}</h3><p>${esc(series.description || '')}</p>`; 
-        $('#watch-title').textContent = series.title; 
-        $('#episode-list').innerHTML = (episodes.episodes || []).map((episode, index) => `<button class="episode-row ${index === 0 ? 'active' : ''}" data-episode-id="${esc(episode._id)}"><strong>${String(episode.episodeNumber).padStart(2, '0')}</strong><span>${esc(episode.title)}${episode.isFree ? ' · Free' : ''}</span></button>`).join(''); 
-        
-        if (episodes.episodes?.[0]) openEpisode(episodes.episodes[0]._id); 
-    } catch (error) { 
-        toast(error.message, 'error'); 
-    } 
+
+// ============================================================================
+// TIKTOK STYLE FEED LOGIC 
+// ============================================================================
+
+// Creates the Observer that watches the user scroll
+const feedObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    const video = entry.target.querySelector('video');
+    if (!video) return;
+
+    if (entry.isIntersecting) {
+      // Play video when it snaps into view
+      video.play().catch(e => console.log('Autoplay blocked. User must interact first.'));
+      
+      // Set the active episode state so unlocking and commenting applies to this video
+      const epData = JSON.parse(entry.target.dataset.episode || '{}');
+      state.currentEpisode = epData;
+      state.currentSeries = epData.seriesId;
+      loadComments(epData._id);
+    } else {
+      // Pause the video when user scrolls away
+      video.pause();
+    }
+  });
+}, { threshold: 0.6 }); // Triggers when 60% of the video is visible
+
+// Modified: If a user clicks a series card, we get its first episode and open the feed
+async function openSeries(id) {
+    try {
+        const episodes = await api(`/series/${id}/episodes?limit=1`);
+        if (episodes.episodes && episodes.episodes.length > 0) {
+            openEpisode(episodes.episodes[0]._id);
+        } else {
+            toast('This story has no episodes yet.', 'info');
+        }
+    } catch(e) {
+        toast('Could not open story.', 'error');
+    }
 }
 
-// MODIFIED: Automatically jump to Watch Section when an episode is clicked
+// The new feed generator
 async function openEpisode(id) {
   try {
     setSection('watch');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    const feedContainer = $('#tiktok-feed');
+    feedContainer.innerHTML = '<div style="color:#fff; text-align:center; margin-top:100px;">Loading feed...</div>';
+
+    // Fetch the specific episode they clicked
+    const currentEp = await api(`/episodes/${id}`);
+    
+    // Fetch a list of trending episodes to scroll into
+    const feedData = await api('/episodes/feed?sort=trending&limit=15');
+    let episodes = feedData.episodes || [];
+    
+    // Remove duplicates and put the clicked episode at the very top
+    episodes = episodes.filter(ep => ep._id !== id);
+    episodes.unshift(currentEp);
+
+    feedContainer.innerHTML = ''; // Clear loading state
+
+    // Generate a full-screen card for each episode
+    episodes.forEach(episode => {
+      // Prioritize standard MP4s for the feed to prevent mobile browser memory crashes
+      let mediaUrl = episode.mediaUrl || episode.videoUrl || episode.hlsUrl || '';
+      if (mediaUrl.startsWith('http://')) mediaUrl = mediaUrl.replace('http://', 'https://');
+      if (mediaUrl.includes('.m3u8')) mediaUrl = mediaUrl.replace('.m3u8', '.mp4'); 
+
+      const card = document.createElement('div');
+      card.className = 'feed-video-card';
+      card.dataset.episode = JSON.stringify(episode); // Store data for observer
+
+      // Generate the lock screen if they don't have access
+      let lockScreen = '';
+      if (!episode.hasAccess) {
+         lockScreen = `
+          <div class="feed-lock-overlay">
+            <span class="lock-icon" style="font-size:40px;color:#d4a017;">◈</span>
+            <h3 style="color:#fff; margin-top:15px;">Premium Story</h3>
+            <p style="color:#ccc; margin-bottom: 20px;">Unlock this episode to start watching.</p>
+            <button class="button button-accent" data-action="unlock-current">Unlock episode</button>
+          </div>
+         `;
+      }
+
+      card.innerHTML = `
+        <video 
+          src="${mediaUrl}" 
+          poster="${image(episode.thumbnailUrl || episode.seriesId?.coverImage)}" 
+          loop 
+          playsinline
+          ${episode.hasAccess ? 'controls' : ''}>
+        </video>
+        ${lockScreen}
+        <div class="feed-overlay">
+          <h3 style="margin:0; font-size:22px;">${esc(episode.title)}</h3>
+          <p style="margin:6px 0 0 0; font-size:14px; opacity:0.9;">${esc(episode.seriesId?.title || 'AfroStory')}</p>
+        </div>
+        <div class="feed-sidebar">
+          <button class="notification-button" style="background:rgba(36,36,36,0.8); border:none;" onclick="document.getElementById('comments-sheet').classList.remove('hidden')">
+            💬
+          </button>
+        </div>
+      `;
+
+      // Track watch progress
+      const videoEl = card.querySelector('video');
+      videoEl.addEventListener('pause', () => saveProgressFeed(episode, videoEl));
+      videoEl.addEventListener('ended', () => saveProgressFeed(episode, videoEl, true));
+
+      feedContainer.appendChild(card);
       
-    const episode = await api(`/episodes/${id}`);
-    state.currentEpisode = episode;
-    if (episode.seriesId && typeof episode.seriesId === 'object') state.currentSeries = episode.seriesId;
-    $$('.episode-row').forEach(row => row.classList.toggle('active', row.dataset.episodeId === id));
-    $('#watch-title').textContent = `${state.currentSeries?.title || ''} / ${episode.title}`;
-    const video = $('#video-player');
-    video.pause();
-    video.removeAttribute('src');
-    video.load();
-    video.poster = image(episode.thumbnailUrl || state.currentSeries?.coverImage);
-    video.classList.remove('video-error');
-
-    if (state.hls) {
-      state.hls.destroy();
-      state.hls = null;
-    }
-
-    let mediaUrl = episode.hlsUrl || episode.mediaUrl || episode.videoUrl || '';
-    let fallbackUrl = episode.mediaUrl || episode.videoUrl || episode.hlsUrl || '';
-    
-    if (!mediaUrl) throw new Error('This episode has no video URL yet.');
-
-    if (mediaUrl.startsWith('http://')) mediaUrl = mediaUrl.replace('http://', 'https://');
-    if (fallbackUrl.startsWith('http://')) fallbackUrl = fallbackUrl.replace('http://', 'https://');
-    
-    if (fallbackUrl.includes('cloudinary.com') && fallbackUrl.includes('.m3u8')) {
-        const parts = fallbackUrl.split('/upload/');
-        if (parts.length === 2) {
-            const filePart = parts[1].replace('.m3u8', '.mp4');
-            fallbackUrl = `${parts[0]}/upload/f_mp4,vc_auto/${filePart}`;
-        }
-    } else if (fallbackUrl) {
-        fallbackUrl = fallbackUrl.replace('.m3u8', '.mp4');
-    }
-
-    const isHls = /\.m3u8(?:\?|$)/i.test(mediaUrl);
-
-    video.onerror = () => {
-        let errMessage = 'Video format not supported or network failed.';
-        if (video.error && video.error.code === 4) errMessage = 'Video file could not be found or format is unsupported by your browser.';
-        console.error("Native Video Error:", video.error);
-        video.classList.add('video-error');
-        toast(errMessage, 'error');
-    };
-
-    if (isHls && window.Hls?.isSupported()) {
-      state.hls = new Hls({ enableWorker: true, lowLatencyMode: true });
-      state.hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (data.fatal) {
-          console.warn('HLS stream not ready. Auto-switching to raw mp4 fallback...');
-          if (fallbackUrl && fallbackUrl !== mediaUrl) {
-              state.hls.destroy();
-              video.src = fallbackUrl;
-              video.load();
-              video.play().catch(e => console.error('Fallback play failed:', e));
-          } else {
-              video.classList.add('video-error');
-              toast('Video is processing or temporarily unavailable. Try again soon.', 'error');
-          }
-        }
-      });
-      state.hls.loadSource(mediaUrl);
-      state.hls.attachMedia(video);
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = mediaUrl;
-    } else {
-      video.src = fallbackUrl;
-    }
-
-    video.play().catch(error => {
-      if (error.name !== 'NotAllowedError') console.error('Video play failed:', error);
+      // Tell the IntersectionObserver to watch this specific video card
+      feedObserver.observe(card);
     });
 
-    if (!episode.hasAccess) {
-      $('#player-lock').classList.add('hidden');
-      const previewTime = 10;
-      const checkPreviewEnd = setInterval(() => {
-        if (video.currentTime >= previewTime) {
-          video.pause();
-          $('#player-lock').classList.remove('hidden');
-          clearInterval(checkPreviewEnd);
-        }
-      }, 500);
-    } else {
-      $('#player-lock').classList.add('hidden');
-    }
-    await loadComments(id);
   } catch (error) {
-    console.error('Failed to open episode:', error);
+    console.error('Failed to open feed:', error);
     toast(error.message, 'error');
   }
 }
+
+// Updated progress saver to accept specific episode/video objects
+async function saveProgressFeed(episode, video, completed = false) { 
+  if (!episode || !video.duration || !Number.isFinite(video.duration)) return; 
+  try { 
+    await api(`/episodes/${episode._id}/watch`, { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify({ 
+        lastPosition: video.currentTime, 
+        watchedPercentage: Math.min(100, video.currentTime / video.duration * 100), 
+        completed 
+      }) 
+    }); 
+  } catch {} 
+}
+
+
+// ============================================================================
 
 async function unlockEpisode() { if (!state.currentEpisode) return; try { const hasActiveSubscription = state.user?.subscriptionExpiresAt && new Date(state.user.subscriptionExpiresAt) > new Date(); if (hasActiveSubscription) { toast('✓ This episode is included in your VIP subscription!', 'success'); return; } const hasAds = state.currentEpisode.adUnlockable && window.AfroStoryAds?.isEnabled; const userAdBalance = state.user?.adUnlocksRemaining || 0; const canUseAd = hasAds && userAdBalance > 0; let choice = 'coins'; if (canUseAd) { if (window.Swal) { const result = await Swal.fire({ title: '🎬 Unlock this episode', html: `<div style="text-align:left; font-size:14px;"><p><strong>📺 Watch Ad (Free)</strong></p><p style="color:#76a86b; font-weight:bold;">${userAdBalance} ad unlock${userAdBalance !== 1 ? 's' : ''} available today</p><hr style="border-color:#343434; margin:15px 0;"><p><strong>💰 Use Coins</strong></p><p style="color:#d4a017; font-weight:bold;">${state.currentEpisode.coinCost || 10} coins</p></div>`, showDenyButton: true, showCancelButton: true, confirmButtonText: '📺 Watch Ad Now', denyButtonText: `💰 Use ${state.currentEpisode.coinCost || 10} Coins`, cancelButtonText: 'Cancel', confirmButtonColor: '#76a86b', denyButtonColor: '#d4a017', background: '#1b1b1b', color: '#f5f5f5', allowOutsideClick: false, allowEscapeKey: false }); if (result.isDismissed) return; choice = result.isDenied ? 'coins' : 'ad'; } } else { if (window.Swal) { const result = await Swal.fire({ title: '🎬 Unlock this episode', html: `<p style="font-size:15px; line-height:1.6;"><strong style="color:#d4a017;">💰 Only coins available now</strong></p><p style="font-size:13px; color:#999; margin-top:10px;">Ad unlocks are coming soon!</p><p style="font-size:15px; margin-top:15px;">Use <strong style="color:#d4a017;">${state.currentEpisode.coinCost || 10} coins</strong> to unlock and continue</p>`, showCancelButton: true, confirmButtonText: `💰 Unlock with ${state.currentEpisode.coinCost || 10} Coins`, cancelButtonText: 'Cancel', confirmButtonColor: '#d4a017', background: '#1b1b1b', color: '#f5f5f5', allowOutsideClick: false, allowEscapeKey: false }); if (result.isDismissed) return; choice = 'coins'; } } if (choice === 'ad') await window.AfroStoryAds.showRewarded(state.currentEpisode._id); else await api('/wallet/unlock-episode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ episodeId: state.currentEpisode._id }) }); await openEpisode(state.currentEpisode._id); toast('✨ Episode unlocked! Enjoy the story!', 'success'); } catch (error) { toast(error.message, 'error'); } }
 async function loadComments(id) { try { const result = await api(`/comments/episode/${id}?limit=50`); const render = comment => `<article class="comment"><span class="comment-meta">${esc(comment.userId?.username || 'Story lover')}</span><p>${esc(comment.text)}</p><button class="text-button" data-reply-comment="${esc(comment._id)}">Reply</button>${comment.replies?.length ? `<div class="comment-replies">${comment.replies.map(render).join('')}</div>` : ''}</article>`; $('#comments-list').innerHTML = (result.comments || []).map(render).join('') || '<p class="muted">Be the first to share a thought.</p>'; $('#comment-input').placeholder = 'Share what this story brought up for you...'; $('#comment-input').disabled = false; $('#comment-submit').disabled = false; } catch (error) { toast(error.message, 'error'); } }
@@ -502,14 +528,13 @@ async function saveProfile(event) {
     toast(error.message, 'error'); 
   } 
 }
-async function saveProgress(completed = false) { const video = $('#video-player'); if (!state.currentEpisode || !video.duration || !Number.isFinite(video.duration)) return; try { await api(`/episodes/${state.currentEpisode._id}/watch`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lastPosition: video.currentTime, watchedPercentage: Math.min(100, video.currentTime / video.duration * 100), completed }) }); } catch {} }
+
 document.addEventListener('click', async event => { if (event.target.closest('[data-action="profile"]')) loadProfile(); if (event.target.closest('[data-action="notifications"]')) { $('#notification-modal').classList.remove('hidden'); await loadNotifications(); } if (event.target.closest('[data-action="close-notifications"]') || event.target.id === 'notification-modal') $('#notification-modal').classList.add('hidden'); if (event.target.closest('[data-action="read-all"]')) { try { await api('/notifications/me/read-all', { method: 'PUT' }); await loadNotifications(); refreshNotificationBadge(); } catch (error) { toast(error.message, 'error'); } } const notification = event.target.closest('[data-read-notification]'); if (notification) { try { await api(`/notifications/${notification.dataset.readNotification}/read`, { method: 'PUT' }); await loadNotifications(); refreshNotificationBadge(); } catch (error) { toast(error.message, 'error'); } } const dismissed = event.target.closest('[data-dismiss-notification]'); if (dismissed) { try { await api(`/notifications/${dismissed.dataset.dismissNotification}`, { method: 'DELETE' }); await loadNotifications(); refreshNotificationBadge(); } catch (error) { toast(error.message, 'error'); } } const history = event.target.closest('[data-history-episode]'); if (history) openHistoryEpisode(history.dataset.historySeries, history.dataset.historyEpisode); });
 document.addEventListener('click', async event => { if (event.target.closest('[data-action="edit-profile"]')) openProfileEditor(); if (event.target.closest('[data-action="close-profile-edit"]')) $('#profile-edit-panel').classList.add('hidden'); const tab = event.target.closest('[data-profile-tab]'); if (tab) { $$('.profile-tab').forEach(item => item.classList.toggle('active', item === tab));$$('.profile-panel').forEach(panel => panel.classList.toggle('hidden', panel.id !== `profile-panel-${tab.dataset.profileTab}`)); } const remove = event.target.closest('[data-remove-history]'); if (remove) { try { await api(`/users/me/history/${remove.dataset.removeHistory}`, { method: 'DELETE' }); await loadProfile(); } catch (error) { toast(error.message, 'error'); } } });
 $('#profile-form')?.addEventListener('submit', saveProfile);
 document.addEventListener('click', event => { const section = event.target.closest('[data-section="history"]'); if (section) loadHistory(); });
 ensureClassificationControls();
 $('#genre-filter')?.addEventListener('change', () => { loadDiscover(); loadDiscoverEpisodes(); }); $('#sort-filter')?.addEventListener('change', () => { loadDiscover(); loadDiscoverEpisodes(); }); $('#cultural-filter')?.addEventListener('change', loadDiscoverEpisodes); $('#language-filter')?.addEventListener('change', loadDiscoverEpisodes);
-$('#video-player')?.addEventListener('pause', () => saveProgress()); $('#video-player')?.addEventListener('ended', () => saveProgress(true));
 setInterval(refreshNotificationBadge, 30000);
 window.addEventListener('hashchange', () => { const name = location.hash.slice(1); if (['discover', 'watch', 'history', 'wallet', 'rewards', 'creator', 'admin', 'profile'].includes(name)) { setSection(name); if (name === 'history') loadHistory(); } });
 (async () => { if (await boot()) setSection(location.hash.slice(1) || 'discover'); })();
