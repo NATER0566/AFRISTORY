@@ -396,25 +396,25 @@ async function saveProfile(event) {
 // FIX: Search library and Episodes target fixes
 async function searchLibrary(event) { 
   event.preventDefault(); 
-  const targetContainer = event.currentTarget.id === 'search-form' ? '#series-grid' : '#search-results';
-  const input = event.currentTarget.querySelector('input');
-  const query = input.value.trim(); 
+  const input = event.target.querySelector('input');
+  const query = input ? input.value.trim() : ''; 
   if (query.length < 2) return toast('Enter at least two characters', 'error'); 
   try { 
+    $('#search-results').innerHTML = '<div class="empty-state">Searching...</div>';
     const result = await api(`/search/global?q=${encodeURIComponent(query)}&type=series&limit=50`); 
-    $(targetContainer).innerHTML = (result.series?.data || []).map(card).join('') || '<div class="empty-state">No stories matched your search.</div>'; 
+    $('#search-results').innerHTML = (result.series?.data || []).map(card).join('') || '<div class="empty-state">No stories matched your search.</div>'; 
   } catch (error) { toast(error.message, 'error'); } 
 }
 
 async function searchEpisodes(event) { 
   event.preventDefault(); 
-  const targetContainer = event.currentTarget.id === 'search-form' ? '#series-grid' : '#search-results';
-  const input = event.currentTarget.querySelector('input'); 
-  const query = input.value.trim(); 
+  const input = event.target.querySelector('input'); 
+  const query = input ? input.value.trim() : ''; 
   if (query.length < 2) return toast('Enter at least two characters', 'error'); 
   try { 
+    $('#series-grid').innerHTML = '<div class="empty-state">Searching...</div>';
     const result = await api(`/search/global?q=${encodeURIComponent(query)}&type=episodes&limit=50`); 
-    $(targetContainer).innerHTML = (result.episodes?.data || []).map(episodeCard).join('') || '<div class="empty-state">No episodes matched your search.</div>'; 
+    $('#series-grid').innerHTML = (result.episodes?.data || []).map(episodeCard).join('') || '<div class="empty-state">No episodes matched your search.</div>'; 
   } catch (error) { toast(error.message, 'error'); } 
 }
 
@@ -509,11 +509,8 @@ document.addEventListener('click', async event => {
 
 $('#upload-form')?.addEventListener('submit', submitUpload);
 $('#series-form')?.addEventListener('submit', submitSeries);
-
-// FIX: Split event listeners so Discover page searches Episodes, Library page searches Series
 $('#search-form')?.addEventListener('submit', searchEpisodes); 
 $('#library-search-form')?.addEventListener('submit', searchLibrary);
-
 $('#profile-form')?.addEventListener('submit', saveProfile);
 $('#settings-form')?.addEventListener('submit', saveSettings);
 $('#comment-form')?.addEventListener('submit', async event => { event.preventDefault(); const input = $('#comment-input'); const submit = $('#comment-submit'); if (!state.currentEpisode) return toast('Open an episode before commenting', 'error'); if (!input.value.trim()) return toast('Write a comment first', 'error'); submit.disabled = true; submit.textContent = 'Posting...'; try { await api('/comments/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ episodeId: state.currentEpisode._id, text: input.value.trim() }) }); input.value = ''; await loadComments(state.currentEpisode._id); toast('Comment posted', 'success'); } catch (error) { toast(error.message, 'error'); } finally { submit.disabled = false; submit.textContent = 'Post'; } });
