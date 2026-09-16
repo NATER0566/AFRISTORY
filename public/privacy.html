@@ -1,44 +1,72 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy Policy - AFROSTORY</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 40px 20px; }
-        h1 { color: #111; border-bottom: 2px solid #eaeaea; padding-bottom: 10px; }
-        h2 { color: #222; margin-top: 30px; }
-        .back-link { display: inline-block; margin-bottom: 20px; color: #2563eb; text-decoration: none; font-weight: bold; }
-        .back-link:hover { text-decoration: underline; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Policy | AfroStory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif']},colors:{background:'#111111',surface:'#1B1B1B',accent:'#D4A017',action:'#E67E22',success:'#2ECC71',danger:'#E74C3C'}}}};</script>
 </head>
-<body>
-    <a href="/" class="back-link">← Back to AFROSTORY</a>
-    <h1>Privacy Policy</h1>
-    <p><strong>Last Updated:</strong> September 2026</p>
+<body class="bg-background text-gray-300 font-sans min-h-screen p-6 lg:p-12">
+  
+  <header class="max-w-3xl mx-auto mb-10 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2 text-white hover:text-accent transition-colors font-black tracking-widest">
+      <span class="text-accent text-xl">A</span> AFROSTORY
+    </a>
+    <a href="/" class="text-sm font-semibold text-accent hover:underline flex items-center gap-1">
+      <i data-lucide="arrow-left" width="16" height="16"></i> Back
+    </a>
+  </header>
 
-    <h2>1. Introduction</h2>
-    <p>Welcome to AFROSTORY. We respect your privacy and are committed to protecting your personal data. This Privacy Policy explains how we collect, use, and safeguard your information when you use our platform.</p>
+  <main class="max-w-3xl mx-auto bg-surface p-8 md:p-12 rounded-2xl border border-gray-800 shadow-xl space-y-8">
+    <div class="border-b border-gray-800 pb-6">
+        <h1 class="text-3xl font-bold text-white mb-2">Privacy Policy</h1>
+        <p class="text-sm text-gray-500 tracking-wide uppercase">Last Updated: September 2026</p>
+    </div>
 
-    <h2>2. Information We Collect</h2>
-    <p>When you register for AFROSTORY, we may collect the following information:</p>
-    <ul>
-        <li><strong>Account Information:</strong> Your chosen username, email address, and securely hashed passwords or PINs.</li>
-        <li><strong>Google OAuth Data:</strong> If you choose to log in using Google, we collect your Google email address, your name, and your profile picture to create and authenticate your account.</li>
-    </ul>
+    <section class="space-y-4">
+        <h2 class="text-xl font-semibold text-white">1. Introduction</h2>
+        <p class="leading-relaxed text-gray-400">Welcome to AFROSTORY. We respect your privacy and are committed to protecting your personal data. This Privacy Policy explains how we collect, use, and safeguard your information when you use our platform.</p>
+    </section>
 
-    <h2>3. How We Use Your Information</h2>
-    <p>We use your information exclusively to:</p>
-    <ul>
-        <li>Provide, operate, and maintain your account.</li>
-        <li>Send transactional emails (such as verification codes and password resets).</li>
-        <li>Personalize your community experience.</li>
-    </ul>
+    <section class="space-y-4">
+        <h2 class="text-xl font-semibold text-white">2. Information We Collect</h2>
+        <p class="leading-relaxed text-gray-400">When you register for AFROSTORY, we may collect the following information:</p>
+        <ul class="list-disc pl-5 space-y-2 text-gray-400">
+            <li><strong class="text-gray-200">Account Information:</strong> Your chosen username, email address, and securely hashed passwords or PINs.</li>
+            <li><strong class="text-gray-200">Google OAuth Data:</strong> If you choose to log in using Google, we collect your Google email address, your name, and your profile picture to create and authenticate your account.</li>
+        </ul>
+    </section>
 
-    <h2>4. Data Security</h2>
-    <p>We implement industry-standard security measures, including bcrypt hashing for passwords and secure JSON Web Tokens (JWT) for session management, to protect your data. We do not sell, trade, or rent your personal identification information to others.</p>
+    <section class="space-y-4">
+        <h2 class="text-xl font-semibold text-white">3. How We Use Your Information</h2>
+        <p class="leading-relaxed text-gray-400">We use your information exclusively to:</p>
+        <ul class="list-disc pl-5 space-y-2 text-gray-400">
+            <li>Provide, operate, and maintain your account.</li>
+            <li>Send transactional emails (such as verification codes and password resets).</li>
+            <li>Personalize your community experience.</li>
+        </ul>
+    </section>
 
-    <h2>5. Contact Us</h2>
-    <p>If you have any questions about this Privacy Policy, please contact our support team via our official channels.</p>
+    <section class="space-y-4">
+        <h2 class="text-xl font-semibold text-white">4. Data Security</h2>
+        <p class="leading-relaxed text-gray-400">We implement industry-standard security measures, including bcrypt hashing for passwords and secure JSON Web Tokens (JWT) for session management, to protect your data. We do not sell, trade, or rent your personal identification information to others.</p>
+    </section>
+
+    <section class="space-y-4">
+        <h2 class="text-xl font-semibold text-white">5. Contact Us</h2>
+        <p class="leading-relaxed text-gray-400">If you have any questions about this Privacy Policy, please contact our support team via our official channels.</p>
+    </section>
+  </main>
+  
+  <footer class="max-w-3xl mx-auto mt-8 text-center text-xs text-gray-600">
+      &copy; 2026 AFROSTORY. All rights reserved.
+  </footer>
+
+  <script>window.lucide?.createIcons?.();</script>
 </body>
 </html>
