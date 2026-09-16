@@ -95,9 +95,23 @@ function toast(message, type = 'info') {
   }, 4000); 
 }
 
-// Performance: Lazy load images
 function setupLazyLoading() { if ('IntersectionObserver' in window) { const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting && entry.target.dataset.src) { entry.target.src = entry.target.dataset.src; delete entry.target.dataset.src; observer.unobserve(entry.target); } }); }, { rootMargin: '50px' }); $$('[data-src]').forEach(el => observer.observe(el)); } }
-function setSection(name) { $$('.app-section').forEach(section => section.classList.toggle('hidden', section.id !== `section-${name}`)); $$('.nav-item[data-section]').forEach(item => item.classList.toggle('active', item.dataset.section === name)); $('#genre-filter')?.closest('.discover-filters')?.classList.toggle('hidden', name !== 'discover'); $('#save-current')?.classList.toggle('hidden', name !== 'watch'); location.hash = name; if (name === 'wallet') loadWallet(); if (name === 'rewards') loadRewards(); if (name === 'creator') loadCreator(); if (name === 'admin') loadAdmin(); if (name === 'history') loadHistory(); if (name === 'continue') loadContinue(); if (name === 'favorites') loadFavorites(); if (name === 'trending') loadTrending(); if (name === 'settings') loadSettings(); if (name === 'watch') loadWatchRecommended(); }
+
+// MODIFIED: Close modals & sheets when navigating away!
+function setSection(name) { 
+  $$('.app-section').forEach(section => section.classList.toggle('hidden', section.id !== `section-${name}`)); 
+  $$('.nav-item[data-section]').forEach(item => item.classList.toggle('active', item.dataset.section === name)); 
+  $('#genre-filter')?.closest('.discover-filters')?.classList.toggle('hidden', name !== 'discover'); 
+  $('#save-current')?.classList.toggle('hidden', name !== 'watch'); 
+  
+  // IMPORTANT: Force all modals and bottom sheets to close when the section changes
+  $$('.modal-root').forEach(m => m.classList.add('hidden'));
+  $('#mobile-more-sheet')?.classList.add('hidden');
+  
+  location.hash = name; 
+  if (name === 'wallet') loadWallet(); if (name === 'rewards') loadRewards(); if (name === 'creator') loadCreator(); if (name === 'admin') loadAdmin(); if (name === 'history') loadHistory(); if (name === 'continue') loadContinue(); if (name === 'favorites') loadFavorites(); if (name === 'trending') loadTrending(); if (name === 'settings') loadSettings(); if (name === 'watch') loadWatchRecommended(); 
+}
+
 const episodeGenres = ['Action', 'Drama', 'Comedy', 'Romance', 'Thriller', 'Horror', 'Adventure', 'Family', 'Historical', 'Traditional', 'Documentary', 'Educational', 'Faith', 'Mystery', 'Other'];
 const culturalCategories = ['Tiv', 'Igbo', 'Yoruba', 'Hausa', 'Idoma', 'Nupe', 'Fulani', 'Edo', 'Efik', 'Ibibio', 'Kanuri', 'Ijaw', 'Other African culture'];
 const episodeLanguages = ['English', 'Tiv', 'Igbo', 'Yoruba', 'Hausa', 'Idoma', 'Edo', 'Efik', 'Ibibio', 'Nupe', 'Fulfulde', 'Kanuri', 'Ijaw', 'Other'];
@@ -116,7 +130,7 @@ async function loadDiscover() {
     $('#featured-series').innerHTML = featured ? `<article class="featured-card" style="background-image:url('${image(featured.coverImage)}')" data-series-id="${esc(featured._id)}"><p class="eyebrow">FEATURED SERIES</p><h2>${esc(featured.title)}</h2><p>${esc(featured.description || 'A new story is waiting.')}</p></article>` : '<div class="empty-state">No stories match this filter.</div>'; 
     $('#series-grid').innerHTML = state.series.map(card).join('') || '<div class="empty-state">No stories match this filter.</div>'; 
     
-    // MASSIVE FIX: Catch the error so it doesn't break the page, and handle any nested data structure
+    // Safety Catch for Creator Data
     let creatorsList = [];
     try {
         const cRes = await api('/creators/top/creators?limit=6').catch(() => null) || await api('/creators?limit=6').catch(() => null);
@@ -157,9 +171,14 @@ async function openEpisode(id) {
       state.hls = null;
     }
 
-    // MASSIVE FIX: Check for hlsUrl, but keep the standard mediaUrl as a raw fallback
+    // MODIFIED: VIDEO PLAYBACK & FALLBACK FIX
     const mediaUrl = episode.hlsUrl || episode.mediaUrl || episode.videoUrl;
-    const fallbackUrl = episode.mediaUrl || episode.videoUrl;
+    let fallbackUrl = episode.mediaUrl || episode.videoUrl || episode.hlsUrl;
+    
+    // Automatically rewrite Cloudinary .m3u8 urls to raw .mp4 so we ALWAYS have a fallback
+    if (fallbackUrl && fallbackUrl.includes('.m3u8')) {
+        fallbackUrl = fallbackUrl.replace('.m3u8', '.mp4');
+    }
     
     if (!mediaUrl) throw new Error('This episode has no video URL yet.');
     
@@ -168,10 +187,9 @@ async function openEpisode(id) {
       state.hls = new Hls({ enableWorker: true, lowLatencyMode: true });
       state.hls.on(Hls.Events.ERROR, (_event, data) => {
         if (data.fatal) {
-          console.warn('HLS encountered a fatal error. Attempting fallback...', data);
+          console.warn('HLS stream not ready. Auto-switching to raw mp4 fallback...');
           
-          // If HLS fails (e.g. still processing on Cloudinary), switch to raw mp4
-          if (fallbackUrl && fallbackUrl !== mediaUrl && !fallbackUrl.includes('.m3u8')) {
+          if (fallbackUrl && fallbackUrl !== mediaUrl) {
               state.hls.destroy();
               video.src = fallbackUrl;
               video.load();
@@ -186,6 +204,7 @@ async function openEpisode(id) {
       state.hls.attachMedia(video);
     } else {
       video.preload = 'auto';
+      // If no HLS is supported or available, use raw MP4 automatically
       video.src = fallbackUrl || mediaUrl;
       video.load();
     }
@@ -288,7 +307,6 @@ $('#become-creator-form')?.addEventListener('submit', async (event) => {
   }
 });
 
-// Massive 10 minute timeout so video uploads don't freeze and cancel!
 async function uploadAsset(path, file) { 
     const data = new FormData(); 
     data.append('file', file); 
