@@ -12,94 +12,21 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
-      .discover-filters {
-        display: flex;
-        gap: 12px;
-        margin: 0 0 24px;
-      }
-      .discover-filters label {
-        color: #999;
-        display: flex;
-        flex-direction: column;
-        font-size: 11px;
-        gap: 6px;
-      }
-      .discover-filters select {
-        background: #242424;
-        border: 1px solid #343434;
-        border-radius: 6px;
-        color: #f5f5f5;
-        padding: 9px 28px 9px 10px;
-      }
-      .profile-form {
-        max-width: 520px;
-      }
-      .save-current {
-        bottom: 28px;
-        position: fixed;
-        right: 28px;
-        z-index: 10;
-      }
-      .history-row {
-        border: 0;
-        color: inherit;
-        cursor: pointer;
-        text-align: left;
-        width: 100%;
-      }
-      .notification-unread {
-        border-left: 3px solid #d4a017;
-      }
-      .comment-replies {
-        border-left: 1px solid #343434;
-        margin: 12px 0 0 18px;
-        padding-left: 14px;
-      }
-      @keyframes slideInToast {
-        from { opacity: 0; transform: translateX(400px) scale(0.9); }
-        to { opacity: 1; transform: translateX(0) scale(1); }
-      }
-      @keyframes pulseGlow {
-        0%, 100% { box-shadow: 0 0 10px rgba(118, 168, 107, 0.3); }
-        50% { box-shadow: 0 0 25px rgba(118, 168, 107, 0.6); }
-      }
-      .toast {
-        align-items: center;
-        animation: slideInToast 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
-        background: linear-gradient(135deg, #242424, #2d2d2d);
-        border: 2px solid #343434;
-        border-radius: 8px;
-        color: #f5f5f5;
-        display: flex;
-        font-size: 15px;
-        font-weight: 700;
-        gap: 12px;
-        max-width: 380px;
-        padding: 16px 18px;
-        position: relative;
-        word-wrap: break-word;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-      }
-      .toast.success {
-        border-color: #76a86b;
-        background: linear-gradient(135deg, #2b3d2b, #1a2a1a);
-        box-shadow: 0 0 20px rgba(118, 168, 107, 0.4), inset 0 0 20px rgba(118, 168, 107, 0.1);
-        animation: slideInToast 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), pulseGlow 2s ease-in-out;
-      }
-      .toast.error {
-        border-color: #e67e22;
-        background: linear-gradient(135deg, #3d2b1b, #2a1b0a);
-        box-shadow: 0 0 20px rgba(230, 126, 34, 0.4), inset 0 0 20px rgba(230, 126, 34, 0.1);
-      }
-      .toast-icon {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 18px;
-        font-weight: 700;
-        flex-shrink: 0;
-        min-width: 24px;
-      }
+      .discover-filters { display: flex; gap: 12px; margin: 0 0 24px; }
+      .discover-filters label { color: #999; display: flex; flex-direction: column; font-size: 11px; gap: 6px; }
+      .discover-filters select { background: #242424; border: 1px solid #343434; border-radius: 6px; color: #f5f5f5; padding: 9px 28px 9px 10px; }
+      .profile-form { max-width: 520px; }
+      .save-current { bottom: 28px; position: fixed; right: 28px; z-index: 10; }
+      .history-row { border: 0; color: inherit; cursor: pointer; text-align: left; width: 100%; }
+      .notification-unread { border-left: 3px solid #d4a017; }
+      .comment-replies { border-left: 1px solid #343434; margin: 12px 0 0 18px; padding-left: 14px; }
+      
+      @keyframes slideInToast { from { opacity: 0; transform: translateX(400px) scale(0.9); } to { opacity: 1; transform: translateX(0) scale(1); } }
+      @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 10px rgba(118, 168, 107, 0.3); } 50% { box-shadow: 0 0 25px rgba(118, 168, 107, 0.6); } }
+      .toast { align-items: center; animation: slideInToast 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); background: linear-gradient(135deg, #242424, #2d2d2d); border: 2px solid #343434; border-radius: 8px; color: #f5f5f5; display: flex; font-size: 15px; font-weight: 700; gap: 12px; max-width: 380px; padding: 16px 18px; position: relative; word-wrap: break-word; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); }
+      .toast.success { border-color: #76a86b; background: linear-gradient(135deg, #2b3d2b, #1a2a1a); box-shadow: 0 0 20px rgba(118, 168, 107, 0.4), inset 0 0 20px rgba(118, 168, 107, 0.1); animation: slideInToast 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), pulseGlow 2s ease-in-out; }
+      .toast.error { border-color: #e67e22; background: linear-gradient(135deg, #3d2b1b, #2a1b0a); box-shadow: 0 0 20px rgba(230, 126, 34, 0.4), inset 0 0 20px rgba(230, 126, 34, 0.1); }
+      .toast-icon { display: inline-flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; flex-shrink: 0; min-width: 24px; }
       .toast.success .toast-icon::before { content: '✓'; color: #76a86b; font-size: 20px; }
       .toast.error .toast-icon::before { content: '✕'; color: #e67e22; font-size: 20px; }
       .toast-message { flex: 1; letter-spacing: 0.3px; line-height: 1.4; }
@@ -113,160 +40,136 @@
       .profile-cover{background:linear-gradient(120deg,#2b2114,#171717 52%,#222);border:1px solid #343434;min-height:230px;padding:28px 32px;position:relative;overflow:hidden}.profile-cover[style]{background-position:center;background-size:cover}.profile-header{align-items:flex-end;display:flex;gap:22px;min-height:174px}.profile-avatar{align-items:center;background:#d4a017;color:#111;display:flex;flex:0 0 104px;font-family:Georgia,serif;font-size:48px;height:104px;justify-content:center;overflow:hidden;border-radius:50%;}.profile-avatar img{height:100%;object-fit:cover;width:100%}.profile-identity{max-width:650px}.profile-identity h1{font-size:clamp(30px,4vw,52px)}.profile-handle{margin:4px 0 10px}.profile-bio{color:#ddd;margin:0}.profile-location{color:#d4a017;font-size:13px;margin-top:10px}.profile-actions{display:flex;gap:10px;margin-left:auto}.profile-tabs{border-bottom:1px solid #343434;display:flex;gap:24px;overflow:auto;padding:0 4px}.profile-tab{background:none;border:0;border-bottom:2px solid transparent;color:#999;padding:16px 4px;white-space:nowrap}.profile-tab.active,.profile-tab:hover{border-color:#d4a017;color:#f5f5f5}.profile-panel{padding-top:30px}.profile-summary-grid{display:grid;gap:30px;grid-template-columns:1fr 1fr}.profile-section-heading{align-items:end;display:flex;justify-content:space-between;margin:28px 0 18px}.profile-section-heading h2{font-size:24px}.profile-list{display:grid;gap:10px}.profile-list-row{align-items:center;background:#1b1b1b;border:1px solid #343434;display:flex;gap:14px;padding:12px}.profile-list-row strong{display:block}.profile-list-row p{color:#999;font-size:13px;margin:2px 0 0}.profile-list-row .progress{background:#343434;height:4px;margin-top:8px;width:180px}.profile-list-row .progress i{background:#d4a017;display:block;height:100%}.profile-story-grid{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-story-grid .series-card{min-width:0}.interest-list{display:flex;flex-wrap:wrap;gap:8px}.interest-chip{background:#242424;border:1px solid #4a4a4a;color:#f5f5f5;padding:7px 11px}.profile-about{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr));max-width:680px}.profile-about div{background:#1b1b1b;border-bottom:1px solid #343434;padding:14px}.profile-about span{color:#999;display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase}.profile-edit-panel{border-top:1px solid #343434;margin-top:30px;padding-top:24px}.profile-edit-grid{display:grid;gap:14px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-form label{color:#bbb;display:grid;font-size:12px;gap:6px}.profile-form input,.profile-form textarea,.profile-form select{background:#111;border:1px solid #444;color:#f5f5f5;padding:11px}.profile-form select[multiple]{min-height:130px}.profile-privacy{display:flex;flex-wrap:wrap;gap:18px;margin:16px 0}.profile-privacy label{display:flex;display:flex;gap:8px}.profile-empty{border:1px dashed #444;color:#999;padding:24px}.profile-empty button{margin-top:12px}@media(max-width:700px){.profile-cover{padding:22px 18px}.profile-header{align-items:flex-start;flex-wrap:wrap}.profile-avatar{flex-basis:78px;font-size:36px;height:78px}.profile-actions{margin-left:0;width:100%}.profile-actions .button{flex:1}.profile-summary-grid,.profile-about,.profile-edit-grid{grid-template-columns:1fr}.profile-tabs{gap:16px}.profile-story-grid{grid-template-columns:1fr 1fr}}
       
       /* ==============================================================
-         NEW AVATAR + NAME BELOW HEADER (MATCHING REFERENCE IMAGE)
+         FIXED SINGLE CIRCLE HEADER (FORCED CSS TO STOP OVERLAPS)
       ============================================================== */
       .topbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center; /* Center items vertically */
-        padding: 0 4vw;
-        height: 75px; /* Slightly taller to accommodate stacked text */
-        background: #111;
-        border-bottom: 1px solid #333;
-        position: sticky;
-        top: 0;
-        z-index: 50;
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0 4vw; height: 70px; background: #111; border-bottom: 1px solid #333;
+        position: sticky; top: 0; z-index: 50;
       }
+      .topbar-actions { display: flex; align-items: center; gap: 20px; }
       
-      .topbar-actions {
-        display: flex;
-        align-items: center; /* Keep bell and profile aligned */
-        gap: 20px;
-      }
-      
-      .notification-button{
-        align-items:center;background:#242424;border:1px solid #3b3b3b;border-radius:50%;display:inline-flex;height:42px;justify-content:center;transition:border-color .2s,transform .2s;width:42px; position:relative;
-      }
+      .notification-button{ align-items:center;background:#242424;border:1px solid #3b3b3b;border-radius:50%;display:inline-flex;height:42px;justify-content:center;transition:border-color .2s,transform .2s;width:42px; position:relative; }
       .notification-button:hover{border-color:#d4a017;transform:translateY(-1px)}
       .header-icon{font-size:19px;line-height:1}
       .notification-button .notification-badge{position:absolute; right:-4px;top:-3px; background:#d4a017; color:#111; font-size:10px; padding:2px 6px; border-radius:10px; font-weight:bold;}
       
-      /* STACKED PROFILE BUTTON */
-      .profile-chip {
-        display: flex;
-        flex-direction: column; /* Stack image on top of text */
-        align-items: center;
-        justify-content: center;
-        background: transparent;
-        border: none;
-        padding: 0;
-        cursor: pointer;
-        gap: 4px; /* Space between circle and text */
-        transition: transform .2s;
+      /* HARD OVERRIDE FOR THE PROFILE CHIP TO BE EXACTLY ONE CIRCLE */
+      .topbar .profile-chip {
+        display: block !important;
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 44px !important; 
+        height: 44px !important;
+        border-radius: 50% !important;
+        cursor: pointer !important;
+        transition: transform .2s ease !important;
       }
+      .topbar .profile-chip:hover { transform: translateY(-2px); }
       
-      .profile-chip:hover {
-        transform: translateY(-2px);
+      .topbar .profile-chip-avatar {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100% !important;
+        height: 100% !important;
+        border-radius: 50% !important;
+        background: #d4a017 !important;
+        color: #111 !important;
+        font-family: Georgia, serif !important;
+        font-weight: 700 !important;
+        font-size: 20px !important;
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 2px solid transparent !important;
       }
+      .topbar .profile-chip-avatar img { width: 100% !important; height: 100% !important; object-fit: cover !important; }
       
-      .profile-chip-avatar {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 38px; /* Perfect circle */
-        height: 38px;
-        border-radius: 50%;
-        background: #d4a017;
-        color: #111;
-        font-family: Georgia, serif;
-        font-weight: 700;
-        font-size: 18px;
-        overflow: hidden;
-      }
-      
-      .profile-chip-avatar img { 
-        width: 100%; 
-        height: 100%; 
-        object-fit: cover; 
-      }
-      
-      .profile-chip-meta { 
-        display: flex; 
-        flex-direction: column; 
-        align-items: center; 
-      }
-      
-      .profile-chip #user-name { 
-        font-size: 11px; 
-        font-weight: 600; 
-        color: #f5f5f5; 
-        line-height: 1; 
-        white-space: nowrap; 
-      }
-      
-      .profile-chevron { display: none !important; } /* Removed completely */
       .profile-initial { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
 
       /* ==============================================================
-         MOBILE HORIZONTAL SCROLL NAV & MOBILE HEADER TWEAKS
+         DESKTOP VS MOBILE NAV VISIBILITY & BOTTOM SHEET DESIGN
       ============================================================== */
-      @media(max-width: 800px) {
-        .topbar-actions { gap: 14px; }
-        
-        /* Mobile Profile Picture Sizing (Hide name, keep circle) */
-        .profile-chip { gap: 0; }
-        .profile-chip-meta { display: none !important; }
-        .profile-chip-avatar {
-          width: 40px; 
-          height: 40px;
-        }
+      .desktop-only { display: flex; }
+      .mobile-only { display: none !important; }
 
+      @media(max-width: 800px) {
+        .desktop-only { display: none !important; }
+        .mobile-only { display: flex !important; }
+        
+        .topbar-actions { gap: 14px; }
+        .topbar .profile-chip { width: 40px !important; height: 40px !important; }
         .app-layout { flex-direction: column; }
         
-        /* The Horizontally Scrollable Bottom Bar */
+        /* The Fixed Mobile Bottom Bar (6 Items) */
         .sidebar {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: 65px; 
-          width: 100%;
-          background: #111;
-          border-top: 1px solid #333;
-          border-right: none;
-          z-index: 40;
-          display: flex;
-          padding: 0;
+          position: fixed; bottom: 0; left: 0; right: 0; height: 70px; 
+          width: 100%; background: #111; border-top: 1px solid #333;
+          border-right: none; z-index: 40; display: flex; padding: 0;
+          justify-content: center;
         }
         
         .side-nav {
-          display: flex;
-          flex-direction: row;
-          overflow-x: auto; /* Enable horizontal scrolling */
-          overflow-y: hidden;
-          white-space: nowrap; 
-          width: 100%;
-          padding: 0 10px;
-          -webkit-overflow-scrolling: touch; 
-          scrollbar-width: none; /* Firefox */
+          display: flex; flex-direction: row; justify-content: space-around; 
+          width: 100%; padding: 0 5px;
         }
-        .side-nav::-webkit-scrollbar { display: none; /* Chrome */ }
         
         .nav-item {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 8px 14px;
-          min-width: 72px; /* Prevent squishing */
-          gap: 4px;
-          font-size: 10px;
-          color: #999;
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          flex: 1; gap: 6px; font-size: 10px; color: #999; padding: 0;
         }
-        
         .nav-item span { display: block; margin: 0; }
         .nav-item.active { color: #d4a017; }
-        
         .sidebar-bottom { display: none; }
-        
-        /* Ensure content doesn't hide behind the new bottom bar */
-        .main-content { padding-bottom: 80px; }
+        .main-content { padding-bottom: 90px; }
         
         /* Adjust Hero on mobile */
         .rewards-hero { align-items: flex-start; display: block; padding: 22px; }
         .rewards-balance { border-left: 0; border-top: 1px solid #6b5122; margin-top: 22px; padding: 16px 0 0; }
         .rewards-grid { grid-template-columns: 1fr; }
       }
+
+      /* BOTTOM SHEET OVERLAY FOR "MORE" MENU */
+      .bottom-sheet-overlay {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.8); z-index: 9999;
+        display: flex; align-items: flex-end;
+        opacity: 1; transition: opacity 0.3s;
+      }
+      .bottom-sheet-overlay.hidden {
+        opacity: 0; pointer-events: none;
+      }
+      .bottom-sheet {
+        background: #111; border-top: 1px solid #333;
+        border-radius: 24px 24px 0 0; width: 100%;
+        padding: 16px 24px 40px;
+        transform: translateY(0); transition: transform 0.3s;
+        box-shadow: 0 -10px 40px rgba(0,0,0,0.9);
+      }
+      .bottom-sheet-overlay.hidden .bottom-sheet { transform: translateY(100%); }
+      
+      .sheet-handle {
+        width: 44px; height: 5px; background: #333; border-radius: 4px;
+        margin: 0 auto 20px;
+      }
+      .bottom-sheet h3 {
+        text-align: center; color: #fff; margin: 0 0 24px; font-size: 18px; font-weight: 600;
+      }
+      
+      .sheet-grid {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+      }
+      .sheet-item {
+        background: #1a1a1a; border: 1px solid #333; border-radius: 14px;
+        padding: 20px 10px; display: flex; flex-direction: column; align-items: center;
+        gap: 12px; color: #f5f5f5; cursor: pointer; transition: border-color .2s;
+      }
+      .sheet-item:active { border-color: #d4a017; background: #222; }
+      .sheet-item i { font-size: 24px; font-style: normal; color: #d4a017; }
+      .sheet-item span { font-size: 13px; font-weight: 500; }
 
       /* Notification & Rewards styles */
       .notification-panel{max-height:min(680px,calc(100vh - 40px));overflow:auto;position:relative;width:min(560px,calc(100vw - 32px))}.notification-item{align-items:flex-start;background:#1b1b1b;border:1px solid #343434;display:flex;gap:12px;padding:14px}.notification-item-icon{align-items:center;background:#2d2112;border-radius:50%;color:#d4a017;display:flex;flex:0 0 30px;height:30px;justify-content:center}.notification-item-content{min-width:0}.notification-item-content strong{display:block}.notification-item-content p{color:#bbb;font-size:13px;margin:3px 0}.notification-item-content time{color:#777;font-size:11px}.notification-item-actions{display:flex;flex-direction:column;gap:4px;margin-left:auto;white-space:nowrap}.notification-empty{align-items:center;color:#999;display:flex;flex-direction:column;gap:5px;padding:44px 20px;text-align:center}.notification-empty strong{color:#f5f5f5}.reward-card{transition:border-color .2s,opacity .2s}.reward-state-locked{opacity:.66}.reward-state-claimable{border-color:#d4a017}.reward-state-pending_verification{border-color:#765d21}.reward-state-claimed{opacity:.72}.reward-state-label{color:#999;font-size:11px;letter-spacing:1px;margin-top:12px;text-transform:uppercase}.reward-check{color:#76a86b;display:block;font-weight:700;margin-top:12px}.reward-pending{color:#d4a017;display:block;font-weight:700;margin-top:12px}.reward-locked{color:#999;display:block;font-size:12px;margin-top:12px}@media(max-width:700px){.notification-panel{width:calc(100vw - 20px)}.notification-item-actions{flex-direction:row;flex-wrap:wrap}.notification-item{gap:8px;padding:12px}.profile-header{gap:14px}}
@@ -282,10 +185,9 @@
         <span class="header-icon">&#128276;</span><i id="notification-badge" class="notification-badge hidden">0</i>
       </button>
       
-      <!-- AVATAR WITH NAME STACKED BELOW (Desktop only) -->
+      <!-- PERFECT SINGLE CIRCLE (NAME REMOVED ENTIRELY) -->
       <button class="profile-chip" data-action="profile" aria-label="Open your profile" title="Profile">
         <span id="user-avatar" class="profile-chip-avatar" aria-hidden="true"><span id="user-initial" class="profile-initial">A</span></span>
-        <span class="profile-chip-meta"><span id="user-name">Account</span></span>
       </button>
 
     </div>
@@ -295,15 +197,18 @@
       <nav class="side-nav" aria-label="Main navigation">
         <button class="nav-item active" data-section="discover">⌂<span>Discover</span></button>
         <button class="nav-item" data-section="search">⌕<span>Search</span></button>
-        <button class="nav-item" data-section="trending">↗<span>Trending</span></button>
+        <button class="nav-item desktop-only" data-section="trending">↗<span>Trending</span></button>
         <button class="nav-item" data-section="watch">▶<span>Watch</span></button>
-        <button class="nav-item" data-section="continue">◷<span>Continue</span></button>
-        <button class="nav-item" data-section="favorites">♡<span>Favorites</span></button>
-        <button class="nav-item" data-section="history">◴<span>History</span></button>
+        <button class="nav-item desktop-only" data-section="continue">◷<span>Continue</span></button>
+        <button class="nav-item desktop-only" data-section="favorites">♡<span>Favorites</span></button>
+        <button class="nav-item desktop-only" data-section="history">◴<span>History</span></button>
         <button class="nav-item" data-section="wallet">◈<span>Wallet</span></button>
-        <button class="nav-item" data-section="rewards">✧<span>Rewards</span></button>
+        <button class="nav-item desktop-only" data-section="rewards">✧<span>Rewards</span></button>
         <button class="nav-item" data-section="creator">✦<span>Studio</span></button>
-        <button class="nav-item admin-only hidden" data-section="admin">▦<span>Admin</span></button>
+        <button class="nav-item admin-only hidden desktop-only" data-section="admin">▦<span>Admin</span></button>
+        
+        <!-- MOBILE ONLY: The "More" Menu Button -->
+        <button class="nav-item mobile-only" id="mobile-more-btn" type="button">⋯<span>More</span></button>
       </nav>
       <div class="sidebar-bottom">
         <button class="nav-item" data-section="settings">⚙<span>Settings</span></button>
@@ -327,9 +232,63 @@
       <section id="section-settings" class="app-section hidden"><div class="section-heading"><div><p class="eyebrow">PREFERENCES</p><h1>Settings</h1></div></div><form id="settings-form" class="stack-form profile-form"><label>Language<select id="settings-language" name="language"><option value="en">English</option><option value="fr">French</option><option value="sw">Swahili</option></select></label><label class="checkbox-label"><input id="settings-notifications" name="notifications" type="checkbox" checked> Receive notifications</label><button class="button button-primary" type="submit">Save settings</button></form></section>
     </main>
   </div>
-  <button id="save-current" class="button button-accent save-current" data-action="save-current" type="button">Save to favorites</button><div id="upload-modal" class="modal-root hidden"><div class="modal"><div class="modal-header"><h2>Upload episode</h2><button class="modal-close" data-action="close-upload">×</button></div><form id="upload-form" class="stack-form"><label>Series<select id="upload-series" name="seriesId" required></select></label><label>Episode title<input name="title" required maxlength="200"></label><label>Description<textarea name="description" maxlength="2000"></textarea></label><label>Access<select name="access" required><option value="Ad">Ad-supported</option><option value="Premium">Premium</option></select></label><label>Coin cost<input name="coinCost" type="number" min="1" value="10" required></label><label>Video<input name="video" type="file" accept="video/mp4,video/webm" required></label><label>Thumbnail<input name="thumbnail" type="file" accept="image/*"></label><label class="checkbox-label"><input name="publish" type="checkbox" checked> Publish episode now</label><button class="button button-primary" type="submit">Upload episode</button></form></div></div>
+  
+  <button id="save-current" class="button button-accent save-current" data-action="save-current" type="button">Save to favorites</button>
+  
+  <!-- THE NEW MOBILE "MORE" BOTTOM SHEET -->
+  <div id="mobile-more-sheet" class="bottom-sheet-overlay hidden">
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+      <h3>More</h3>
+      <div class="sheet-grid">
+        <button class="sheet-item" data-section="trending"><i>↗</i><span>Trending</span></button>
+        <button class="sheet-item" data-section="rewards"><i>✧</i><span>Rewards</span></button>
+        <button class="sheet-item" data-section="continue"><i>◷</i><span>Continue</span></button>
+        <button class="sheet-item" data-section="favorites"><i>♡</i><span>Favorite</span></button>
+        <button class="sheet-item" data-section="history"><i>◴</i><span>History</span></button>
+        <button class="sheet-item" data-section="settings"><i>⚙</i><span>Settings</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALL MODALS -->
+  <div id="upload-modal" class="modal-root hidden"><div class="modal"><div class="modal-header"><h2>Upload episode</h2><button class="modal-close" data-action="close-upload">×</button></div><form id="upload-form" class="stack-form"><label>Series<select id="upload-series" name="seriesId" required></select></label><label>Episode title<input name="title" required maxlength="200"></label><label>Description<textarea name="description" maxlength="2000"></textarea></label><label>Access<select name="access" required><option value="Ad">Ad-supported</option><option value="Premium">Premium</option></select></label><label>Coin cost<input name="coinCost" type="number" min="1" value="10" required></label><label>Video<input name="video" type="file" accept="video/mp4,video/webm" required></label><label>Thumbnail<input name="thumbnail" type="file" accept="image/*"></label><label class="checkbox-label"><input name="publish" type="checkbox" checked> Publish episode now</label><button class="button button-primary" type="submit">Upload episode</button></form></div></div>
   <div id="series-modal" class="modal-root hidden"><div class="modal"><div class="modal-header"><div><p class="eyebrow">CREATOR STUDIO</p><h2>Create a series</h2></div><button class="modal-close" data-action="close-series">×</button></div><form id="series-form" class="stack-form"><label>Series title<input name="title" required maxlength="200"></label><label>Description<textarea name="description" maxlength="2000"></textarea></label><label>Genre<input name="genre" maxlength="80" placeholder="Drama, history, comedy..."></label><label>Language<input name="language" value="English" maxlength="40"></label><label>Tags<input name="tags" placeholder="culture, family, Lagos"></label><label>Cover image<input name="cover" type="file" accept="image/*" required></label><label class="checkbox-label"><input name="publish" type="checkbox" checked> Publish series now</label><label class="checkbox-label"><input name="premium" type="checkbox"> VIP subscribers only</label><button class="button button-primary" type="submit">Create series</button></form></div></div>
-  <div id="notification-modal" class="modal-root hidden"><div class="modal notification-panel" role="dialog" aria-modal="true" aria-labelledby="notification-title"><div class="modal-header"><div><p class="eyebrow">YOUR INBOX</p><h2 id="notification-title">Notifications</h2></div><button class="modal-close" data-action="close-notifications" aria-label="Close notifications">×</button></div><div class="modal-actions"><button class="text-button" data-action="read-all">Mark all as read</button></div><div id="notification-list" class="data-list"></div></div></div><div id="modal-root" class="modal-root hidden"></div><div id="toast-region" class="toast-region" aria-live="polite"></div>
+  <div id="notification-modal" class="modal-root hidden"><div class="modal notification-panel" role="dialog" aria-modal="true" aria-labelledby="notification-title"><div class="modal-header"><div><p class="eyebrow">YOUR INBOX</p><h2 id="notification-title">Notifications</h2></div><button class="modal-close" data-action="close-notifications" aria-label="Close notifications">×</button></div><div class="modal-actions"><button class="text-button" data-action="read-all">Mark all as read</button></div><div id="notification-list" class="data-list"></div></div></div>
+  <div id="modal-root" class="modal-root hidden"></div><div id="toast-region" class="toast-region" aria-live="polite"></div>
+  
   <script type="module" src="/js/ads.js"></script><script type="module" src="/js/main.js"></script>
+
+  <!-- TINY SCRIPT TO OPEN/CLOSE THE "MORE" SHEET -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const moreBtn = document.getElementById('mobile-more-btn');
+      const sheet = document.getElementById('mobile-more-sheet');
+      const sheetItems = document.querySelectorAll('.sheet-item');
+
+      if (moreBtn && sheet) {
+        // Open sheet
+        moreBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          sheet.classList.remove('hidden');
+        });
+        
+        // Close if tapping the dark background outside the sheet
+        sheet.addEventListener('click', (e) => {
+          if (e.target === sheet) {
+            sheet.classList.add('hidden');
+          }
+        });
+        
+        // When clicking a button inside the sheet, close the sheet
+        // (your main.js routing logic handles the actual navigation)
+        sheetItems.forEach(item => {
+          item.addEventListener('click', () => {
+            sheet.classList.add('hidden');
+          });
+        });
+      }
+    });
+  </script>
 </body>
 </html>
