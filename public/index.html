@@ -19,23 +19,165 @@
   </style>
 </head>
 <body class="auth-page">
-  <header class="topbar"><a class="brand" href="/" aria-label="AfroStory home"><span class="brand-mark">A</span><span>AFRO<span>STORY</span></span></a><a class="text-button" href="/">Back to home</a></header>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="AfroStory home"><span class="brand-mark">A</span><span>AFRO<span>STORY</span></span></a>
+    <a class="text-button" href="/">Back to home</a>
+  </header>
+  
   <div class="auth-shell">
-    <section class="auth-showcase"><a class="brand brand-light" href="/"><span class="brand-mark">A</span><span>AFRO<span>STORY</span></span></a><div class="showcase-copy"><p class="eyebrow">THE HOME OF AFRICAN STORIES</p><h1>Find your next<br><em>favorite world</em></h1><p>Stories with rhythm, roots, and a point of view. Sign in to continue watching.</p></div><div class="showcase-stamp"><strong>01</strong><span>Real stories.<br>Made here.</span></div></section>
-    <main class="auth-panel"><div class="auth-panel-inner">
-    <header class="text-center mb-8"><h1 class="text-4xl font-black tracking-widest">AFRO<span class="text-accent">STORY</span></h1><p class="text-xs text-gray-400 mt-2 tracking-widest">PREMIUM STREAMING</p></header>
-    <form id="login-form" class="auth-form space-y-4" novalidate><h2 class="text-2xl font-bold">Welcome back</h2><p class="text-gray-400 text-sm">Sign in to continue your journey.</p><input class="field" id="login-email" type="email" autocomplete="email" placeholder="Email address" required><div class="password-field"><input class="field" id="login-password" type="password" autocomplete="current-password" placeholder="Password" required><button class="password-toggle" type="button" data-password-toggle="login-password" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button></div><label class="text-sm text-gray-400 flex gap-2"><input id="remember-me" type="checkbox"> Remember me</label><button class="link text-sm" type="button" data-mode="forgot">Forgot password?</button><button class="primary" type="submit">Sign in</button><div class="border-t border-gray-700 pt-4 text-center text-sm text-gray-400">New to AfroStory? <button class="link" type="button" data-mode="register">Create an account</button></div><div class="grid grid-cols-3 gap-2"><button class="field" type="button" data-sso="google">Google</button><button class="field" type="button" data-sso="apple">Apple</button><button class="field" type="button" data-sso="github">GitHub</button></div></form>
-    <form id="register-form" class="auth-form hidden space-y-4" novalidate><h2 class="text-2xl font-bold">Create your account</h2><p class="text-gray-400 text-sm">Join a home for African stories.</p><input class="field" id="reg-username" type="text" autocomplete="username" placeholder="Username" required><input class="field" id="reg-email" type="email" autocomplete="email" placeholder="Email address" required><div class="password-field"><input class="field" id="reg-password" type="password" autocomplete="new-password" placeholder="Password" required><button class="password-toggle" type="button" data-password-toggle="reg-password" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button></div><div class="flex gap-1"><i id="str-bar-1" class="bar"></i><i id="str-bar-2" class="bar"></i><i id="str-bar-3" class="bar"></i><i id="str-bar-4" class="bar"></i></div><p id="password-feedback" class="text-xs text-gray-500"></p><div class="password-field"><input class="field" id="reg-confirm" type="password" autocomplete="new-password" placeholder="Confirm password" required><button class="password-toggle" type="button" data-password-toggle="reg-confirm" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button></div><label class="text-sm text-gray-400 flex gap-2"><input id="reg-terms" type="checkbox" required> I agree to the Terms and Privacy Policy.</label><button class="primary gold" type="submit">Create account</button><p class="text-center text-sm text-gray-400">Already a member? <button class="link" type="button" data-mode="login">Sign in</button></p></form>
-    <form id="forgot-form" class="auth-form hidden space-y-4" novalidate><h2 class="text-2xl font-bold">Reset password</h2><p class="text-gray-400 text-sm">We will send a secure 15-minute code.</p><input class="field" id="forgot-email" type="email" placeholder="Registered email" required><button class="primary" type="submit">Send reset code</button><button class="link text-sm w-full" type="button" data-mode="login">Back to sign in</button></form>
-    <form id="reset-form" class="auth-form hidden space-y-4" novalidate><h2 class="text-2xl font-bold">Set new password</h2><p class="text-gray-400 text-sm">Enter the code sent to your email.</p><input class="field code" id="reset-code" inputmode="numeric" maxlength="6" placeholder="------" required><div class="password-field"><input class="field" id="reset-password" type="password" placeholder="New password" required><button class="password-toggle" type="button" data-password-toggle="reset-password" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button></div><button class="primary gold" type="submit">Update password</button><button class="link text-sm w-full" type="button" data-mode="login">Cancel</button></form>
-    <form id="verify-form" class="auth-form hidden space-y-4" novalidate><h2 class="text-2xl font-bold">Verify your email</h2><p class="text-gray-400 text-sm">Enter the six-digit code sent to your email.</p><input class="field code" id="verify-code" inputmode="numeric" maxlength="6" placeholder="------" required><button class="primary" type="submit">Verify account</button><button id="resend-otp" class="link text-sm w-full" type="button">Resend code</button></form>
-    </div></main>
+    <section class="auth-showcase">
+      <a class="brand brand-light" href="/"><span class="brand-mark">A</span><span>AFRO<span>STORY</span></span></a>
+      <div class="showcase-copy">
+        <p class="eyebrow">THE HOME OF AFRICAN STORIES</p>
+        <h1>Find your next<br><em>favorite world</em></h1>
+        <p>Stories with rhythm, roots, and a point of view. Sign in to continue watching.</p>
+      </div>
+      <div class="showcase-stamp"><strong>01</strong><span>Real stories.<br>Made here.</span></div>
+    </section>
+    
+    <main class="auth-panel">
+      <div class="auth-panel-inner">
+        <header class="text-center mb-8">
+          <h1 class="text-4xl font-black tracking-widest">AFRO<span class="text-accent">STORY</span></h1>
+          <p class="text-xs text-gray-400 mt-2 tracking-widest">PREMIUM STREAMING</p>
+        </header>
+        
+        <!-- LOGIN FORM -->
+        <form id="login-form" class="auth-form space-y-4" novalidate>
+          <h2 class="text-2xl font-bold">Welcome back</h2>
+          <p class="text-gray-400 text-sm">Sign in to continue your journey.</p>
+          <input class="field" id="login-email" type="email" autocomplete="email" placeholder="Email address" required>
+          <div class="password-field">
+            <input class="field" id="login-password" type="password" autocomplete="current-password" placeholder="Password" required>
+            <button class="password-toggle" type="button" data-password-toggle="login-password" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
+          </div>
+          <label class="text-sm text-gray-400 flex gap-2"><input id="remember-me" type="checkbox"> Remember me</label>
+          <button class="link text-sm" type="button" data-mode="forgot">Forgot password?</button>
+          <button class="primary" type="submit">Sign in</button>
+          <div class="border-t border-gray-700 pt-4 text-center text-sm text-gray-400">New to AfroStory? <button class="link" type="button" data-mode="register">Create an account</button></div>
+          <div class="grid grid-cols-3 gap-2">
+            <button class="field hover:border-accent transition-colors" type="button" data-sso="google">Google</button>
+            <button class="field hover:border-accent transition-colors" type="button" data-sso="apple">Apple</button>
+            <button class="field hover:border-accent transition-colors" type="button" data-sso="github">GitHub</button>
+          </div>
+        </form>
+
+        <!-- REGISTER FORM -->
+        <form id="register-form" class="auth-form hidden space-y-4" novalidate>
+          <h2 class="text-2xl font-bold">Create your account</h2>
+          <p class="text-gray-400 text-sm">Join a home for African stories.</p>
+          <input class="field" id="reg-username" type="text" autocomplete="username" placeholder="Username" required>
+          <input class="field" id="reg-email" type="email" autocomplete="email" placeholder="Email address" required>
+          <div class="password-field">
+            <input class="field" id="reg-password" type="password" autocomplete="new-password" placeholder="Password" required>
+            <button class="password-toggle" type="button" data-password-toggle="reg-password" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
+          </div>
+          <div class="flex gap-1"><i id="str-bar-1" class="bar"></i><i id="str-bar-2" class="bar"></i><i id="str-bar-3" class="bar"></i><i id="str-bar-4" class="bar"></i></div>
+          <p id="password-feedback" class="text-xs text-gray-500"></p>
+          <div class="password-field">
+            <input class="field" id="reg-confirm" type="password" autocomplete="new-password" placeholder="Confirm password" required>
+            <button class="password-toggle" type="button" data-password-toggle="reg-confirm" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
+          </div>
+          <!-- 🛠️ LINKED PRIVACY & TERMS -->
+          <label class="text-sm text-gray-400 flex gap-2">
+            <input id="reg-terms" type="checkbox" required> 
+            <span>I agree to the <a href="/terms.html" class="text-accent hover:underline" target="_blank">Terms</a> and <a href="/privacy.html" class="text-accent hover:underline" target="_blank">Privacy Policy</a>.</span>
+          </label>
+          <button class="primary gold" type="submit">Create account</button>
+          <p class="text-center text-sm text-gray-400">Already a member? <button class="link" type="button" data-mode="login">Sign in</button></p>
+        </form>
+
+        <!-- FORGOT PASSWORD FORM -->
+        <form id="forgot-form" class="auth-form hidden space-y-4" novalidate>
+          <h2 class="text-2xl font-bold">Reset password</h2>
+          <p class="text-gray-400 text-sm">We will send a secure 15-minute code.</p>
+          <input class="field" id="forgot-email" type="email" placeholder="Registered email" required>
+          <button class="primary" type="submit">Send reset code</button>
+          <button class="link text-sm w-full" type="button" data-mode="login">Back to sign in</button>
+        </form>
+
+        <!-- RESET PASSWORD FORM -->
+        <form id="reset-form" class="auth-form hidden space-y-4" novalidate>
+          <h2 class="text-2xl font-bold">Set new password</h2>
+          <p class="text-gray-400 text-sm">Enter the code sent to your email.</p>
+          <input class="field code" id="reset-code" inputmode="numeric" maxlength="6" placeholder="------" required>
+          
+          <!-- 🛠️ SPAM NOTICE BOX -->
+          <div class="bg-accent/10 border border-accent/20 rounded-lg p-3 text-center">
+            <p class="text-xs text-accent font-semibold">Don't see the email? Please check your Spam or Junk folder.</p>
+          </div>
+
+          <div class="password-field">
+            <input class="field" id="reset-password" type="password" placeholder="New password" required>
+            <button class="password-toggle" type="button" data-password-toggle="reset-password" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
+          </div>
+          <button class="primary gold" type="submit">Update password</button>
+          <button class="link text-sm w-full" type="button" data-mode="login">Cancel</button>
+        </form>
+
+        <!-- VERIFY EMAIL FORM -->
+        <form id="verify-form" class="auth-form hidden space-y-4" novalidate>
+          <h2 class="text-2xl font-bold">Verify your email</h2>
+          <p class="text-gray-400 text-sm">Enter the six-digit code sent to your email.</p>
+          <input class="field code" id="verify-code" inputmode="numeric" maxlength="6" placeholder="------" required>
+          
+          <!-- 🛠️ SPAM NOTICE BOX -->
+          <div class="bg-accent/10 border border-accent/20 rounded-lg p-3 text-center">
+            <p class="text-xs text-accent font-semibold">Don't see the email? Please check your Spam or Junk folder.</p>
+          </div>
+
+          <button class="primary" type="submit">Verify account</button>
+          <button id="resend-otp" class="link text-sm w-full" type="button">Resend code</button>
+        </form>
+
+      </div>
+    </main>
   </div>
+  
   <script>
-    let currentAuthEmail='';const $=id=>document.getElementById(id);const jsonHeaders={'Content-Type':'application/json'};const emailOk=value=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);const codeOk=value=>/^\d{6}$/.test(value);async function request(path,body){const response=await fetch('/api/auth/'+path,{method:'POST',headers:jsonHeaders,credentials:'include',body:JSON.stringify(body)});const data=await response.json().catch(()=>({}));return{response,data}}function show(mode){['login','register','forgot','reset','verify'].forEach(name=>$(`${name}-form`).classList.toggle('hidden',name!==mode))}function alertMessage(icon,title){Swal.fire({toast:true,position:'top-end',showConfirmButton:false,timer:3000,icon,title,background:'#1B1B1B',color:'#F5F5F5'})}function redirect(){window.location.assign('/app.html')}document.querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>show(button.dataset.mode)));document.querySelectorAll('[data-password-toggle]').forEach(button=>button.addEventListener('click',()=>{const input=$(button.dataset.passwordToggle),visible=input.type==='text';input.type=visible?'password':'text';button.setAttribute('aria-label',visible?'Show password':'Hide password');button.innerHTML=`<i data-lucide="${visible?'eye':'eye-off'}" width="18" height="18"></i>`;window.lucide?.createIcons?.()}));document.querySelectorAll('[data-sso]').forEach(button=>button.addEventListener('click',()=>window.location.assign('/api/auth/'+button.dataset.sso)));$( 'reg-password'.trim()).addEventListener('input',event=>{const result=zxcvbn(event.target.value);const colors=['#E74C3C','#E74C3C','#D4A017','#2ECC71','#2ECC71'];for(let index=0;index<4;index++)$(`str-bar-${index+1}`).style.background=index<result.score+1?colors[result.score]:'#444';$('password-feedback').textContent=result.feedback.warning||result.feedback.suggestions[0]||''});
-    $('login-form').addEventListener('submit',async event=>{event.preventDefault();const email=$('login-email').value.trim().toLowerCase(),password=$('login-password').value;if(!emailOk(email))return alertMessage('error','Enter a valid email');currentAuthEmail=email;const{response,data}=await request('login',{email,password,rememberMe:$('remember-me').checked});if(response.ok)redirect();else if(response.status===403&&data.code==='UNVERIFIED'){show('verify');alertMessage('info','Verification required')}else alertMessage('error',data.message||'Invalid credentials')});$('register-form').addEventListener('submit',async event=>{event.preventDefault();const username=$('reg-username').value.trim(),email=$('reg-email').value.trim().toLowerCase(),password=$('reg-password').value;if(!/^[a-zA-Z0-9_.\s]{3,30}$/.test(username)||!emailOk(email)||password!==$('reg-confirm').value||!$('reg-terms').checked||zxcvbn(password).score<2)return alertMessage('error','Check your registration details');currentAuthEmail=email;const{response,data}=await request('register',{username,email,password});if(response.ok){show('verify');alertMessage('success','Account created. Enter your code')}else alertMessage('error',data.message||'Registration failed')});
-    $('forgot-form').addEventListener('submit',async event=>{event.preventDefault();const email=$('forgot-email').value.trim().toLowerCase();if(!emailOk(email))return alertMessage('error','Enter a valid email');const{response,data}=await request('forgot-password',{email});if(response.ok){currentAuthEmail=email;show('reset');alertMessage('success','Reset code sent')}else alertMessage('error',data.message||'Could not send reset code')});$('reset-form').addEventListener('submit',async event=>{event.preventDefault();const code=$('reset-code').value.trim(),newPassword=$('reset-password').value;if(!codeOk(code)||newPassword.length<6)return alertMessage('error','Enter a valid code and password');const{response,data}=await request('reset-password',{email:currentAuthEmail,code,newPassword});if(response.ok){show('login');alertMessage('success','Password updated')}else alertMessage('error',data.message||'Reset failed')});$('verify-form').addEventListener('submit',async event=>{event.preventDefault();const code=$('verify-code').value.trim();if(!codeOk(code))return alertMessage('error','Enter the six-digit code');const{response,data}=await request('verify-email',{email:currentAuthEmail,code});if(response.ok)redirect();else alertMessage('error',data.message||'Invalid or expired code')});$('resend-otp').addEventListener('click',async()=>{if(!currentAuthEmail)return alertMessage('error','Email session lost');const{response,data}=await request('resend-otp',{email:currentAuthEmail});alertMessage(response.ok?'success':'error',data.message||(response.ok?'New code sent':'Could not resend code'))});window.lucide?.createIcons?.();
-  const authError = new URLSearchParams(window.location.search).get('authError'); if (authError) { window.history.replaceState({}, '', '/'); alertMessage('error', authError); }
+    let currentAuthEmail='';
+    const $=id=>document.getElementById(id);
+    const jsonHeaders={'Content-Type':'application/json'};
+    const emailOk=value=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+    const codeOk=value=>/^\d{6}$/.test(value);
+    
+    async function request(path,body){
+      const response=await fetch('/api/auth/'+path,{method:'POST',headers:jsonHeaders,credentials:'include',body:JSON.stringify(body)});
+      const data=await response.json().catch(()=>({}));
+      return{response,data}
+    }
+    
+    function show(mode){
+      ['login','register','forgot','reset','verify'].forEach(name=>$(`${name}-form`).classList.toggle('hidden',name!==mode))
+    }
+    
+    // 🛠️ ALERTS FIXED: Moved to 'top' so it pops up directly over the form
+    function alertMessage(icon,title){
+      Swal.fire({toast:true,position:'top',showConfirmButton:false,timer:4000,icon,title,background:'#1B1B1B',color:'#F5F5F5',customClass:{popup:'border border-gray-800'}})
+    }
+    
+    function redirect(){window.location.assign('/app.html')}
+    
+    document.querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>show(button.dataset.mode)));
+    document.querySelectorAll('[data-password-toggle]').forEach(button=>button.addEventListener('click',()=>{const input=$(button.dataset.passwordToggle),visible=input.type==='text';input.type=visible?'password':'text';button.setAttribute('aria-label',visible?'Show password':'Hide password');button.innerHTML=`<i data-lucide="${visible?'eye':'eye-off'}" width="18" height="18"></i>`;window.lucide?.createIcons?.()}));
+    document.querySelectorAll('[data-sso]').forEach(button=>button.addEventListener('click',()=>window.location.assign('/api/auth/'+button.dataset.sso)));
+    
+    $( 'reg-password'.trim()).addEventListener('input',event=>{const result=zxcvbn(event.target.value);const colors=['#E74C3C','#E74C3C','#D4A017','#2ECC71','#2ECC71'];for(let index=0;index<4;index++)$(`str-bar-${index+1}`).style.background=index<result.score+1?colors[result.score]:'#444';$('password-feedback').textContent=result.feedback.warning||result.feedback.suggestions[0]||''});
+    
+    $('login-form').addEventListener('submit',async event=>{event.preventDefault();const email=$('login-email').value.trim().toLowerCase(),password=$('login-password').value;if(!emailOk(email))return alertMessage('error','Enter a valid email');currentAuthEmail=email;const{response,data}=await request('login',{email,password,rememberMe:$('remember-me').checked});if(response.ok)redirect();else if(response.status===403&&data.code==='UNVERIFIED'){show('verify');alertMessage('info','Verification required')}else alertMessage('error',data.message||'Invalid credentials')});
+    
+    $('register-form').addEventListener('submit',async event=>{event.preventDefault();const username=$('reg-username').value.trim(),email=$('reg-email').value.trim().toLowerCase(),password=$('reg-password').value;if(!/^[a-zA-Z0-9_.\s]{3,30}$/.test(username)||!emailOk(email)||password!==$('reg-confirm').value||!$('reg-terms').checked||zxcvbn(password).score<2)return alertMessage('error','Check your registration details');currentAuthEmail=email;const{response,data}=await request('register',{username,email,password});if(response.ok){show('verify');alertMessage('success','Account created. Enter your code')}else alertMessage('error',data.message||'Registration failed')});
+    
+    $('forgot-form').addEventListener('submit',async event=>{event.preventDefault();const email=$('forgot-email').value.trim().toLowerCase();if(!emailOk(email))return alertMessage('error','Enter a valid email');const{response,data}=await request('forgot-password',{email});if(response.ok){currentAuthEmail=email;show('reset');alertMessage('success','Reset code sent')}else alertMessage('error',data.message||'Could not send reset code')});
+    
+    $('reset-form').addEventListener('submit',async event=>{event.preventDefault();const code=$('reset-code').value.trim(),newPassword=$('reset-password').value;if(!codeOk(code)||newPassword.length<6)return alertMessage('error','Enter a valid code and password');const{response,data}=await request('reset-password',{email:currentAuthEmail,code,newPassword});if(response.ok){show('login');alertMessage('success','Password updated')}else alertMessage('error',data.message||'Reset failed')});
+    
+    $('verify-form').addEventListener('submit',async event=>{event.preventDefault();const code=$('verify-code').value.trim();if(!codeOk(code))return alertMessage('error','Enter the six-digit code');const{response,data}=await request('verify-email',{email:currentAuthEmail,code});if(response.ok)redirect();else alertMessage('error',data.message||'Invalid or expired code')});
+    
+    $('resend-otp').addEventListener('click',async()=>{if(!currentAuthEmail)return alertMessage('error','Email session lost');const{response,data}=await request('resend-otp',{email:currentAuthEmail});alertMessage(response.ok?'success':'error',data.message||(response.ok?'New code sent':'Could not resend code'))});
+    
+    window.lucide?.createIcons?.();
+    const authError = new URLSearchParams(window.location.search).get('authError'); if (authError) { window.history.replaceState({}, '', '/'); alertMessage('error', authError); }
  </script>
 </body>
 </html>
