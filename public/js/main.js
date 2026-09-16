@@ -6,13 +6,24 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 
+// =========================================================================
+// UI FIX: FORCE MODALS TO ALWAYS OVERLAY HEADER & FOOTER
+// =========================================================================
+const styleFix = document.createElement('style');
+styleFix.textContent = `
+  .modal-root { z-index: 999999 !important; position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; padding-bottom: 120px !important; overflow-y: auto !important; background: rgba(0,0,0,0.9) !important; }
+  .modal { margin-top: 40px !important; margin-bottom: 80px !important; position: relative !important; z-index: 9999999 !important; }
+  .topbar { z-index: 50 !important; }
+  .sidebar { z-index: 900 !important; }
+`;
+document.head.appendChild(styleFix);
+
 const api = async (path, options = {}) => { 
   const cacheKey = `${path}:${JSON.stringify(options)}`; 
   const cached = apiCache.get(cacheKey); 
   if (cached && Date.now() - cached.time < CACHE_DURATION && options.method !== 'POST') return cached.data; 
   
   try { 
-    // Massive 10 minute timeout so video uploads don't freeze and cancel!
     const timeoutMs = options.timeout || 25000; 
     const response = await fetch(`${API}${path}`, { 
       credentials: 'include', 
@@ -88,7 +99,6 @@ function toast(message, type = 'info') {
   if (!container) return; 
   container.appendChild(el); 
   
-  // Custom timeout to fade out the centered toast
   setTimeout(() => { 
     el.style.animation = 'fadeOutToast 0.4s ease-out forwards'; 
     setTimeout(() => el.remove(), 400); 
@@ -104,7 +114,7 @@ function setSection(name) {
   $('#genre-filter')?.closest('.discover-filters')?.classList.toggle('hidden', name !== 'discover'); 
   $('#save-current')?.classList.toggle('hidden', name !== 'watch'); 
   
-  // IMPORTANT: Force all modals and bottom sheets to close when the section changes
+  // FORCE CLOSE ALL MODALS WHEN NAVIGATING
   $$('.modal-root').forEach(m => m.classList.add('hidden'));
   $('#mobile-more-sheet')?.classList.add('hidden');
   
@@ -130,7 +140,6 @@ async function loadDiscover() {
     $('#featured-series').innerHTML = featured ? `<article class="featured-card" style="background-image:url('${image(featured.coverImage)}')" data-series-id="${esc(featured._id)}"><p class="eyebrow">FEATURED SERIES</p><h2>${esc(featured.title)}</h2><p>${esc(featured.description || 'A new story is waiting.')}</p></article>` : '<div class="empty-state">No stories match this filter.</div>'; 
     $('#series-grid').innerHTML = state.series.map(card).join('') || '<div class="empty-state">No stories match this filter.</div>'; 
     
-    // Safety Catch for Creator Data
     let creatorsList = [];
     try {
         const cRes = await api('/creators/top/creators?limit=6').catch(() => null) || await api('/creators?limit=6').catch(() => null);
@@ -171,24 +180,39 @@ async function openEpisode(id) {
       state.hls = null;
     }
 
-    // MODIFIED: VIDEO PLAYBACK & FALLBACK FIX
-    const mediaUrl = episode.hlsUrl || episode.mediaUrl || episode.videoUrl;
-    let fallbackUrl = episode.mediaUrl || episode.videoUrl || episode.hlsUrl;
-    
-    // Automatically rewrite Cloudinary .m3u8 urls to raw .mp4 so we ALWAYS have a fallback
-    if (fallbackUrl && fallbackUrl.includes('.m3u8')) {
-        fallbackUrl = fallbackUrl.replace('.m3u8', '.mp4');
-    }
+    let mediaUrl = episode.hlsUrl || episode.mediaUrl || episode.videoUrl || '';
+    let fallbackUrl = episode.mediaUrl || episode.videoUrl || episode.hlsUrl || '';
     
     if (!mediaUrl) throw new Error('This episode has no video URL yet.');
+
+    if (mediaUrl.startsWith('http://')) mediaUrl = mediaUrl.replace('http://', 'https://');
+    if (fallbackUrl.startsWith('http://')) fallbackUrl = fallbackUrl.replace('http://', 'https://');
     
+    if (fallbackUrl.includes('cloudinary.com') && fallbackUrl.includes('.m3u8')) {
+        const parts = fallbackUrl.split('/upload/');
+        if (parts.length === 2) {
+            const filePart = parts[1].replace('.m3u8', '.mp4');
+            fallbackUrl = `${parts[0]}/upload/f_mp4,vc_auto/${filePart}`;
+        }
+    } else if (fallbackUrl) {
+        fallbackUrl = fallbackUrl.replace('.m3u8', '.mp4');
+    }
+
     const isHls = /\.m3u8(?:\?|$)/i.test(mediaUrl);
+
+    video.onerror = () => {
+        let errMessage = 'Video format not supported or network failed.';
+        if (video.error && video.error.code === 4) errMessage = 'Video file could not be found or format is unsupported by your browser.';
+        console.error("Native Video Error:", video.error);
+        video.classList.add('video-error');
+        toast(errMessage, 'error');
+    };
+
     if (isHls && window.Hls?.isSupported()) {
       state.hls = new Hls({ enableWorker: true, lowLatencyMode: true });
       state.hls.on(Hls.Events.ERROR, (_event, data) => {
         if (data.fatal) {
           console.warn('HLS stream not ready. Auto-switching to raw mp4 fallback...');
-          
           if (fallbackUrl && fallbackUrl !== mediaUrl) {
               state.hls.destroy();
               video.src = fallbackUrl;
@@ -202,11 +226,10 @@ async function openEpisode(id) {
       });
       state.hls.loadSource(mediaUrl);
       state.hls.attachMedia(video);
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = mediaUrl;
     } else {
-      video.preload = 'auto';
-      // If no HLS is supported or available, use raw MP4 automatically
-      video.src = fallbackUrl || mediaUrl;
-      video.load();
+      video.src = fallbackUrl;
     }
 
     video.play().catch(error => {
@@ -307,13 +330,93 @@ $('#become-creator-form')?.addEventListener('submit', async (event) => {
   }
 });
 
-async function uploadAsset(path, file) { 
-    const data = new FormData(); 
-    data.append('file', file); 
-    return api(path, { method: 'POST', body: data, timeout: 600000 }); 
+
+// =========================================================================
+// MASSIVE FIX: DIRECT-TO-CLOUDINARY FAST UPLOAD
+// =========================================================================
+async function uploadAsset(resourceType, file) { 
+    try {
+        // 1. Get Signature from your Node Backend
+        const signData = await api(`/upload/sign?type=${resourceType}`);
+        
+        // 2. Prepare Payload for Cloudinary
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('api_key', signData.apiKey);
+        formData.append('timestamp', signData.timestamp);
+        formData.append('signature', signData.signature);
+        formData.append('folder', signData.folder);
+
+        // 3. Send straight to Cloudinary (bypassing Render limits)
+        const uploadUrl = `https://api.cloudinary.com/v1_1/${signData.cloudName}/${resourceType}/upload`;
+        
+        const response = await fetch(uploadUrl, {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(result.error?.message || 'Direct upload to Cloudinary failed');
+        }
+
+        // Return unified URL map
+        return {
+            url: result.secure_url,
+            secure_url: result.secure_url,
+            mediaUrl: result.secure_url,
+            publicId: result.public_id,
+            duration: result.duration || 0
+        };
+    } catch (error) {
+        throw new Error('Upload Failed: ' + error.message);
+    }
 }
 
-async function submitSeries(event) { event.preventDefault(); const form = event.target; const values = new FormData(form); const cover = values.get('cover'); if (!cover?.size) return toast('Choose a cover image', 'error'); try { const upload = await uploadAsset('/upload/image', cover); await api('/series/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: values.get('title'), description: values.get('description'), coverImage: upload.url, genre: values.get('genre'), language: values.get('language'), tags: String(values.get('tags') || '').split(',').map(tag => tag.trim()).filter(Boolean), isPublished: values.get('publish') === 'on', isPremiumExclusive: values.get('premium') === 'on' }) }); $('#series-modal').classList.add('hidden'); form.reset(); await loadCreator(); toast('Series created', 'success'); } catch (error) { toast(error.message, 'error'); } }
+async function submitSeries(event) { 
+    event.preventDefault(); 
+    const form = event.target; 
+    const values = new FormData(form); 
+    const cover = values.get('cover'); 
+    
+    if (!cover?.size) return toast('Choose a cover image', 'error'); 
+    
+    const submitBtn = form.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Uploading image...';
+
+    try { 
+        // Changed to use 'image' type
+        const upload = await uploadAsset('image', cover); 
+        
+        submitBtn.textContent = 'Creating series...';
+        await api('/series/create', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ 
+                title: values.get('title'), 
+                description: values.get('description'), 
+                coverImage: upload.url, 
+                genre: values.get('genre'), 
+                language: values.get('language'), 
+                tags: String(values.get('tags') || '').split(',').map(tag => tag.trim()).filter(Boolean), 
+                isPublished: values.get('publish') === 'on', 
+                isPremiumExclusive: values.get('premium') === 'on' 
+            }) 
+        }); 
+        
+        $('#series-modal').classList.add('hidden'); 
+        form.reset(); 
+        await loadCreator(); 
+        toast('Series created successfully!', 'success'); 
+    } catch (error) { 
+        toast(error.message, 'error'); 
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create series';
+    }
+}
 
 async function submitUpload(event) { 
     event.preventDefault(); 
@@ -330,28 +433,48 @@ async function submitUpload(event) {
     if (!genre || !culturalCategory || !language) return toast('Choose a genre, cultural category, and language', 'error'); 
     
     submit.disabled = true; 
-    submit.textContent = 'Uploading video (please wait)...'; 
+    submit.textContent = 'Uploading video securely...'; 
     
     try { 
-        const upload = await uploadAsset('/upload/video', file); 
-        const mediaUrl = upload.hlsUrl || upload.mediaUrl || upload.secure_url || upload.url; 
-        if (!mediaUrl || !/^https?:\/\/.+\.(mp4|m3u8)(?:\?.*)?$/i.test(mediaUrl)) throw new Error('Cloudinary did not return a playable MP4 or HLS URL'); 
+        // Fast direct upload
+        const upload = await uploadAsset('video', file); 
+        const mediaUrl = upload.secure_url; 
         
         const thumbnail = values.get('thumbnail'); 
-        const thumbnailUpload = thumbnail?.size ? await uploadAsset('/upload/image', thumbnail) : null; 
-        if (thumbnail?.size && !thumbnailUpload?.url) throw new Error('Thumbnail upload did not return an image URL'); 
+        let thumbnailUpload = null;
+        if (thumbnail?.size) {
+            submit.textContent = 'Uploading thumbnail...';
+            thumbnailUpload = await uploadAsset('image', thumbnail);
+        }
         
+        submit.textContent = 'Saving episode details...';
         const access = values.get('access'); 
+        
         await api(`/episodes/series/${encodeURIComponent(seriesId)}/create`, { 
             method: 'POST', 
             headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ title: values.get('title'), description: values.get('description'), mediaUrl, thumbnailUrl: thumbnailUpload?.url || null, genre, culturalCategory, language, tags: String(values.get('tags') || '').split(',').map(tag => tag.trim()).filter(Boolean), mediaUrl, duration: upload.duration || 0, coinCost: Number(values.get('coinCost')), isFree: false, adUnlockable: access === 'Ad', isPublished: values.get('publish') === 'on' }) 
+            body: JSON.stringify({ 
+                title: values.get('title'), 
+                description: values.get('description'), 
+                mediaUrl, 
+                thumbnailUrl: thumbnailUpload?.url || null, 
+                genre, 
+                culturalCategory, 
+                language, 
+                tags: String(values.get('tags') || '').split(',').map(tag => tag.trim()).filter(Boolean), 
+                mediaUrl, 
+                duration: upload.duration || 0, 
+                coinCost: Number(values.get('coinCost')), 
+                isFree: false, 
+                adUnlockable: access === 'Ad', 
+                isPublished: values.get('publish') === 'on' 
+            }) 
         }); 
         
         $('#upload-modal').classList.add('hidden'); 
         form.reset(); 
         await loadCreator(); 
-        toast('Episode uploaded successfully!', 'success'); 
+        toast('Episode uploaded fast & successfully!', 'success'); 
     } catch (error) { 
         console.error('Episode upload failed:', error); 
         toast(error.message, 'error'); 
@@ -426,7 +549,50 @@ async function refreshNotificationBadge() { try { const result = await api('/not
     badge.classList.add('is-new');
     setTimeout(() => badge.classList.remove('is-new'), 1100);
   } } catch {} }
-async function saveProfile(event) { event.preventDefault(); try { const form = new FormData(event.target); let avatarUrl = state.profile?.user?.profile?.avatarUrl || state.profile?.user?.profileImage || null; let coverUrl = state.profile?.user?.profile?.coverUrl || null; const imageFile = form.get('profileImage'); const coverFile = form.get('coverImage'); if (imageFile?.size) avatarUrl = (await uploadAsset('/upload/image', imageFile)).url; if (coverFile?.size) coverUrl = (await uploadAsset('/upload/image', coverFile)).url; const updated = await api('/users/profile/update', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: form.get('username'), email: form.get('email'), profile: { displayName: form.get('displayName'), bio: form.get('bio'), avatarUrl, coverUrl, country: form.get('country'), region: form.get('region'), preferredLanguage: form.get('preferredLanguage'), additionalLanguages: [], favoriteGenres: [...form.getAll('favoriteGenres')], favoriteCultures: String(form.get('favoriteCultures') || '').split(',').map(value => value.trim()).filter(Boolean) }, privacy: { profileVisibility: form.get('profileVisibility') === 'on' ? 'PUBLIC' : 'PRIVATE', showFavorites: form.get('showFavorites') === 'on' } }) }); state.user = { ...state.user, ...updated }; renderHeaderUser(state.user); $('#profile-edit-panel').classList.add('hidden'); await loadProfile(); toast('Profile updated', 'success'); } catch (error) { toast(error.message, 'error'); } }
+async function saveProfile(event) { 
+  event.preventDefault(); 
+  try { 
+    const form = new FormData(event.target); 
+    let avatarUrl = state.profile?.user?.profile?.avatarUrl || state.profile?.user?.profileImage || null; 
+    let coverUrl = state.profile?.user?.profile?.coverUrl || null; 
+    const imageFile = form.get('profileImage'); 
+    const coverFile = form.get('coverImage'); 
+    if (imageFile?.size) avatarUrl = (await uploadAsset('image', imageFile)).url; 
+    if (coverFile?.size) coverUrl = (await uploadAsset('image', coverFile)).url; 
+    
+    const updated = await api('/users/profile/update', { 
+      method: 'PUT', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify({ 
+        username: form.get('username'), 
+        email: form.get('email'), 
+        profile: { 
+          displayName: form.get('displayName'), 
+          bio: form.get('bio'), 
+          avatarUrl, 
+          coverUrl, 
+          country: form.get('country'), 
+          region: form.get('region'), 
+          preferredLanguage: form.get('preferredLanguage'), 
+          additionalLanguages: [], 
+          favoriteGenres: [...form.getAll('favoriteGenres')], 
+          favoriteCultures: String(form.get('favoriteCultures') || '').split(',').map(value => value.trim()).filter(Boolean) 
+        }, 
+        privacy: { 
+          profileVisibility: form.get('profileVisibility') === 'on' ? 'PUBLIC' : 'PRIVATE', 
+          showFavorites: form.get('showFavorites') === 'on' 
+        } 
+      }) 
+    }); 
+    state.user = { ...state.user, ...updated }; 
+    renderHeaderUser(state.user); 
+    $('#profile-edit-panel').classList.add('hidden'); 
+    await loadProfile(); 
+    toast('Profile updated', 'success'); 
+  } catch (error) { 
+    toast(error.message, 'error'); 
+  } 
+}
 async function saveProgress(completed = false) { const video = $('#video-player'); if (!state.currentEpisode || !video.duration || !Number.isFinite(video.duration)) return; try { await api(`/episodes/${state.currentEpisode._id}/watch`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lastPosition: video.currentTime, watchedPercentage: Math.min(100, video.currentTime / video.duration * 100), completed }) }); } catch {} }
 document.addEventListener('click', async event => { if (event.target.closest('[data-action="profile"]')) loadProfile(); if (event.target.closest('[data-action="notifications"]')) { $('#notification-modal').classList.remove('hidden'); await loadNotifications(); } if (event.target.closest('[data-action="close-notifications"]') || event.target.id === 'notification-modal') $('#notification-modal').classList.add('hidden'); if (event.target.closest('[data-action="read-all"]')) { try { await api('/notifications/me/read-all', { method: 'PUT' }); await loadNotifications(); refreshNotificationBadge(); } catch (error) { toast(error.message, 'error'); } } const notification = event.target.closest('[data-read-notification]'); if (notification) { try { await api(`/notifications/${notification.dataset.readNotification}/read`, { method: 'PUT' }); await loadNotifications(); refreshNotificationBadge(); } catch (error) { toast(error.message, 'error'); } } const dismissed = event.target.closest('[data-dismiss-notification]'); if (dismissed) { try { await api(`/notifications/${dismissed.dataset.dismissNotification}`, { method: 'DELETE' }); await loadNotifications(); refreshNotificationBadge(); } catch (error) { toast(error.message, 'error'); } } const history = event.target.closest('[data-history-episode]'); if (history) openHistoryEpisode(history.dataset.historySeries, history.dataset.historyEpisode); });
 document.addEventListener('click', async event => { if (event.target.closest('[data-action="edit-profile"]')) openProfileEditor(); if (event.target.closest('[data-action="close-profile-edit"]')) $('#profile-edit-panel').classList.add('hidden'); const tab = event.target.closest('[data-profile-tab]'); if (tab) { $$('.profile-tab').forEach(item => item.classList.toggle('active', item === tab));$$('.profile-panel').forEach(panel => panel.classList.toggle('hidden', panel.id !== `profile-panel-${tab.dataset.profileTab}`)); } const remove = event.target.closest('[data-remove-history]'); if (remove) { try { await api(`/users/me/history/${remove.dataset.removeHistory}`, { method: 'DELETE' }); await loadProfile(); } catch (error) { toast(error.message, 'error'); } } });
