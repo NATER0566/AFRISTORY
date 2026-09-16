@@ -34,7 +34,7 @@ export default async function creatorRoutes(fastify, opts) {
     }
   });
 
-  // Become a creator
+  // Become a creator (FIXED: No longer requires a custom brand name)
   fastify.post('/become-creator', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
@@ -45,19 +45,20 @@ export default async function creatorRoutes(fastify, opts) {
 
       const { brandName, bio, socialLinks } = request.body || {};
 
-      if (!brandName) {
-        return sendError(reply, 'Brand name is required', 400);
-      }
-
       const existingCreator = await Creator.findOne({ userId: request.user._id });
-
       if (existingCreator) {
         return sendError(reply, 'You are already a creator', 409);
       }
 
+      // Fetch user to use their username as the default brand name
+      const user = await User.findById(request.user._id);
+      
+      // If no brandName is provided, default to their username
+      const finalBrandName = brandName || user.username || 'Creator';
+
       const creator = new Creator({
         userId: request.user._id,
-        brandName,
+        brandName: finalBrandName,
         bio: bio || '',
         socialLinks: socialLinks || {},
       });
@@ -65,7 +66,6 @@ export default async function creatorRoutes(fastify, opts) {
       await creator.save();
 
       // Update user role
-      const user = await User.findById(request.user._id);
       user.role = 'CREATOR';
       await user.save();
 
