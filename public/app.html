@@ -276,6 +276,29 @@
     </div>
   </div>
 
+  <!-- BECOME CREATOR MODAL -->
+  <div id="become-creator-modal" class="modal-root hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">SHARE YOUR VOICE</p>
+          <h2>Become a creator</h2>
+        </div>
+        <button class="modal-close" data-action="close-become-creator">×</button>
+      </div>
+      <form id="become-creator-form" class="stack-form">
+        <p style="color: #999; margin-bottom: 16px;">Create a home for your stories and upload episodes.</p>
+        <label>Creator Name
+          <input name="brandName" required maxlength="100" placeholder="e.g. Nater Studios">
+        </label>
+        <label>Bio (Optional)
+          <textarea name="bio" maxlength="500" placeholder="Tell viewers what to expect..."></textarea>
+        </label>
+        <button class="button button-primary" type="submit">Start creating</button>
+      </form>
+    </div>
+  </div>
+
   <!-- ALL MODALS -->
   <div id="upload-modal" class="modal-root hidden"><div class="modal"><div class="modal-header"><h2>Upload episode</h2><button class="modal-close" data-action="close-upload">×</button></div><form id="upload-form" class="stack-form"><label>Series<select id="upload-series" name="seriesId" required></select></label><label>Episode title<input name="title" required maxlength="200"></label><label>Description<textarea name="description" maxlength="2000"></textarea></label><label>Access<select name="access" required><option value="Ad">Ad-supported</option><option value="Premium">Premium</option></select></label><label>Coin cost<input name="coinCost" type="number" min="1" value="10" required></label><label>Video<input name="video" type="file" accept="video/mp4,video/webm" required></label><label>Thumbnail<input name="thumbnail" type="file" accept="image/*"></label><label class="checkbox-label"><input name="publish" type="checkbox" checked> Publish episode now</label><button class="button button-primary" type="submit">Upload episode</button></form></div></div>
   <div id="series-modal" class="modal-root hidden"><div class="modal"><div class="modal-header"><div><p class="eyebrow">CREATOR STUDIO</p><h2>Create a series</h2></div><button class="modal-close" data-action="close-series">×</button></div><form id="series-form" class="stack-form"><label>Series title<input name="title" required maxlength="200"></label><label>Description<textarea name="description" maxlength="2000"></textarea></label><label>Genre<input name="genre" maxlength="80" placeholder="Drama, history, comedy..."></label><label>Language<input name="language" value="English" maxlength="40"></label><label>Tags<input name="tags" placeholder="culture, family, Lagos"></label><label>Cover image<input name="cover" type="file" accept="image/*" required></label><label class="checkbox-label"><input name="publish" type="checkbox" checked> Publish series now</label><label class="checkbox-label"><input name="premium" type="checkbox"> VIP subscribers only</label><button class="button button-primary" type="submit">Create series</button></form></div></div>
@@ -313,3 +336,6 @@
   </script>
 </body>
 </html>
+look at code please  why am seeing desktop items on mobile device 
+
+There is a file you can reference named "1000106030.jpg". Refer to this file by its name verbatim.
