@@ -1,5 +1,5 @@
 const API = '/api';
-const PREVIEW_LIMIT = 5; // Seconds before the video locks
+const PREVIEW_LIMIT = 30; // Seconds before the video locks
 const state = { user: null, profile: null, rewards: null, series: [], currentSeries: null, currentEpisode: null, hls: null, recommendedEpisodes: [] };
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -69,7 +69,7 @@ function setSection(name) {
   $('#mobile-more-sheet')?.classList.add('hidden');
   location.hash = name; 
   
-  if (name === 'watch' && !state.currentEpisode) openDefaultFeed(); // FIX: Autoload video if going straight to watch
+  if (name === 'watch' && !state.currentEpisode) openDefaultFeed();
   if (name === 'wallet') loadWallet(); 
   if (name === 'rewards') loadRewards(); 
   if (name === 'creator') loadCreator(); 
@@ -211,7 +211,6 @@ async function openEpisode(id) {
          `;
       }
 
-      // FIX: TikTok overlay layout and SVG action buttons
       card.innerHTML = `
         <video src="${mediaUrl}" poster="${image(episode.thumbnailUrl || episode.seriesId?.coverImage)}" loop playsinline ${episode.hasAccess ? 'controls' : ''}></video>
         ${lockScreen}
@@ -353,7 +352,7 @@ function renderRewardCard(reward) {
   return `<article class="reward-card reward-state-${state.toLowerCase()}"><p class="eyebrow">${esc(reward.category || 'MISSION')}</p><h3>${esc(reward.name)}</h3><p class="muted">${esc(reward.description || '')}</p><div class="reward-meta">+${Number(reward.rewardAmount).toLocaleString()} Coins</div><div class="reward-state-label">${isSocial ? (state === 'CLAIMED' ? 'COMPLETED' : 'AVAILABLE') : esc(state.replaceAll('_', ' '))}</div>${action}</article>`;
 }
 
-async function loadRewards() { try { const result = await api('/rewards/me'); state.rewards = result; $('#rewards-balance').textContent = Number(result.balance || 0).toLocaleString(); $('#reward-current-streak').textContent = Number(result.streak?.currentStreak || 0); $('#reward-best-streak').textContent = Number(result.streak?.bestStreak || 0); const daily = result.daily; const rewards = result.rewards || []; $('#daily-reward-card').innerHTML = daily ? `<p class="eyebrow">DAILY CHECK-IN</p><h2>${daily.claimed ? 'Check-in complete' : 'Your daily reward is ready'}</h2><p class="muted">${esc(daily.description || 'Return each day to keep your streak alive.')}</p><div class="reward-meta">+${Number(daily.rewardAmount).toLocaleString()} coins</div>${daily.claimed ? '<div class="reward-state">Come back after the next calendar day.</div>' : `<button class="button button-accent reward-action" data-reward-id="${esc(daily._id)}">Claim today</button>`}` : '<div class="profile-empty">Daily check-in is not available right now.</div>'; const social = rewards.filter(reward => reward.type === 'SOCIAL' || reward.category === 'social'); $('#social-rewards-grid').innerHTML = social.map(renderRewardCard).join('') || '<div class="profile-empty">No active social missions right now.</div>'; $('#rewards-grid').innerHTML = rewards.filter(reward => !social.includes(reward) && (!daily || reward._id !== daily._id)).map(renderRewardCard).join('') || '<div class="profile-empty">No active missions right now.</div>'; $('#rewards-history').innerHTML = (result.history || []).map(item => `<div class="data-row"><div><strong>${esc(item.description || 'Reward activity')}</strong><p>${new Date(item.createdAt).toLocaleDateString()}</p></div><span class="data-value ${item.type === 'SPEND' ? '' : 'reward-positive'}">${item.type === 'SPEND' ? '-' : '+'}${Number(item.amount || 0).toLocaleString()}</span></div>`).join('') || '<div class="profile-empty">Your reward history will appear here.</div>'; } catch (error) { toast(error.message, 'error'); } }
+async function loadRewards() { try { const result = await api('/rewards/me'); state.rewards = result; $('#rewards-balance').textContent = Number(result.balance \vert{}\vert{} 0).toLocaleString(); $('#reward-current-streak').textContent = Number(result.streak?.currentStreak || 0); $('#reward-best-streak').textContent = Number(result.streak?.bestStreak \vert{}\vert{} 0); const daily = result.daily; const rewards = result.rewards \vert{}\vert{} []; $('#daily-reward-card').innerHTML = daily ? `<p class="eyebrow">DAILY CHECK-IN</p><h2>${daily.claimed ? 'Check-in complete' : 'Your daily reward is ready'}</h2><p class="muted">${esc(daily.description || 'Return each day to keep your streak alive.')}</p><div class="reward-meta">+${Number(daily.rewardAmount).toLocaleString()} coins</div>${daily.claimed ? '<div class="reward-state">Come back after the next calendar day.</div>' : `<button class="button button-accent reward-action" data-reward-id="${esc(daily._id)}">Claim today</button>`}` : '<div class="profile-empty">Daily check-in is not available right now.</div>'; const social = rewards.filter(reward => reward.type === 'SOCIAL' || reward.category === 'social'); $('#social-rewards-grid').innerHTML = social.map(renderRewardCard).join('') || '<div class="profile-empty">No active social missions right now.</div>'; $('#rewards-grid').innerHTML = rewards.filter(reward => !social.includes(reward) && (!daily || reward._id !== daily._id)).map(renderRewardCard).join('') || '<div class="profile-empty">No active missions right now.</div>'; $('#rewards-history').innerHTML = (result.history || []).map(item => `<div class="data-row"><div><strong>${esc(item.description || 'Reward activity')}</strong><p>${new Date(item.createdAt).toLocaleDateString()}</p></div><span class="data-value ${item.type === 'SPEND' ? '' : 'reward-positive'}">${item.type === 'SPEND' ? '-' : '+'}${Number(item.amount || 0).toLocaleString()}</span></div>`).join('') || '<div class="profile-empty">Your reward history will appear here.</div>'; } catch (error) { toast(error.message, 'error'); } }
 
 async function loadCreator() { try { const creator = await api('/creators/me/profile'); const series = await api(`/creators/${creator._id}/series?limit=100`); $('#creator-stats').innerHTML = [['TOTAL VIEWS', creator.totalViews], ['TOTAL EARNINGS', creator.totalEarnings], ['FOLLOWERS', creator.totalFollowers], ['SERIES', series.series?.length || 0]].map(item => `<div class="stat-card"><span class="eyebrow">${item[0]}</span><strong>${Number(item[1] || 0).toLocaleString()}</strong></div>`).join(''); $('#my-series-grid').innerHTML = (series.series || []).map(card).join('') || '<div class="empty-state">Create your first series.</div>'; $('#upload-series').innerHTML = (series.series || []).map(item => `<option value="${esc(item._id)}">${esc(item.title)}</option>`).join(''); } catch (error) { if (error.message.includes('creator')) { $('#section-creator').innerHTML = '<div class="creator-onboarding"><p class="eyebrow">SHARE YOUR VOICE</p><h1>Become a creator</h1><p>Create a home for your stories and upload episodes.</p><button class="button button-primary" data-action="become-creator">Start creating</button></div>'; } else toast(error.message, 'error'); } }
 
@@ -378,9 +377,9 @@ async function loadHistory() {
 }
 async function openHistoryEpisode(seriesId, episodeId) { try { const [series, episode] = await Promise.all([api(`/series/${seriesId}`), api(`/episodes/${episodeId}`)]); state.currentSeries = series; setSection('watch'); await openEpisode(episode._id); } catch (error) { toast(error.message, 'error'); } }
 
-function renderProfile(profile) { const user = profile.user || {}; const details = user.profile || {}; const avatar = details.avatarUrl || user.profileImage; $('#profile-display-name').textContent = details.displayName || user.username || 'Profile'; $('#profile-handle').textContent = `@${user.username || 'story-lover'}`; $('#profile-bio').textContent = details.bio || 'Complete your profile to help your story journey feel like home.'; $('#profile-location').textContent = [details.region, details.country].filter(Boolean).join(' · '); $('#profile-avatar').innerHTML = avatar ? `<img src="${image(avatar)}" alt="">` : esc((details.displayName || user.username || 'A')[0].toUpperCase()); if (details.coverUrl) $('#profile-cover').style.backgroundImage = `linear-gradient(120deg,#111b,#1118),url('${image(details.coverUrl)}')`; $('.creator-profile-tab')?.classList.toggle('hidden', !profile.creator); }
+function renderProfile(profile) { const user = profile.user || {}; const details = user.profile || {}; const avatar = details.avatarUrl || user.profileImage; $('#profile-display-name').textContent = details.displayName \vert{}\vert{} user.username \vert{}\vert{} 'Profile'; $('#profile-handle').textContent = `@${user.username || 'story-lover'}`; $('#profile-bio').textContent = details.bio || 'Complete your profile to help your story journey feel like home.'; $('#profile-location').textContent = [details.region, details.country].filter(Boolean).join(' · '); $('#profile-avatar').innerHTML = avatar ? `<img src="${image(avatar)}" alt="">` : esc((details.displayName || user.username || 'A')[0].toUpperCase()); if (details.coverUrl) $('#profile-cover').style.backgroundImage = `linear-gradient(120deg,#111b,#1118),url('${image(details.coverUrl)}')`; $('.creator-profile-tab')?.classList.toggle('hidden', !profile.creator); }
 async function loadProfile(refresh = false) { try { if (!state.profile && !refresh) { setSection('profile'); } if (state.profile && !refresh) { renderProfile(state.profile); setSection('profile'); loadProfile(true); return; } const profile = await api('/users/me/profile'); state.profile = profile; renderProfile(profile); setSection('profile'); } catch (error) { if (!state.profile) toast(error.message, 'error'); } }
-function openProfileEditor() { const user = state.profile?.user; const profile = user?.profile || {}; if (!user) return; $('#profile-display-name-input').value = profile.displayName || user.username || ''; $('#profile-username').value = user.username || ''; $('#profile-email').value = user.email || ''; $('#profile-edit-panel').classList.remove('hidden'); $('#profile-edit-panel').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+function openProfileEditor() { const user = state.profile?.user; const profile = user?.profile || {}; if (!user) return; $('#profile-display-name-input').value = profile.displayName || user.username || ''; $('#profile-username').value = user.username \vert{}\vert{} ''; $('#profile-email').value = user.email || ''; $('#profile-edit-panel').classList.remove('hidden'); $('#profile-edit-panel').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 
 async function loadNotifications() { try { const result = await api('/notifications/me?limit=50'); $('#notification-list').innerHTML = (result.notifications || []).map(item => `<article class="notification-item ${item.read ? '' : 'notification-unread'}"><span class="notification-item-icon">✧</span><div class="notification-item-content"><strong>${esc(item.title)}</strong><p>${esc(item.message || '')}</p><time>${new Date(item.createdAt).toLocaleString()}</time></div><div class="notification-item-actions"><button class="text-button" data-read-notification="${esc(item._id)}">Read</button></div></article>`).join('') || '<div class="notification-empty"><strong>No new notifications</strong></div>'; } catch (error) { toast(error.message, 'error'); } }
 async function refreshNotificationBadge() { try { const result = await api('/notifications/me/unread-count'); const badge = $('#notification-badge'); badge.textContent = result.unreadCount || 0; badge.classList.toggle('hidden', !result.unreadCount); } catch {} }
@@ -394,13 +393,33 @@ async function saveProfile(event) {
   } catch (error) { toast(error.message, 'error'); } 
 }
 
-async function searchLibrary(event) { event.preventDefault(); const query = $('#library-search-input').value.trim(); if (query.length < 2) return; try { const result = await api(`/search/global?q=${encodeURIComponent(query)}&type=series&limit=50`); $('#search-results').innerHTML = (result.series?.data || []).map(card).join('') || '<div class="empty-state">No stories matched your search.</div>'; } catch (error) { toast(error.message, 'error'); } }
+// FIX: Search library and Episodes target fixes
+async function searchLibrary(event) { 
+  event.preventDefault(); 
+  const targetContainer = event.currentTarget.id === 'search-form' ? '#series-grid' : '#search-results';
+  const input = event.currentTarget.querySelector('input');
+  const query = input.value.trim(); 
+  if (query.length < 2) return toast('Enter at least two characters', 'error'); 
+  try { 
+    const result = await api(`/search/global?q=${encodeURIComponent(query)}&type=series&limit=50`); 
+    $(targetContainer).innerHTML = (result.series?.data || []).map(card).join('') || '<div class="empty-state">No stories matched your search.</div>'; 
+  } catch (error) { toast(error.message, 'error'); } 
+}
 
-async function searchEpisodes(event) { event.preventDefault(); const input = event.currentTarget.querySelector('input'); const query = input.value.trim(); if (query.length < 2) return toast('Enter at least two characters', 'error'); try { const result = await api(`/search/global?q=${encodeURIComponent(query)}&type=episodes&limit=50`); const target = event.currentTarget.id === 'search-form' ? '#series-grid' : '#search-results'; $(target).innerHTML = (result.episodes?.data || []).map(episodeCard).join('') || '<div class="empty-state">No episodes matched your search.</div>'; } catch (error) { toast(error.message, 'error'); } }
+async function searchEpisodes(event) { 
+  event.preventDefault(); 
+  const targetContainer = event.currentTarget.id === 'search-form' ? '#series-grid' : '#search-results';
+  const input = event.currentTarget.querySelector('input'); 
+  const query = input.value.trim(); 
+  if (query.length < 2) return toast('Enter at least two characters', 'error'); 
+  try { 
+    const result = await api(`/search/global?q=${encodeURIComponent(query)}&type=episodes&limit=50`); 
+    $(targetContainer).innerHTML = (result.episodes?.data || []).map(episodeCard).join('') || '<div class="empty-state">No episodes matched your search.</div>'; 
+  } catch (error) { toast(error.message, 'error'); } 
+}
 
 async function loadTrending() { try { const result = await api('/search/trending'); $('#trending-list').innerHTML = (result.trending || []).map(episodeCard).join('') || '<div class="empty-state">No trending episodes yet.</div>'; } catch (error) { toast(error.message, 'error'); } }
 
-// FIX: Continue list safely filters
 async function loadContinue() { 
   try { 
     const result = await api('/users/history/watch?limit=50'); 
@@ -419,7 +438,7 @@ async function loadFavorites() {
 
 async function toggleFavorite() { if (!state.currentSeries) return toast('Open a story first', 'error'); try { const result = await api(`/favorites/${state.currentSeries._id}/toggle`, { method: 'POST' }); toast(result.saved ? 'Added to favorites' : 'Removed from favorites', 'success'); } catch (error) { toast(error.message, 'error'); } }
 
-function loadSettings() { const settings = JSON.parse(localStorage.getItem('afrostory-settings') || '{}'); $('#settings-language').value = settings.language || 'en'; $('#settings-notifications').checked = settings.notifications !== false; }
+function loadSettings() { const settings = JSON.parse(localStorage.getItem('afrostory-settings') || '{}'); $('#settings-language').value = settings.language \vert{}\vert{} 'en'; $('#settings-notifications').checked = settings.notifications !== false; }
 function saveSettings(event) { event.preventDefault(); localStorage.setItem('afrostory-settings', JSON.stringify({ language: $('#settings-language').value, notifications: $('#settings-notifications').checked })); toast('Settings saved', 'success'); }
 
 // ============================================================================
@@ -461,7 +480,7 @@ document.addEventListener('click', async event => {
   if (event.target.closest('[data-action="save-current"]')) toggleFavorite(); 
 
   const tab = event.target.closest('[data-profile-tab]'); 
-  if (tab) { $$('.profile-tab').forEach(item => item.classList.toggle('active', item === tab)); $$('.profile-panel').forEach(panel => panel.classList.toggle('hidden', panel.id !== `profile-panel-${tab.dataset.profileTab}`)); } 
+  if (tab) { $$('.profile-tab').forEach(item => item.classList.toggle('active', item === tab));$$('.profile-panel').forEach(panel => panel.classList.toggle('hidden', panel.id !== `profile-panel-${tab.dataset.profileTab}`)); } 
 
   const packageButton = event.target.closest('[data-package]'); 
   if (packageButton) { try { const result = await api('/payment/initialize-transaction', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ packageKey: packageButton.dataset.package }) }); window.location.href = result.authorizationUrl; } catch (error) { toast(error.message, 'error'); } } 
@@ -490,20 +509,16 @@ document.addEventListener('click', async event => {
 
 $('#upload-form')?.addEventListener('submit', submitUpload);
 $('#series-form')?.addEventListener('submit', submitSeries);
+
+// FIX: Split event listeners so Discover page searches Episodes, Library page searches Series
 $('#search-form')?.addEventListener('submit', searchEpisodes); 
-$('#library-search-form')?.addEventListener('submit', searchEpisodes);
+$('#library-search-form')?.addEventListener('submit', searchLibrary);
+
 $('#profile-form')?.addEventListener('submit', saveProfile);
 $('#settings-form')?.addEventListener('submit', saveSettings);
 $('#comment-form')?.addEventListener('submit', async event => { event.preventDefault(); const input = $('#comment-input'); const submit = $('#comment-submit'); if (!state.currentEpisode) return toast('Open an episode before commenting', 'error'); if (!input.value.trim()) return toast('Write a comment first', 'error'); submit.disabled = true; submit.textContent = 'Posting...'; try { await api('/comments/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ episodeId: state.currentEpisode._id, text: input.value.trim() }) }); input.value = ''; await loadComments(state.currentEpisode._id); toast('Comment posted', 'success'); } catch (error) { toast(error.message, 'error'); } finally { submit.disabled = false; submit.textContent = 'Post'; } });
 
-$('#become-creator-form')?.addEventListener('submit', async (event) => { 
-  event.preventDefault(); 
-  const form = event.target; const brandName = form.querySelector('[name="brandName"]').value.trim(); const bio = form.querySelector('[name="bio"]').value.trim(); const submitBtn = form.querySelector('button[type="submit"]'); 
-  if (!brandName) return toast('Brand name is required', 'error'); 
-  submitBtn.disabled = true; submitBtn.textContent = 'Creating...'; 
-  try { 
-    await api('/creators/become-creator', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ brandName, bio }) }); 
-    state.user.role = 'CREATOR'; $$('.creator-only').forEach(el => el.classList.remove('hidden')); $('#become-creator-modal').classList.add('hidden'); toast('Welcome to Creator Studio!', 'success'); setSection('creator'); await loadCreator(); 
+$('#become-creator-form')?.addEventListener('submit', async (event) => {    event.preventDefault();    const form = event.target; const brandName = form.querySelector('[name="brandName"]').value.trim(); const bio = form.querySelector('[name="bio"]').value.trim(); const submitBtn = form.querySelector('button[type="submit"]');    if (!brandName) return toast('Brand name is required', 'error');    submitBtn.disabled = true; submitBtn.textContent = 'Creating...';    try {      await api('/creators/become-creator', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ brandName, bio }) });      state.user.role = 'CREATOR'; $$('.creator-only').forEach(el => el.classList.remove('hidden'));$('#become-creator-modal').classList.add('hidden'); toast('Welcome to Creator Studio!', 'success'); setSection('creator'); await loadCreator(); 
   } catch (error) { toast(error.message, 'error'); } finally { submitBtn.disabled = false; submitBtn.textContent = 'Start creating'; } 
 });
 
@@ -530,8 +545,7 @@ async function boot() {
   try {
     state.user = await api('/auth/me');
     renderHeaderUser(state.user);
-    if (state.user?.role && ['CREATOR', 'ADMIN'].includes(state.user.role)) $$('.creator-only').forEach(el => el.classList.remove('hidden'));     
-    if (state.user?.role === 'ADMIN') $$('.admin-only').forEach(el => el.classList.remove('hidden'));
+    if (state.user?.role && ['CREATOR', 'ADMIN'].includes(state.user.role)) $$('.creator-only').forEach(el => el.classList.remove('hidden'));          if (state.user?.role === 'ADMIN') $$('.admin-only').forEach(el => el.classList.remove('hidden'));
     
     // Using independent catches so one failure doesn't break the whole app
     ensureClassificationControls();
