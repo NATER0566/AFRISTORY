@@ -72,22 +72,78 @@
       .modal-header h2 { font-size: 22px !important; margin: 0 0 16px !important; }
       
       /* ==============================================================
-         MODERN DYNAMIC VIDEO PLAYER (Fixes cutoffs & aspect ratio)
+         TIKTOK STYLE FEED CSS 
       ============================================================== */
-      .player-wrap { 
-        position: relative; z-index: 2; width: 100%; 
-        background-color: #000; border-radius: 12px; overflow: hidden; 
-        box-shadow: 0 8px 30px rgba(0,0,0,0.5); 
-        display: flex; justify-content: center; align-items: center; 
-        min-height: 30vh; /* Keeps structure before video loads */
+      .tiktok-feed {
+        height: calc(100vh - 80px); /* Adjust based on topbar height */
+        width: 100%;
+        overflow-y: scroll;
+        scroll-snap-type: y mandatory;
+        scroll-behavior: smooth;
+        background-color: #000;
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
       }
-      .player-wrap video { 
-        width: 100%; height: auto; max-height: 75vh; 
-        object-fit: contain; /* Handles Portrait and Landscape perfectly */
-        background-color: transparent; outline: none; display: block;
+      
+      @media(max-width: 800px) {
+        .tiktok-feed {
+            height: calc(100vh - 80px - 80px); /* Adjust based on topbar + bottomnav */
+        }
       }
-      .player-lock { z-index: 3; }
-      .video-error { opacity: 0.5; }
+
+      .feed-video-card {
+        height: 100%;
+        width: 100%;
+        scroll-snap-align: start; 
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #000;
+      }
+
+      .feed-video-card video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain; /* Set to cover if you want full screen no black bars */
+        background-color: transparent;
+        outline: none;
+        display: block;
+      }
+
+      .feed-overlay {
+        position: absolute;
+        bottom: 30px;
+        left: 20px;
+        right: 80px; 
+        color: #fff;
+        z-index: 10;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+      }
+
+      .feed-sidebar {
+        position: absolute;
+        bottom: 40px;
+        right: 15px;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .feed-lock-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0,0,0,0.85);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 20;
+        text-align: center;
+        padding: 20px;
+        backdrop-filter: blur(8px);
+      }
 
       @media(max-width:700px) {
         .discover-filters { flex-wrap: wrap; }
@@ -205,7 +261,31 @@
     <main class="main-content">
       <div class="discover-filters"><label>Genre<select id="genre-filter"><option value="">All genres</option><option>Action</option><option>Drama</option><option>Comedy</option><option>Romance</option><option>Thriller</option><option>Sci-Fi</option><option>Horror</option><option>Documentary</option><option>Afro-Futurism</option><option>Folklore</option><option>Urban Drama</option><option>Animation</option><option>Historical</option><option>Adventure</option><option>Mystery</option><option>Crime</option><option>Family</option><option>Faith &amp; Inspirational</option><option>Musical</option><option>Biography</option><option>Short Film</option></select></label><label>Sort<select id="sort-filter"><option value="trending">Trending</option><option value="newest">Newest</option><option value="rating">Top rated</option></select></label></div>
       <section id="section-discover" class="app-section"><div class="section-heading hero-heading"><div><p class="eyebrow">THE HOME OF AFRICAN STORIES</p><h1>Find your next<br><em>favorite world.</em></h1></div><form id="search-form" class="search-box"><span>⌕</span><input id="search-input" type="search" placeholder="Search series, creators..." aria-label="Search"><button type="submit">Search</button></form></div><div id="featured-series" class="featured-strip"></div><div class="section-heading"><div><p class="eyebrow">CURATED FOR YOU</p><h2>Trending now</h2></div><button class="text-button" data-action="refresh-discover">View all ↗</button></div><div id="series-grid" class="content-grid"></div><div class="section-heading compact-heading"><div><p class="eyebrow">VOICES TO KNOW</p><h2>Top creators</h2></div></div><div id="creator-grid" class="creator-grid"></div></section>
-      <section id="section-watch" class="app-section hidden"><div class="section-heading"><div><p class="eyebrow">NOW PLAYING</p><h2 id="watch-title">Choose an episode</h2></div><button class="button button-quiet" data-section="discover">Back to discover</button></div><div class="watch-layout"><div class="player-wrap"><video id="video-player" controls playsinline poster="" aria-label="AfroStory video player"></video><div id="player-lock" class="player-lock hidden"><span class="lock-icon">◈</span><h3>This story is waiting for you.</h3><p>Unlock this episode to start watching.</p><button class="button button-accent" data-action="unlock-current">Unlock episode</button></div></div><aside class="episode-panel"><div id="watch-series-meta" class="watch-series-meta"></div><div id="episode-list" class="episode-list"></div></aside></div><div id="recommended-episodes-section" class="section-heading compact-heading"><h2>Trending Now</h2><div id="recommended-episodes" class="content-grid"></div></div><div class="comments-section"><div class="section-heading compact-heading"><h2>Join the conversation</h2></div><form id="comment-form" class="comment-form"><input id="comment-input" maxlength="1000" placeholder="Choose an episode to join the conversation" aria-label="Write a comment"><button id="comment-submit" class="button button-primary" type="submit">Post</button></form><div id="comments-list"></div></div></section>
+      
+      <!-- UPDATED WATCH SECTION (TIKTOK STYLE) -->
+      <section id="section-watch" class="app-section hidden" style="padding: 0; position: relative;">
+        <!-- Infinite Scroll Feed Container -->
+        <div id="tiktok-feed" class="tiktok-feed">
+          <!-- Videos will be injected here by JavaScript -->
+        </div>
+
+        <!-- Comments Bottom Sheet -->
+        <div id="comments-sheet" class="bottom-sheet-overlay hidden" style="z-index: 99999;">
+          <div class="bottom-sheet" style="height: 65vh; overflow-y: auto; position: relative;">
+            <div class="sheet-handle"></div>
+            <button class="modal-close" style="position:absolute; right:20px; top:15px; background:none; border:none; color:#fff; font-size:24px; cursor:pointer;" onclick="document.getElementById('comments-sheet').classList.add('hidden')">×</button>
+            <div class="section-heading compact-heading">
+              <h2>Comments</h2>
+            </div>
+            <div id="comments-list" style="margin-bottom: 70px;"></div>
+            <form id="comment-form" class="comment-form" style="position: fixed; bottom: 0; left: 0; right: 0; background: #111; padding: 15px; border-top: 1px solid #333;">
+              <input id="comment-input" maxlength="1000" placeholder="Share a thought..." aria-label="Write a comment" style="width:calc(100% - 90px);">
+              <button id="comment-submit" class="button button-primary" type="submit">Post</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
       <section id="section-wallet" class="app-section hidden"><div class="section-heading"><div><p class="eyebrow">YOUR STORY ECONOMY</p><h1>Wallet</h1></div><div><button class="button button-primary" data-action="buy-coins">Get coins <span>↗</span></button><button class="button button-accent" data-action="buy-pass">Get a pass</button></div></div><div class="wallet-overview"><div class="balance-card"><span class="eyebrow">AVAILABLE COINS</span><strong id="wallet-balance">0</strong><span class="balance-caption">Use coins to unlock premium episodes.</span></div><div class="wallet-stat"><span class="eyebrow">TOTAL EARNED</span><strong id="wallet-earned">0</strong><span>Creator earnings</span></div><div class="wallet-stat"><span class="eyebrow">AD UNLOCKS</span><strong id="ad-balance">3</strong><span>Available today</span></div></div><div class="section-heading compact-heading"><h2>Recent transactions</h2></div><div id="transactions-list" class="data-list"></div></section>
       <section id="section-rewards" class="app-section hidden"><div class="rewards-hero"><div><p class="eyebrow">AFROSTORY REWARDS</p><h1>Return. Discover. Earn.</h1><p class="muted">Complete activities on AfroStory and earn coins.</p></div><div class="rewards-balance"><span class="eyebrow">CURRENT BALANCE</span><strong id="rewards-balance">0</strong><span>story coins</span><div class="reward-streak"><b id="reward-current-streak">0</b> day streak <small>Best <span id="reward-best-streak">0</span></small></div></div></div><div id="daily-reward-card" class="daily-reward-card"></div><div class="section-heading compact-heading"><div><p class="eyebrow">SOCIAL MEDIA REWARDS</p><h2>Support AfroStory</h2><p class="muted">Support AfroStory on social media and earn bonus coins.</p></div></div><div id="social-rewards-grid" class="rewards-grid"></div><div class="section-heading compact-heading"><div><p class="eyebrow">EARN COINS</p><h2>Available missions</h2></div></div><div id="rewards-grid" class="rewards-grid"></div><div class="section-heading compact-heading"><div><p class="eyebrow">REWARD HISTORY</p><h2>Recent activity</h2></div></div><div id="rewards-history" class="data-list"></div></section>
       <section id="section-creator" class="app-section hidden"><div class="section-heading"><div><p class="eyebrow">MAKE YOUR MARK</p><h1>Creator studio</h1></div><button class="button button-primary" data-action="new-series">New series <span>+</span></button></div><div id="creator-stats" class="stats-row"></div><div class="section-heading compact-heading"><h2>Your series</h2><button class="button button-accent" data-action="open-upload">Upload episode</button></div><div id="my-series-grid" class="content-grid"></div></section>
