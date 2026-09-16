@@ -72,18 +72,19 @@
       .modal-header h2 { font-size: 22px !important; margin: 0 0 16px !important; }
       
       /* ==============================================================
-         MODERN DYNAMIC VIDEO PLAYER
+         MODERN DYNAMIC VIDEO PLAYER (Fixes cutoffs & aspect ratio)
       ============================================================== */
       .player-wrap { 
         position: relative; z-index: 2; width: 100%; 
         background-color: #000; border-radius: 12px; overflow: hidden; 
         box-shadow: 0 8px 30px rgba(0,0,0,0.5); 
         display: flex; justify-content: center; align-items: center; 
+        min-height: 30vh; /* Keeps structure before video loads */
       }
       .player-wrap video { 
-        width: 100%; height: auto; max-height: 70vh; 
+        width: 100%; height: auto; max-height: 75vh; 
         object-fit: contain; /* Handles Portrait and Landscape perfectly */
-        background-color: transparent; outline: none; 
+        background-color: transparent; outline: none; display: block;
       }
       .player-lock { z-index: 3; }
       .video-error { opacity: 0.5; }
@@ -170,7 +171,6 @@
         <span class="header-icon">&#128276;</span><i id="notification-badge" class="notification-badge hidden">0</i>
       </button>
       
-      <!-- HEADER AVATAR: Perfect Circle with Animated Border -->
       <button class="header-profile-btn" data-action="profile" aria-label="Open your profile" title="Profile">
         <div class="header-avatar-container">
             <span id="user-avatar" class="header-avatar-img" aria-hidden="true"><span id="user-initial" class="profile-initial">A</span></span>
