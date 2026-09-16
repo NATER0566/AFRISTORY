@@ -41,7 +41,7 @@
       .profile-cover{background:linear-gradient(120deg,#2b2114,#171717 52%,#222);border:1px solid #343434;min-height:230px;padding:28px 32px;position:relative;overflow:hidden}.profile-cover[style]{background-position:center;background-size:cover}.profile-header{align-items:flex-end;display:flex;gap:22px;min-height:174px}.profile-avatar{align-items:center;background:#d4a017;color:#111;display:flex;flex:0 0 104px;font-family:Georgia,serif;font-size:48px;height:104px;justify-content:center;overflow:hidden;border-radius:50%;}.profile-avatar img{height:100%;object-fit:cover;width:100%}.profile-identity{max-width:650px}.profile-identity h1{font-size:clamp(30px,4vw,52px)}.profile-handle{margin:4px 0 10px}.profile-bio{color:#ddd;margin:0}.profile-location{color:#d4a017;font-size:13px;margin-top:10px}.profile-actions{display:flex;gap:10px;margin-left:auto}.profile-tabs{border-bottom:1px solid #343434;display:flex;gap:24px;overflow:auto;padding:0 4px}.profile-tab{background:none;border:0;border-bottom:2px solid transparent;color:#999;padding:16px 4px;white-space:nowrap}.profile-tab.active,.profile-tab:hover{border-color:#d4a017;color:#f5f5f5}.profile-panel{padding-top:30px}.profile-summary-grid{display:grid;gap:30px;grid-template-columns:1fr 1fr}.profile-section-heading{align-items:end;display:flex;justify-content:space-between;margin:28px 0 18px}.profile-section-heading h2{font-size:24px}.profile-list{display:grid;gap:10px}.profile-list-row{align-items:center;background:#1b1b1b;border:1px solid #343434;display:flex;gap:14px;padding:12px}.profile-list-row strong{display:block}.profile-list-row p{color:#999;font-size:13px;margin:2px 0 0}.profile-list-row .progress{background:#343434;height:4px;margin-top:8px;width:180px}.profile-list-row .progress i{background:#d4a017;display:block;height:100%}.profile-story-grid{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-story-grid .series-card{min-width:0}.interest-list{display:flex;flex-wrap:wrap;gap:8px}.interest-chip{background:#242424;border:1px solid #4a4a4a;color:#f5f5f5;padding:7px 11px}.profile-about{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr));max-width:680px}.profile-about div{background:#1b1b1b;border-bottom:1px solid #343434;padding:14px}.profile-about span{color:#999;display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase}.profile-edit-panel{border-top:1px solid #343434;margin-top:30px;padding-top:24px}.profile-edit-grid{display:grid;gap:14px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-form label{color:#bbb;display:grid;font-size:12px;gap:6px}.profile-form input,.profile-form textarea,.profile-form select{background:#111;border:1px solid #444;color:#f5f5f5;padding:11px}.profile-form select[multiple]{min-height:130px}.profile-privacy{display:flex;flex-wrap:wrap;gap:18px;margin:16px 0}.profile-privacy label{display:flex;display:flex;gap:8px}.profile-empty{border:1px dashed #444;color:#999;padding:24px}.profile-empty button{margin-top:12px}@media(max-width:700px){.profile-cover{padding:22px 18px}.profile-header{align-items:flex-start;flex-wrap:wrap}.profile-avatar{flex-basis:78px;font-size:36px;height:78px}.profile-actions{margin-left:0;width:100%}.profile-actions .button{flex:1}.profile-summary-grid,.profile-about,.profile-edit-grid{grid-template-columns:1fr}.profile-tabs{gap:16px}.profile-story-grid{grid-template-columns:1fr 1fr}}
       
       /* ==============================================================
-         1. FIXED HEADER PROFILE DESIGN (Strict Single Circle, No Chevron)
+         1. FIXED HEADER PROFILE DESIGN (Rounded Square Avatar)
       ============================================================== */
       .topbar {
         display: flex; justify-content: space-between; align-items: center;
@@ -59,31 +59,28 @@
       .header-icon { font-size: 19px; line-height: 1; }
       .notification-button .notification-badge { position: absolute; right: -4px; top: -3px; background: #d4a017; color: #111; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: bold; }
       
-      /* STRICT HEADER AVATAR OVERRIDES - Disconnects from main profile page CSS */
+      /* STRICT HEADER AVATAR OVERRIDES - Rounded Square Design */
       .header-profile-btn {
         display: flex !important; align-items: center !important; justify-content: center !important;
         background: transparent !important; border: none !important; padding: 0 !important; margin: 0 !important;
-        cursor: pointer !important; width: 44px !important; height: 44px !important;
+        cursor: pointer !important; width: 42px !important; height: 42px !important;
+        transition: transform .2s ease !important;
       }
+      .header-profile-btn:hover { transform: translateY(-2px); }
       
       .header-avatar-container { 
-        position: relative; width: 44px; height: 44px; display: block; 
+        position: relative; width: 42px; height: 42px; display: block; 
       }
       
       .header-avatar-img {
         display: flex !important; align-items: center !important; justify-content: center !important;
-        width: 100% !important; height: 100% !important; border-radius: 50% !important;
+        width: 100% !important; height: 100% !important; 
+        border-radius: 12px !important; /* ROUNDED SQUARE */
         background: #d4a017 !important; color: #111 !important; font-family: Georgia, serif !important;
         font-weight: 700 !important; font-size: 20px !important; overflow: hidden !important;
-        margin: 0 !important; padding: 0 !important; border: none !important;
+        margin: 0 !important; padding: 0 !important; border: 1px solid #333 !important;
       }
       .header-avatar-img img { width: 100% !important; height: 100% !important; object-fit: cover !important; }
-      
-      .header-online-dot {
-        position: absolute; bottom: 0; right: 0; width: 14px; height: 14px;
-        background-color: #2ecc71; border: 2.5px solid #111; border-radius: 50%;
-        z-index: 2;
-      }
       
       .profile-initial { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
 
@@ -198,11 +195,10 @@
         <span class="header-icon">&#128276;</span><i id="notification-badge" class="notification-badge hidden">0</i>
       </button>
       
-      <!-- STRICT SINGLE AVATAR HEADER (NO CHEVRON) -->
+      <!-- STRICT ROUNDED SQUARE AVATAR HEADER -->
       <button class="header-profile-btn" data-action="profile" aria-label="Open your profile" title="Profile">
         <div class="header-avatar-container">
             <span id="user-avatar" class="header-avatar-img" aria-hidden="true"><span id="user-initial" class="profile-initial">A</span></span>
-            <div class="header-online-dot"></div>
         </div>
       </button>
 
