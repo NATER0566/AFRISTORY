@@ -1,4 +1,3 @@
-
 const API = '/api';
 const state = { user: null, profile: null, rewards: null, series: [], currentSeries: null, currentEpisode: null, hls: null, recommendedEpisodes: [] };
 // Performance optimization: Request caching
@@ -106,7 +105,8 @@ function setSection(name) {
   $('#mobile-more-sheet')?.classList.add('hidden');
   
   location.hash = name; 
-  if (name === 'wallet') loadWallet(); if (name === 'rewards') loadRewards(); if (name === 'creator') loadCreator(); if (name === 'admin') loadAdmin(); if (name === 'history') loadHistory(); if (name === 'continue') loadContinue(); if (name === 'favorites') loadFavorites(); if (name === 'trending') loadTrending(); if (name === 'settings') loadSettings(); if (name === 'watch') loadWatchRecommended(); 
+  // FIX: Removed loadWatchRecommended() from this line to stop the innerHTML null crash.
+  if (name === 'wallet') loadWallet(); if (name === 'rewards') loadRewards(); if (name === 'creator') loadCreator(); if (name === 'admin') loadAdmin(); if (name === 'history') loadHistory(); if (name === 'continue') loadContinue(); if (name === 'favorites') loadFavorites(); if (name === 'trending') loadTrending(); if (name === 'settings') loadSettings(); 
 }
 
 const episodeGenres = ['Action', 'Drama', 'Comedy', 'Romance', 'Thriller', 'Horror', 'Adventure', 'Family', 'Historical', 'Traditional', 'Documentary', 'Educational', 'Faith', 'Mystery', 'Other'];
@@ -188,7 +188,7 @@ async function openSeries(id) {
     }
 }
 
-// The new feed generator
+// The new feed generator with 30-second preview
 async function openEpisode(id) {
   try {
     setSection('watch');
@@ -220,14 +220,14 @@ async function openEpisode(id) {
       card.className = 'feed-video-card';
       card.dataset.episode = JSON.stringify(episode); // Store data for observer
 
-      // Generate the lock screen if they don't have access
+      // Generate the lock screen but KEEP IT HIDDEN initially
       let lockScreen = '';
       if (!episode.hasAccess) {
          lockScreen = `
-          <div class="feed-lock-overlay">
+          <div class="feed-lock-overlay hidden" id="lock-${episode._id}">
             <span class="lock-icon" style="font-size:40px;color:#d4a017;">◈</span>
             <h3 style="color:#fff; margin-top:15px;">Premium Story</h3>
-            <p style="color:#ccc; margin-bottom: 20px;">Unlock this episode to start watching.</p>
+            <p style="color:#ccc; margin-bottom: 20px;">You've reached the end of the free preview.</p>
             <button class="button button-accent" data-action="unlock-current">Unlock episode</button>
           </div>
          `;
@@ -253,8 +253,28 @@ async function openEpisode(id) {
         </div>
       `;
 
-      // Track watch progress
       const videoEl = card.querySelector('video');
+
+      // --- 30 SECOND PREVIEW LOGIC ---
+      if (!episode.hasAccess) {
+         videoEl.addEventListener('timeupdate', () => {
+             if (videoEl.currentTime >= 30) {
+                 videoEl.pause();
+                 videoEl.currentTime = 30; // Lock it exactly at 30 seconds
+                 videoEl.removeAttribute('controls'); // Remove controls so they can't skip past the lock
+                 card.querySelector(`#lock-${episode._id}`).classList.remove('hidden');
+             }
+         });
+         
+         // Prevent the user from manually skipping past 30 seconds during the preview
+         videoEl.addEventListener('seeking', () => {
+             if (videoEl.currentTime > 30) {
+                 videoEl.currentTime = 30;
+             }
+         });
+      }
+
+      // Track watch progress
       videoEl.addEventListener('pause', () => saveProgressFeed(episode, videoEl));
       videoEl.addEventListener('ended', () => saveProgressFeed(episode, videoEl, true));
 
@@ -266,7 +286,7 @@ async function openEpisode(id) {
 
   } catch (error) {
     console.error('Failed to open feed:', error);
-    toast(error.message, 'error');
+    toast('Failed to load feed', 'error');
   }
 }
 
@@ -289,7 +309,89 @@ async function saveProgressFeed(episode, video, completed = false) {
 
 // ============================================================================
 
-async function unlockEpisode() { if (!state.currentEpisode) return; try { const hasActiveSubscription = state.user?.subscriptionExpiresAt && new Date(state.user.subscriptionExpiresAt) > new Date(); if (hasActiveSubscription) { toast('✓ This episode is included in your VIP subscription!', 'success'); return; } const hasAds = state.currentEpisode.adUnlockable && window.AfroStoryAds?.isEnabled; const userAdBalance = state.user?.adUnlocksRemaining || 0; const canUseAd = hasAds && userAdBalance > 0; let choice = 'coins'; if (canUseAd) { if (window.Swal) { const result = await Swal.fire({ title: '🎬 Unlock this episode', html: `<div style="text-align:left; font-size:14px;"><p><strong>📺 Watch Ad (Free)</strong></p><p style="color:#76a86b; font-weight:bold;">${userAdBalance} ad unlock${userAdBalance !== 1 ? 's' : ''} available today</p><hr style="border-color:#343434; margin:15px 0;"><p><strong>💰 Use Coins</strong></p><p style="color:#d4a017; font-weight:bold;">${state.currentEpisode.coinCost || 10} coins</p></div>`, showDenyButton: true, showCancelButton: true, confirmButtonText: '📺 Watch Ad Now', denyButtonText: `💰 Use ${state.currentEpisode.coinCost || 10} Coins`, cancelButtonText: 'Cancel', confirmButtonColor: '#76a86b', denyButtonColor: '#d4a017', background: '#1b1b1b', color: '#f5f5f5', allowOutsideClick: false, allowEscapeKey: false }); if (result.isDismissed) return; choice = result.isDenied ? 'coins' : 'ad'; } } else { if (window.Swal) { const result = await Swal.fire({ title: '🎬 Unlock this episode', html: `<p style="font-size:15px; line-height:1.6;"><strong style="color:#d4a017;">💰 Only coins available now</strong></p><p style="font-size:13px; color:#999; margin-top:10px;">Ad unlocks are coming soon!</p><p style="font-size:15px; margin-top:15px;">Use <strong style="color:#d4a017;">${state.currentEpisode.coinCost || 10} coins</strong> to unlock and continue</p>`, showCancelButton: true, confirmButtonText: `💰 Unlock with ${state.currentEpisode.coinCost || 10} Coins`, cancelButtonText: 'Cancel', confirmButtonColor: '#d4a017', background: '#1b1b1b', color: '#f5f5f5', allowOutsideClick: false, allowEscapeKey: false }); if (result.isDismissed) return; choice = 'coins'; } } if (choice === 'ad') await window.AfroStoryAds.showRewarded(state.currentEpisode._id); else await api('/wallet/unlock-episode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ episodeId: state.currentEpisode._id }) }); await openEpisode(state.currentEpisode._id); toast('✨ Episode unlocked! Enjoy the story!', 'success'); } catch (error) { toast(error.message, 'error'); } }
+// Updated Unlock logic to resume video playback immediately
+async function unlockEpisode() { 
+  if (!state.currentEpisode) return; 
+  try { 
+    const hasActiveSubscription = state.user?.subscriptionExpiresAt && new Date(state.user.subscriptionExpiresAt) > new Date(); 
+    if (hasActiveSubscription) { 
+      toast('✓ This episode is included in your VIP subscription!', 'success'); 
+      return; 
+    } 
+    
+    const hasAds = state.currentEpisode.adUnlockable && window.AfroStoryAds?.isEnabled; 
+    const userAdBalance = state.user?.adUnlocksRemaining || 0; 
+    const canUseAd = hasAds && userAdBalance > 0; 
+    let choice = 'coins'; 
+    
+    if (canUseAd) { 
+      if (window.Swal) { 
+        const result = await Swal.fire({ 
+          title: '🎬 Unlock this episode', 
+          html: `<div style="text-align:left; font-size:14px;"><p><strong>📺 Watch Ad (Free)</strong></p><p style="color:#76a86b; font-weight:bold;">${userAdBalance} ad unlock${userAdBalance !== 1 ? 's' : ''} available today</p><hr style="border-color:#343434; margin:15px 0;"><p><strong>💰 Use Coins</strong></p><p style="color:#d4a017; font-weight:bold;">${state.currentEpisode.coinCost || 10} coins</p></div>`, 
+          showDenyButton: true, 
+          showCancelButton: true, 
+          confirmButtonText: '📺 Watch Ad Now', 
+          denyButtonText: `💰 Use ${state.currentEpisode.coinCost || 10} Coins`, 
+          cancelButtonText: 'Cancel', 
+          confirmButtonColor: '#76a86b', 
+          denyButtonColor: '#d4a017', 
+          background: '#1b1b1b', 
+          color: '#f5f5f5', 
+          allowOutsideClick: false, 
+          allowEscapeKey: false 
+        }); 
+        if (result.isDismissed) return; 
+        choice = result.isDenied ? 'coins' : 'ad'; 
+      } 
+    } else { 
+      if (window.Swal) { 
+        const result = await Swal.fire({ 
+          title: '🎬 Unlock this episode', 
+          html: `<p style="font-size:15px; line-height:1.6;"><strong style="color:#d4a017;">💰 Only coins available now</strong></p><p style="font-size:13px; color:#999; margin-top:10px;">Ad unlocks are coming soon!</p><p style="font-size:15px; margin-top:15px;">Use <strong style="color:#d4a017;">${state.currentEpisode.coinCost || 10} coins</strong> to unlock and continue</p>`, 
+          showCancelButton: true, 
+          confirmButtonText: `💰 Unlock with ${state.currentEpisode.coinCost || 10} Coins`, 
+          cancelButtonText: 'Cancel', 
+          confirmButtonColor: '#d4a017', 
+          background: '#1b1b1b', 
+          color: '#f5f5f5', 
+          allowOutsideClick: false, 
+          allowEscapeKey: false 
+        }); 
+        if (result.isDismissed) return; 
+        choice = 'coins'; 
+      } 
+    } 
+    
+    if (choice === 'ad') {
+        await window.AfroStoryAds.showRewarded(state.currentEpisode._id); 
+    } else {
+        await api('/wallet/unlock-episode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ episodeId: state.currentEpisode._id }) }); 
+    }
+    
+    // Resume playback and hide lock immediately
+    state.currentEpisode.hasAccess = true;
+    const lockScreen = document.getElementById(`lock-${state.currentEpisode._id}`);
+    if (lockScreen) {
+      lockScreen.classList.add('hidden');
+      const videoEl = lockScreen.parentElement.querySelector('video');
+      if (videoEl) {
+          videoEl.setAttribute('controls', 'true');
+          // Remove the event listeners by replacing the node, then play
+          const newVideoEl = videoEl.cloneNode(true);
+          videoEl.parentNode.replaceChild(newVideoEl, videoEl);
+          newVideoEl.addEventListener('pause', () => saveProgressFeed(state.currentEpisode, newVideoEl));
+          newVideoEl.addEventListener('ended', () => saveProgressFeed(state.currentEpisode, newVideoEl, true));
+          newVideoEl.play();
+      }
+    }
+    
+    toast('✨ Episode unlocked! Enjoy the story!', 'success'); 
+  } catch (error) { 
+    toast(error.message, 'error'); 
+  } 
+}
+
 async function loadComments(id) { try { const result = await api(`/comments/episode/${id}?limit=50`); const render = comment => `<article class="comment"><span class="comment-meta">${esc(comment.userId?.username || 'Story lover')}</span><p>${esc(comment.text)}</p><button class="text-button" data-reply-comment="${esc(comment._id)}">Reply</button>${comment.replies?.length ? `<div class="comment-replies">${comment.replies.map(render).join('')}</div>` : ''}</article>`; $('#comments-list').innerHTML = (result.comments || []).map(render).join('') || '<p class="muted">Be the first to share a thought.</p>'; $('#comment-input').placeholder = 'Share what this story brought up for you...'; $('#comment-input').disabled = false; $('#comment-submit').disabled = false; } catch (error) { toast(error.message, 'error'); } }
 async function loadWallet() { try { const [wallet, transactions] = await Promise.all([api('/wallet/me/balance'), api('/wallet/me/transactions?limit=10')]); $('#wallet-balance').textContent = Number(wallet.storyCoins || 0).toLocaleString(); $('#wallet-earned').textContent = Number(wallet.totalEarned || 0).toLocaleString(); state.user.adUnlocksRemaining = wallet.adUnlocks || 0; const adBalanceEl = $('#ad-balance'); if (adBalanceEl) adBalanceEl.textContent = Math.max(0, wallet.adUnlocks || 0); if (adBalanceEl?.closest('.wallet-stat')) adBalanceEl.closest('.wallet-stat').style.display = 'block'; $('#transactions-list').innerHTML = (transactions.transactions || []).map(item => `<div class="data-row"><div><strong>${esc(item.description || item.type)}</strong><p>${new Date(item.createdAt).toLocaleDateString()}</p></div><span class="data-value">${esc(item.type === 'SPEND' ? '-' : '+')}${Number(item.amount || 0).toLocaleString()}</span></div>`).join('') || '<div class="empty-state">No transactions yet.</div>'; await window.AfroStoryAds.refresh(); } catch (error) { toast(error.message, 'error'); } }
 function renderRewardCard(reward) {
@@ -424,8 +526,7 @@ async function boot() {
   try {
     state.user = await api('/auth/me');
     renderHeaderUser(state.user);
-    if (['CREATOR', 'ADMIN'].includes(state.user.role)) $$('.creator-only').forEach(el => el.classList.remove('hidden'));     
-    if (state.user.role === 'ADMIN') $$('.admin-only').forEach(el => el.classList.remove('hidden'));
+    if (['CREATOR', 'ADMIN'].includes(state.user.role)) $$('.creator-only').forEach(el => el.classList.remove('hidden'));          if (state.user.role === 'ADMIN') $$('.admin-only').forEach(el => el.classList.remove('hidden'));
     ensureClassificationControls();
     await Promise.all([loadDiscover(), loadDiscoverEpisodes(), refreshNotificationBadge(), window.AfroStoryAds?.refresh()]);
     setupLazyLoading();
@@ -474,9 +575,9 @@ async function openHistoryEpisode(seriesId, episodeId) { try { const [series, ep
 function profileEmpty(message) { return `<div class="profile-empty">${esc(message)}</div>`; }
 function renderProfileStoryList(stories, target, emptyMessage) { $(target).innerHTML = stories?.length ? stories.map(card).join('') : profileEmpty(emptyMessage); }
 function renderProfileHistory(history, target) { $(target).innerHTML = history?.length ? history.map(item => `<div class="profile-list-row"><div><strong>${esc(item.seriesId?.title || 'Story')}</strong><p>${esc(item.episodeId?.title || 'Episode')} · ${new Date(item.updatedAt).toLocaleDateString()}</p><div class="progress"><i style="width:${Math.min(100, Number(item.watchedPercentage || 0))}%"></i></div></div><button class="text-button" data-history-episode="${esc(item.episodeId?._id)}" data-history-series="${esc(item.seriesId?._id)}">Continue</button><button class="text-button" data-remove-history="${esc(item._id)}">Remove</button></div>`).join('') : profileEmpty('You have not watched any stories yet.'); }
-function renderProfile(profile) { const user = profile.user || {}; const details = user.profile || {}; const avatar = details.avatarUrl || user.profileImage; $('#profile-display-name').textContent = details.displayName || user.username || 'Profile'; $('#profile-handle').textContent = `@${user.username || 'story-lover'}`; $('#profile-bio').textContent = details.bio || 'Complete your profile to help your story journey feel like home.'; $('#profile-location').textContent = [details.region, details.country].filter(Boolean).join(' · '); $('#profile-avatar').innerHTML = avatar ? `<img src="${image(avatar)}" alt="">` : esc((details.displayName || user.username || 'A')[0].toUpperCase()); if (details.coverUrl) $('#profile-cover').style.backgroundImage = `linear-gradient(120deg,#111b,#1118),url('${image(details.coverUrl)}')`; renderProfileHistory(profile.recentlyWatched, '#profile-recent'); renderProfileHistory(profile.recentlyWatched, '#profile-history'); renderProfileStoryList(profile.favorites, '#profile-saved', 'No saved stories yet. Explore Discover to find your next African story.'); renderProfileStoryList(profile.favorites, '#profile-watchlist', 'Your watchlist is empty.'); $('#profile-library').innerHTML = profile.library?.length ? profile.library.map(item => `<div class="profile-list-row"><div><strong>${esc(item.seriesId?.title || 'Story')}</strong><p>${esc(item.episodeId?.title || 'Episode')} · Unlocked ${new Date(item.unlockedAt).toLocaleDateString()}</p></div></div>`).join('') : profileEmpty('Your unlocked stories will appear here.'); const interests = [...(details.favoriteGenres || []), ...(details.favoriteCultures || []), ...(details.additionalLanguages || [])]; $('#profile-interests').innerHTML = interests.length ? interests.map(item => `<span class="interest-chip">${esc(item)}</span>`).join('') : profileEmpty('Choose genres, cultures, and languages to shape your discoveries.'); $('#profile-about').innerHTML = `<div><span>Account</span>${esc(details.displayName || user.username || '')}</div><div><span>Preferred language</span>${esc(details.preferredLanguage || 'English')}</div><div><span>Country</span>${esc(details.country || 'Not added')}</div><div><span>Member since</span>${user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Recently'}</div><div><span>Profile visibility</span>${esc(user.privacy?.profileVisibility === 'PUBLIC' ? 'Public' : 'Private')}</div>`; $('.creator-profile-tab')?.classList.toggle('hidden', !profile.creator); }
-async function loadProfile(refresh = false) { try { if (!state.profile && !refresh) { setSection('profile'); $('#profile-display-name').textContent = state.user?.username || 'Your profile'; $('#profile-handle').textContent = state.user?.username ? `@${state.user.username}` : '@story-lover'; $('#profile-avatar').textContent = (state.user?.username || 'A')[0].toUpperCase(); $('#profile-bio').textContent = 'Loading your story space...'; } if (state.profile && !refresh) { renderProfile(state.profile); setSection('profile'); loadProfile(true); return; } const profile = await api('/users/me/profile'); state.profile = profile; renderProfile(profile); setSection('profile'); } catch (error) { if (!state.profile) toast(error.message, 'error'); } }
-function openProfileEditor() { const user = state.profile?.user; const profile = user?.profile || {}; if (!user) return; $('#profile-display-name-input').value = profile.displayName || user.username || ''; $('#profile-username').value = user.username || ''; $('#profile-email').value = user.email || ''; $('#profile-country').value = profile.country || ''; $('#profile-region').value = profile.region || ''; $('#profile-language').value = profile.preferredLanguage || 'English'; $('#profile-bio-input').value = profile.bio || ''; $('#profile-cultures').value = (profile.favoriteCultures || []).join(', '); $('#profile-public').checked = user.privacy?.profileVisibility === 'PUBLIC'; $('#profile-show-favorites').checked = Boolean(user.privacy?.showFavorites); $$('#profile-genres option').forEach(option => { option.selected = (profile.favoriteGenres || []).includes(option.value); }); $('#profile-edit-panel').classList.remove('hidden'); $('#profile-edit-panel').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+function renderProfile(profile) { const user = profile.user || {}; const details = user.profile || {}; const avatar = details.avatarUrl || user.profileImage; $('#profile-display-name').textContent = details.displayName \vert{}\vert{} user.username \vert{}\vert{} 'Profile'; $('#profile-handle').textContent = `@${user.username || 'story-lover'}`; $('#profile-bio').textContent = details.bio || 'Complete your profile to help your story journey feel like home.'; $('#profile-location').textContent = [details.region, details.country].filter(Boolean).join(' · '); $('#profile-avatar').innerHTML = avatar ? `<img src="${image(avatar)}" alt="">` : esc((details.displayName || user.username || 'A')[0].toUpperCase()); if (details.coverUrl) $('#profile-cover').style.backgroundImage = `linear-gradient(120deg,#111b,#1118),url('${image(details.coverUrl)}')`; renderProfileHistory(profile.recentlyWatched, '#profile-recent'); renderProfileHistory(profile.recentlyWatched, '#profile-history'); renderProfileStoryList(profile.favorites, '#profile-saved', 'No saved stories yet. Explore Discover to find your next African story.'); renderProfileStoryList(profile.favorites, '#profile-watchlist', 'Your watchlist is empty.'); $('#profile-library').innerHTML = profile.library?.length ? profile.library.map(item => `<div class="profile-list-row"><div><strong>${esc(item.seriesId?.title || 'Story')}</strong><p>${esc(item.episodeId?.title || 'Episode')} · Unlocked ${new Date(item.unlockedAt).toLocaleDateString()}</p></div></div>`).join('') : profileEmpty('Your unlocked stories will appear here.'); const interests = [...(details.favoriteGenres || []), ...(details.favoriteCultures || []), ...(details.additionalLanguages || [])]; $('#profile-interests').innerHTML = interests.length ? interests.map(item => `<span class="interest-chip">${esc(item)}</span>`).join('') : profileEmpty('Choose genres, cultures, and languages to shape your discoveries.'); $('#profile-about').innerHTML = `<div><span>Account</span>${esc(details.displayName || user.username || '')}</div><div><span>Preferred language</span>${esc(details.preferredLanguage || 'English')}</div><div><span>Country</span>${esc(details.country || 'Not added')}</div><div><span>Member since</span>${user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Recently'}</div><div><span>Profile visibility</span>${esc(user.privacy?.profileVisibility === 'PUBLIC' ? 'Public' : 'Private')}</div>`; $('.creator-profile-tab')?.classList.toggle('hidden', !profile.creator); }
+async function loadProfile(refresh = false) { try { if (!state.profile && !refresh) { setSection('profile'); $('#profile-display-name').textContent = state.user?.username \vert{}\vert{} 'Your profile'; $('#profile-handle').textContent = state.user?.username ? `@${state.user.username}` : '@story-lover'; $('#profile-avatar').textContent = (state.user?.username \vert{}\vert{} 'A')[0].toUpperCase(); $('#profile-bio').textContent = 'Loading your story space...'; } if (state.profile && !refresh) { renderProfile(state.profile); setSection('profile'); loadProfile(true); return; } const profile = await api('/users/me/profile'); state.profile = profile; renderProfile(profile); setSection('profile'); } catch (error) { if (!state.profile) toast(error.message, 'error'); } }
+function openProfileEditor() { const user = state.profile?.user; const profile = user?.profile || {}; if (!user) return; $('#profile-display-name-input').value = profile.displayName || user.username || ''; $('#profile-username').value = user.username \vert{}\vert{} ''; $('#profile-email').value = user.email || ''; $('#profile-country').value = profile.country \vert{}\vert{} ''; $('#profile-region').value = profile.region || ''; $('#profile-language').value = profile.preferredLanguage \vert{}\vert{} 'English'; $('#profile-bio-input').value = profile.bio || ''; $('#profile-cultures').value = (profile.favoriteCultures \vert{}\vert{} []).join(', '); $('#profile-public').checked = user.privacy?.profileVisibility === 'PUBLIC'; $('#profile-show-favorites').checked = Boolean(user.privacy?.showFavorites); $$('#profile-genres option').forEach(option => { option.selected = (profile.favoriteGenres || []).includes(option.value); }); $('#profile-edit-panel').classList.remove('hidden'); $('#profile-edit-panel').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 async function loadNotifications() { try { const result = await api('/notifications/me?limit=50'); $('#notification-list').innerHTML = (result.notifications || []).map(item => `<article class="notification-item ${item.read ? '' : 'notification-unread'}"><span class="notification-item-icon">${item.type === 'REWARD_EARNED' ? '✧' : '•'}</span><div class="notification-item-content"><strong>${esc(item.title)}</strong><p>${esc(item.message || '')}</p><time>${new Date(item.createdAt).toLocaleString()}</time></div><div class="notification-item-actions"><button class="text-button" data-read-notification="${esc(item._id)}" aria-label="${item.read ? 'Notification already read' : 'Mark notification as read'}">${item.read ? 'Read' : 'Mark read'}</button><button class="text-button" data-dismiss-notification="${esc(item._id)}" aria-label="Dismiss notification">Dismiss</button></div></article>`).join('') || '<div class="notification-empty"><strong>No new notifications</strong><span>You are all caught up.</span></div>'; } catch (error) { toast(error.message, 'error'); } }
 async function refreshNotificationBadge() { try { const result = await api('/notifications/me/unread-count'); const badge = $('#notification-badge'); const previousCount = Number(badge.dataset.count || 0); const nextCount = Number(result.unreadCount || 0); badge.textContent = nextCount; badge.dataset.count = String(nextCount); badge.classList.toggle('hidden', !nextCount); if (nextCount > 0 && nextCount !== previousCount) {
     badge.classList.remove('is-new');
@@ -529,7 +630,7 @@ async function saveProfile(event) {
   } 
 }
 
-document.addEventListener('click', async event => { if (event.target.closest('[data-action="profile"]')) loadProfile(); if (event.target.closest('[data-action="notifications"]')) { $('#notification-modal').classList.remove('hidden'); await loadNotifications(); } if (event.target.closest('[data-action="close-notifications"]') || event.target.id === 'notification-modal') $('#notification-modal').classList.add('hidden'); if (event.target.closest('[data-action="read-all"]')) { try { await api('/notifications/me/read-all', { method: 'PUT' }); await loadNotifications(); refreshNotificationBadge(); } catch (error) { toast(error.message, 'error'); } } const notification = event.target.closest('[data-read-notification]'); if (notification) { try { await api(`/notifications/${notification.dataset.readNotification}/read`, { method: 'PUT' }); await loadNotifications(); refreshNotificationBadge(); } catch (error) { toast(error.message, 'error'); } } const dismissed = event.target.closest('[data-dismiss-notification]'); if (dismissed) { try { await api(`/notifications/${dismissed.dataset.dismissNotification}`, { method: 'DELETE' }); await loadNotifications(); refreshNotificationBadge(); } catch (error) { toast(error.message, 'error'); } } const history = event.target.closest('[data-history-episode]'); if (history) openHistoryEpisode(history.dataset.historySeries, history.dataset.historyEpisode); });
+document.addEventListener('click', async event => { if (event.target.closest('[data-action="profile"]')) loadProfile(); if (event.target.closest('[data-action="notifications"]')) { $('#notification-modal').classList.remove('hidden'); await loadNotifications(); } if (event.target.closest('[data-action="close-notifications"]') \vert{}\vert{} event.target.id === 'notification-modal') $('#notification-modal').classList.add('hidden'); if (event.target.closest('[data-action="read-all"]')) { try { await api('/notifications/me/read-all', { method: 'PUT' }); await loadNotifications(); refreshNotificationBadge(); } catch (error) { toast(error.message, 'error'); } } const notification = event.target.closest('[data-read-notification]'); if (notification) { try { await api(`/notifications/${notification.dataset.readNotification}/read`, { method: 'PUT' }); await loadNotifications(); refreshNotificationBadge(); } catch (error) { toast(error.message, 'error'); } } const dismissed = event.target.closest('[data-dismiss-notification]'); if (dismissed) { try { await api(`/notifications/${dismissed.dataset.dismissNotification}`, { method: 'DELETE' }); await loadNotifications(); refreshNotificationBadge(); } catch (error) { toast(error.message, 'error'); } } const history = event.target.closest('[data-history-episode]'); if (history) openHistoryEpisode(history.dataset.historySeries, history.dataset.historyEpisode); });
 document.addEventListener('click', async event => { if (event.target.closest('[data-action="edit-profile"]')) openProfileEditor(); if (event.target.closest('[data-action="close-profile-edit"]')) $('#profile-edit-panel').classList.add('hidden'); const tab = event.target.closest('[data-profile-tab]'); if (tab) { $$('.profile-tab').forEach(item => item.classList.toggle('active', item === tab));$$('.profile-panel').forEach(panel => panel.classList.toggle('hidden', panel.id !== `profile-panel-${tab.dataset.profileTab}`)); } const remove = event.target.closest('[data-remove-history]'); if (remove) { try { await api(`/users/me/history/${remove.dataset.removeHistory}`, { method: 'DELETE' }); await loadProfile(); } catch (error) { toast(error.message, 'error'); } } });
 $('#profile-form')?.addEventListener('submit', saveProfile);
 document.addEventListener('click', event => { const section = event.target.closest('[data-section="history"]'); if (section) loadHistory(); });
@@ -541,12 +642,10 @@ window.addEventListener('hashchange', () => { const name = location.hash.slice(1
 async function toggleFavorite() { if (!state.currentSeries) return toast('Open a story first', 'error'); try { const result = await api(`/favorites/${state.currentSeries._id}/toggle`, { method: 'POST' }); $('#save-current').textContent = result.saved ? 'Saved to favorites' : 'Save to favorites'; toast(result.saved ? 'Added to favorites' : 'Removed from favorites', 'success'); } catch (error) { toast(error.message, 'error'); } }
 document.addEventListener('click', event => { if (event.target.closest('[data-action="save-current"]')) toggleFavorite(); });
 async function loadTrending() { try { const result = await api('/search/trending'); $('#trending-list').innerHTML = (result.trending || []).map(episodeCard).join('') || '<div class="empty-state">No trending episodes yet.</div>'; } catch (error) { toast(error.message, 'error'); } }
-function ensureWatchFeedTargets() { const section = $('#section-watch'); if (!section) return; if (!$('#watch-featured')) section.insertAdjacentHTML('afterbegin', '<div id="watch-featured" class="watch-featured"></div>'); if (!$('#watch-continue')) section.insertAdjacentHTML('beforeend', '<div class="section-heading compact-heading"><h2>Continue Watching</h2><div id="watch-continue" class="content-grid"></div></div>'); if (!$('#watch-recommended')) section.insertAdjacentHTML('beforeend', '<div class="section-heading compact-heading"><h2>Recommended for You</h2><div id="watch-recommended" class="content-grid"></div></div>'); if (!$('#latest-episodes')) section.insertAdjacentHTML('beforeend', '<div class="section-heading compact-heading"><h2>Latest Episodes</h2><div id="latest-episodes" class="content-grid"></div></div>'); if (!$('#browse-episodes')) section.insertAdjacentHTML('beforeend', '<div class="section-heading compact-heading"><h2>Browse All</h2><div id="browse-episodes" class="content-grid"></div></div>'); }
-async function loadWatchRecommended() { try { ensureWatchFeedTargets(); const [trending, latest, history] = await Promise.all([api('/episodes/feed?sort=trending&limit=8'), api('/episodes/feed?sort=latest&limit=8'), api('/users/history/watch?limit=8')]); const trendingEpisodes = trending.episodes || []; const latestEpisodes = latest.episodes || []; const historyItems = (history.history || []).filter(item => !item.completed && item.episodeId?._id); const continueEpisodes = (await Promise.all(historyItems.map(item => api(`/episodes/${item.episodeId._id}`).catch(() => null)))).filter(Boolean); state.recommendedEpisodes = trendingEpisodes; const featured = trendingEpisodes[0] || latestEpisodes[0]; $('#watch-featured').innerHTML = featured ? `<article class="featured-card episode-featured" data-episode-id="${esc(featured._id)}" style="background-image:url('${image(featured.thumbnailUrl || featured.seriesId?.coverImage)}')"><p class="eyebrow">FEATURED EPISODE</p><h2>${esc(featured.title)}</h2><p>${esc(featured.seriesId?.title || '')} · ${esc(featured.genre || '')} · ${esc(featured.culturalCategory || '')}</p><button class="button button-accent" data-episode-id="${esc(featured._id)}">Watch now</button></article>` : '<div class="empty-state">No published episodes available yet.</div>'; $('#recommended-episodes').innerHTML = trendingEpisodes.map(episodeCard).join('') || '<div class="empty-state">No trending episodes yet.</div>'; $('#watch-continue').innerHTML = continueEpisodes.map(episodeCard).join('') || '<div class="empty-state">Nothing to continue yet.</div>'; $('#watch-recommended').innerHTML = trendingEpisodes.map(episodeCard).join('') || '<div class="empty-state">No recommendations yet.</div>'; $('#latest-episodes').innerHTML = latestEpisodes.map(episodeCard).join('') || '<div class="empty-state">No latest episodes yet.</div>'; $('#browse-episodes').innerHTML = latestEpisodes.map(episodeCard).join('') || '<div class="empty-state">No episodes to browse yet.</div>'; } catch (error) { console.error('Failed to load Watch episodes:', error); toast(error.message, 'error'); } }
 async function loadContinue() { try { const result = await api('/users/history/watch?limit=50'); $('#continue-list').innerHTML = (result.history || []).filter(item => !item.completed).map(item => `<button class="data-row history-row" data-history-episode="${esc(item.episodeId?._id)}" data-history-series="${esc(item.seriesId?._id)}"><div><strong>${esc(item.seriesId?.title || 'Series')}</strong><p>${esc(item.episodeId?.title || 'Episode')}</p></div><span class="data-value">${Math.round(Number(item.watchedPercentage || 0))}%</span></button>`).join('') || '<div class="empty-state">Nothing to continue yet.</div>'; } catch (error) { toast(error.message, 'error'); } }
 async function loadFavorites() { try { const result = await api('/favorites'); $('#favorites-list').innerHTML = (result || []).map(card).join('') || '<div class="empty-state">Save stories from the player to build your library.</div>'; } catch (error) { toast(error.message, 'error'); } }
 async function searchLibrary(event) { event.preventDefault(); const query = $('#library-search-input').value.trim(); if (query.length < 2) return; try { const result = await api(`/search/global?q=${encodeURIComponent(query)}&type=series&limit=50`); $('#search-results').innerHTML = (result.series?.data || []).map(card).join('') || '<div class="empty-state">No stories matched your search.</div>'; } catch (error) { toast(error.message, 'error'); } }
-function loadSettings() { const settings = JSON.parse(localStorage.getItem('afrostory-settings') || '{}'); $('#settings-language').value = settings.language || 'en'; $('#settings-notifications').checked = settings.notifications !== false; }
+function loadSettings() { const settings = JSON.parse(localStorage.getItem('afrostory-settings') || '{}'); $('#settings-language').value = settings.language \vert{}\vert{} 'en'; $('#settings-notifications').checked = settings.notifications !== false; }
 function saveSettings(event) { event.preventDefault(); localStorage.setItem('afrostory-settings', JSON.stringify({ language: $('#settings-language').value, notifications: $('#settings-notifications').checked })); toast('Settings saved', 'success'); }
 $('#library-search-form')?.addEventListener('submit', searchLibrary); $('#settings-form')?.addEventListener('submit', saveSettings);
 async function searchEpisodes(event) { event.preventDefault(); const input = event.currentTarget.querySelector('input'); const query = input.value.trim(); if (query.length < 2) return toast('Enter at least two characters', 'error'); try { const result = await api(`/search/global?q=${encodeURIComponent(query)}&type=episodes&limit=50`); const target = event.currentTarget.id === 'search-form' ? '#series-grid' : '#search-results'; $(target).innerHTML = (result.episodes?.data || []).map(episodeCard).join('') || '<div class="empty-state">No episodes matched your search.</div>'; } catch (error) { toast(error.message, 'error'); } }
