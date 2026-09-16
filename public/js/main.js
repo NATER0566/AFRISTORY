@@ -5,11 +5,46 @@ const apiCache = new Map();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
-const api = async (path, options = {}) => { const cacheKey = `${path}:${JSON.stringify(options)}`; const cached = apiCache.get(cacheKey); if (cached && Date.now() - cached.time < CACHE_DURATION && options.method !== 'POST') return cached.data; try { const response = await fetch(`${API}${path}`, { credentials: 'include', signal: AbortSignal.timeout(15000), ...options }); const data = await response.json().catch(() => ({})); if (response.status === 401) { window.location.replace('/'); throw new Error('Your session has expired'); } if (!response.ok || data.success === false) throw new Error(data.message || 'Request failed'); if (options.method !== 'POST') apiCache.set(cacheKey, { data: data.data, time: Date.now() }); return data.data; } catch (error) { if (error.name === 'AbortError') throw new Error('Request timeout - please try again'); throw error; } };
+
+const api = async (path, options = {}) => { 
+  const cacheKey = `${path}:${JSON.stringify(options)}`; 
+  const cached = apiCache.get(cacheKey); 
+  if (cached && Date.now() - cached.time < CACHE_DURATION && options.method !== 'POST') return cached.data; 
+  
+  try { 
+    // MASSIVE FIX: We now allow much larger timeouts so video uploads don't get cancelled!
+    const timeoutMs = options.timeout || 25000; // default 25 seconds
+    const response = await fetch(`${API}${path}`, { 
+      credentials: 'include', 
+      signal: AbortSignal.timeout(timeoutMs), 
+      ...options 
+    }); 
+    
+    const data = await response.json().catch(() => ({})); 
+    
+    if (response.status === 401) { 
+      window.location.replace('/'); 
+      throw new Error('Your session has expired'); 
+    } 
+    
+    if (!response.ok || data.success === false) {
+      throw new Error(data.message || 'Request failed');
+    }
+    
+    if (options.method !== 'POST') {
+      apiCache.set(cacheKey, { data: data.data, time: Date.now() }); 
+    }
+    return data.data; 
+    
+  } catch (error) { 
+    if (error.name === 'AbortError') throw new Error('Request timeout - please check your connection and try again'); 
+    throw error; 
+  } 
+};
+
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char]));
 const image = value => {
   if (!value) value = 'https://images.unsplash.com/photo-1539650116574-75c0c6d73f6e?auto=format&fit=crop&w=400&q=70';
-  // Optimize image URLs for faster loading
   if (value.includes('unsplash')) return `${value}&auto=format&fit=crop&w=400&q=70`;
   if (value.includes('cloudinary')) return value.replace('/upload/', '/upload/q_auto,w_400/');
   return value;
@@ -22,7 +57,7 @@ function getUserAvatarUrl(user) {
 }
 function renderHeaderUser(user = state.user) {
   const avatarWrap = $('#user-avatar');
-  const nameEl = $('#user-name'); // Optional in the new header
+  const nameEl = $('#user-name');
   if (!avatarWrap) return;
   
   const displayName = getUserDisplayName(user);
@@ -35,7 +70,8 @@ function renderHeaderUser(user = state.user) {
   
   if (avatarUrl) {
     const cacheBust = `${avatarUrl}${avatarUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
-    avatarWrap.innerHTML = `<img src="${image(cacheBust)}" alt="${esc(displayName)} profile picture" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;"/>`;
+    // Inline perfect circle style
+    avatarWrap.innerHTML = `<img src="${image(cacheBust)}" alt="${esc(displayName)} profile picture" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"/>`;
   } else {
     const initial = (displayName || 'A').trim().charAt(0).toUpperCase() || 'A';
     avatarWrap.innerHTML = `<span id="user-initial" class="profile-initial">${esc(initial)}</span>`;
@@ -43,7 +79,20 @@ function renderHeaderUser(user = state.user) {
   avatarWrap.parentElement.setAttribute('aria-label', `${displayName} profile menu`);
   avatarWrap.parentElement.setAttribute('title', displayName);
 }
-function toast(message, type = 'info') { const el = document.createElement('div'); el.className = `toast ${type}`; el.setAttribute('role', 'alert'); el.innerHTML = `<span class="toast-icon"></span><span class="toast-message">${esc(message)}</span>`; const container = $('#toast-region'); if (!container) return; container.appendChild(el); setTimeout(() => { el.style.animation = 'slideOutToast 0.3s ease-out forwards'; setTimeout(() => el.remove(), 300); }, 3700); }
+function toast(message, type = 'info') { 
+  const el = document.createElement('div'); 
+  el.className = `toast ${type}`; 
+  el.setAttribute('role', 'alert'); 
+  el.innerHTML = `<span class="toast-icon"></span><span class="toast-message">${esc(message)}</span>`; 
+  const container = $('#toast-region'); 
+  if (!container) return; 
+  container.appendChild(el); 
+  setTimeout(() => { 
+    // UPDATED to fade out properly for centered toast
+    el.style.animation = 'fadeOutToast 0.4s ease-out forwards'; 
+    setTimeout(() => el.remove(), 400); 
+  }, 4500); 
+}
 // Performance: Lazy load images
 function setupLazyLoading() { if ('IntersectionObserver' in window) { const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting && entry.target.dataset.src) { entry.target.src = entry.target.dataset.src; delete entry.target.dataset.src; observer.unobserve(entry.target); } }); }, { rootMargin: '50px' }); $$('[data-src]').forEach(el => observer.observe(el)); } }
 function setSection(name) { $$('.app-section').forEach(section => section.classList.toggle('hidden', section.id !== `section-${name}`)); $$('.nav-item[data-section]').forEach(item => item.classList.toggle('active', item.dataset.section === name)); $('#genre-filter')?.closest('.discover-filters')?.classList.toggle('hidden', name !== 'discover'); $('#save-current')?.classList.toggle('hidden', name !== 'watch'); location.hash = name; if (name === 'wallet') loadWallet(); if (name === 'rewards') loadRewards(); if (name === 'creator') loadCreator(); if (name === 'admin') loadAdmin(); if (name === 'history') loadHistory(); if (name === 'continue') loadContinue(); if (name === 'favorites') loadFavorites(); if (name === 'trending') loadTrending(); if (name === 'settings') loadSettings(); if (name === 'watch') loadWatchRecommended(); }
@@ -144,7 +193,7 @@ async function loadRewards() { try { const result = await api('/rewards/me'); st
 async function loadCreator() { try { const creator = await api('/creators/me/profile'); const series = await api(`/creators/${creator._id}/series?limit=100`); $('#creator-stats').innerHTML = [['TOTAL VIEWS', creator.totalViews], ['TOTAL EARNINGS', creator.totalEarnings], ['FOLLOWERS', creator.totalFollowers], ['SERIES', series.series?.length || 0]].map(item => `<div class="stat-card"><span class="eyebrow">${item[0]}</span><strong>${Number(item[1] || 0).toLocaleString()}</strong></div>`).join(''); $('#my-series-grid').innerHTML = (series.series || []).map(card).join('') || '<div class="empty-state">Create your first series.</div>'; $('#upload-series').innerHTML = (series.series || []).map(item => `<option value="${esc(item._id)}">${esc(item.title)}</option>`).join(''); } catch (error) { if (error.message.includes('creator')) { $('#section-creator').innerHTML = '<div class="creator-onboarding"><p class="eyebrow">SHARE YOUR VOICE</p><h1>Become a creator</h1><p>Create a home for your stories and upload episodes.</p><button class="button button-primary" data-action="become-creator">Start creating</button></div>'; } else toast(error.message, 'error'); } }
 
 // ----------------------------------------------------
-// FIXED: This ID was wrong! It is now #become-creator-form
+// CREATOR SIGNUP FIX: Dynamically Restore the HTML!
 // ----------------------------------------------------
 $('#become-creator-form')?.addEventListener('submit', async (event) => { 
   event.preventDefault(); 
@@ -167,13 +216,27 @@ $('#become-creator-form')?.addEventListener('submit', async (event) => {
     
     state.user.role = 'CREATOR'; 
     $$('.creator-only').forEach(el => el.classList.remove('hidden')); 
-    $('#become-creator-modal').classList.add('hidden'); // Close modal
+    $('#become-creator-modal').classList.add('hidden'); 
     
     toast('Welcome to Creator Studio!', 'success');
     
-    // Automatically switch to the creator studio page tab after reload
-    window.location.hash = 'creator';
-    window.location.reload(); 
+    // RESTORE the Creator DOM that was wiped out by the "Onboarding Button"
+    $('#section-creator').innerHTML = `
+      <div class="section-heading">
+        <div><p class="eyebrow">MAKE YOUR MARK</p><h1>Creator studio</h1></div>
+        <button class="button button-primary" data-action="new-series">New series <span>+</span></button>
+      </div>
+      <div id="creator-stats" class="stats-row"></div>
+      <div class="section-heading compact-heading">
+        <h2>Your series</h2>
+        <button class="button button-accent" data-action="open-upload">Upload episode</button>
+      </div>
+      <div id="my-series-grid" class="content-grid"></div>
+    `;
+
+    setSection('creator'); 
+    await loadCreator(); // Safely reload the layout WITHOUT refreshing the page
+    
   } catch (error) { 
     toast(error.message, 'error'); 
   } finally {
@@ -182,9 +245,61 @@ $('#become-creator-form')?.addEventListener('submit', async (event) => {
   }
 });
 
-async function uploadAsset(path, file) { const data = new FormData(); data.append('file', file); return api(path, { method: 'POST', body: data }); }
+// MASSIVE FIX: We pass timeout: 600000 (10 minutes) so video uploads don't freeze and cancel!
+async function uploadAsset(path, file) { 
+    const data = new FormData(); 
+    data.append('file', file); 
+    return api(path, { method: 'POST', body: data, timeout: 600000 }); 
+}
+
 async function submitSeries(event) { event.preventDefault(); const form = event.target; const values = new FormData(form); const cover = values.get('cover'); if (!cover?.size) return toast('Choose a cover image', 'error'); try { const upload = await uploadAsset('/upload/image', cover); await api('/series/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: values.get('title'), description: values.get('description'), coverImage: upload.url, genre: values.get('genre'), language: values.get('language'), tags: String(values.get('tags') || '').split(',').map(tag => tag.trim()).filter(Boolean), isPublished: values.get('publish') === 'on', isPremiumExclusive: values.get('premium') === 'on' }) }); $('#series-modal').classList.add('hidden'); form.reset(); await loadCreator(); toast('Series created', 'success'); } catch (error) { toast(error.message, 'error'); } }
-async function submitUpload(event) { event.preventDefault(); const form = event.target; const submit = form.querySelector('button[type="submit"]'); const values = new FormData(form); const seriesId = values.get('seriesId'); const file = values.get('video'); const genre = values.get('genre'); const culturalCategory = values.get('culturalCategory'); const language = values.get('language'); if (!seriesId || !file?.size) return toast('Choose a series and video', 'error'); if (!genre || !culturalCategory || !language) return toast('Choose a genre, cultural category, and language', 'error'); submit.disabled = true; submit.textContent = 'Uploading video...'; try { const upload = await uploadAsset('/upload/video', file); const mediaUrl = upload.hlsUrl || upload.mediaUrl || upload.secure_url || upload.url; if (!mediaUrl || !/^https?:\/\/.+\.(mp4|m3u8)(?:\?.*)?$/i.test(mediaUrl)) throw new Error('Cloudinary did not return a playable MP4 or HLS URL'); const thumbnail = values.get('thumbnail'); const thumbnailUpload = thumbnail?.size ? await uploadAsset('/upload/image', thumbnail) : null; if (thumbnail?.size && !thumbnailUpload?.url) throw new Error('Thumbnail upload did not return an image URL'); const access = values.get('access'); await api(`/episodes/series/${encodeURIComponent(seriesId)}/create`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: values.get('title'), description: values.get('description'), mediaUrl, thumbnailUrl: thumbnailUpload?.url || null, genre, culturalCategory, language, tags: String(values.get('tags') || '').split(',').map(tag => tag.trim()).filter(Boolean), mediaUrl, duration: upload.duration || 0, coinCost: Number(values.get('coinCost')), isFree: false, adUnlockable: access === 'Ad', isPublished: values.get('publish') === 'on' }) }); $('#upload-modal').classList.add('hidden'); form.reset(); await loadCreator(); toast('Episode uploaded', 'success'); } catch (error) { console.error('Episode upload failed:', error); toast(error.message, 'error'); } finally { submit.disabled = false; submit.textContent = 'Upload episode'; } }
+
+async function submitUpload(event) { 
+    event.preventDefault(); 
+    const form = event.target; 
+    const submit = form.querySelector('button[type="submit"]'); 
+    const values = new FormData(form); 
+    const seriesId = values.get('seriesId'); 
+    const file = values.get('video'); 
+    const genre = values.get('genre'); 
+    const culturalCategory = values.get('culturalCategory'); 
+    const language = values.get('language'); 
+    
+    if (!seriesId || !file?.size) return toast('Choose a series and video', 'error'); 
+    if (!genre || !culturalCategory || !language) return toast('Choose a genre, cultural category, and language', 'error'); 
+    
+    submit.disabled = true; 
+    submit.textContent = 'Uploading video (please wait)...'; 
+    
+    try { 
+        const upload = await uploadAsset('/upload/video', file); 
+        const mediaUrl = upload.hlsUrl || upload.mediaUrl || upload.secure_url || upload.url; 
+        if (!mediaUrl || !/^https?:\/\/.+\.(mp4|m3u8)(?:\?.*)?$/i.test(mediaUrl)) throw new Error('Cloudinary did not return a playable MP4 or HLS URL'); 
+        
+        const thumbnail = values.get('thumbnail'); 
+        const thumbnailUpload = thumbnail?.size ? await uploadAsset('/upload/image', thumbnail) : null; 
+        if (thumbnail?.size && !thumbnailUpload?.url) throw new Error('Thumbnail upload did not return an image URL'); 
+        
+        const access = values.get('access'); 
+        await api(`/episodes/series/${encodeURIComponent(seriesId)}/create`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ title: values.get('title'), description: values.get('description'), mediaUrl, thumbnailUrl: thumbnailUpload?.url || null, genre, culturalCategory, language, tags: String(values.get('tags') || '').split(',').map(tag => tag.trim()).filter(Boolean), mediaUrl, duration: upload.duration || 0, coinCost: Number(values.get('coinCost')), isFree: false, adUnlockable: access === 'Ad', isPublished: values.get('publish') === 'on' }) 
+        }); 
+        
+        $('#upload-modal').classList.add('hidden'); 
+        form.reset(); 
+        await loadCreator(); 
+        toast('Episode uploaded successfully!', 'success'); 
+    } catch (error) { 
+        console.error('Episode upload failed:', error); 
+        toast(error.message, 'error'); 
+    } finally { 
+        submit.disabled = false; 
+        submit.textContent = 'Upload episode'; 
+    } 
+}
+
 async function loadAdmin() { try { const [stats, reports] = await Promise.all([api('/admin/dashboard/stats'), api('/admin/reports?limit=20')]); $('#admin-stats').innerHTML = Object.entries(stats).map(([key, value]) => `<div class="stat-card"><span class="eyebrow">${esc(key.replace(/([A-Z])/g, ' $1'))}</span><strong>${Number(value).toLocaleString()}</strong></div>`).join(''); $('#reports-list').innerHTML = (reports.reports || []).map(report => `<div class="data-row"><div><strong>${esc(report.reason || report.type || 'Report')}</strong><p>${esc(report.description || '')}</p></div><span class="data-value">${esc(report.status)}</span></div>`).join('') || '<div class="empty-state">The queue is clear.</div>'; } catch (error) { toast(error.message, 'error'); } }
 async function boot() {
   try {
@@ -215,7 +330,6 @@ document.addEventListener('click', event => {
       if(modal) modal.classList.remove('hidden');
   }
   
-  // FIXED: Properly close the become creator modal when X is clicked
   if (event.target.closest('[data-action="close-become-creator"]')) {
       $('#become-creator-modal')?.classList.add('hidden');
   }
