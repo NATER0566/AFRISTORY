@@ -217,18 +217,18 @@ async function openEpisode(id) {
       if (!episode.hasAccess) {
          // Check constantly as the video plays
          videoEl.addEventListener('timeupdate', () => {
-             if (videoEl.currentTime >= 30) {
+             if (videoEl.currentTime >=5) {
                  videoEl.pause();
                  videoEl.removeAttribute('controls'); 
-                 if (videoEl.currentTime > 30.5) videoEl.currentTime = 30; // Snap back if they try to bypass
+                 if (videoEl.currentTime >5) videoEl.currentTime = 30; // Snap back if they try to bypass
                  card.querySelector(`#lock-${episode._id}`).classList.remove('hidden');
              }
          });
          // Check if they aggressively drag the seek bar past 30 seconds
          videoEl.addEventListener('seeked', () => {
-             if (videoEl.currentTime >= 30) {
+             if (videoEl.currentTime >= 5) {
                  videoEl.pause();
-                 videoEl.currentTime = 30;
+                 videoEl.currentTime = 5;
                  videoEl.removeAttribute('controls'); 
                  card.querySelector(`#lock-${episode._id}`).classList.remove('hidden');
              }
