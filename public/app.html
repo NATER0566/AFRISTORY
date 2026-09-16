@@ -37,10 +37,11 @@
         .toast { font-size: 14px; max-width: calc(100vw - 40px); margin-right: 0; }
       }
       
+      /* THIS IS FOR THE MAIN PROFILE PAGE COVER - NOT THE HEADER */
       .profile-cover{background:linear-gradient(120deg,#2b2114,#171717 52%,#222);border:1px solid #343434;min-height:230px;padding:28px 32px;position:relative;overflow:hidden}.profile-cover[style]{background-position:center;background-size:cover}.profile-header{align-items:flex-end;display:flex;gap:22px;min-height:174px}.profile-avatar{align-items:center;background:#d4a017;color:#111;display:flex;flex:0 0 104px;font-family:Georgia,serif;font-size:48px;height:104px;justify-content:center;overflow:hidden;border-radius:50%;}.profile-avatar img{height:100%;object-fit:cover;width:100%}.profile-identity{max-width:650px}.profile-identity h1{font-size:clamp(30px,4vw,52px)}.profile-handle{margin:4px 0 10px}.profile-bio{color:#ddd;margin:0}.profile-location{color:#d4a017;font-size:13px;margin-top:10px}.profile-actions{display:flex;gap:10px;margin-left:auto}.profile-tabs{border-bottom:1px solid #343434;display:flex;gap:24px;overflow:auto;padding:0 4px}.profile-tab{background:none;border:0;border-bottom:2px solid transparent;color:#999;padding:16px 4px;white-space:nowrap}.profile-tab.active,.profile-tab:hover{border-color:#d4a017;color:#f5f5f5}.profile-panel{padding-top:30px}.profile-summary-grid{display:grid;gap:30px;grid-template-columns:1fr 1fr}.profile-section-heading{align-items:end;display:flex;justify-content:space-between;margin:28px 0 18px}.profile-section-heading h2{font-size:24px}.profile-list{display:grid;gap:10px}.profile-list-row{align-items:center;background:#1b1b1b;border:1px solid #343434;display:flex;gap:14px;padding:12px}.profile-list-row strong{display:block}.profile-list-row p{color:#999;font-size:13px;margin:2px 0 0}.profile-list-row .progress{background:#343434;height:4px;margin-top:8px;width:180px}.profile-list-row .progress i{background:#d4a017;display:block;height:100%}.profile-story-grid{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-story-grid .series-card{min-width:0}.interest-list{display:flex;flex-wrap:wrap;gap:8px}.interest-chip{background:#242424;border:1px solid #4a4a4a;color:#f5f5f5;padding:7px 11px}.profile-about{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr));max-width:680px}.profile-about div{background:#1b1b1b;border-bottom:1px solid #343434;padding:14px}.profile-about span{color:#999;display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase}.profile-edit-panel{border-top:1px solid #343434;margin-top:30px;padding-top:24px}.profile-edit-grid{display:grid;gap:14px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-form label{color:#bbb;display:grid;font-size:12px;gap:6px}.profile-form input,.profile-form textarea,.profile-form select{background:#111;border:1px solid #444;color:#f5f5f5;padding:11px}.profile-form select[multiple]{min-height:130px}.profile-privacy{display:flex;flex-wrap:wrap;gap:18px;margin:16px 0}.profile-privacy label{display:flex;display:flex;gap:8px}.profile-empty{border:1px dashed #444;color:#999;padding:24px}.profile-empty button{margin-top:12px}@media(max-width:700px){.profile-cover{padding:22px 18px}.profile-header{align-items:flex-start;flex-wrap:wrap}.profile-avatar{flex-basis:78px;font-size:36px;height:78px}.profile-actions{margin-left:0;width:100%}.profile-actions .button{flex:1}.profile-summary-grid,.profile-about,.profile-edit-grid{grid-template-columns:1fr}.profile-tabs{gap:16px}.profile-story-grid{grid-template-columns:1fr 1fr}}
       
       /* ==============================================================
-         1. NEW HEADER DESIGN (Variation 1: Circular Avatar + Online Dot + Dropdown)
+         1. FIXED HEADER PROFILE DESIGN (Strict Circular Avatar + Online Dot)
       ============================================================== */
       .topbar {
         display: flex; justify-content: space-between; align-items: center;
@@ -48,7 +49,7 @@
         position: sticky; top: 0; z-index: 50;
       }
       
-      .topbar-actions { display: flex; align-items: center; gap: 24px; }
+      .topbar-actions { display: flex; align-items: center; gap: 16px; }
       
       .notification-button {
         align-items: center; background: #242424; border: 1px solid #3b3b3b; border-radius: 50%;
@@ -58,32 +59,33 @@
       .header-icon { font-size: 19px; line-height: 1; }
       .notification-button .notification-badge { position: absolute; right: -4px; top: -3px; background: #d4a017; color: #111; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: bold; }
       
-      /* OVERRIDE TO FIX THE WEIRD DOUBLE CIRCLES FOREVER */
-      .topbar .profile-chip {
-        display: flex !important; align-items: center !important; gap: 6px !important;
+      /* STRICT HEADER AVATAR OVERRIDES - Disconnects from main profile page CSS */
+      .header-profile-btn {
+        display: flex !important; align-items: center !important; gap: 8px !important;
         background: transparent !important; border: none !important; padding: 0 !important; margin: 0 !important;
-        cursor: pointer !important; min-width: 0 !important; width: auto !important; height: auto !important;
+        cursor: pointer !important; width: auto !important; height: auto !important;
       }
       
-      .avatar-wrapper { position: relative; width: 44px; height: 44px; }
+      .header-avatar-container { 
+        position: relative; width: 44px; height: 44px; display: block; 
+      }
       
-      .topbar .profile-chip-avatar {
+      .header-avatar-img {
         display: flex !important; align-items: center !important; justify-content: center !important;
         width: 100% !important; height: 100% !important; border-radius: 50% !important;
         background: #d4a017 !important; color: #111 !important; font-family: Georgia, serif !important;
         font-weight: 700 !important; font-size: 20px !important; overflow: hidden !important;
         margin: 0 !important; padding: 0 !important; border: none !important;
       }
-      .topbar .profile-chip-avatar img { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+      .header-avatar-img img { width: 100% !important; height: 100% !important; object-fit: cover !important; }
       
-      .online-dot {
-        position: absolute; bottom: 0; right: 2px; width: 12px; height: 12px;
-        background-color: #2ecc71; border: 2px solid #111; border-radius: 50%;
+      .header-online-dot {
+        position: absolute; bottom: 0; right: 0; width: 14px; height: 14px;
+        background-color: #2ecc71; border: 2.5px solid #111; border-radius: 50%;
+        z-index: 2;
       }
       
-      .profile-chevron-icon { color: #999; font-size: 14px; margin-left: 4px; display: block !important; }
-      .profile-chip-meta { display: none !important; } /* Hide the actual text name */
-      .profile-initial { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+      .header-chevron { color: #999; font-size: 14px; display: block !important; margin-left: 2px; }
 
       /* ==============================================================
          2. DESKTOP VS MOBILE NAV VISIBILITY
@@ -95,41 +97,44 @@
         .desktop-only { display: none !important; }
         .mobile-only { display: flex !important; }
         
-        .topbar-actions { gap: 16px; }
+        .topbar-actions { gap: 14px; }
         .app-layout { flex-direction: column; }
         
-        /* 3. THE FLOATING BOTTOM NAVIGATION BAR (Exactly 6 items, NO SCROLL) */
+        /* 3. EDGE-TO-EDGE MOBILE BOTTOM NAV (Matching Original Image) */
         .sidebar {
-          position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-          width: calc(100% - 32px); max-width: 500px;
-          height: 68px; background: #1E1E1E; border: 1px solid #333;
-          border-radius: 34px; z-index: 40; display: flex; padding: 0 10px;
-          justify-content: space-between; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+          position: fixed; bottom: 0; left: 0; right: 0;
+          width: 100%; height: 75px; /* Taller for mobile layout */
+          background: #181818; /* Darker, sleek background */
+          border-top: none;
+          border-radius: 28px 28px 0 0; /* Rounded top corners only */
+          z-index: 40; display: flex; padding: 0 16px 8px; /* Padding for safe area */
+          align-items: center;
+          box-shadow: 0 -5px 25px rgba(0,0,0,0.6); /* Soft shadow above */
         }
         
         .side-nav {
           display: flex; flex-direction: row; justify-content: space-between; 
-          width: 100%; padding: 0; overflow: visible;
+          width: 100%; padding: 0; margin: 0;
         }
         
+        /* Exactly 6 Even Items */
         .nav-item {
           display: flex; flex-direction: column; align-items: center; justify-content: center;
-          flex: 1 1 0; min-width: 0; gap: 4px; font-size: 10px; color: #999; padding: 0;
-          transition: color 0.2s;
+          flex: 1 1 0; min-width: 0; gap: 4px; font-size: 10px; font-weight: 500; 
+          color: #999; padding: 8px 0; border: none; background: transparent;
         }
-        .nav-icon { font-size: 20px; font-style: normal; margin-bottom: 2px; }
+        .nav-icon { font-size: 22px; font-style: normal; margin-bottom: 2px; transition: transform 0.2s; }
         .nav-item span { display: block; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
         
         /* Active State Glow */
         .nav-item.active { color: #d4a017; }
         .nav-item.active .nav-icon { 
-          background: radial-gradient(circle, rgba(212,160,23,0.2) 0%, transparent 70%);
-          border-radius: 50%;
-          box-shadow: 0 0 15px rgba(212,160,23,0.3);
+          transform: translateY(-2px);
+          text-shadow: 0 0 15px rgba(212,160,23,0.8); /* Glowing icon effect */
         }
         
         .sidebar-bottom { display: none; }
-        .main-content { padding-bottom: 110px; } /* Room for floating bar */
+        .main-content { padding-bottom: 90px; } /* Room for floating bar */
         
         /* Adjust Hero on mobile */
         .rewards-hero { align-items: flex-start; display: block; padding: 22px; }
@@ -193,13 +198,13 @@
         <span class="header-icon">&#128276;</span><i id="notification-badge" class="notification-badge hidden">0</i>
       </button>
       
-      <!-- NEW HEADER DESIGN: Circular Avatar + Online Dot + Dropdown Arrow -->
-      <button class="profile-chip" data-action="profile" aria-label="Open your profile" title="Profile">
-        <div class="avatar-wrapper">
-            <span id="user-avatar" class="profile-chip-avatar" aria-hidden="true"><span id="user-initial" class="profile-initial">A</span></span>
-            <div class="online-dot"></div>
+      <!-- STRICT SINGLE AVATAR HEADER -->
+      <button class="header-profile-btn" data-action="profile" aria-label="Open your profile" title="Profile">
+        <div class="header-avatar-container">
+            <span id="user-avatar" class="header-avatar-img" aria-hidden="true"><span id="user-initial" class="profile-initial">A</span></span>
+            <div class="header-online-dot"></div>
         </div>
-        <span class="profile-chevron-icon">⌄</span>
+        <span class="header-chevron">⌄</span>
       </button>
 
     </div>
@@ -207,7 +212,7 @@
   <div class="app-layout">
     <aside class="sidebar">
       <nav class="side-nav" aria-label="Main navigation">
-        <!-- These 6 items show on desktop AND mobile -->
+        <!-- 6 Edge-to-Edge Mobile Items -->
         <button class="nav-item active" data-section="discover"><i class="nav-icon">⌂</i><span>Discover</span></button>
         <button class="nav-item" data-section="search"><i class="nav-icon">⌕</i><span>Search</span></button>
         <button class="nav-item" data-section="watch"><i class="nav-icon">▶</i><span>Watch</span></button>
@@ -217,7 +222,7 @@
         <!-- MOBILE ONLY: The "More" Menu Button -->
         <button class="nav-item mobile-only" id="mobile-more-btn" type="button"><i class="nav-icon">⋯</i><span>More</span></button>
         
-        <!-- These items are hidden on mobile's floating bar, visible on desktop sidebar -->
+        <!-- Hidden on Mobile Bottom Nav, Visible on Desktop Sidebar -->
         <button class="nav-item desktop-only" data-section="trending"><i class="nav-icon">↗</i><span>Trending</span></button>
         <button class="nav-item desktop-only" data-section="continue"><i class="nav-icon">◷</i><span>Continue</span></button>
         <button class="nav-item desktop-only" data-section="favorites"><i class="nav-icon">♡</i><span>Favorites</span></button>
