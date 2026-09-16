@@ -6,25 +6,13 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 
-// =========================================================================
-// UI FIX: FORCE MODALS TO ALWAYS OVERLAY HEADER & FOOTER
-// =========================================================================
-const styleFix = document.createElement('style');
-styleFix.textContent = `
-  .modal-root { z-index: 999999 !important; position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; padding-bottom: 120px !important; overflow-y: auto !important; background: rgba(0,0,0,0.9) !important; }
-  .modal { margin-top: 40px !important; margin-bottom: 80px !important; position: relative !important; z-index: 9999999 !important; }
-  .topbar { z-index: 50 !important; }
-  .sidebar { z-index: 900 !important; }
-`;
-document.head.appendChild(styleFix);
-
 const api = async (path, options = {}) => { 
   const cacheKey = `${path}:${JSON.stringify(options)}`; 
   const cached = apiCache.get(cacheKey); 
   if (cached && Date.now() - cached.time < CACHE_DURATION && options.method !== 'POST') return cached.data; 
   
   try { 
-    const timeoutMs = options.timeout || 25000; 
+    const timeoutMs = options.timeout || 600000; 
     const response = await fetch(`${API}${path}`, { 
       credentials: 'include', 
       signal: AbortSignal.timeout(timeoutMs), 
@@ -107,14 +95,12 @@ function toast(message, type = 'info') {
 
 function setupLazyLoading() { if ('IntersectionObserver' in window) { const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting && entry.target.dataset.src) { entry.target.src = entry.target.dataset.src; delete entry.target.dataset.src; observer.unobserve(entry.target); } }); }, { rootMargin: '50px' }); $$('[data-src]').forEach(el => observer.observe(el)); } }
 
-// MODIFIED: Close modals & sheets when navigating away!
 function setSection(name) { 
   $$('.app-section').forEach(section => section.classList.toggle('hidden', section.id !== `section-${name}`)); 
   $$('.nav-item[data-section]').forEach(item => item.classList.toggle('active', item.dataset.section === name)); 
   $('#genre-filter')?.closest('.discover-filters')?.classList.toggle('hidden', name !== 'discover'); 
   $('#save-current')?.classList.toggle('hidden', name !== 'watch'); 
   
-  // FORCE CLOSE ALL MODALS WHEN NAVIGATING
   $$('.modal-root').forEach(m => m.classList.add('hidden'));
   $('#mobile-more-sheet')?.classList.add('hidden');
   
@@ -159,10 +145,31 @@ async function loadDiscover() {
 }
 
 async function loadDiscoverEpisodes() { try { ensureClassificationControls(); const genre = $('#genre-filter')?.value || ''; const culturalCategory = $('#cultural-filter')?.value || ''; const language = $('#language-filter')?.value || ''; const query = new URLSearchParams({ sort: 'trending', limit: '12' }); if (genre) query.set('genre', genre); if (culturalCategory) query.set('culturalCategory', culturalCategory); if (language) query.set('language', language); const result = await api(`/episodes/feed?${query}`); $('#series-grid').innerHTML = (result.episodes || []).map(episodeCard).join('') || '<div class="empty-state">No episodes match these filters.</div>'; } catch (error) { toast(error.message, 'error'); } }
-async function openSeries(id) { try { const [series, episodes] = await Promise.all([api(`/series/${id}`), api(`/series/${id}/episodes?limit=100`)]); state.currentSeries = series; $('#watch-series-meta').innerHTML = `<h3>${esc(series.title)}</h3><p>${esc(series.description || '')}</p>`; $('#watch-title').textContent = series.title; $('#episode-list').innerHTML = (episodes.episodes || []).map((episode, index) => `<button class="episode-row ${index === 0 ? 'active' : ''}" data-episode-id="${esc(episode._id)}"><strong>${String(episode.episodeNumber).padStart(2, '0')}</strong><span>${esc(episode.title)}${episode.isFree ? ' · Free' : ''}</span></button>`).join(''); setSection('watch'); if (episodes.episodes?.[0]) openEpisode(episodes.episodes[0]._id); } catch (error) { toast(error.message, 'error'); } }
 
+// MODIFIED: Automatically jump to Watch Section when a series is clicked
+async function openSeries(id) { 
+    try { 
+        setSection('watch');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        const [series, episodes] = await Promise.all([api(`/series/${id}`), api(`/series/${id}/episodes?limit=100`)]); 
+        state.currentSeries = series; 
+        $('#watch-series-meta').innerHTML = `<h3>${esc(series.title)}</h3><p>${esc(series.description || '')}</p>`; 
+        $('#watch-title').textContent = series.title; 
+        $('#episode-list').innerHTML = (episodes.episodes || []).map((episode, index) => `<button class="episode-row ${index === 0 ? 'active' : ''}" data-episode-id="${esc(episode._id)}"><strong>${String(episode.episodeNumber).padStart(2, '0')}</strong><span>${esc(episode.title)}${episode.isFree ? ' · Free' : ''}</span></button>`).join(''); 
+        
+        if (episodes.episodes?.[0]) openEpisode(episodes.episodes[0]._id); 
+    } catch (error) { 
+        toast(error.message, 'error'); 
+    } 
+}
+
+// MODIFIED: Automatically jump to Watch Section when an episode is clicked
 async function openEpisode(id) {
   try {
+    setSection('watch');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+      
     const episode = await api(`/episodes/${id}`);
     state.currentEpisode = episode;
     if (episode.seriesId && typeof episode.seriesId === 'object') state.currentSeries = episode.seriesId;
@@ -172,7 +179,7 @@ async function openEpisode(id) {
     video.pause();
     video.removeAttribute('src');
     video.load();
-    video.poster = image(episode.thumbnailUrl);
+    video.poster = image(episode.thumbnailUrl || state.currentSeries?.coverImage);
     video.classList.remove('video-error');
 
     if (state.hls) {
@@ -330,93 +337,13 @@ $('#become-creator-form')?.addEventListener('submit', async (event) => {
   }
 });
 
-
-// =========================================================================
-// MASSIVE FIX: DIRECT-TO-CLOUDINARY FAST UPLOAD
-// =========================================================================
-async function uploadAsset(resourceType, file) { 
-    try {
-        // 1. Get Signature from your Node Backend
-        const signData = await api(`/upload/sign?type=${resourceType}`);
-        
-        // 2. Prepare Payload for Cloudinary
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('api_key', signData.apiKey);
-        formData.append('timestamp', signData.timestamp);
-        formData.append('signature', signData.signature);
-        formData.append('folder', signData.folder);
-
-        // 3. Send straight to Cloudinary (bypassing Render limits)
-        const uploadUrl = `https://api.cloudinary.com/v1_1/${signData.cloudName}/${resourceType}/upload`;
-        
-        const response = await fetch(uploadUrl, {
-            method: 'POST',
-            body: formData
-        });
-
-        const result = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(result.error?.message || 'Direct upload to Cloudinary failed');
-        }
-
-        // Return unified URL map
-        return {
-            url: result.secure_url,
-            secure_url: result.secure_url,
-            mediaUrl: result.secure_url,
-            publicId: result.public_id,
-            duration: result.duration || 0
-        };
-    } catch (error) {
-        throw new Error('Upload Failed: ' + error.message);
-    }
+async function uploadAsset(path, file) { 
+    const data = new FormData(); 
+    data.append('file', file); 
+    return api(path, { method: 'POST', body: data, timeout: 600000 }); 
 }
 
-async function submitSeries(event) { 
-    event.preventDefault(); 
-    const form = event.target; 
-    const values = new FormData(form); 
-    const cover = values.get('cover'); 
-    
-    if (!cover?.size) return toast('Choose a cover image', 'error'); 
-    
-    const submitBtn = form.querySelector('button[type="submit"]');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Uploading image...';
-
-    try { 
-        // Changed to use 'image' type
-        const upload = await uploadAsset('image', cover); 
-        
-        submitBtn.textContent = 'Creating series...';
-        await api('/series/create', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ 
-                title: values.get('title'), 
-                description: values.get('description'), 
-                coverImage: upload.url, 
-                genre: values.get('genre'), 
-                language: values.get('language'), 
-                tags: String(values.get('tags') || '').split(',').map(tag => tag.trim()).filter(Boolean), 
-                isPublished: values.get('publish') === 'on', 
-                isPremiumExclusive: values.get('premium') === 'on' 
-            }) 
-        }); 
-        
-        $('#series-modal').classList.add('hidden'); 
-        form.reset(); 
-        await loadCreator(); 
-        toast('Series created successfully!', 'success'); 
-    } catch (error) { 
-        toast(error.message, 'error'); 
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Create series';
-    }
-}
+async function submitSeries(event) { event.preventDefault(); const form = event.target; const values = new FormData(form); const cover = values.get('cover'); if (!cover?.size) return toast('Choose a cover image', 'error'); try { const upload = await uploadAsset('/upload/image', cover); await api('/series/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: values.get('title'), description: values.get('description'), coverImage: upload.url, genre: values.get('genre'), language: values.get('language'), tags: String(values.get('tags') || '').split(',').map(tag => tag.trim()).filter(Boolean), isPublished: values.get('publish') === 'on', isPremiumExclusive: values.get('premium') === 'on' }) }); $('#series-modal').classList.add('hidden'); form.reset(); await loadCreator(); toast('Series created', 'success'); } catch (error) { toast(error.message, 'error'); } }
 
 async function submitUpload(event) { 
     event.preventDefault(); 
@@ -433,48 +360,30 @@ async function submitUpload(event) {
     if (!genre || !culturalCategory || !language) return toast('Choose a genre, cultural category, and language', 'error'); 
     
     submit.disabled = true; 
-    submit.textContent = 'Uploading video securely...'; 
+    submit.textContent = 'Uploading video (please wait)...'; 
     
     try { 
-        // Fast direct upload
-        const upload = await uploadAsset('video', file); 
-        const mediaUrl = upload.secure_url; 
+        const upload = await uploadAsset('/upload/video', file); 
+        const mediaUrl = upload.hlsUrl || upload.mediaUrl || upload.secure_url || upload.url; 
+        if (!mediaUrl || !/^https?:\/\/.+\.(mp4|m3u8)(?:\?.*)?$/i.test(mediaUrl)) throw new Error('Cloudinary did not return a playable MP4 or HLS URL'); 
         
         const thumbnail = values.get('thumbnail'); 
-        let thumbnailUpload = null;
-        if (thumbnail?.size) {
-            submit.textContent = 'Uploading thumbnail...';
-            thumbnailUpload = await uploadAsset('image', thumbnail);
-        }
+        const thumbnailUpload = thumbnail?.size ? await uploadAsset('/upload/image', thumbnail) : null; 
+        if (thumbnail?.size && !thumbnailUpload?.url) throw new Error('Thumbnail upload did not return an image URL'); 
         
-        submit.textContent = 'Saving episode details...';
         const access = values.get('access'); 
-        
         await api(`/episodes/series/${encodeURIComponent(seriesId)}/create`, { 
             method: 'POST', 
             headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ 
-                title: values.get('title'), 
-                description: values.get('description'), 
-                mediaUrl, 
-                thumbnailUrl: thumbnailUpload?.url || null, 
-                genre, 
-                culturalCategory, 
-                language, 
-                tags: String(values.get('tags') || '').split(',').map(tag => tag.trim()).filter(Boolean), 
-                mediaUrl, 
-                duration: upload.duration || 0, 
-                coinCost: Number(values.get('coinCost')), 
-                isFree: false, 
-                adUnlockable: access === 'Ad', 
-                isPublished: values.get('publish') === 'on' 
-            }) 
+            body: JSON.stringify({ title: values.get('title'), description: values.get('description'), mediaUrl, thumbnailUrl: thumbnailUpload?.url || null, genre, culturalCategory, language, tags: String(values.get('tags') || '').split(',').map(tag => tag.trim()).filter(Boolean), mediaUrl, duration: upload.duration || 0, coinCost: Number(values.get('coinCost')), isFree: false, adUnlockable: access === 'Ad', isPublished: values.get('publish') === 'on' }) 
         }); 
         
         $('#upload-modal').classList.add('hidden'); 
         form.reset(); 
         await loadCreator(); 
-        toast('Episode uploaded fast & successfully!', 'success'); 
+        
+        // MODIFIED: Informative success toast regarding processing time
+        toast('Upload successful! 🎬 Cloudinary is processing the video for fast streaming, so playback may take a minute to fully load.', 'success'); 
     } catch (error) { 
         console.error('Episode upload failed:', error); 
         toast(error.message, 'error'); 
