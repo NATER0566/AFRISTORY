@@ -120,14 +120,16 @@
           width: 100%; padding: 0; margin: 0;
         }
         
-        /* Exactly 6 Even Items */
+        /* Exactly 6 Even Items WITH TEXT VISIBLE */
         .nav-item {
           display: flex; flex-direction: column; align-items: center; justify-content: center;
-          flex: 1 1 0; min-width: 0; gap: 4px; font-size: 10px; font-weight: 500; 
+          flex: 1 1 0; gap: 4px; font-size: 10px; font-weight: 500; 
           color: #999; padding: 8px 0; border: none; background: transparent;
         }
         .nav-icon { font-size: 22px; font-style: normal; margin-bottom: 2px; transition: transform 0.2s; }
-        .nav-item span { display: block; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+        
+        /* FIXED: Removed the overflow:hidden that was cutting off the text! */
+        .nav-item span { display: block; margin: 0; white-space: nowrap; }
         
         /* Active State Glow */
         .nav-item.active { color: #d4a017; }
