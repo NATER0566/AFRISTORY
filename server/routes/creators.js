@@ -34,7 +34,7 @@ export default async function creatorRoutes(fastify, opts) {
     }
   });
 
-  // Become a creator (FIXED: No longer requires a custom brand name)
+  // Become a creator
   fastify.post('/become-creator', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
@@ -118,7 +118,7 @@ export default async function creatorRoutes(fastify, opts) {
       let includeDrafts = false;
       if (request.cookies?.token && await verifyAuth(request, reply)) {
         const currentCreator = await Creator.findOne({ userId: request.user._id });
-        includeDrafts = currentCreator?._id.toString() === creatorId;
+        includeDrafts = currentCreator?._id?.toString() === creatorId;
       }
       const query = includeDrafts ? { creatorId } : { creatorId, isPublished: true };
 
@@ -147,12 +147,12 @@ export default async function creatorRoutes(fastify, opts) {
     }
   });
 
-  // Get top creators
+  // Get top creators (FIXED: Removed isVerified check so new creators display immediately)
   fastify.get('/top/creators', async (request, reply) => {
     try {
       const { limit = 10 } = request.query;
 
-      const creators = await Creator.find({ isVerified: true })
+      const creators = await Creator.find({})
         .sort({ totalViews: -1 })
         .limit(parseInt(limit))
         .populate('userId', 'username profileImage profile');
