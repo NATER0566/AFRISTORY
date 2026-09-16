@@ -1,9 +1,9 @@
 const API = '/api';
+const PREVIEW_LIMIT = 30; // Seconds before the video locks
 const state = { user: null, profile: null, rewards: null, series: [], currentSeries: null, currentEpisode: null, hls: null, recommendedEpisodes: [] };
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 
-// FIX 1: Removed Cache so new uploads appear instantly
 const api = async (path, options = {}) => { 
   try { 
     const timeoutMs = options.timeout || 600000; 
@@ -203,32 +203,34 @@ async function openEpisode(id) {
         <video src="${mediaUrl}" poster="${image(episode.thumbnailUrl || episode.seriesId?.coverImage)}" loop playsinline ${episode.hasAccess ? 'controls' : ''}></video>
         ${lockScreen}
         <div class="feed-overlay">
-          <h3 style="margin:0; font-size:22px;">${esc(episode.title)}</h3>
-          <p style="margin:6px 0 0 0; font-size:14px; opacity:0.9;">${esc(episode.seriesId?.title || 'AfroStory')}</p>
+          <h3 style="margin:0; font-size:20px; font-weight:700;">${esc(episode.title)}</h3>
+          <p style="margin:4px 0 0 0; font-size:14px; opacity:0.9;">@${esc(episode.seriesId?.creatorId?.brandName || 'AfroStory')} · ${esc(episode.seriesId?.title || '')}</p>
         </div>
         <div class="feed-sidebar">
-          <button class="notification-button" style="background:rgba(36,36,36,0.8); border:none;" onclick="document.getElementById('comments-sheet').classList.remove('hidden')">💬</button>
+          <button class="feed-action-btn" data-action="save-current" title="Save to Favorites">
+            <i>♡</i>
+          </button>
+          <button class="feed-action-btn" onclick="document.getElementById('comments-sheet').classList.remove('hidden')" title="Comments">
+            <i>💬</i>
+          </button>
         </div>
       `;
 
       const videoEl = card.querySelector('video');
 
-      // FIX 3: Aggressive 30-Second Lock
       if (!episode.hasAccess) {
-         // Check constantly as the video plays
          videoEl.addEventListener('timeupdate', () => {
-             if (videoEl.currentTime >=5) {
+             if (videoEl.currentTime >= PREVIEW_LIMIT) {
                  videoEl.pause();
                  videoEl.removeAttribute('controls'); 
-                 if (videoEl.currentTime >5) videoEl.currentTime = 30; // Snap back if they try to bypass
+                 if (videoEl.currentTime > PREVIEW_LIMIT + 0.5) videoEl.currentTime = PREVIEW_LIMIT;
                  card.querySelector(`#lock-${episode._id}`).classList.remove('hidden');
              }
          });
-         // Check if they aggressively drag the seek bar past 30 seconds
          videoEl.addEventListener('seeked', () => {
-             if (videoEl.currentTime >= 5) {
+             if (videoEl.currentTime >= PREVIEW_LIMIT) {
                  videoEl.pause();
-                 videoEl.currentTime = 5;
+                 videoEl.currentTime = PREVIEW_LIMIT;
                  videoEl.removeAttribute('controls'); 
                  card.querySelector(`#lock-${episode._id}`).classList.remove('hidden');
              }
@@ -351,7 +353,13 @@ async function loadAdmin() { try { const [stats, reports] = await Promise.all([a
 async function showPackages() { try { const plans = await api('/payment/packages'); const choices = Object.entries(plans).map(([key, plan]) => `<button class="plan-option" data-package="${key}"><strong>${key}</strong><span>${plan.coins} coins · ₦${Number(plan.naira).toLocaleString()}</span></button>`).join(''); $('#modal-root').innerHTML = `<div class="modal"><div class="modal-header"><div><p class="eyebrow">POWER YOUR WATCHLIST</p><h2>Choose your coins</h2></div><button class="modal-close" data-action="close-modal">×</button></div><div class="plan-grid">${choices}</div></div>`; $('#modal-root').classList.remove('hidden'); } catch (error) { toast(error.message, 'error'); } }
 async function showSubscriptionPlans() { try { const plans = await api('/vip/plans'); const choices = Object.entries(plans).map(([tier, plan]) => `<button class="plan-option" data-tier="${tier}"><strong>${tier}</strong><span>${plan.price} coins · ${plan.duration} day${plan.duration === 1 ? '' : 's'}</span></button>`).join(''); $('#modal-root').innerHTML = `<div class="modal"><div class="modal-header"><div><p class="eyebrow">UNLOCK EVERY STORY</p><h2>Choose a pass</h2></div><button class="modal-close" data-action="close-modal">×</button></div><div class="plan-grid">${choices}</div></div>`; $('#modal-root').classList.remove('hidden'); } catch (error) { toast(error.message, 'error'); } }
 
-async function loadHistory() { try { const result = await api('/users/history/watch?limit=50'); $('#history-list').innerHTML = (result.history || []).map(item => `<button class="data-row history-row" data-history-episode="${esc(item.episodeId?._id)}" data-history-series="${esc(item.seriesId?._id)}"><div><strong>${esc(item.seriesId?.title || 'Series')}</strong><p>${esc(item.episodeId?.title || 'Episode')}</p></div><span class="data-value">${Math.round(Number(item.watchedPercentage || 0))}%</span></button>`).join('') || '<div class="empty-state">Your watched episodes will appear here.</div>'; } catch (error) { toast(error.message, 'error'); } }
+async function loadHistory() { 
+  try { 
+    const result = await api('/users/history/watch?limit=50'); 
+    const list = result.history || result || [];
+    $('#history-list').innerHTML = list.map(item => `<button class="data-row history-row" data-history-episode="${esc(item.episodeId?._id)}" data-history-series="${esc(item.seriesId?._id)}"><div><strong>${esc(item.seriesId?.title || 'Series')}</strong><p>${esc(item.episodeId?.title || 'Episode')}</p></div><span class="data-value">${Math.round(Number(item.watchedPercentage || 0))}%</span></button>`).join('') || '<div class="empty-state">Your watched episodes will appear here.</div>'; 
+  } catch (error) { toast(error.message, 'error'); } 
+}
 async function openHistoryEpisode(seriesId, episodeId) { try { const [series, episode] = await Promise.all([api(`/series/${seriesId}`), api(`/episodes/${episodeId}`)]); state.currentSeries = series; setSection('watch'); await openEpisode(episode._id); } catch (error) { toast(error.message, 'error'); } }
 
 function renderProfile(profile) { const user = profile.user || {}; const details = user.profile || {}; const avatar = details.avatarUrl || user.profileImage; $('#profile-display-name').textContent = details.displayName || user.username || 'Profile'; $('#profile-handle').textContent = `@${user.username || 'story-lover'}`; $('#profile-bio').textContent = details.bio || 'Complete your profile to help your story journey feel like home.'; $('#profile-location').textContent = [details.region, details.country].filter(Boolean).join(' · '); $('#profile-avatar').innerHTML = avatar ? `<img src="${image(avatar)}" alt="">` : esc((details.displayName || user.username || 'A')[0].toUpperCase()); if (details.coverUrl) $('#profile-cover').style.backgroundImage = `linear-gradient(120deg,#111b,#1118),url('${image(details.coverUrl)}')`; $('.creator-profile-tab')?.classList.toggle('hidden', !profile.creator); }
@@ -375,8 +383,23 @@ async function searchLibrary(event) { event.preventDefault(); const query = $('#
 async function searchEpisodes(event) { event.preventDefault(); const input = event.currentTarget.querySelector('input'); const query = input.value.trim(); if (query.length < 2) return toast('Enter at least two characters', 'error'); try { const result = await api(`/search/global?q=${encodeURIComponent(query)}&type=episodes&limit=50`); const target = event.currentTarget.id === 'search-form' ? '#series-grid' : '#search-results'; $(target).innerHTML = (result.episodes?.data || []).map(episodeCard).join('') || '<div class="empty-state">No episodes matched your search.</div>'; } catch (error) { toast(error.message, 'error'); } }
 
 async function loadTrending() { try { const result = await api('/search/trending'); $('#trending-list').innerHTML = (result.trending || []).map(episodeCard).join('') || '<div class="empty-state">No trending episodes yet.</div>'; } catch (error) { toast(error.message, 'error'); } }
-async function loadContinue() { try { const result = await api('/users/history/watch?limit=50'); $('#continue-list').innerHTML = (result.history || []).filter(item => !item.completed).map(item => `<button class="data-row history-row" data-history-episode="${esc(item.episodeId?._id)}" data-history-series="${esc(item.seriesId?._id)}"><div><strong>${esc(item.seriesId?.title || 'Series')}</strong><p>${esc(item.episodeId?.title || 'Episode')}</p></div><span class="data-value">${Math.round(Number(item.watchedPercentage || 0))}%</span></button>`).join('') || '<div class="empty-state">Nothing to continue yet.</div>'; } catch (error) { toast(error.message, 'error'); } }
-async function loadFavorites() { try { const result = await api('/favorites'); $('#favorites-list').innerHTML = (result || []).map(card).join('') || '<div class="empty-state">Save stories from the player to build your library.</div>'; } catch (error) { toast(error.message, 'error'); } }
+
+async function loadContinue() { 
+  try { 
+    const result = await api('/users/history/watch?limit=50'); 
+    const list = result.history || result || [];
+    $('#continue-list').innerHTML = list.filter(item => !item.completed).map(item => `<button class="data-row history-row" data-history-episode="${esc(item.episodeId?._id)}" data-history-series="${esc(item.seriesId?._id)}"><div><strong>${esc(item.seriesId?.title || 'Series')}</strong><p>${esc(item.episodeId?.title || 'Episode')}</p></div><span class="data-value">${Math.round(Number(item.watchedPercentage || 0))}%</span></button>`).join('') || '<div class="empty-state">Nothing to continue yet.</div>'; 
+  } catch (error) { toast(error.message, 'error'); } 
+}
+
+async function loadFavorites() { 
+  try { 
+    const result = await api('/favorites'); 
+    const list = result.favorites || result.data || result || [];
+    $('#favorites-list').innerHTML = list.map(card).join('') || '<div class="empty-state">Save stories from the player to build your library.</div>'; 
+  } catch (error) { toast(error.message, 'error'); } 
+}
+
 async function toggleFavorite() { if (!state.currentSeries) return toast('Open a story first', 'error'); try { const result = await api(`/favorites/${state.currentSeries._id}/toggle`, { method: 'POST' }); $('#save-current').textContent = result.saved ? 'Saved to favorites' : 'Save to favorites'; toast(result.saved ? 'Added to favorites' : 'Removed from favorites', 'success'); } catch (error) { toast(error.message, 'error'); } }
 
 function loadSettings() { const settings = JSON.parse(localStorage.getItem('afrostory-settings') || '{}'); $('#settings-language').value = settings.language || 'en'; $('#settings-notifications').checked = settings.notifications !== false; }
