@@ -1,4 +1,3 @@
-
 const API = '/api';
 const PREVIEW_LIMIT = 30; // Seconds before the video locks
 const state = { 
@@ -444,9 +443,9 @@ async function loadCreator() {
     try { 
         const creator = await api('/creators/me/profile') || {}; 
         const series = await api(`/creators/${creator._id}/series?limit=100`) || {}; 
-        $('#creator-stats').innerHTML = [['TOTAL VIEWS', creator.totalViews], ['TOTAL EARNINGS', creator.totalEarnings], ['FOLLOWERS', creator.totalFollowers], ['SERIES', series.series?.length || 0]].map(item => `<div class="stat-card"><span class="eyebrow">${item[0]}</span><strong>${Number(item[1] || 0).toLocaleString()}</strong></div>`).join(''); 
-        $('#my-series-grid').innerHTML = (series.series || []).map(card).join('') || '<p>Create your first series.</p>'; 
-        $('#upload-series').innerHTML = (series.series || []).map(item => `<option value="${esc(item._id)}">${esc(item.title)}</option>`).join(''); 
+        if ($('#creator-stats')) $('#creator-stats').innerHTML = [['TOTAL VIEWS', creator.totalViews], ['TOTAL EARNINGS', creator.totalEarnings], ['FOLLOWERS', creator.totalFollowers], ['SERIES', series.series?.length || 0]].map(item => `<div class="stat-card"><span class="eyebrow">${item[0]}</span><strong>${Number(item[1] || 0).toLocaleString()}</strong></div>`).join(''); 
+        if ($('#my-series-grid')) $('#my-series-grid').innerHTML = (series.series || []).map(card).join('') || '<p>Create your first series.</p>'; 
+        if ($('#upload-series')) $('#upload-series').innerHTML = (series.series || []).map(item => `<option value="${esc(item._id)}">${esc(item.title)}</option>`).join(''); 
     } catch (error) { 
         if (error.message?.includes('creator')) { $('#section-creator').innerHTML = '<div style="text-align:center; max-width:400px; margin:100px auto;"><p class="eyebrow">SHARE YOUR VOICE</p><h2>Become a creator</h2><p>Create a home for your stories and upload episodes.</p><button class="button button-primary" data-action="become-creator">Start creating</button></div>'; } 
         else toast(error.message, 'error'); 
@@ -753,7 +752,7 @@ $('#comment-form')?.addEventListener('submit', async event => {
 
 $('#become-creator-form')?.addEventListener('submit', async (event) => {      event.preventDefault(); const form = event.target; const brandName = form.querySelector('[name="brandName"]').value.trim(); const bio = form.querySelector('[name="bio"]').value.trim(); const submitBtn = form.querySelector('button[type="submit"]');      if (!brandName) return toast('Brand name is required', 'error');      submitBtn.disabled = true; submitBtn.textContent = 'Creating...';      try {          await api('/creators/become-creator', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ brandName, bio }) });          if(state.user) state.user.role = 'CREATOR';          $$('.creator-only').forEach(el => el.classList.remove('hidden'));$('#become-creator-modal').classList.add('hidden'); 
         toast('Welcome to Creator Studio!', 'success'); 
-        setSection('creator'); await loadCreator();
+        setSection('creator');
     } catch (error) { toast(error.message, 'error'); } 
     finally { submitBtn.disabled = false; submitBtn.textContent = 'Start creating'; }
 });
