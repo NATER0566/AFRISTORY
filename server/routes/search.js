@@ -16,32 +16,34 @@ export default async function searchRoutes(fastify, opts) {
 
       const { skip, limit: l, page: p } = paginate(page, limit);
 
-      const escapedQuery = q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const searchRegex = { $regex: escapedQuery, $options: 'i' };
+      // FIX: Split the search query into individual keywords for broad TikTok-style searching
+      const words = q.trim().split(/\s+/).filter(w => w.length > 0);
       let results = {};
 
       if (!type || type === 'series') {
-        const series = await Series.find({
-          $or: [
-            { title: searchRegex },
-            { description: searchRegex },
-            { tags: searchRegex },
-          ],
+        const seriesQuery = {
+          $and: words.map(word => {
+            const regex = { $regex: word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
+            return {
+              $or: [
+                { title: regex },
+                { description: regex },
+                { tags: regex },
+                { genre: regex },
+                { language: regex }
+              ]
+            };
+          }),
           isPublished: true,
-        })
+        };
+
+        const series = await Series.find(seriesQuery)
           .populate('creatorId', 'brandName profileImage')
           .skip(skip)
           .limit(l)
-          .lean(); // Faster, lighter, prevents virtual crashes
+          .lean();
 
-        const total = await Series.countDocuments({
-          $or: [
-            { title: searchRegex },
-            { description: searchRegex },
-            { tags: searchRegex },
-          ],
-          isPublished: true,
-        });
+        const total = await Series.countDocuments(seriesQuery);
 
         results.series = {
           data: series.map(s => ({
@@ -54,19 +56,26 @@ export default async function searchRoutes(fastify, opts) {
       }
 
       if (!type || type === 'creators') {
-        const creators = await Creator.find({
-          $or: [{ brandName: searchRegex }, { bio: searchRegex }],
+        const creatorQuery = {
+          $and: words.map(word => {
+            const regex = { $regex: word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
+            return {
+              $or: [
+                { brandName: regex },
+                { bio: regex }
+              ]
+            };
+          }),
           isVerified: true,
-        })
+        };
+
+        const creators = await Creator.find(creatorQuery)
           .skip(skip)
           .limit(l)
           .populate('userId', 'username profileImage')
-          .lean(); // Faster, lighter, prevents virtual crashes
+          .lean();
 
-        const total = await Creator.countDocuments({
-          $or: [{ brandName: searchRegex }, { bio: searchRegex }],
-          isVerified: true,
-        });
+        const total = await Creator.countDocuments(creatorQuery);
 
         results.creators = {
           data: creators.map(c => ({
@@ -80,33 +89,30 @@ export default async function searchRoutes(fastify, opts) {
       }
 
       if (!type || type === 'episodes') {
-        const episodes = await Episode.find({
-          $or: [
-            { title: searchRegex },
-            { description: searchRegex },
-            { genre: searchRegex },
-            { culturalCategory: searchRegex },
-            { language: searchRegex },
-            { tags: searchRegex },
-          ],
+        const episodeQuery = {
+          $and: words.map(word => {
+            const regex = { $regex: word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
+            return {
+              $or: [
+                { title: regex },
+                { description: regex },
+                { genre: regex },
+                { culturalCategory: regex },
+                { language: regex },
+                { tags: regex }
+              ]
+            };
+          }),
           isPublished: true,
-        })
+        };
+
+        const episodes = await Episode.find(episodeQuery)
           .populate({ path: 'seriesId', populate: { path: 'creatorId', select: 'brandName profileImage' } })
           .skip(skip)
           .limit(l)
-          .lean(); // Faster, lighter, prevents virtual crashes
+          .lean();
 
-        const total = await Episode.countDocuments({
-          $or: [
-            { title: searchRegex },
-            { description: searchRegex },
-            { genre: searchRegex },
-            { culturalCategory: searchRegex },
-            { language: searchRegex },
-            { tags: searchRegex },
-          ],
-          isPublished: true,
-        });
+        const total = await Episode.countDocuments(episodeQuery);
 
         results.episodes = {
           data: episodes.map(e => ({
@@ -135,15 +141,22 @@ export default async function searchRoutes(fastify, opts) {
       }
 
       const { skip, limit: l, page: p } = paginate(page, limit);
-      const escapedQuery = q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const searchRegex = { $regex: escapedQuery, $options: 'i' };
-
+      
+      const words = q.trim().split(/\s+/).filter(w => w.length > 0);
+      
       let query = {
-        $or: [
-          { title: searchRegex },
-          { description: searchRegex },
-          { tags: searchRegex },
-        ],
+        $and: words.map(word => {
+          const regex = { $regex: word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
+          return {
+            $or: [
+              { title: regex },
+              { description: regex },
+              { tags: regex },
+              { genre: regex },
+              { language: regex }
+            ]
+          };
+        }),
         isPublished: true,
       };
 
@@ -163,7 +176,7 @@ export default async function searchRoutes(fastify, opts) {
         .sort(sortBy)
         .skip(skip)
         .limit(l)
-        .lean(); // Faster, lighter, prevents virtual crashes
+        .lean();
 
       const total = await Series.countDocuments(query);
 
@@ -195,23 +208,30 @@ export default async function searchRoutes(fastify, opts) {
       }
 
       const { skip, limit: l, page: p } = paginate(page, limit);
-      const escapedQuery = q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const searchRegex = { $regex: escapedQuery, $options: 'i' };
-
-      const creators = await Creator.find({
-        $or: [{ brandName: searchRegex }, { bio: searchRegex }],
+      
+      const words = q.trim().split(/\s+/).filter(w => w.length > 0);
+      
+      const query = {
+        $and: words.map(word => {
+          const regex = { $regex: word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
+          return {
+            $or: [
+              { brandName: regex },
+              { bio: regex }
+            ]
+          };
+        }),
         isVerified: true,
-      })
+      };
+
+      const creators = await Creator.find(query)
         .populate('userId', 'username profileImage')
         .sort({ totalViews: -1 })
         .skip(skip)
         .limit(l)
-        .lean(); // Faster, lighter, prevents virtual crashes
+        .lean();
 
-      const total = await Creator.countDocuments({
-        $or: [{ brandName: searchRegex }, { bio: searchRegex }],
-        isVerified: true,
-      });
+      const total = await Creator.countDocuments(query);
 
       sendSuccess(reply, {
         creators: creators.map(c => ({
@@ -241,7 +261,7 @@ export default async function searchRoutes(fastify, opts) {
         .populate({ path: 'seriesId', populate: { path: 'creatorId', select: 'brandName profileImage' } })
         .sort({ totalViews: -1, createdAt: -1 })
         .limit(parseInt(limit))
-        .lean(); // Faster, lighter, prevents virtual crashes
+        .lean(); 
 
       sendSuccess(reply, {
         trending: trendingEpisodes.map(episode => ({
