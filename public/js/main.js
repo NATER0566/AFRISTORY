@@ -132,6 +132,10 @@ function episodeCard(episode) { const series = episode.seriesId || {}; const cre
 
 async function loadDiscover() {
     try {
+        // Restore default Discover layout elements (unhide them) when coming back from Series Details
+        $$('#section-discover .section-heading').forEach(el => el.classList.remove('hidden'));
+        $('#creator-grid')?.classList.remove('hidden');
+
         const genre = $('#genre-filter')?.value || '';
         const sort = $('#sort-filter')?.value || 'trending';
         const result = await api(`/series/discover/all?page=1&limit=12&sort=${encodeURIComponent(sort)}${genre ? `&genre=${encodeURIComponent(genre)}` : ''}`) || {};
@@ -210,12 +214,39 @@ async function openDefaultFeed() {
 
 async function openSeries(id) {
     try {
-        const episodes = await api(`/series/${id}/episodes?limit=1`) || {};
-        if (episodes.episodes && episodes.episodes.length > 0) {
-            openEpisode(episodes.episodes[0]._id);
+        // Fetch full series details alongside its episodes
+        const [seriesInfo, episodesData] = await Promise.all([
+            api(`/series/${id}`).catch(() => null),
+            api(`/series/${id}/episodes?limit=50`).catch(() => ({}))
+        ]);
+        
+        const episodes = episodesData.episodes || [];
+        if (!seriesInfo) throw new Error("Could not load series details");
+
+        // Clean the layout by hiding extraneous Discover elements
+        $$('#section-discover .section-heading').forEach(el => el.classList.add('hidden'));
+        $('#creator-grid')?.classList.add('hidden');
+
+        // Render Series Details right inside the Discover page
+        $('#featured-series').innerHTML = `
+            <article class="featured-card" style="background-image: linear-gradient(to top, rgba(17,17,17,1) 0%, rgba(17,17,17,0.4) 100%), url('${image(seriesInfo.coverImage)}')">
+                <button class="button button-quiet" onclick="loadDiscover()" style="margin-bottom: 20px; z-index: 10; position: relative;">← Back to Series</button>
+                <p class="eyebrow" style="position: relative; z-index: 10;">${esc(seriesInfo.genre || 'SERIES')}</p>
+                <h2 style="position: relative; z-index: 10;">${esc(seriesInfo.title)}</h2>
+                <p style="position: relative; z-index: 10; max-width: 600px;">${esc(seriesInfo.description || 'No description available.')}</p>
+                <p style="color:#d4a017; margin-top:10px; position: relative; z-index: 10;">★ ${Number(seriesInfo.rating || 0).toFixed(1)} &nbsp; · &nbsp; ${esc(seriesInfo.language || 'English')}</p>
+                ${episodes.length > 0 ? `<button class="button button-primary" onclick="openEpisode('${episodes[0]._id}')" style="margin-top:15px; position: relative; z-index: 10;">Play Episode 1</button>` : ''}
+            </article>
+        `;
+        
+        // Render the Episodes for this Series
+        if (episodes.length > 0) {
+            $('#series-grid').innerHTML = episodes.map(episodeCard).join('');
         } else {
-            toast('This story has no episodes yet.', 'info');
+            $('#series-grid').innerHTML = '<p style="grid-column: 1/-1;">This story has no episodes yet.</p>';
         }
+        
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch(e) { toast('Could not open story.', 'error'); }
 }
 
@@ -224,7 +255,9 @@ async function openEpisode(id) {
         setSection('watch');
         window.scrollTo({ top: 0, behavior: 'smooth' });
         const feedContainer = $('#tiktok-feed');
-        feedContainer.innerHTML = '<p>Loading feed...</p>'; 
+        
+        // Triggers the beautiful shiny CSS loading spinner perfectly
+        feedContainer.innerHTML = '<div style="text-align:center; margin-top:50px;"></div>'; 
 
         const currentEp = await api(`/episodes/${id}`) || {}; 
         const feedData = await api('/episodes/feed?sort=trending&limit=15') || {}; 
@@ -619,17 +652,65 @@ async function refreshNotificationBadge() {
 
 async function saveProfile(event) {
     event.preventDefault();
+    const form = event.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Saving profile...';
+
     try {
-        const form = new FormData(event.target);
-        const updated = await api('/users/profile/update', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: form.get('username'), profile: { displayName: form.get('displayName'), bio: form.get('bio') } }) });
-        if(updated) {
-            state.user = { ...state.user, ...updated }; 
-            renderHeaderUser(state.user); 
-            $('#profile-edit-panel').classList.add('hidden'); 
-            await loadProfile(); 
-            toast('Profile updated', 'success');
+        const values = new FormData(form);
+
+        const profileImgFile = values.get('profileImage');
+        const coverImgFile = values.get('coverImage');
+
+        let avatarUrl;
+        let coverUrl;
+
+        if (profileImgFile && profileImgFile.size) {
+            const upload = await uploadAsset('/upload/image', profileImgFile);
+            avatarUrl = upload.url || upload.secure_url || upload.mediaUrl;
         }
-    } catch (error) { toast(error.message, 'error'); }
+
+        if (coverImgFile && coverImgFile.size) {
+            const upload = await uploadAsset('/upload/image', coverImgFile);
+            coverUrl = upload.url || upload.secure_url || upload.mediaUrl;
+        }
+
+        const payload = {
+            username: values.get('username'),
+            profile: {
+                displayName: values.get('displayName'),
+                bio: values.get('bio'),
+                country: values.get('country'),
+                region: values.get('region'),
+                preferredLanguage: values.get('preferredLanguage')
+            }
+        };
+
+        if (avatarUrl) payload.profile.avatarUrl = avatarUrl;
+        if (coverUrl) payload.profile.coverUrl = coverUrl;
+
+        const updated = await api('/users/profile/update', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (updated) {
+            state.user = { ...state.user, ...updated };
+            renderHeaderUser(state.user);
+            $('#profile-edit-panel').classList.add('hidden');
+            form.reset(); 
+            await loadProfile(true); 
+            toast('Profile updated successfully!', 'success');
+        }
+    } catch (error) {
+        toast(error.message, 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Save profile';
+    }
 }
 
 async function searchLibrary(event) {
@@ -803,10 +884,10 @@ $('#become-creator-form')?.addEventListener('submit', async (event) => {        
     }
 });
 
-$('#genre-filter')?.addEventListener('change', () => { loadDiscover(); loadDiscoverEpisodes(); });
-$('#sort-filter')?.addEventListener('change', () => { loadDiscover(); loadDiscoverEpisodes(); });
-$('#cultural-filter')?.addEventListener('change', loadDiscoverEpisodes);
-$('#language-filter')?.addEventListener('change', loadDiscoverEpisodes);
+$('#genre-filter')?.addEventListener('change', loadDiscover);
+$('#sort-filter')?.addEventListener('change', loadDiscover);
+$('#cultural-filter')?.addEventListener('change', loadDiscover);
+$('#language-filter')?.addEventListener('change', loadDiscover);
 
 setInterval(refreshNotificationBadge, 30000);
 
@@ -830,7 +911,6 @@ async function boot() {
 
         ensureClassificationControls(); 
         await loadDiscover().catch(e => console.warn(e)); 
-        await loadDiscoverEpisodes().catch(e => console.warn(e)); 
         refreshNotificationBadge().catch(e => console.warn(e)); 
         if(window.AfroStoryAds) window.AfroStoryAds.refresh().catch(e => console.warn(e)); 
         setupLazyLoading(); 
