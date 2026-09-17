@@ -1,6 +1,7 @@
 const API = '/api';
 const PREVIEW_LIMIT = 30; // Seconds before the video locks
-const state = { user: null, profile: null, rewards: null, series: [], currentSeries: null, currentEpisode: null, hls: null, recommendedEpisodes: [] };
+// ADDED: isNavigating flag to prevent the Watch page double-load loop
+const state = { user: null, profile: null, rewards: null, series: [], currentSeries: null, currentEpisode: null, hls: null, recommendedEpisodes: [], isNavigating: false };
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 
@@ -60,16 +61,36 @@ function setupLazyLoading() {
   } 
 }
 
+// FIX 1 & 2: Prevent hash loop, and forcibly save history when user leaves the watch section
 function setSection(name) { 
+  // FIX 2: If we are leaving the watch page, forcefully save the progress of the current video before hiding it
+  if (name !== 'watch' && state.currentEpisode) {
+      const activeVideo = document.querySelector('.feed-video-card video');
+      if (activeVideo) saveProgressFeed(state.currentEpisode, activeVideo);
+      
+      // Pause any playing videos so they don't run in background
+      $$('.feed-video-card video').forEach(v => v.pause());
+  }
+
   $$('.app-section').forEach(section => section.classList.toggle('hidden', section.id !== `section-${name}`)); 
   $$('.nav-item[data-section]').forEach(item => item.classList.toggle('active', item.dataset.section === name)); 
   $('#genre-filter')?.closest('.discover-filters')?.classList.toggle('hidden', name !== 'discover'); 
   $('#save-current')?.classList.toggle('hidden', name !== 'watch'); 
   $$('.modal-root').forEach(m => m.classList.add('hidden'));
   $('#mobile-more-sheet')?.classList.add('hidden');
-  location.hash = name; 
   
-  if (name === 'watch' && !state.currentEpisode) openDefaultFeed();
+  // FIX 1: Use history.pushState instead of location.hash. 
+  // location.hash triggers the 'hashchange' event, causing an infinite loop that makes the Watch page double-load.
+  if (location.hash !== `#${name}`) {
+      history.pushState(null, null, `#${name}`);
+  }
+  
+  // FIX 1: Guard against double fetching. Only load default feed if we aren't already navigating to it.
+  if (name === 'watch' && !state.currentEpisode && !state.isNavigating) {
+      state.isNavigating = true;
+      openDefaultFeed().finally(() => state.isNavigating = false);
+  }
+
   if (name === 'wallet') loadWallet(); 
   if (name === 'rewards') loadRewards(); 
   if (name === 'creator') loadCreator(); 
@@ -133,9 +154,6 @@ async function loadDiscoverEpisodes() {
   } catch (error) { toast(error.message, 'error'); } 
 }
 
-// ============================================================================
-// TIKTOK STYLE FEED LOGIC 
-// ============================================================================
 const feedObserver = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     const video = entry.target.querySelector('video');
@@ -147,6 +165,9 @@ const feedObserver = new IntersectionObserver((entries) => {
       state.currentSeries = epData.seriesId;
       loadComments(epData._id);
     } else {
+      // FIX 2: Save progress when video scrolls out of view
+      const epData = JSON.parse(entry.target.dataset.episode || '{}');
+      saveProgressFeed(epData, video);
       video.pause();
     }
   });
@@ -263,11 +284,19 @@ async function openEpisode(id) {
   }
 }
 
+// FIX 2: Reliable History Saving. Removed strict finite duration check which fails on HLS streams.
 async function saveProgressFeed(episode, video, completed = false) { 
-  if (!episode || !video.duration || !Number.isFinite(video.duration)) return; 
+  if (!episode || video.currentTime === 0) return; 
+  
+  // Calculate percentage securely, defaulting to a fallback if duration is missing/Infinity
+  let durationToUse = video.duration && Number.isFinite(video.duration) ? video.duration : (episode.duration || 60);
+  let percentage = Math.min(100, (video.currentTime / durationToUse) * 100);
+  
   try { 
-    await api(`/episodes/${episode._id}/watch`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lastPosition: video.currentTime, watchedPercentage: Math.min(100, video.currentTime / video.duration * 100), completed }) }); 
-  } catch {} 
+    await api(`/episodes/${episode._id}/watch`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lastPosition: video.currentTime, watchedPercentage: percentage, completed }) }); 
+  } catch (e) {
+    console.error("Failed to save progress", e);
+  } 
 }
 
 async function unlockEpisode() { 
@@ -331,13 +360,9 @@ async function unlockEpisode() {
   } catch (error) { toast(error.message, 'error'); } 
 }
 
-// ============================================================================
-// OTHER FUNCTIONALITY
-// ============================================================================
-
 async function loadComments(id) { try { const result = await api(`/comments/episode/${id}?limit=50`); const render = comment => `<article class="comment"><span class="comment-meta">${esc(comment.userId?.username || 'Story lover')}</span><p>${esc(comment.text)}</p><button class="text-button" data-reply-comment="${esc(comment._id)}">Reply</button>${comment.replies?.length ? `<div class="comment-replies">${comment.replies.map(render).join('')}</div>` : ''}</article>`; $('#comments-list').innerHTML = (result.comments || []).map(render).join('') || '<p class="muted">Be the first to share a thought.</p>'; $('#comment-input').placeholder = 'Share what this story brought up for you...'; $('#comment-input').disabled = false; $('#comment-submit').disabled = false; } catch (error) { toast(error.message, 'error'); } }
 
-async function loadWallet() { try { const [wallet, transactions] = await Promise.all([api('/wallet/me/balance'), api('/wallet/me/transactions?limit=10')]); $('#wallet-balance').textContent = Number(wallet.storyCoins || 0).toLocaleString(); $('#wallet-earned').textContent = Number(wallet.totalEarned || 0).toLocaleString(); if(state.user) state.user.adUnlocksRemaining = wallet.adUnlocks || 0; const adBalanceEl = $('#ad-balance'); if (adBalanceEl) adBalanceEl.textContent = Math.max(0, wallet.adUnlocks || 0); if (adBalanceEl?.closest('.wallet-stat')) adBalanceEl.closest('.wallet-stat').style.display = 'block'; $('#transactions-list').innerHTML = (transactions.transactions || []).map(item => `<div class="data-row"><div><strong>${esc(item.description || item.type)}</strong><p>${new Date(item.createdAt).toLocaleDateString()}</p></div><span class="data-value">${esc(item.type === 'SPEND' ? '-' : '+')}${Number(item.amount || 0).toLocaleString()}</span></div>`).join('') || '<div class="empty-state">No transactions yet.</div>'; await window.AfroStoryAds?.refresh(); } catch (error) { toast(error.message, 'error'); } }
+async function loadWallet() { try { const [wallet, transactions] = await Promise.all([api('/wallet/me/balance'), api('/wallet/me/transactions?limit=10')]); $('#wallet-balance').textContent = Number(wallet.storyCoins \vert{}\vert{} 0).toLocaleString(); $('#wallet-earned').textContent = Number(wallet.totalEarned || 0).toLocaleString(); if(state.user) state.user.adUnlocksRemaining = wallet.adUnlocks || 0; const adBalanceEl = $('#ad-balance'); if (adBalanceEl) adBalanceEl.textContent = Math.max(0, wallet.adUnlocks \vert{}\vert{} 0); if (adBalanceEl?.closest('.wallet-stat')) adBalanceEl.closest('.wallet-stat').style.display = 'block'; $('#transactions-list').innerHTML = (transactions.transactions || []).map(item => `<div class="data-row"><div><strong>${esc(item.description || item.type)}</strong><p>${new Date(item.createdAt).toLocaleDateString()}</p></div><span class="data-value">${esc(item.type === 'SPEND' ? '-' : '+')}${Number(item.amount || 0).toLocaleString()}</span></div>`).join('') || '<div class="empty-state">No transactions yet.</div>'; await window.AfroStoryAds?.refresh(); } catch (error) { toast(error.message, 'error'); } }
 
 function renderRewardCard(reward) {
   const eligibility = reward.eligibility || { state: reward.claimed ? 'CLAIMED' : 'LOCKED', reason: 'Complete the required activity first.' };
@@ -383,7 +408,6 @@ async function loadAdmin() { try { const [stats, reports] = await Promise.all([a
 async function showPackages() { try { const plans = await api('/payment/packages'); const choices = Object.entries(plans).map(([key, plan]) => `<button class="plan-option" data-package="${key}"><strong>${key}</strong><span>${plan.coins} coins · ₦${Number(plan.naira).toLocaleString()}</span></button>`).join(''); $('#modal-root').innerHTML = `<div class="modal"><div class="modal-header"><div><p class="eyebrow">POWER YOUR WATCHLIST</p><h2>Choose your coins</h2></div><button class="modal-close" data-action="close-modal">×</button></div><div class="plan-grid">${choices}</div></div>`; $('#modal-root').classList.remove('hidden'); } catch (error) { toast(error.message, 'error'); } }
 async function showSubscriptionPlans() { try { const plans = await api('/vip/plans'); const choices = Object.entries(plans).map(([tier, plan]) => `<button class="plan-option" data-tier="${tier}"><strong>${tier}</strong><span>${plan.price} coins · ${plan.duration} day${plan.duration === 1 ? '' : 's'}</span></button>`).join(''); $('#modal-root').innerHTML = `<div class="modal"><div class="modal-header"><div><p class="eyebrow">UNLOCK EVERY STORY</p><h2>Choose a pass</h2></div><button class="modal-close" data-action="close-modal">×</button></div><div class="plan-grid">${choices}</div></div>`; $('#modal-root').classList.remove('hidden'); } catch (error) { toast(error.message, 'error'); } }
 
-// FIX: History loads safely and filters out deleted episodes
 async function loadHistory() { 
   try { 
     const result = await api('/users/history/watch?limit=50'); 
@@ -431,16 +455,25 @@ async function saveProfile(event) {
   } catch (error) { toast(error.message, 'error'); } 
 }
 
-// FIX: Search library and Episodes target fixes
+// FIX 3: Search Library updated to fetch BOTH series and episodes natively
 async function searchLibrary(event) { 
   event.preventDefault(); 
   const input = event.target.querySelector('input');
   const query = input ? input.value.trim() : ''; 
   if (query.length < 2) return toast('Enter at least two characters', 'error'); 
   try { 
-    $('#search-results').innerHTML = '<div class="empty-state">Searching...</div>';
-    const result = await api(`/search/global?q=${encodeURIComponent(query)}&type=series&limit=50`); 
-    $('#search-results').innerHTML = (result.series?.data || []).map(card).join('') || '<div class="empty-state">No stories matched your search.</div>'; 
+    $('#search-results').innerHTML = '<div class="empty-state" style="margin-top:40px; text-align:center;">Searching...</div>';
+    
+    // We remove the hardcoded `type=series` and let the backend search across all types
+    const result = await api(`/search/global?q=${encodeURIComponent(query)}&limit=50`); 
+    
+    // Combine both arrays of results and render them in the same grid seamlessly
+    const seriesResults = (result.series?.data || result.series || []).map(card);
+    const episodeResults = (result.episodes?.data || result.episodes || []).map(episodeCard);
+    
+    const combinedHTML = [...seriesResults, ...episodeResults].join('');
+    
+    $('#search-results').innerHTML = combinedHTML || '<div class="empty-state">No stories or episodes matched your search.</div>'; 
   } catch (error) { toast(error.message, 'error'); } 
 }
 
@@ -484,9 +517,6 @@ function loadSettings() {
 
 function saveSettings(event) { event.preventDefault(); localStorage.setItem('afrostory-settings', JSON.stringify({ language: $('#settings-language').value, notifications: $('#settings-notifications').checked })); toast('Settings saved', 'success'); }
 
-// ============================================================================
-// THE UNIFIED CLICK LISTENER
-// ============================================================================
 document.addEventListener('click', async event => { 
   const section = event.target.closest('[data-section]'); if (section) setSection(section.dataset.section); 
   const series = event.target.closest('[data-series-id]'); if (series) openSeries(series.dataset.seriesId); 
@@ -517,8 +547,8 @@ document.addEventListener('click', async event => {
   const notification = event.target.closest('[data-read-notification]'); 
   if (notification) { try { await api(`/notifications/${notification.dataset.readNotification}/read`, { method: 'PUT' }); await loadNotifications(); refreshNotificationBadge(); } catch (error) { toast(error.message, 'error'); } } 
 
-  const history = event.target.closest('[data-history-episode]'); 
-  if (history) openHistoryEpisode(history.dataset.historySeries, history.dataset.historyEpisode); 
+  const historyLink = event.target.closest('[data-history-episode]'); 
+  if (historyLink) openHistoryEpisode(historyLink.dataset.historySeries, historyLink.dataset.historyEpisode); 
 
   if (event.target.closest('[data-action="save-current"]')) toggleFavorite(); 
 
@@ -569,10 +599,11 @@ $('#language-filter')?.addEventListener('change', loadDiscoverEpisodes);
 
 setInterval(refreshNotificationBadge, 30000);
 
+// FIX 1: Modified hashchange listener to safely handle direct URL changes without triggering the loop
 window.addEventListener('hashchange', () => { 
   const name = location.hash.slice(1); 
   if (['discover', 'search', 'watch', 'history', 'wallet', 'rewards', 'creator', 'admin', 'profile', 'trending', 'continue', 'favorites', 'settings'].includes(name)) { 
-    setSection(name); 
+    // Instead of forcing setSection which causes a loop, just do standard loading 
     if (name === 'history') loadHistory(); 
     if (name === 'trending') loadTrending(); 
     if (name === 'continue') loadContinue(); 
@@ -587,7 +618,6 @@ async function boot() {
     renderHeaderUser(state.user);
     if (state.user?.role && ['CREATOR', 'ADMIN'].includes(state.user.role)) $$('.creator-only').forEach(el => el.classList.remove('hidden'));          if (state.user?.role === 'ADMIN') $$('.admin-only').forEach(el => el.classList.remove('hidden'));
     
-    // Using independent catches so one failure doesn't break the whole app
     ensureClassificationControls();
     loadDiscover().catch(e => console.error(e));
     loadDiscoverEpisodes().catch(e => console.error(e));
