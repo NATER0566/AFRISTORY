@@ -341,7 +341,44 @@
 
       <section id="section-wallet" class="app-section hidden"><div class="section-heading"><div><p class="eyebrow">YOUR STORY ECONOMY</p><h1>Wallet</h1></div><div><button class="button button-primary" data-action="buy-coins">Get coins <span>↗</span></button><button class="button button-accent" data-action="buy-pass">Get a pass</button></div></div><div class="wallet-overview"><div class="balance-card"><span class="eyebrow">AVAILABLE COINS</span><strong id="wallet-balance">0</strong><span class="balance-caption">Use coins to unlock premium episodes.</span></div><div class="wallet-stat"><span class="eyebrow">TOTAL EARNED</span><strong id="wallet-earned">0</strong><span>Creator earnings</span></div><div class="wallet-stat"><span class="eyebrow">AD UNLOCKS</span><strong id="ad-balance">3</strong><span>Available today</span></div></div><div class="section-heading compact-heading"><h2>Recent transactions</h2></div><div id="transactions-list" class="data-list"></div></section>
       <section id="section-rewards" class="app-section hidden"><div class="rewards-hero"><div><p class="eyebrow">AFROSTORY REWARDS</p><h1>Return. Discover. Earn.</h1><p class="muted">Complete activities on AfroStory and earn coins.</p></div><div class="rewards-balance"><span class="eyebrow">CURRENT BALANCE</span><strong id="rewards-balance">0</strong><span>story coins</span><div class="reward-streak"><b id="reward-current-streak">0</b> day streak <small>Best <span id="reward-best-streak">0</span></small></div></div></div><div id="daily-reward-card" class="daily-reward-card"></div><div class="section-heading compact-heading"><div><p class="eyebrow">SOCIAL MEDIA REWARDS</p><h2>Support AfroStory</h2><p class="muted">Support AfroStory on social media and earn bonus coins.</p></div></div><div id="social-rewards-grid" class="rewards-grid"></div><div class="section-heading compact-heading"><div><p class="eyebrow">EARN COINS</p><h2>Available missions</h2></div></div><div id="rewards-grid" class="rewards-grid"></div><div class="section-heading compact-heading"><div><p class="eyebrow">REWARD HISTORY</p><h2>Recent activity</h2></div></div><div id="rewards-history" class="data-list"></div></section>
-      <section id="section-creator" class="app-section hidden"><div class="section-heading"><div><p class="eyebrow">MAKE YOUR MARK</p><h1>Creator studio</h1></div><button class="button button-primary" data-action="new-series">New series <span>+</span></button></div><div id="creator-stats" class="stats-row"></div><div class="section-heading compact-heading"><h2>Your series</h2><button class="button button-accent" data-action="open-upload">Upload episode</button></div><div id="my-series-grid" class="content-grid"></div></section>
+      
+      <!-- CREATOR DASHBOARD SECTION -->
+      <section id="section-creator" class="app-section hidden">
+        <!-- SPLASH SCREEN: Shown when user is not a creator -->
+        <div id="creator-onboarding" class="hidden" style="text-align:center; max-width:400px; margin:100px auto;">
+          <p class="eyebrow">SHARE YOUR VOICE</p>
+          <h2>Become a creator</h2>
+          <p style="color: #999; margin-bottom: 24px;">Create a home for your stories and upload episodes.</p>
+          
+          <form id="become-creator-form" class="stack-form" style="text-align: left;">
+            <label>Creator Name
+              <input name="brandName" required maxlength="100" placeholder="e.g. Nater Studios">
+            </label>
+            <label>Bio (Optional)
+              <textarea name="bio" maxlength="500" placeholder="Tell viewers what to expect..."></textarea>
+            </label>
+            <button class="button button-primary" type="submit" style="width: 100%; margin-top: 10px;">Start creating</button>
+          </form>
+        </div>
+
+        <!-- ACTUAL DASHBOARD: Shown when user is a creator -->
+        <div id="creator-dashboard" class="hidden">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">MAKE YOUR MARK</p>
+              <h1>Creator studio</h1>
+            </div>
+            <button class="button button-primary" data-action="new-series">New series <span>+</span></button>
+          </div>
+          <div id="creator-stats" class="stats-row"></div>
+          <div class="section-heading compact-heading">
+            <h2>Your series</h2>
+            <button class="button button-accent" data-action="open-upload">Upload episode</button>
+          </div>
+          <div id="my-series-grid" class="content-grid"></div>
+        </div>
+      </section>
+
       <section id="section-admin" class="app-section hidden admin-only"><div class="section-heading"><div><p class="eyebrow">KEEPING THE STORY GOING</p><h1>Admin dashboard</h1></div></div><div id="admin-stats" class="stats-row"></div><div class="section-heading compact-heading"><h2>Moderation queue</h2></div><div id="reports-list" class="data-list"></div></section>
       <section id="section-history" class="app-section hidden"><div class="section-heading"><div><p class="eyebrow">YOUR JOURNEY</p><h1>Watch history</h1></div><button class="button button-quiet" data-section="discover">Discover stories</button></div><div id="history-list" class="data-list"></div></section>
       <section id="section-profile" class="app-section hidden"><div id="profile-cover" class="profile-cover"><div class="profile-header"><div id="profile-avatar" class="profile-avatar">A</div><div class="profile-identity"><p class="eyebrow">YOUR STORY SPACE</p><h1 id="profile-display-name">Profile</h1><p id="profile-handle" class="muted">@username</p><p id="profile-bio" class="profile-bio">Complete your profile to help your story journey feel like home.</p><div id="profile-location" class="profile-location"></div></div><div class="profile-actions"><button class="button button-primary" data-action="edit-profile">Edit profile</button><button class="button button-quiet" data-section="settings">Settings</button></div></div></div><nav class="profile-tabs" aria-label="Profile sections"><button class="profile-tab active" data-profile-tab="overview">Overview</button><button class="profile-tab" data-profile-tab="watchlist">Watchlist</button><button class="profile-tab" data-profile-tab="history">History</button><button class="profile-tab" data-profile-tab="library">My library</button><button class="profile-tab" data-profile-tab="about">About</button><button class="profile-tab creator-profile-tab hidden" data-section="creator">My content</button></nav><div id="profile-panel-overview" class="profile-panel"><div class="profile-summary-grid"><div><p class="eyebrow">RECENTLY WATCHED</p><div id="profile-recent" class="profile-list"></div></div><div><p class="eyebrow">SAVED STORIES</p><div id="profile-saved" class="profile-story-grid"></div></div></div><div class="profile-section-heading"><div><p class="eyebrow">YOUR INTERESTS</p><h2 id="profile-interest-title">Shape your next discovery</h2></div><button class="text-button" data-action="edit-profile">Edit interests</button></div><div id="profile-interests" class="interest-list"></div></div><div id="profile-panel-watchlist" class="profile-panel hidden"><div class="profile-section-heading"><div><p class="eyebrow">YOUR COLLECTION</p><h2>Watchlist</h2></div></div><div id="profile-watchlist" class="profile-story-grid"></div></div><div id="profile-panel-history" class="profile-panel hidden"><div class="profile-section-heading"><div><p class="eyebrow">YOUR JOURNEY</p><h2>Watch history</h2></div></div><div id="profile-history" class="profile-list"></div></div><div id="profile-panel-library" class="profile-panel hidden"><div class="profile-section-heading"><div><p class="eyebrow">UNLOCKED STORIES</p><h2>My library</h2></div></div><div id="profile-library" class="profile-list"></div></div><div id="profile-panel-about" class="profile-panel hidden"><div class="profile-section-heading"><div><p class="eyebrow">ACCOUNT DETAILS</p><h2>About your AfroStory account</h2></div></div><div id="profile-about" class="profile-about"></div></div><div id="profile-edit-panel" class="profile-edit-panel hidden"><div class="profile-section-heading"><div><p class="eyebrow">MAKE IT YOURS</p><h2>Edit profile</h2></div><button class="text-button" data-action="close-profile-edit">Close</button></div><form id="profile-form" class="profile-form"><div class="profile-edit-grid"><label>Display name<input id="profile-display-name-input" name="displayName" maxlength="80"></label><label>Username<input id="profile-username" name="username" required maxlength="30"></label><label>Email<input id="profile-email" name="email" type="email" readonly></label><label>Country<input id="profile-country" name="country" maxlength="80" placeholder="Nigeria"></label><label>Region<input id="profile-region" name="region" maxlength="80" placeholder="North Central"></label><label>Preferred language<select id="profile-language" name="preferredLanguage"><option>English</option><option>Nigerian Pidgin</option><option>Tiv</option><option>Igbo</option><option>Yoruba</option><option>Hausa</option><option>French</option><option>Arabic</option><option>Swahili</option><option>Other</option></select></label></div><label>Bio<textarea id="profile-bio-input" name="bio" maxlength="280" rows="3" placeholder="What kinds of stories stay with you?"></textarea></label><label>Profile photo<input id="profile-image" name="profileImage" type="file" accept="image/jpeg,image/png,image/webp"></label><label>Cover image<input id="profile-cover-image" name="coverImage" type="file" accept="image/jpeg,image/png,image/webp"></label><label>Favorite genres<select id="profile-genres" name="favoriteGenres" multiple><option>Action</option><option>Drama</option><option>Comedy</option><option>Romance</option><option>Thriller</option><option>Sci-Fi</option><option>Horror</option><option>Documentary</option><option>Afro-Futurism</option><option>Folklore</option><option>Urban Drama</option><option>Animation</option><option>Historical</option><option>Adventure</option><option>Mystery</option><option>Crime</option><option>Family</option><option>Faith &amp; Inspirational</option><option>Musical</option><option>Biography</option><option>Short Film</option></select></label><label>Favorite cultures / communities<input id="profile-cultures" name="favoriteCultures" maxlength="500" placeholder="Tiv, Igbo, Yoruba"></label><div class="profile-privacy"><label class="checkbox-label"><input id="profile-public" name="profileVisibility" type="checkbox"> Make my profile public</label><label class="checkbox-label"><input id="profile-show-favorites" name="showFavorites" type="checkbox"> Show favorites publicly</label></div><button class="button button-primary" type="submit">Save profile</button></form></div></section>
@@ -369,29 +406,6 @@
         <button class="sheet-item" data-section="settings"><i>⚙</i><span>Settings</span></button>
         <button class="sheet-item sheet-logout" data-action="logout"><i>↪</i><span>Sign out</span></button>
       </div>
-    </div>
-  </div>
-
-  <!-- BECOME CREATOR MODAL -->
-  <div id="become-creator-modal" class="modal-root hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <div>
-          <p class="eyebrow">SHARE YOUR VOICE</p>
-          <h2>Become a creator</h2>
-        </div>
-        <button class="modal-close" data-action="close-become-creator">×</button>
-      </div>
-      <form id="become-creator-form" class="stack-form">
-        <p style="color: #999; margin-bottom: 16px;">Create a home for your stories and upload episodes.</p>
-        <label>Creator Name
-          <input name="brandName" required maxlength="100" placeholder="e.g. Nater Studios">
-        </label>
-        <label>Bio (Optional)
-          <textarea name="bio" maxlength="500" placeholder="Tell viewers what to expect..."></textarea>
-        </label>
-        <button class="button button-primary" type="submit">Start creating</button>
-      </form>
     </div>
   </div>
 
