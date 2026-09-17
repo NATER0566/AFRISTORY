@@ -443,41 +443,85 @@ async function loadCreator() {
     try { 
         const creator = await api('/creators/me/profile') || {}; 
         const series = await api(`/creators/${creator._id}/series?limit=100`) || {}; 
+        
+        $('#creator-dashboard')?.classList.remove('hidden');
+        $('#creator-onboarding')?.classList.add('hidden');
+
         if ($('#creator-stats')) $('#creator-stats').innerHTML = [['TOTAL VIEWS', creator.totalViews], ['TOTAL EARNINGS', creator.totalEarnings], ['FOLLOWERS', creator.totalFollowers], ['SERIES', series.series?.length || 0]].map(item => `<div class="stat-card"><span class="eyebrow">${item[0]}</span><strong>${Number(item[1] || 0).toLocaleString()}</strong></div>`).join(''); 
         if ($('#my-series-grid')) $('#my-series-grid').innerHTML = (series.series || []).map(card).join('') || '<p>Create your first series.</p>'; 
         if ($('#upload-series')) $('#upload-series').innerHTML = (series.series || []).map(item => `<option value="${esc(item._id)}">${esc(item.title)}</option>`).join(''); 
     } catch (error) { 
-        if (error.message?.includes('creator')) { $('#section-creator').innerHTML = '<div style="text-align:center; max-width:400px; margin:100px auto;"><p class="eyebrow">SHARE YOUR VOICE</p><h2>Become a creator</h2><p>Create a home for your stories and upload episodes.</p><button class="button button-primary" data-action="become-creator">Start creating</button></div>'; } 
-        else toast(error.message, 'error'); 
+        if (error.message?.includes('creator')) { 
+            $('#creator-dashboard')?.classList.add('hidden');
+            $('#creator-onboarding')?.classList.remove('hidden');
+        } else {
+            toast(error.message, 'error'); 
+        } 
     } 
 } 
 
 async function uploadAsset(path, file) { const data = new FormData(); data.append('file', file); return api(path, { method: 'POST', body: data, timeout: 600000 }); }
 
 async function submitSeries(event) { 
-    event.preventDefault(); const form = event.target; const values = new FormData(form); const cover = values.get('cover'); 
+    event.preventDefault(); 
+    const form = event.target; 
+    const submit = form.querySelector('button[type="submit"]'); 
+    const values = new FormData(form); 
+    const cover = values.get('cover'); 
+    
     if (!cover?.size) return toast('Choose a cover image', 'error'); 
+    
+    submit.disabled = true; 
+    submit.textContent = 'Creating series (please wait)...';
+    
     try { 
         const upload = await uploadAsset('/upload/image', cover); 
         await api('/series/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: values.get('title'), description: values.get('description'), coverImage: upload.url, genre: values.get('genre'), language: values.get('language'), tags: String(values.get('tags') || '').split(',').map(tag => tag.trim()).filter(Boolean), isPublished: values.get('publish') === 'on', isPremiumExclusive: values.get('premium') === 'on' }) }); 
-        $('#series-modal').classList.add('hidden'); form.reset(); await loadCreator(); toast('Series created', 'success'); 
-    } catch (error) { toast(error.message, 'error'); } 
+        $('#series-modal').classList.add('hidden'); 
+        form.reset(); 
+        await loadCreator(); 
+        toast('Series created', 'success'); 
+    } catch (error) { 
+        toast(error.message, 'error'); 
+    } finally { 
+        submit.disabled = false; 
+        submit.textContent = 'Create series'; 
+    } 
 }
 
 async function submitUpload(event) { 
-    event.preventDefault(); const form = event.target; const submit = form.querySelector('button[type="submit"]'); const values = new FormData(form); const seriesId = values.get('seriesId'); const file = values.get('video'); const genre = values.get('genre'); const culturalCategory = values.get('culturalCategory'); const language = values.get('language'); 
+    event.preventDefault(); 
+    const form = event.target; 
+    const submit = form.querySelector('button[type="submit"]'); 
+    const values = new FormData(form); 
+    const seriesId = values.get('seriesId'); 
+    const file = values.get('video'); 
+    const genre = values.get('genre'); 
+    const culturalCategory = values.get('culturalCategory'); 
+    const language = values.get('language'); 
+    
     if (!seriesId || !file?.size) return toast('Choose a series and video', 'error'); 
     if (!genre || !culturalCategory || !language) return toast('Choose a genre, cultural category, and language', 'error'); 
-    submit.disabled = true; submit.textContent = 'Uploading video (please wait)...'; 
+    
+    submit.disabled = true; 
+    submit.textContent = 'Uploading video (please wait)...'; 
+    
     try { 
         const upload = await uploadAsset('/upload/video', file); 
         const mediaUrl = upload.hlsUrl || upload.mediaUrl || upload.secure_url || upload.url; 
         if (!mediaUrl || !/^https?:\/\/.+\.(mp4|m3u8)(?:\?.*)?$/i.test(mediaUrl)) throw new Error('Cloudinary did not return a playable MP4 or HLS URL'); 
         const thumbnail = values.get('thumbnail'); const thumbnailUpload = thumbnail?.size ? await uploadAsset('/upload/image', thumbnail) : null; const access = values.get('access'); 
         await api(`/episodes/series/${encodeURIComponent(seriesId)}/create`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: values.get('title'), description: values.get('description'), mediaUrl, thumbnailUrl: thumbnailUpload?.url || null, genre, culturalCategory, language, tags: String(values.get('tags') || '').split(',').map(tag => tag.trim()).filter(Boolean), duration: upload.duration || 0, coinCost: Number(values.get('coinCost')), isFree: false, adUnlockable: access === 'Ad', isPublished: values.get('publish') === 'on' }) }); 
-        $('#upload-modal').classList.add('hidden'); form.reset(); await loadCreator(); toast('Upload successful!', 'success'); 
-    } catch (error) { toast(error.message, 'error'); } 
-    finally { submit.disabled = false; submit.textContent = 'Upload episode'; } 
+        $('#upload-modal').classList.add('hidden'); 
+        form.reset(); 
+        await loadCreator(); 
+        toast('Upload successful!', 'success'); 
+    } catch (error) { 
+        toast(error.message, 'error'); 
+    } finally { 
+        submit.disabled = false; 
+        submit.textContent = 'Upload episode'; 
+    } 
 }
 
 async function loadAdmin() { 
@@ -671,13 +715,11 @@ document.addEventListener('click', async event => {
         if (event.target.closest('[data-action="buy-coins"]')) showPackages();
         if (event.target.closest('[data-action="buy-pass"]')) showSubscriptionPlans();
 
-        if (event.target.closest('[data-action="close-become-creator"]')) $('#become-creator-modal')?.classList.add('hidden');
         if (event.target.closest('[data-action="close-upload"]') || event.target.id === 'upload-modal') $('#upload-modal').classList.add('hidden');
         if (event.target.closest('[data-action="close-series"]') || event.target.id === 'series-modal') $('#series-modal').classList.add('hidden');
         if (event.target.closest('[data-action="close-modal"]') || event.target.id === 'modal-root') $('#modal-root').classList.add('hidden');
         if (event.target.closest('[data-action="close-notifications"]') || event.target.id === 'notification-modal') $('#notification-modal').classList.add('hidden');
 
-        if (event.target.closest('[data-action="become-creator"]')) $('#become-creator-modal')?.classList.remove('hidden');
         if (event.target.closest('[data-action="new-series"]')) $('#series-modal').classList.remove('hidden');
         if (event.target.closest('[data-action="open-upload"]')) { $('#upload-modal').classList.remove('hidden'); loadCreator(); }
 
@@ -750,11 +792,15 @@ $('#comment-form')?.addEventListener('submit', async event => {
     finally { submit.disabled = false; submit.textContent = 'Post'; } 
 });
 
-$('#become-creator-form')?.addEventListener('submit', async (event) => {      event.preventDefault(); const form = event.target; const brandName = form.querySelector('[name="brandName"]').value.trim(); const bio = form.querySelector('[name="bio"]').value.trim(); const submitBtn = form.querySelector('button[type="submit"]');      if (!brandName) return toast('Brand name is required', 'error');      submitBtn.disabled = true; submitBtn.textContent = 'Creating...';      try {          await api('/creators/become-creator', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ brandName, bio }) });          if(state.user) state.user.role = 'CREATOR';          $$('.creator-only').forEach(el => el.classList.remove('hidden'));$('#become-creator-modal').classList.add('hidden'); 
+$('#become-creator-form')?.addEventListener('submit', async (event) => {           event.preventDefault();      const form = event.target;      const brandName = form.querySelector('[name="brandName"]').value.trim();      const bio = form.querySelector('[name="bio"]').value.trim();      const submitBtn = form.querySelector('button[type="submit"]');                if (!brandName) return toast('Brand name is required', 'error');                submitBtn.disabled = true;      submitBtn.textContent = 'Creating...';           try {                   await api('/creators/become-creator', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ brandName, bio }) });                   if(state.user) state.user.role = 'CREATOR';                   $$('.creator-only').forEach(el => el.classList.remove('hidden'));
         toast('Welcome to Creator Studio!', 'success'); 
-        setSection('creator');
-    } catch (error) { toast(error.message, 'error'); } 
-    finally { submitBtn.disabled = false; submitBtn.textContent = 'Start creating'; }
+        await loadCreator();
+    } catch (error) { 
+        toast(error.message, 'error'); 
+    } finally { 
+        submitBtn.disabled = false; 
+        submitBtn.textContent = 'Start creating'; 
+    }
 });
 
 $('#genre-filter')?.addEventListener('change', () => { loadDiscover(); loadDiscoverEpisodes(); });
