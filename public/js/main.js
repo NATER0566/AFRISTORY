@@ -60,20 +60,32 @@ function setupLazyLoading() {
   } 
 }
 
+// FIX: Forcefully save progress before switching tabs so History is never empty
+let pendingSave = null;
 function setSection(name) { 
-  // FIX: Forcefully save progress and pause video before switching tabs to ensure History updates
   if (name !== 'watch' && state.currentEpisode) {
       const activeVideo = document.querySelector('.feed-video-card video');
       if (activeVideo) {
-          saveProgressFeed(state.currentEpisode, activeVideo);
+          pendingSave = saveProgressFeed(state.currentEpisode, activeVideo);
           activeVideo.pause();
       }
   }
 
   $$('.app-section').forEach(section => section.classList.toggle('hidden', section.id !== `section-${name}`)); 
-  $$('.nav-item[data-section]').forEach(item => item.classList.toggle('active', item.dataset.section === name));$('#genre-filter')?.closest('.discover-filters')?.classList.toggle('hidden', name !== 'discover'); 
-  $('#save-current')?.classList.toggle('hidden', name !== 'watch'); 
-  $$('.modal-root').forEach(m => m.classList.add('hidden'));$('#mobile-more-sheet')?.classList.add('hidden');
+  $$('.nav-item[data-section]').forEach(item => item.classList.toggle('active', item.dataset.section === name));
+  
+  const genreFilter = $('#genre-filter');
+  if (genreFilter && genreFilter.closest('.discover-filters')) {
+      genreFilter.closest('.discover-filters').classList.toggle('hidden', name !== 'discover');
+  }
+  
+  const saveBtn = $('#save-current');
+  if (saveBtn) saveBtn.classList.toggle('hidden', name !== 'watch');
+  
+  $$('.modal-root').forEach(m => m.classList.add('hidden'));
+  const moreSheet = $('#mobile-more-sheet');
+  if (moreSheet) moreSheet.classList.add('hidden');
+  
   location.hash = name; 
   
   if (name === 'watch' && !state.currentEpisode) openDefaultFeed();
@@ -81,8 +93,15 @@ function setSection(name) {
   if (name === 'rewards') loadRewards(); 
   if (name === 'creator') loadCreator(); 
   if (name === 'admin') loadAdmin(); 
-  if (name === 'history') loadHistory(); 
-  if (name === 'continue') loadContinue(); 
+  
+  // FIX: Wait for the save to finish before loading the history pages!
+  if (name === 'history') {
+      (async () => { if (pendingSave) await pendingSave; loadHistory(); })();
+  }
+  if (name === 'continue') {
+      (async () => { if (pendingSave) await pendingSave; loadContinue(); })();
+  }
+  
   if (name === 'favorites') loadFavorites(); 
   if (name === 'trending') loadTrending(); 
   if (name === 'settings') loadSettings(); 
@@ -140,9 +159,6 @@ async function loadDiscoverEpisodes() {
   } catch (error) { toast(error.message, 'error'); } 
 }
 
-// ============================================================================
-// TIKTOK STYLE FEED LOGIC 
-// ============================================================================
 const feedObserver = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     const video = entry.target.querySelector('video');
@@ -159,12 +175,7 @@ const feedObserver = new IntersectionObserver((entries) => {
   });
 }, { threshold: 0.6 });
 
-// FIX: Added a lock to prevent double loading
-let isFetchingFeed = false;
-
 async function openDefaultFeed() {
-    if (isFetchingFeed) return;
-    isFetchingFeed = true;
     try {
         const feedData = await api('/episodes/feed?sort=trending&limit=15');
         if (feedData.episodes && feedData.episodes.length > 0) {
@@ -173,7 +184,6 @@ async function openDefaultFeed() {
             $('#tiktok-feed').innerHTML = '<div style="color:white; text-align:center; padding-top: 100px;">No stories available right now.</div>';
         }
     } catch (e) { toast('Could not load feed.', 'error'); }
-    finally { isFetchingFeed = false; }
 }
 
 async function openSeries(id) {
@@ -189,6 +199,8 @@ async function openSeries(id) {
 
 async function openEpisode(id) {
   try {
+    // FIX: Set this immediately so the Watch page doesn't try to double-load the default feed
+    state.currentEpisode = { _id: id }; 
     setSection('watch');
     window.scrollTo({ top: 0, behavior: 'smooth' });
     const feedContainer = $('#tiktok-feed');
@@ -276,14 +288,14 @@ async function openEpisode(id) {
   }
 }
 
-// FIX: Safe history save that ignores HLS Infinity duration bugs
+// FIX: Safe history save that calculates duration correctly for all video types
 async function saveProgressFeed(episode, video, completed = false) { 
   if (!episode || video.currentTime === 0) return; 
   let durationToUse = (video.duration && Number.isFinite(video.duration)) ? video.duration : (episode.duration || 60);
   let percentage = Math.min(100, (video.currentTime / durationToUse) * 100);
   try { 
-    await api(`/episodes/${episode._id}/watch`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lastPosition: video.currentTime, watchedPercentage: percentage, completed }) }); 
-  } catch {} 
+    return api(`/episodes/${episode._id}/watch`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lastPosition: video.currentTime, watchedPercentage: percentage, completed }) }); 
+  } catch (e) { console.error(e); } 
 }
 
 async function unlockEpisode() { 
@@ -349,7 +361,20 @@ async function unlockEpisode() {
 
 async function loadComments(id) { try { const result = await api(`/comments/episode/${id}?limit=50`); const render = comment => `<article class="comment"><span class="comment-meta">${esc(comment.userId?.username || 'Story lover')}</span><p>${esc(comment.text)}</p><button class="text-button" data-reply-comment="${esc(comment._id)}">Reply</button>${comment.replies?.length ? `<div class="comment-replies">${comment.replies.map(render).join('')}</div>` : ''}</article>`; $('#comments-list').innerHTML = (result.comments || []).map(render).join('') || '<p class="muted">Be the first to share a thought.</p>'; $('#comment-input').placeholder = 'Share what this story brought up for you...'; $('#comment-input').disabled = false; $('#comment-submit').disabled = false; } catch (error) { toast(error.message, 'error'); } }
 
-async function loadWallet() { try { const [wallet, transactions] = await Promise.all([api('/wallet/me/balance'), api('/wallet/me/transactions?limit=10')]); $('#wallet-balance').textContent = Number(wallet.storyCoins \vert{}\vert{} 0).toLocaleString(); $('#wallet-earned').textContent = Number(wallet.totalEarned || 0).toLocaleString(); if(state.user) state.user.adUnlocksRemaining = wallet.adUnlocks || 0; const adBalanceEl = $('#ad-balance'); if (adBalanceEl) adBalanceEl.textContent = Math.max(0, wallet.adUnlocks \vert{}\vert{} 0); if (adBalanceEl?.closest('.wallet-stat')) adBalanceEl.closest('.wallet-stat').style.display = 'block'; $('#transactions-list').innerHTML = (transactions.transactions || []).map(item => `<div class="data-row"><div><strong>${esc(item.description || item.type)}</strong><p>${new Date(item.createdAt).toLocaleDateString()}</p></div><span class="data-value">${esc(item.type === 'SPEND' ? '-' : '+')}${Number(item.amount || 0).toLocaleString()}</span></div>`).join('') || '<div class="empty-state">No transactions yet.</div>'; await window.AfroStoryAds?.refresh(); } catch (error) { toast(error.message, 'error'); } }
+// FIX: Removed corrupted \vert{}\vert{} syntax that caused the page to crash completely
+async function loadWallet() { 
+  try { 
+    const [wallet, transactions] = await Promise.all([api('/wallet/me/balance'), api('/wallet/me/transactions?limit=10')]); 
+    $('#wallet-balance').textContent = Number(wallet.storyCoins || 0).toLocaleString(); 
+    $('#wallet-earned').textContent = Number(wallet.totalEarned || 0).toLocaleString(); 
+    if(state.user) state.user.adUnlocksRemaining = wallet.adUnlocks || 0; 
+    const adBalanceEl = $('#ad-balance'); 
+    if (adBalanceEl) adBalanceEl.textContent = Math.max(0, wallet.adUnlocks || 0); 
+    if (adBalanceEl?.closest('.wallet-stat')) adBalanceEl.closest('.wallet-stat').style.display = 'block'; 
+    $('#transactions-list').innerHTML = (transactions.transactions || []).map(item => `<div class="data-row"><div><strong>${esc(item.description || item.type)}</strong><p>${new Date(item.createdAt).toLocaleDateString()}</p></div><span class="data-value">${esc(item.type === 'SPEND' ? '-' : '+')}${Number(item.amount || 0).toLocaleString()}</span></div>`).join('') || '<div class="empty-state">No transactions yet.</div>'; 
+    await window.AfroStoryAds?.refresh(); 
+  } catch (error) { toast(error.message, 'error'); } 
+}
 
 function renderRewardCard(reward) {
   const eligibility = reward.eligibility || { state: reward.claimed ? 'CLAIMED' : 'LOCKED', reason: 'Complete the required activity first.' };
