@@ -43,7 +43,7 @@
          TIKTOK STYLE FEED CSS 
       ============================================================== */
       .tiktok-feed {
-        height: calc(100dvh - 80px); /* Adjust based on topbar height */
+        height: 100%;
         width: 100%;
         overflow-y: scroll;
         scroll-snap-type: y mandatory;
@@ -51,10 +51,6 @@
         background-color: #000;
         position: absolute;
         top: 0; left: 0; right: 0; bottom: 0;
-      }
-      
-      @media(max-width: 800px) {
-        .tiktok-feed { height: calc(100dvh - 160px); }
       }
 
       .feed-video-card {
@@ -71,7 +67,8 @@
       .feed-video-card video {
         width: 100%;
         height: 100%;
-        object-fit: cover; /* CHANGED TO COVER for TikTok look */
+        /* FIX: contain ensures the video is never cropped or hidden regardless of dimensions */
+        object-fit: contain; 
         background-color: #000;
         outline: none;
         display: block;
@@ -81,18 +78,18 @@
         position: absolute;
         bottom: 20px;
         left: 15px;
-        right: 80px; 
+        right: 55px; /* FIX: Reduced right gap so text stretches further */
         color: #fff;
         z-index: 10;
         text-shadow: 0 1px 4px rgba(0,0,0,0.9);
-        pointer-events: none; /* Let clicks pass through to video */
+        pointer-events: none;
       }
       .feed-overlay * { pointer-events: auto; }
 
       .feed-sidebar {
         position: absolute;
         bottom: 30px;
-        right: 12px;
+        right: 8px; /* FIX: Moved buttons closer to edge */
         z-index: 10;
         display: flex;
         flex-direction: column;
@@ -131,6 +128,34 @@
         backdrop-filter: blur(8px);
       }
 
+      @media(max-width: 800px) {
+        .desktop-only { display: none !important; }
+        .mobile-only { display: flex !important; }
+        .topbar-actions { gap: 14px; }
+        .app-layout { flex-direction: column; }
+        
+        .sidebar { position: fixed; bottom: 0; left: 0; right: 0; transform: none; width: 100%; max-width: 100%; height: 80px; background: #111; border-top: 1px solid #222; border-radius: 30px 30px 0 0; z-index: 900 !important; display: flex; padding: 10px 10px 20px; align-items: center; box-shadow: 0 -4px 30px rgba(0,0,0,0.9); }
+        .side-nav { display: flex; flex-direction: row; justify-content: space-between; width: 100%; padding: 0; margin: 0; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1 1 0; gap: 4px; font-size: 10px; font-weight: 500; color: #999; padding: 8px 0; border: none; background: transparent; }
+        .nav-icon { font-size: 22px; font-style: normal; margin-bottom: 2px; transition: transform 0.2s; }
+        .nav-item span { display: block; margin: 0; white-space: nowrap; }
+        .nav-item.active { color: #d4a017; }
+        .nav-item.active .nav-icon { transform: translateY(-2px); text-shadow: 0 0 15px rgba(212,160,23,0.8); }
+        .sidebar-bottom { display: none; }
+        
+        .main-content { padding-bottom: 130px !important; } 
+        .app-section { padding-bottom: 130px !important; }
+        .profile-panel { padding-bottom: 130px !important; }
+        .bottom-sheet { padding-bottom: 100px !important; }
+        
+        .rewards-hero { align-items: flex-start; display: block; padding: 22px; }
+        .rewards-balance { border-left: 0; border-top: 1px solid #6b5122; margin-top: 22px; padding: 16px 0 0; }
+        .rewards-grid { grid-template-columns: 1fr; }
+
+        /* FIX: Ensure the video player container shrinks to accommodate both the top and bottom nav bars perfectly */
+        #section-watch { height: calc(100dvh - 160px) !important; }
+      }
+
       @media(max-width:700px) {
         .discover-filters { flex-wrap: wrap; }
         .discover-filters label { flex: 1; min-width: 130px; }
@@ -156,34 +181,6 @@
       .header-avatar-img img { width: 100% !important; height: 100% !important; object-fit: cover !important; border-radius: 50% !important; }
       .header-online-dot { position: absolute; bottom: 2px; right: 2px; width: 14px; height: 14px; background-color: #2ecc71; border: 2.5px solid #111; border-radius: 50%; z-index: 10; }
       .profile-initial { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
-
-      .desktop-only { display: flex; }
-      .mobile-only { display: none !important; }
-
-      @media(max-width: 800px) {
-        .desktop-only { display: none !important; }
-        .mobile-only { display: flex !important; }
-        .topbar-actions { gap: 14px; }
-        .app-layout { flex-direction: column; }
-        
-        .sidebar { position: fixed; bottom: 0; left: 0; right: 0; transform: none; width: 100%; max-width: 100%; height: 80px; background: #111; border-top: 1px solid #222; border-radius: 30px 30px 0 0; z-index: 900 !important; display: flex; padding: 10px 10px 20px; align-items: center; box-shadow: 0 -4px 30px rgba(0,0,0,0.9); }
-        .side-nav { display: flex; flex-direction: row; justify-content: space-between; width: 100%; padding: 0; margin: 0; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1 1 0; gap: 4px; font-size: 10px; font-weight: 500; color: #999; padding: 8px 0; border: none; background: transparent; }
-        .nav-icon { font-size: 22px; font-style: normal; margin-bottom: 2px; transition: transform 0.2s; }
-        .nav-item span { display: block; margin: 0; white-space: nowrap; }
-        .nav-item.active { color: #d4a017; }
-        .nav-item.active .nav-icon { transform: translateY(-2px); text-shadow: 0 0 15px rgba(212,160,23,0.8); }
-        .sidebar-bottom { display: none; }
-        
-        .main-content { padding-bottom: 130px !important; } 
-        .app-section { padding-bottom: 130px !important; }
-        .profile-panel { padding-bottom: 130px !important; }
-        .bottom-sheet { padding-bottom: 100px !important; }
-        
-        .rewards-hero { align-items: flex-start; display: block; padding: 22px; }
-        .rewards-balance { border-left: 0; border-top: 1px solid #6b5122; margin-top: 22px; padding: 16px 0 0; }
-        .rewards-grid { grid-template-columns: 1fr; }
-      }
 
       .bottom-sheet-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: flex-end; opacity: 1; transition: opacity 0.3s; }
       .bottom-sheet-overlay.hidden { opacity: 0; pointer-events: none; }
@@ -243,8 +240,8 @@
       <div class="discover-filters"><label>Genre<select id="genre-filter"><option value="">All genres</option><option>Action</option><option>Drama</option><option>Comedy</option><option>Romance</option><option>Thriller</option><option>Sci-Fi</option><option>Horror</option><option>Documentary</option><option>Afro-Futurism</option><option>Folklore</option><option>Urban Drama</option><option>Animation</option><option>Historical</option><option>Adventure</option><option>Mystery</option><option>Crime</option><option>Family</option><option>Faith &amp; Inspirational</option><option>Musical</option><option>Biography</option><option>Short Film</option></select></label><label>Sort<select id="sort-filter"><option value="trending">Trending</option><option value="newest">Newest</option><option value="rating">Top rated</option></select></label></div>
       <section id="section-discover" class="app-section"><div class="section-heading hero-heading"><div><p class="eyebrow">THE HOME OF AFRICAN STORIES</p><h1>Find your next<br><em>favorite world.</em></h1></div><form id="search-form" class="search-box"><span>⌕</span><input id="search-input" type="search" placeholder="Search series, creators..." aria-label="Search"><button type="submit">Search</button></form></div><div id="featured-series" class="featured-strip"></div><div class="section-heading"><div><p class="eyebrow">CURATED FOR YOU</p><h2>Trending now</h2></div><button class="text-button" data-action="refresh-discover">View all ↗</button></div><div id="series-grid" class="content-grid"></div><div class="section-heading compact-heading"><div><p class="eyebrow">VOICES TO KNOW</p><h2>Top creators</h2></div></div><div id="creator-grid" class="creator-grid"></div></section>
       
-      <!-- FIX: Watch Section Container uses absolute positioning so it breaks out of padding -->
-      <section id="section-watch" class="app-section hidden" style="padding: 0; margin: 0; position: absolute; top: 0; left: 0; right: 0; bottom: 0; height: calc(100vh - 80px); overflow: hidden;">
+      <!-- FIX: Watch Section completely refactored to fit relative space safely -->
+      <section id="section-watch" class="app-section hidden" style="padding: 0; margin: 0; height: calc(100dvh - 80px); overflow: hidden; position: relative;">
         <!-- Infinite Scroll Feed Container -->
         <div id="tiktok-feed" class="tiktok-feed">
           <!-- Videos will be injected here by JavaScript -->
@@ -259,7 +256,6 @@
               <h2>Comments</h2>
             </div>
             <div id="comments-list" style="margin-bottom: 70px;"></div>
-            <!-- FIX: Position absolute stops the comment box from floating randomly on the screen -->
             <form id="comment-form" class="comment-form" style="position: absolute; bottom: 0; left: 0; right: 0; background: #111; padding: 15px; border-top: 1px solid #333;">
               <input id="comment-input" maxlength="1000" placeholder="Share a thought..." aria-label="Write a comment" style="width:calc(100% - 90px);">
               <button id="comment-submit" class="button button-primary" type="submit">Post</button>
