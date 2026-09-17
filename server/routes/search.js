@@ -31,7 +31,8 @@ export default async function searchRoutes(fastify, opts) {
         })
           .populate('creatorId', 'brandName profileImage')
           .skip(skip)
-          .limit(l);
+          .limit(l)
+          .lean(); // Faster, lighter, prevents virtual crashes
 
         const total = await Series.countDocuments({
           $or: [
@@ -44,7 +45,7 @@ export default async function searchRoutes(fastify, opts) {
 
         results.series = {
           data: series.map(s => ({
-            ...s.toObject(),
+            ...s,
             rating: formatDecimal(s.rating),
           })),
           total,
@@ -59,7 +60,8 @@ export default async function searchRoutes(fastify, opts) {
         })
           .skip(skip)
           .limit(l)
-          .populate('userId', 'username profileImage');
+          .populate('userId', 'username profileImage')
+          .lean(); // Faster, lighter, prevents virtual crashes
 
         const total = await Creator.countDocuments({
           $or: [{ brandName: searchRegex }, { bio: searchRegex }],
@@ -68,7 +70,7 @@ export default async function searchRoutes(fastify, opts) {
 
         results.creators = {
           data: creators.map(c => ({
-            ...c.toObject(),
+            ...c,
             totalViews: formatDecimal(c.totalViews),
             totalEarnings: formatDecimal(c.totalEarnings),
           })),
@@ -91,7 +93,8 @@ export default async function searchRoutes(fastify, opts) {
         })
           .populate({ path: 'seriesId', populate: { path: 'creatorId', select: 'brandName profileImage' } })
           .skip(skip)
-          .limit(l);
+          .limit(l)
+          .lean(); // Faster, lighter, prevents virtual crashes
 
         const total = await Episode.countDocuments({
           $or: [
@@ -107,7 +110,7 @@ export default async function searchRoutes(fastify, opts) {
 
         results.episodes = {
           data: episodes.map(e => ({
-            ...e.toObject(),
+            ...e,
             rating: formatDecimal(e.rating),
           })),
           total,
@@ -159,13 +162,14 @@ export default async function searchRoutes(fastify, opts) {
         .populate('creatorId', 'brandName profileImage')
         .sort(sortBy)
         .skip(skip)
-        .limit(l);
+        .limit(l)
+        .lean(); // Faster, lighter, prevents virtual crashes
 
       const total = await Series.countDocuments(query);
 
       sendSuccess(reply, {
         series: series.map(s => ({
-          ...s.toObject(),
+          ...s,
           rating: formatDecimal(s.rating),
         })),
         pagination: {
@@ -201,7 +205,8 @@ export default async function searchRoutes(fastify, opts) {
         .populate('userId', 'username profileImage')
         .sort({ totalViews: -1 })
         .skip(skip)
-        .limit(l);
+        .limit(l)
+        .lean(); // Faster, lighter, prevents virtual crashes
 
       const total = await Creator.countDocuments({
         $or: [{ brandName: searchRegex }, { bio: searchRegex }],
@@ -210,7 +215,7 @@ export default async function searchRoutes(fastify, opts) {
 
       sendSuccess(reply, {
         creators: creators.map(c => ({
-          ...c.toObject(),
+          ...c,
           totalViews: formatDecimal(c.totalViews),
           totalEarnings: formatDecimal(c.totalEarnings),
         })),
@@ -236,10 +241,11 @@ export default async function searchRoutes(fastify, opts) {
         .populate({ path: 'seriesId', populate: { path: 'creatorId', select: 'brandName profileImage' } })
         .sort({ totalViews: -1, createdAt: -1 })
         .limit(parseInt(limit))
+        .lean(); // Faster, lighter, prevents virtual crashes
 
       sendSuccess(reply, {
         trending: trendingEpisodes.map(episode => ({
-          ...episode.toObject(),
+          ...episode,
           rating: formatDecimal(episode.rating),
         })),
       });
