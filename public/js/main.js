@@ -1,7 +1,6 @@
 const API = '/api';
 const PREVIEW_LIMIT = 30; // Seconds before the video locks
-// ADDED: isNavigating flag to prevent the Watch page double-load loop
-const state = { user: null, profile: null, rewards: null, series: [], currentSeries: null, currentEpisode: null, hls: null, recommendedEpisodes: [], isNavigating: false };
+const state = { user: null, profile: null, rewards: null, series: [], currentSeries: null, currentEpisode: null, hls: null, recommendedEpisodes: [] };
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 
@@ -61,36 +60,23 @@ function setupLazyLoading() {
   } 
 }
 
-// FIX 1 & 2: Prevent hash loop, and forcibly save history when user leaves the watch section
 function setSection(name) { 
-  // FIX 2: If we are leaving the watch page, forcefully save the progress of the current video before hiding it
+  // FIX: Forcefully save progress and pause video before switching tabs to ensure History updates
   if (name !== 'watch' && state.currentEpisode) {
       const activeVideo = document.querySelector('.feed-video-card video');
-      if (activeVideo) saveProgressFeed(state.currentEpisode, activeVideo);
-      
-      // Pause any playing videos so they don't run in background
-      $$('.feed-video-card video').forEach(v => v.pause());
+      if (activeVideo) {
+          saveProgressFeed(state.currentEpisode, activeVideo);
+          activeVideo.pause();
+      }
   }
 
   $$('.app-section').forEach(section => section.classList.toggle('hidden', section.id !== `section-${name}`)); 
-  $$('.nav-item[data-section]').forEach(item => item.classList.toggle('active', item.dataset.section === name)); 
-  $('#genre-filter')?.closest('.discover-filters')?.classList.toggle('hidden', name !== 'discover'); 
+  $$('.nav-item[data-section]').forEach(item => item.classList.toggle('active', item.dataset.section === name));$('#genre-filter')?.closest('.discover-filters')?.classList.toggle('hidden', name !== 'discover'); 
   $('#save-current')?.classList.toggle('hidden', name !== 'watch'); 
-  $$('.modal-root').forEach(m => m.classList.add('hidden'));
-  $('#mobile-more-sheet')?.classList.add('hidden');
+  $$('.modal-root').forEach(m => m.classList.add('hidden'));$('#mobile-more-sheet')?.classList.add('hidden');
+  location.hash = name; 
   
-  // FIX 1: Use history.pushState instead of location.hash. 
-  // location.hash triggers the 'hashchange' event, causing an infinite loop that makes the Watch page double-load.
-  if (location.hash !== `#${name}`) {
-      history.pushState(null, null, `#${name}`);
-  }
-  
-  // FIX 1: Guard against double fetching. Only load default feed if we aren't already navigating to it.
-  if (name === 'watch' && !state.currentEpisode && !state.isNavigating) {
-      state.isNavigating = true;
-      openDefaultFeed().finally(() => state.isNavigating = false);
-  }
-
+  if (name === 'watch' && !state.currentEpisode) openDefaultFeed();
   if (name === 'wallet') loadWallet(); 
   if (name === 'rewards') loadRewards(); 
   if (name === 'creator') loadCreator(); 
@@ -154,6 +140,9 @@ async function loadDiscoverEpisodes() {
   } catch (error) { toast(error.message, 'error'); } 
 }
 
+// ============================================================================
+// TIKTOK STYLE FEED LOGIC 
+// ============================================================================
 const feedObserver = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     const video = entry.target.querySelector('video');
@@ -165,15 +154,17 @@ const feedObserver = new IntersectionObserver((entries) => {
       state.currentSeries = epData.seriesId;
       loadComments(epData._id);
     } else {
-      // FIX 2: Save progress when video scrolls out of view
-      const epData = JSON.parse(entry.target.dataset.episode || '{}');
-      saveProgressFeed(epData, video);
       video.pause();
     }
   });
 }, { threshold: 0.6 });
 
+// FIX: Added a lock to prevent double loading
+let isFetchingFeed = false;
+
 async function openDefaultFeed() {
+    if (isFetchingFeed) return;
+    isFetchingFeed = true;
     try {
         const feedData = await api('/episodes/feed?sort=trending&limit=15');
         if (feedData.episodes && feedData.episodes.length > 0) {
@@ -182,6 +173,7 @@ async function openDefaultFeed() {
             $('#tiktok-feed').innerHTML = '<div style="color:white; text-align:center; padding-top: 100px;">No stories available right now.</div>';
         }
     } catch (e) { toast('Could not load feed.', 'error'); }
+    finally { isFetchingFeed = false; }
 }
 
 async function openSeries(id) {
@@ -284,19 +276,14 @@ async function openEpisode(id) {
   }
 }
 
-// FIX 2: Reliable History Saving. Removed strict finite duration check which fails on HLS streams.
+// FIX: Safe history save that ignores HLS Infinity duration bugs
 async function saveProgressFeed(episode, video, completed = false) { 
   if (!episode || video.currentTime === 0) return; 
-  
-  // Calculate percentage securely, defaulting to a fallback if duration is missing/Infinity
-  let durationToUse = video.duration && Number.isFinite(video.duration) ? video.duration : (episode.duration || 60);
+  let durationToUse = (video.duration && Number.isFinite(video.duration)) ? video.duration : (episode.duration || 60);
   let percentage = Math.min(100, (video.currentTime / durationToUse) * 100);
-  
   try { 
     await api(`/episodes/${episode._id}/watch`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lastPosition: video.currentTime, watchedPercentage: percentage, completed }) }); 
-  } catch (e) {
-    console.error("Failed to save progress", e);
-  } 
+  } catch {} 
 }
 
 async function unlockEpisode() { 
@@ -455,25 +442,18 @@ async function saveProfile(event) {
   } catch (error) { toast(error.message, 'error'); } 
 }
 
-// FIX 3: Search Library updated to fetch BOTH series and episodes natively
+// FIX: Search library now handles both Series and Episodes dynamically
 async function searchLibrary(event) { 
   event.preventDefault(); 
   const input = event.target.querySelector('input');
   const query = input ? input.value.trim() : ''; 
   if (query.length < 2) return toast('Enter at least two characters', 'error'); 
   try { 
-    $('#search-results').innerHTML = '<div class="empty-state" style="margin-top:40px; text-align:center;">Searching...</div>';
-    
-    // We remove the hardcoded `type=series` and let the backend search across all types
+    $('#search-results').innerHTML = '<div class="empty-state">Searching...</div>';
     const result = await api(`/search/global?q=${encodeURIComponent(query)}&limit=50`); 
-    
-    // Combine both arrays of results and render them in the same grid seamlessly
-    const seriesResults = (result.series?.data || result.series || []).map(card);
-    const episodeResults = (result.episodes?.data || result.episodes || []).map(episodeCard);
-    
-    const combinedHTML = [...seriesResults, ...episodeResults].join('');
-    
-    $('#search-results').innerHTML = combinedHTML || '<div class="empty-state">No stories or episodes matched your search.</div>'; 
+    const seriesHtml = (result.series?.data || []).map(card).join('');
+    const episodesHtml = (result.episodes?.data || []).map(episodeCard).join('');
+    $('#search-results').innerHTML = (seriesHtml + episodesHtml) || '<div class="empty-state">No stories matched your search.</div>'; 
   } catch (error) { toast(error.message, 'error'); } 
 }
 
@@ -599,11 +579,10 @@ $('#language-filter')?.addEventListener('change', loadDiscoverEpisodes);
 
 setInterval(refreshNotificationBadge, 30000);
 
-// FIX 1: Modified hashchange listener to safely handle direct URL changes without triggering the loop
 window.addEventListener('hashchange', () => { 
   const name = location.hash.slice(1); 
   if (['discover', 'search', 'watch', 'history', 'wallet', 'rewards', 'creator', 'admin', 'profile', 'trending', 'continue', 'favorites', 'settings'].includes(name)) { 
-    // Instead of forcing setSection which causes a loop, just do standard loading 
+    setSection(name); 
     if (name === 'history') loadHistory(); 
     if (name === 'trending') loadTrending(); 
     if (name === 'continue') loadContinue(); 
