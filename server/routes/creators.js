@@ -69,6 +69,28 @@ export default async function creatorRoutes(fastify, opts) {
       user.role = 'CREATOR';
       await user.save();
 
+      // =========================================================================
+      // FIX: REFRESH THE USER'S SESSION TOKEN SO THEY DON'T HAVE TO LOG OUT
+      // =========================================================================
+      // This instantly updates their browser cookie to prove they are a CREATOR.
+      // If your login file uses a specific helper to create tokens, use that here.
+      if (fastify.jwt) {
+        const token = fastify.jwt.sign({ 
+          id: user._id, 
+          _id: user._id,
+          role: user.role 
+        });
+        
+        reply.setCookie('token', token, {
+          path: '/',
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+          maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+        });
+      }
+      // =========================================================================
+
       sendSuccess(reply, creator, 'Creator account created successfully', 201);
     } catch (error) {
       fastify.log.error(error);
