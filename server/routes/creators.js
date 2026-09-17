@@ -169,7 +169,7 @@ export default async function creatorRoutes(fastify, opts) {
     }
   });
 
-  // Get top creators (FIXED: Removed isVerified check so new creators display immediately)
+  // Get top creators
   fastify.get('/top/creators', async (request, reply) => {
     try {
       const { limit = 10 } = request.query;
@@ -213,6 +213,32 @@ export default async function creatorRoutes(fastify, opts) {
     } catch (error) {
       fastify.log.error(error);
       sendError(reply, 'Failed to fetch creator profile', 500, error.message);
+    }
+  });
+
+  // FIX: Added the missing follow route
+  fastify.post('/:creatorId/follow', async (request, reply) => {
+    try {
+      await verifyAuth(request, reply);
+
+      if (!request.user) {
+        return sendError(reply, 'Unauthorized', 401);
+      }
+
+      const { creatorId } = request.params;
+      const creator = await Creator.findById(creatorId);
+
+      if (!creator) {
+        return sendError(reply, 'Creator not found', 404);
+      }
+
+      creator.totalFollowers = (creator.totalFollowers || 0) + 1;
+      await creator.save();
+
+      sendSuccess(reply, { totalFollowers: creator.totalFollowers }, 'Following creator');
+    } catch (error) {
+      fastify.log.error(error);
+      sendError(reply, 'Failed to follow creator', 500, error.message);
     }
   });
 }
