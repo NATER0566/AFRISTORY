@@ -40,8 +40,28 @@
       .modal-header h2 { font-size: 22px !important; margin: 0 0 16px !important; }
       
       /* ==============================================================
-         TIKTOK STYLE FEED CSS 
+         LOCKED TIKTOK WATCH SECTION - FLUID EXACT FIT
       ============================================================== */
+      #section-watch {
+        position: fixed !important; /* Locks section to screen */
+        top: 80px !important;       /* Starts exactly below top header */
+        bottom: 0 !important;       /* Reaches bottom on desktop */
+        left: 0 !important;
+        right: 0 !important;
+        height: auto !important;    /* Height auto-fills the space */
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background-color: #000;
+        z-index: 40;                /* Sits securely below sticky header (50) */
+      }
+
+      @media(max-width: 800px) {
+        #section-watch {
+          bottom: 80px !important;  /* Stops exactly above the mobile bottom nav */
+        }
+      }
+
       .tiktok-feed {
         height: 100%;
         width: 100%;
@@ -49,8 +69,6 @@
         scroll-snap-type: y mandatory;
         scroll-behavior: smooth;
         background-color: #000;
-        position: absolute;
-        top: 0; left: 0; right: 0; bottom: 0;
       }
 
       .feed-video-card {
@@ -68,29 +86,29 @@
       .feed-video-card video {
         width: 100%;
         height: 100%;
-        /* FIX: cover completely removes black letterboxing, filling the space like TikTok */
-        object-fit: cover; 
+        /* object-fit: cover guarantees no left/right black bars exist */
+        object-fit: cover !important; 
         background-color: #000;
         outline: none;
         display: block;
       }
 
-      /* FIX: Adds a subtle dark shadow gradient to the bottom so white text is always visible */
+      /* Dark gradient to ensure text readability against bright videos */
       .feed-video-card::after {
         content: '';
         position: absolute;
         bottom: 0;
         left: 0;
         right: 0;
-        height: 35%;
-        background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
+        height: 40%;
+        background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);
         pointer-events: none;
         z-index: 5;
       }
 
       .feed-overlay {
         position: absolute;
-        bottom: 18px; /* Perfectly aligned inside the video */
+        bottom: 15px; /* Neatly spaced from bottom */
         left: 15px;
         right: 65px; 
         color: #fff;
@@ -115,7 +133,6 @@
         gap: 20px;
       }
 
-      /* Native TikTok Floating Buttons */
       .feed-action-btn {
         background: transparent;
         border: none;
@@ -147,6 +164,44 @@
         backdrop-filter: blur(8px);
       }
 
+      /* ==============================================================
+         BEAUTIFUL LOADING SPINNER (Overrides main.js text automatically)
+      ============================================================== */
+      #tiktok-feed > div[style*="margin-top"] {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        height: 100% !important;
+        margin: 0 !important;
+        color: #888 !important;
+        font-family: 'Space Grotesk', sans-serif !important;
+        font-size: 14px !important;
+        background: #000 !important;
+        letter-spacing: 0.5px;
+        /* Hides the old "Loading feed..." text and replaces it */
+        text-indent: -9999px;
+      }
+      #tiktok-feed > div[style*="margin-top"]::before {
+        content: '';
+        display: block;
+        width: 44px;
+        height: 44px;
+        border: 3px solid rgba(212, 160, 23, 0.15);
+        border-radius: 50%;
+        border-top-color: #d4a017;
+        animation: spin 0.8s linear infinite;
+        margin-bottom: 20px;
+        text-indent: 0;
+      }
+      #tiktok-feed > div[style*="margin-top"]::after {
+        content: 'Loading stories...';
+        display: block;
+        text-indent: 0;
+        color: #999;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+
       @media(max-width: 800px) {
         .desktop-only { display: none !important; }
         .mobile-only { display: flex !important; }
@@ -163,16 +218,13 @@
         .sidebar-bottom { display: none; }
         
         .main-content { padding-bottom: 130px !important; } 
-        .app-section { padding-bottom: 130px !important; }
+        .app-section:not(#section-watch) { padding-bottom: 130px !important; }
         .profile-panel { padding-bottom: 130px !important; }
         .bottom-sheet { padding-bottom: 100px !important; }
         
         .rewards-hero { align-items: flex-start; display: block; padding: 22px; }
         .rewards-balance { border-left: 0; border-top: 1px solid #6b5122; margin-top: 22px; padding: 16px 0 0; }
         .rewards-grid { grid-template-columns: 1fr; }
-
-        /* Reserves exact space for topbar and bottom nav so they stay visible */
-        #section-watch { height: calc(100dvh - 160px) !important; }
       }
 
       @media(max-width:700px) {
@@ -260,7 +312,7 @@
       <section id="section-discover" class="app-section"><div class="section-heading hero-heading"><div><p class="eyebrow">THE HOME OF AFRICAN STORIES</p><h1>Find your next<br><em>favorite world.</em></h1></div><form id="search-form" class="search-box"><span>⌕</span><input id="search-input" type="search" placeholder="Search series, creators..." aria-label="Search"><button type="submit">Search</button></form></div><div id="featured-series" class="featured-strip"></div><div class="section-heading"><div><p class="eyebrow">CURATED FOR YOU</p><h2>Trending now</h2></div><button class="text-button" data-action="refresh-discover">View all ↗</button></div><div id="series-grid" class="content-grid"></div><div class="section-heading compact-heading"><div><p class="eyebrow">VOICES TO KNOW</p><h2>Top creators</h2></div></div><div id="creator-grid" class="creator-grid"></div></section>
       
       <!-- FIX: Watch Section completely refactored to fit relative space safely -->
-      <section id="section-watch" class="app-section hidden" style="padding: 0; margin: 0; height: calc(100dvh - 80px); overflow: hidden; position: relative;">
+      <section id="section-watch" class="app-section hidden">
         <!-- Infinite Scroll Feed Container -->
         <div id="tiktok-feed" class="tiktok-feed">
           <!-- Videos will be injected here by JavaScript -->
