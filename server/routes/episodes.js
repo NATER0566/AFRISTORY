@@ -13,7 +13,7 @@ export default async function episodeRoutes(fastify, opts) {
     try {
       let userIsAuthenticated = false;
       if (request.cookies?.token) {
-         userIsAuthenticated = await verifyAuth(request, reply, false); // Pass false or handle so it doesn't hard-reject if invalid
+         userIsAuthenticated = await verifyAuth(request, reply, false);
       }
 
       const { genre, culturalCategory, language, sort = 'trending', limit = 12 } = request.query || {};
@@ -26,12 +26,11 @@ export default async function episodeRoutes(fastify, opts) {
       const episodes = await Episode.find(query)
         .populate({ path: 'seriesId', populate: { path: 'creatorId', select: 'brandName profileImage' } })
         .sort(sortBy)
-        .limit(Math.min(Number(limit) || 12, 50));
-
-      // --- NEW LOGIC: Calculate hasAccess for EVERY episode in the feed ---
+        .limit(Math.min(Number(limit) || 12, 50))
+        .lean(); // Faster, lighter, prevents virtual crashes
+      
       const hasActiveSubscription = request.user && request.user.subscriptionExpiresAt && new Date(request.user.subscriptionExpiresAt) > new Date();
       
-      // Fetch all unlocks for this user in one query for performance
       let userUnlocks = [];
       if (request.user) {
         const episodeIds = episodes.map(ep => ep._id);
@@ -39,7 +38,7 @@ export default async function episodeRoutes(fastify, opts) {
           userId: request.user._id,
           episodeId: { $in: episodeIds },
           isActive: true
-        });
+        }).lean();
         userUnlocks = unlocks.map(u => u.episodeId.toString());
       }
 
@@ -49,9 +48,9 @@ export default async function episodeRoutes(fastify, opts) {
         if (request.user && userUnlocks.includes(episode._id.toString())) hasAccess = true;
 
         return { 
-            ...episode.toObject(), 
+            ...episode,
             rating: formatDecimal(episode.rating),
-            hasAccess // Feed now sends hasAccess correctly
+            hasAccess
         };
       });
 
@@ -67,7 +66,9 @@ export default async function episodeRoutes(fastify, opts) {
     try {
       const { episodeId } = request.params;
 
-      const episode = await Episode.findById(episodeId).populate('seriesId');
+      const episode = await Episode.findById(episodeId)
+        .populate('seriesId')
+        .lean(); // Faster, lighter, prevents virtual crashes
 
       if (!episode) {
         return sendError(reply, 'Episode not found', 404);
@@ -92,12 +93,12 @@ export default async function episodeRoutes(fastify, opts) {
           userId: request.user._id,
           episodeId,
           isActive: true,
-        });
+        }).lean();
         hasAccess = hasAccess || !!unlock;
       }
 
       sendSuccess(reply, {
-        ...episode.toObject(),
+        ...episode,
         rating: formatDecimal(episode.rating),
         hasAccess,
       });
@@ -107,7 +108,7 @@ export default async function episodeRoutes(fastify, opts) {
     }
   });
 
-  // Create episode (FIXED: Modern URL handling for Direct-to-Cloudinary uploads)
+  // Create episode (Write operations remain as full Mongoose documents to utilize .save())
   fastify.post('/series/:seriesId/create', async (request, reply) => {
     try {
       await verifyCreator(request, reply);
@@ -142,7 +143,6 @@ export default async function episodeRoutes(fastify, opts) {
         return sendError(reply, 'Invalid genre, cultural category, or language', 400);
       }
 
-      // MODERN FIX: Relaxed regex. We trust the Cloudinary direct-upload URL instead of strictly demanding .mp4
       if (!/^https?:\/\/.+/i.test(mediaUrl)) {
         return sendError(reply, 'Media URL must be a valid secure web link', 400);
       }
@@ -196,7 +196,7 @@ export default async function episodeRoutes(fastify, opts) {
     }
   });
 
-  // Update episode (FIXED: Modern URL handling for updates)
+  // Update episode
   fastify.put('/:episodeId/update', async (request, reply) => {
     try {
       await verifyCreator(request, reply);
@@ -242,7 +242,6 @@ export default async function episodeRoutes(fastify, opts) {
       if (description !== undefined) episode.description = description;
       
       if (mediaUrl) {
-        // MODERN FIX: Relaxed regex
         if (!/^https?:\/\/.+/i.test(mediaUrl)) {
           return sendError(reply, 'Media URL must be a valid secure web link', 400);
         }
@@ -339,7 +338,7 @@ export default async function episodeRoutes(fastify, opts) {
         userId: request.user._id,
         episodeId,
         isActive: true,
-      });
+      }).lean();
 
       const hasActiveSubscription = request.user.subscriptionExpiresAt > new Date();
       if (!episode.isFree && !unlock && !hasActiveSubscription) {
