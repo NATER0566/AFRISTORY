@@ -68,22 +68,34 @@
       .feed-video-card video {
         width: 100%;
         height: 100%;
-        /* FIX: 'cover' forces the video to fill the entire space, removing all black bars perfectly like TikTok */
+        /* FIX: cover completely removes black letterboxing, filling the space like TikTok */
         object-fit: cover; 
         background-color: #000;
         outline: none;
         display: block;
       }
 
+      /* FIX: Adds a subtle dark shadow gradient to the bottom so white text is always visible */
+      .feed-video-card::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 35%;
+        background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
+        pointer-events: none;
+        z-index: 5;
+      }
+
       .feed-overlay {
         position: absolute;
-        bottom: 25px;
+        bottom: 18px; /* Perfectly aligned inside the video */
         left: 15px;
         right: 65px; 
         color: #fff;
         z-index: 10;
-        /* FIX: Stronger text shadow so it can be read over bright videos */
-        text-shadow: 0 1px 6px rgba(0,0,0,0.95), 0 0 3px rgba(0,0,0,0.8);
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.9);
         pointer-events: none;
         display: flex;
         flex-direction: column;
@@ -95,12 +107,12 @@
 
       .feed-sidebar {
         position: absolute;
-        bottom: 30px;
-        right: 8px; /* Pulled closer to the right edge */
+        bottom: 25px; /* Aligned nicely with overlay */
+        right: 10px;
         z-index: 10;
         display: flex;
         flex-direction: column;
-        gap: 22px; /* Nicer spacing between buttons */
+        gap: 20px;
       }
 
       /* Native TikTok Floating Buttons */
@@ -159,7 +171,7 @@
         .rewards-balance { border-left: 0; border-top: 1px solid #6b5122; margin-top: 22px; padding: 16px 0 0; }
         .rewards-grid { grid-template-columns: 1fr; }
 
-        /* FIX: Perfectly scales the video section between the top header and bottom nav */
+        /* Reserves exact space for topbar and bottom nav so they stay visible */
         #section-watch { height: calc(100dvh - 160px) !important; }
       }
 
