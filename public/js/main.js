@@ -132,7 +132,7 @@ function episodeCard(episode) { const series = episode.seriesId || {}; const cre
 
 async function loadDiscover() {
     try {
-        // Restore default Discover layout elements (unhide them) when coming back from Series Details
+        // FIX: Restore default Discover layout elements (unhide them) when coming back from Series Details
         $$('#section-discover .section-heading').forEach(el => el.classList.remove('hidden'));
         $('#creator-grid')?.classList.remove('hidden');
 
@@ -142,7 +142,10 @@ async function loadDiscover() {
         state.series = result.series || [];
         const featured = state.series[0];
         $('#featured-series').innerHTML = featured ? `<article class="featured-card" style="background-image:url('${image(featured.coverImage)}')" data-series-id="${esc(featured._id)}"><p class="eyebrow">FEATURED SERIES</p><h2>${esc(featured.title)}</h2><p>${esc(featured.description || 'A new story is waiting.')}</p></article>` : '<p>No stories match this filter.</p>';
-        $('#series-grid').innerHTML = state.series.map(card).join('') || '<p>No stories match this filter.</p>';
+        
+        // FIX: Remove the featured series from the grid so it doesn't display twice
+        const gridSeries = state.series.slice(1);
+        $('#series-grid').innerHTML = gridSeries.map(card).join('') || '<p>No stories match this filter.</p>';
         
         let creatorsList = [];
         try {
@@ -214,7 +217,7 @@ async function openDefaultFeed() {
 
 async function openSeries(id) {
     try {
-        // Fetch full series details alongside its episodes
+        // FIX: Fetch full series details alongside its episodes
         const [seriesInfo, episodesData] = await Promise.all([
             api(`/series/${id}`).catch(() => null),
             api(`/series/${id}/episodes?limit=50`).catch(() => ({}))
@@ -227,21 +230,25 @@ async function openSeries(id) {
         $$('#section-discover .section-heading').forEach(el => el.classList.add('hidden'));
         $('#creator-grid')?.classList.add('hidden');
 
-        // Render Series Details right inside the Discover page
+        // Render Series Details right inside the Discover page with data-action back button
         $('#featured-series').innerHTML = `
             <article class="featured-card" style="background-image: linear-gradient(to top, rgba(17,17,17,1) 0%, rgba(17,17,17,0.4) 100%), url('${image(seriesInfo.coverImage)}')">
-                <button class="button button-quiet" onclick="loadDiscover()" style="margin-bottom: 20px; z-index: 10; position: relative;">← Back to Series</button>
+                <button class="button button-quiet" data-action="back-to-discover" style="margin-bottom: 20px; z-index: 10; position: relative;">← Back to Series</button>
                 <p class="eyebrow" style="position: relative; z-index: 10;">${esc(seriesInfo.genre || 'SERIES')}</p>
                 <h2 style="position: relative; z-index: 10;">${esc(seriesInfo.title)}</h2>
                 <p style="position: relative; z-index: 10; max-width: 600px;">${esc(seriesInfo.description || 'No description available.')}</p>
                 <p style="color:#d4a017; margin-top:10px; position: relative; z-index: 10;">★ ${Number(seriesInfo.rating || 0).toFixed(1)} &nbsp; · &nbsp; ${esc(seriesInfo.language || 'English')}</p>
-                ${episodes.length > 0 ? `<button class="button button-primary" onclick="openEpisode('${episodes[0]._id}')" style="margin-top:15px; position: relative; z-index: 10;">Play Episode 1</button>` : ''}
+                ${episodes.length > 0 ? `<button class="button button-primary" data-episode-id="${episodes[0]._id}" style="margin-top:15px; position: relative; z-index: 10;">Play Episode 1</button>` : ''}
             </article>
         `;
         
-        // Render the Episodes for this Series
+        // FIX: Render the Episodes for this Series WITH NUMBERS (Episode 1, 2, 3...)
         if (episodes.length > 0) {
-            $('#series-grid').innerHTML = episodes.map(episodeCard).join('');
+            $('#series-grid').innerHTML = episodes.map((episode, index) => {
+                const series = episode.seriesId || {}; 
+                const creator = series.creatorId || {}; 
+                return `<article class="series-card episode-card" data-episode-id="${esc(episode._id)}"><div class="card-image" style="background-image:url('${image(episode.thumbnailUrl || series.coverImage)}')"><span class="card-tag">EPISODE ${index + 1}</span></div><div class="card-body"><h3>${esc(episode.title)}</h3><p>${esc(series.title || 'Story')} · ${esc(episode.culturalCategory || 'African story')}</p><p>${esc(creator.brandName || '')} · ${esc(episode.language || 'English')} · ${Math.round(Number(episode.duration || 0) / 60)} min</p></div></article>`;
+            }).join('');
         } else {
             $('#series-grid').innerHTML = '<p style="grid-column: 1/-1;">This story has no episodes yet.</p>';
         }
@@ -256,7 +263,7 @@ async function openEpisode(id) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
         const feedContainer = $('#tiktok-feed');
         
-        // Triggers the beautiful shiny CSS loading spinner perfectly
+        // FIX: Triggers the beautiful shiny CSS loading spinner perfectly instead of ugly text
         feedContainer.innerHTML = '<div style="text-align:center; margin-top:50px;"></div>'; 
 
         const currentEp = await api(`/episodes/${id}`) || {}; 
@@ -791,6 +798,9 @@ document.addEventListener('click', async event => {
         const series = event.target.closest('[data-series-id]'); if (series) openSeries(series.dataset.seriesId);
         const episodeRow = event.target.closest('[data-episode-id]'); if (episodeRow && !episodeRow.closest('.feed-video-card')) openEpisode(episodeRow.dataset.episodeId);
 
+        // FIX: The new back button listener
+        if (event.target.closest('[data-action="back-to-discover"]')) loadDiscover();
+
         if (event.target.closest('[data-action="unlock-current"]')) unlockEpisode();
         if (event.target.closest('[data-action="refresh-discover"]')) loadDiscover();
         if (event.target.closest('[data-action="buy-coins"]')) showPackages();
@@ -857,7 +867,22 @@ document.addEventListener('click', async event => {
 
 $('#upload-form')?.addEventListener('submit', submitUpload);
 $('#series-form')?.addEventListener('submit', submitSeries);
-$('#search-form')?.addEventListener('submit', searchEpisodes);
+
+// FIX: Re-wired the Discover Search Form to directly open and use the Global Search page
+$('#search-form')?.addEventListener('submit', event => {
+    event.preventDefault();
+    const input = event.target.querySelector('input');
+    const query = input ? input.value.trim() : '';
+    if (query.length < 2) return toast('Enter at least two characters', 'error');
+    
+    setSection('search');
+    const libraryInput = $('#library-search-input');
+    if (libraryInput) libraryInput.value = query;
+    
+    // Pass execution to the main library search logic
+    searchLibrary({ preventDefault: () => {}, target: $('#library-search-form') });
+});
+
 $('#library-search-form')?.addEventListener('submit', searchLibrary);
 $('#profile-form')?.addEventListener('submit', saveProfile);
 $('#settings-form')?.addEventListener('submit', saveSettings);
@@ -911,6 +936,7 @@ async function boot() {
 
         ensureClassificationControls(); 
         await loadDiscover().catch(e => console.warn(e)); 
+        // FIX: Completely removed the loadDiscoverEpisodes() call to stop it mixing into Discover
         refreshNotificationBadge().catch(e => console.warn(e)); 
         if(window.AfroStoryAds) window.AfroStoryAds.refresh().catch(e => console.warn(e)); 
         setupLazyLoading(); 
