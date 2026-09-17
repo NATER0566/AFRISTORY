@@ -333,17 +333,8 @@ export default async function episodeRoutes(fastify, opts) {
         return sendError(reply, 'Episode not found', 404);
       }
 
-      // Check if user has access
-      const unlock = await Unlock.findOne({
-        userId: request.user._id,
-        episodeId,
-        isActive: true,
-      }).lean();
-
-      const hasActiveSubscription = request.user.subscriptionExpiresAt > new Date();
-      if (!episode.isFree && !unlock && !hasActiveSubscription) {
-        return sendError(reply, 'Access denied - episode not unlocked', 403);
-      }
+      // FIX: Removed strict access block. 
+      // We want to record history and count views for users watching the 30-second free preview.
 
       let history = await History.findOne({
         userId: request.user._id,
