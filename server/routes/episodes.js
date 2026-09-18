@@ -1,9 +1,13 @@
+import mongoose from 'mongoose';
 import Episode, { EPISODE_GENRES, CULTURAL_CATEGORIES, EPISODE_LANGUAGES } from '../models/Episode.js';
 import Series from '../models/Series.js';
 import Creator from '../models/Creator.js';
 import Unlock from '../models/Unlock.js';
 import History from '../models/History.js';
 import Follow from '../models/Follow.js'; // NEW: Added to check mutual/follow state on the feed
+import Like from '../models/Like.js'; // NEW FEATURE: Like Model
+import Rating from '../models/Rating.js'; // NEW FEATURE: Rating Model
+import EpisodeView from '../models/EpisodeView.js'; // NEW FEATURE: Viewer Analytics Model
 import { verifyAuth, verifyCreator } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { formatDecimal } from '../utils/helpers.js';
@@ -44,6 +48,7 @@ export default async function episodeRoutes(fastify, opts) {
       
       let userUnlocks = [];
       let followedCreatorIds = [];
+      let userLikes = []; // NEW FEATURE: Bulk Like mapping
 
       if (request.user) {
         const episodeIds = episodes.map(ep => ep._id);
@@ -61,6 +66,13 @@ export default async function episodeRoutes(fastify, opts) {
           creatorId: { $in: creatorIds }
         }).lean();
         followedCreatorIds = follows.map(f => f.creatorId.toString());
+
+        // NEW FEATURE: Efficiently map all likes for the user in this feed batch
+        const likes = await Like.find({
+          userId: request.user._id,
+          episodeId: { $in: episodeIds }
+        }).lean();
+        userLikes = likes.map(l => l.episodeId.toString());
       }
 
       const processedEpisodes = episodes.map(episode => {
@@ -77,12 +89,14 @@ export default async function episodeRoutes(fastify, opts) {
 
         const creatorIdStr = episode.seriesId?.creatorId?._id?.toString();
         const isFollowing = followedCreatorIds.includes(creatorIdStr);
+        const isLiked = userLikes.includes(episode._id.toString()); // NEW FEATURE: Flag frontend Like icon
 
         return { 
             ...episode,
             rating: formatDecimal(episode.rating),
             hasAccess,
-            isFollowing
+            isFollowing,
+            isLiked
         };
       });
 
@@ -112,6 +126,7 @@ export default async function episodeRoutes(fastify, opts) {
 
       let hasAccess = episode.isFree;
       let isFollowing = false;
+      let isLiked = false; // NEW FEATURE
 
       if (request.cookies?.token) {
           await verifyAuth(request, reply);
@@ -135,6 +150,10 @@ export default async function episodeRoutes(fastify, opts) {
           const followCheck = await Follow.findOne({ followerId: request.user._id, creatorId: creatorIdStr }).lean();
           isFollowing = !!followCheck;
         }
+
+        // NEW FEATURE: Verify Single Like state
+        const likeCheck = await Like.findOne({ userId: request.user._id, episodeId }).lean();
+        isLiked = !!likeCheck;
       }
 
       // Safely resolve the profile image from the deep populated User object
@@ -148,7 +167,8 @@ export default async function episodeRoutes(fastify, opts) {
         ...episode,
         rating: formatDecimal(episode.rating),
         hasAccess,
-        isFollowing
+        isFollowing,
+        isLiked
       });
     } catch (error) {
       fastify.log.error(error);
@@ -350,6 +370,11 @@ export default async function episodeRoutes(fastify, opts) {
       await Episode.findByIdAndDelete(episodeId);
       await Unlock.deleteMany({ episodeId });
       await History.deleteMany({ episodeId });
+      
+      // Cleanup new records
+      await Like.deleteMany({ episodeId });
+      await Rating.deleteMany({ episodeId });
+      await EpisodeView.deleteMany({ episodeId });
 
       series.totalEpisodes = await Episode.countDocuments({ seriesId: series._id });
       await series.save();
@@ -384,10 +409,6 @@ export default async function episodeRoutes(fastify, opts) {
         episodeId,
       });
 
-      // FIX: Store the new view check BEFORE updating the history document 
-      // so it correctly adds +1 view the first time the video is watched.
-      const isNewView = !history || history.lastPosition === 0;
-
       if (!history) {
         history = new History({
           userId: request.user._id,
@@ -407,25 +428,160 @@ export default async function episodeRoutes(fastify, opts) {
 
       await history.save();
 
-      // If this is a new view, increment both the episode AND the creator safely.
-      if (isNewView) {
-        episode.totalViews += 1;
-        await episode.save();
-
-        const series = await Series.findById(episode.seriesId);
-        if (series && series.creatorId) {
-          const creator = await Creator.findById(series.creatorId);
-          if (creator) {
-            creator.totalViews = (creator.totalViews || 0) + 1;
-            await creator.save();
-          }
-        }
-      }
-
       sendSuccess(reply, history, 'Watch history updated successfully');
     } catch (error) {
       fastify.log.error(error);
       sendError(reply, 'Failed to update watch history', 500, error.message);
     }
   });
+
+  /* ============================================================================ */
+  /* NEW FEATURE ROUTES: LIKES, RATINGS & UNIQUE VIEWS */
+  /* ============================================================================ */
+
+  fastify.post('/:episodeId/like/toggle', async (request, reply) => {
+    try {
+      await verifyAuth(request, reply);
+      if (!request.user) return sendError(reply, 'Unauthorized', 401);
+
+      const { episodeId } = request.params;
+      const userId = request.user._id;
+
+      const existingLike = await Like.findOne({ userId, episodeId }).lean();
+      let isLiked = false;
+      let updatedEpisode;
+
+      if (existingLike) {
+        // Unlike: Delete atomic record & decrement gracefully
+        await Like.deleteOne({ _id: existingLike._id });
+        updatedEpisode = await Episode.findByIdAndUpdate(
+          episodeId, 
+          { $inc: { likeCount: -1, likes: -1 } }, 
+          { new: true }
+        );
+        isLiked = false;
+      } else {
+        // Like: Create unique record & increment atomically
+        await Like.create({ userId, episodeId });
+        updatedEpisode = await Episode.findByIdAndUpdate(
+          episodeId, 
+          { $inc: { likeCount: 1, likes: 1 } }, 
+          { new: true }
+        );
+        isLiked = true;
+      }
+
+      const currentCount = Math.max(updatedEpisode?.likeCount || updatedEpisode?.likes || 0, 0);
+      sendSuccess(reply, { isLiked, likeCount: currentCount }, isLiked ? 'Liked' : 'Unliked');
+    } catch (error) {
+      // Race condition safety: If user spams click, MongoDB unique index throws 11000.
+      if (error.code === 11000) return sendSuccess(reply, { isLiked: true });
+      fastify.log.error(error);
+      sendError(reply, 'Failed to toggle like', 500, error.message);
+    }
+  });
+
+  fastify.post('/:episodeId/rate', async (request, reply) => {
+    try {
+      await verifyAuth(request, reply);
+      if (!request.user) return sendError(reply, 'Unauthorized', 401);
+
+      const { episodeId } = request.params;
+      const { rating } = request.body;
+      const userId = request.user._id;
+
+      const numRating = Number(rating);
+      if (!numRating || numRating < 1 || numRating > 5) {
+        return sendError(reply, 'Invalid rating. Must be between 1 and 5.', 400);
+      }
+
+      // Upsert single rating per user
+      await Rating.findOneAndUpdate(
+        { userId, episodeId },
+        { $set: { rating: numRating } },
+        { upsert: true, new: true }
+      );
+
+      // Recalculate average atomically and accurately via Aggregation
+      const stats = await Rating.aggregate([
+        { $match: { episodeId: new mongoose.Types.ObjectId(episodeId) } },
+        { $group: { _id: null, average: { $avg: '$rating' }, count: { $sum: 1 } } }
+      ]);
+
+      const avg = stats.length > 0 ? stats[0].average : 0;
+      const count = stats.length > 0 ? stats[0].count : 0;
+
+      const updated = await Episode.findByIdAndUpdate(
+        episodeId,
+        { $set: { rating: avg, ratingCount: count } },
+        { new: true }
+      );
+
+      sendSuccess(reply, { rating: formatDecimal(updated.rating), ratingCount: updated.ratingCount }, 'Rating submitted successfully');
+    } catch (error) {
+      fastify.log.error(error);
+      sendError(reply, 'Failed to submit rating', 500, error.message);
+    }
+  });
+
+  fastify.post('/:episodeId/record-view', async (request, reply) => {
+    try {
+      // Unique Analytics requires an authenticated user ID.
+      // We do not fail hard if unauthenticated to avoid console errors.
+      if (!request.cookies?.token) return sendSuccess(reply, { tracked: false, reason: 'unauthenticated' });
+      
+      const isAuthenticated = await verifyAuth(request, reply, false).catch(() => false);
+      if (!isAuthenticated || !request.user) return sendSuccess(reply, { tracked: false, reason: 'unauthorized' });
+
+      const { episodeId } = request.params;
+      const userId = request.user._id;
+
+      const episode = await Episode.findById(episodeId).lean();
+      if (!episode) return sendError(reply, 'Episode not found', 404);
+
+      const series = await Series.findById(episode.seriesId).lean();
+      if (!series || !series.creatorId) return sendSuccess(reply, { tracked: false, reason: 'no_creator' });
+
+      const creatorId = series.creatorId;
+
+      // 1. Unconditionally increment Total Views for this qualifying 10-second watch event
+      await Episode.findByIdAndUpdate(episodeId, { $inc: { totalViews: 1 } });
+      await Creator.findByIdAndUpdate(creatorId, { $inc: { totalViews: 1 } });
+
+      // 2. Check if user has EVER viewed this EXACT episode
+      const existingEpView = await EpisodeView.findOne({ userId, episodeId }).lean();
+
+      if (!existingEpView) {
+        // 3. Count how many UNIQUE episodes from this creator the user has already watched
+        const priorCreatorViewsCount = await EpisodeView.countDocuments({ userId, creatorId });
+
+        // 4. Atomically lock this unique view record in place
+        await EpisodeView.create({ userId, episodeId, creatorId });
+
+        // 5. Increment Episode Unique Viewers
+        await Episode.findByIdAndUpdate(episodeId, { $inc: { uniqueViewers: 1 } });
+
+        // 6. Categorize the Creator Analytics impact exactly ONCE per user status
+        if (priorCreatorViewsCount === 0) {
+          // First time this user has ever watched this Creator
+          await Creator.findByIdAndUpdate(creatorId, { $inc: { uniqueViewers: 1 } });
+        } else if (priorCreatorViewsCount === 1) {
+          // Exactly the second distinct episode -> they transition to a Returning Viewer
+          await Creator.findByIdAndUpdate(creatorId, { $inc: { returningViewers: 1 } });
+        }
+        // If priorCreatorViewsCount > 1, they are ALREADY a returning viewer, do not increment again.
+
+        return sendSuccess(reply, { tracked: true, type: priorCreatorViewsCount > 0 ? 'returning' : 'new' });
+      }
+
+      // View was already tracked for this episode + user pair (unique viewers don't increment, but total views did)
+      sendSuccess(reply, { tracked: true, type: 'repeat' });
+    } catch (error) {
+      // Safe catch for race condition duplicate insert (e.g. user swiped rapidly)
+      if (error.code === 11000) return sendSuccess(reply, { tracked: true, type: 'duplicate_race' });
+      fastify.log.error(error);
+      sendError(reply, 'Failed to record view', 500, error.message);
+    }
+  });
+
 }
