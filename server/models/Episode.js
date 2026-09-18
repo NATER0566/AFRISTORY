@@ -88,6 +88,11 @@ const episodeSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    // NEW FEATURE: Unique viewer count
+    uniqueViewers: {
+      type: Number,
+      default: 0,
+    },
     totalUnlocks: {
       type: Number,
       default: 0,
@@ -104,9 +109,19 @@ const episodeSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    // NEW FEATURE: Explicitly map to frontend likeCount
+    likeCount: {
+      type: Number,
+      default: 0,
+    },
     rating: {
       type: mongoose.Decimal128,
       default: 0.0,
+    },
+    // NEW FEATURE: Necessary to properly calculate ★ 4.7 (23)
+    ratingCount: {
+      type: Number,
+      default: 0,
     },
     isPublished: {
       type: Boolean,
