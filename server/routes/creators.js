@@ -1,6 +1,7 @@
 import Creator from '../models/Creator.js';
 import User from '../models/User.js';
 import Series from '../models/Series.js';
+import Follow from '../models/Follow.js'; // NEW: Import dedicated follow model
 import { verifyAuth, verifyCreator } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { paginate, formatDecimal } from '../utils/helpers.js';
@@ -69,11 +70,6 @@ export default async function creatorRoutes(fastify, opts) {
       user.role = 'CREATOR';
       await user.save();
 
-      // =========================================================================
-      // FIX: REFRESH THE USER'S SESSION TOKEN SO THEY DON'T HAVE TO LOG OUT
-      // =========================================================================
-      // This instantly updates their browser cookie to prove they are a CREATOR.
-      // If your login file uses a specific helper to create tokens, use that here.
       if (fastify.jwt) {
         const token = fastify.jwt.sign({ 
           id: user._id, 
@@ -89,7 +85,6 @@ export default async function creatorRoutes(fastify, opts) {
           maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
         });
       }
-      // =========================================================================
 
       sendSuccess(reply, creator, 'Creator account created successfully', 201);
     } catch (error) {
@@ -216,7 +211,65 @@ export default async function creatorRoutes(fastify, opts) {
     }
   });
 
-  // FIX: Safely check for duplicates before following
+  // NEW: Get paginated list of actual users following the logged-in creator (For Creator Studio)
+  fastify.get('/me/followers', async (request, reply) => {
+    try {
+      await verifyCreator(request, reply);
+      if (!request.user) return sendError(reply, 'Unauthorized', 401);
+
+      const creator = await Creator.findOne({ userId: request.user._id });
+      if (!creator) return sendError(reply, 'Creator profile not found', 404);
+
+      const { page = 1, limit = 20 } = request.query;
+      const { skip, limit: l, page: p } = paginate(page, limit);
+
+      const follows = await Follow.find({ creatorId: creator._id })
+        .populate({
+          path: 'followerId',
+          select: 'username profileImage profile'
+        })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(l)
+        .lean();
+
+      const total = await Follow.countDocuments({ creatorId: creator._id });
+
+      // For each follower, check if the creator also follows them back (Mutual check)
+      const followerDetails = await Promise.all(follows.map(async (f) => {
+        const followerUser = f.followerId;
+        if (!followerUser) return null;
+
+        // Find if this follower has a creator profile to check reverse follow
+        const followerCreator = await Creator.findOne({ userId: followerUser._id });
+        let isMutual = false;
+        if (followerCreator) {
+          const reverseCheck = await Follow.findOne({ followerId: creator.userId, creatorId: followerCreator._id });
+          isMutual = !!reverseCheck;
+        }
+
+        return {
+          _id: f._id,
+          userId: followerUser._id,
+          username: followerUser.username,
+          displayName: followerUser.profile?.displayName || followerUser.username,
+          profileImage: followerUser.profile?.avatarUrl || followerUser.profileImage || null,
+          createdAt: f.createdAt,
+          isMutual
+        };
+      }));
+
+      sendSuccess(reply, {
+        followers: followerDetails.filter(Boolean),
+        pagination: { page: p, limit: l, total, pages: Math.ceil(total / l) }
+      });
+    } catch (error) {
+      fastify.log.error(error);
+      sendError(reply, 'Failed to fetch followers', 500, error.message);
+    }
+  });
+
+  // SECURE & ATOMIC FOLLOW ENDPOINT (Prevents self-follows, duplicate spam, and handles counts securely)
   fastify.post('/:creatorId/follow', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
@@ -226,33 +279,88 @@ export default async function creatorRoutes(fastify, opts) {
       }
 
       const { creatorId } = request.params;
-      const creator = await Creator.findById(creatorId);
+      const targetCreator = await Creator.findById(creatorId);
 
-      if (!creator) {
+      if (!targetCreator) {
         return sendError(reply, 'Creator not found', 404);
       }
 
-      // Initialize followers array if it doesn't exist to track users
-      if (!creator.followers) {
-        creator.followers = [];
+      // 1. REJECT SELF-FOLLOWS AT APPLICATION LEVEL
+      if (targetCreator.userId.toString() === request.user._id.toString()) {
+        return sendError(reply, 'You cannot follow yourself', 400);
       }
 
-      // Check if the user is already in the followers list
-      const alreadyFollowing = creator.followers.some(id => id.toString() === request.user._id.toString());
+      // 2. ATOMIC UPSERT USING UNIQUE INDEX TO PREVENT DUPLICATE / SPAM WRITES
+      const existingFollow = await Follow.findOne({
+        followerId: request.user._id,
+        creatorId: targetCreator._id
+      });
 
-      if (alreadyFollowing) {
-        return sendSuccess(reply, { totalFollowers: creator.totalFollowers, alreadyFollowing: true }, 'You already follow this creator');
+      if (existingFollow) {
+        return sendSuccess(reply, { 
+          totalFollowers: targetCreator.totalFollowers, 
+          alreadyFollowing: true,
+          isFollowing: true 
+        }, 'You already follow this creator');
       }
 
-      // If they are not following, add their ID and increase the count
-      creator.followers.push(request.user._id);
-      creator.totalFollowers = (creator.totalFollowers || 0) + 1;
-      await creator.save();
+      // Create new secure follow relation
+      await Follow.create({
+        followerId: request.user._id,
+        creatorId: targetCreator._id
+      });
 
-      sendSuccess(reply, { totalFollowers: creator.totalFollowers, alreadyFollowing: false }, 'Following creator');
+      // Increment count safely
+      targetCreator.totalFollowers = (targetCreator.totalFollowers || 0) + 1;
+      await targetCreator.save();
+
+      sendSuccess(reply, { 
+        totalFollowers: targetCreator.totalFollowers, 
+        alreadyFollowing: false,
+        isFollowing: true 
+      }, 'Following creator');
     } catch (error) {
+      // Handle unique index race-condition safely if dual simultaneous requests hit
+      if (error.code === 11000) {
+        const creator = await Creator.findById(request.params.creatorId);
+        return sendSuccess(reply, { 
+          totalFollowers: creator?.totalFollowers || 0, 
+          alreadyFollowing: true,
+          isFollowing: true 
+        }, 'You already follow this creator');
+      }
       fastify.log.error(error);
       sendError(reply, 'Failed to follow creator', 500, error.message);
+    }
+  });
+
+  // UNFOLLOW ENDPOINT (Idempotent, decrements safely without negative counts)
+  fastify.delete('/:creatorId/follow', async (request, reply) => {
+    try {
+      await verifyAuth(request, reply);
+      if (!request.user) return sendError(reply, 'Unauthorized', 401);
+
+      const { creatorId } = request.params;
+      const targetCreator = await Creator.findById(creatorId);
+      if (!targetCreator) return sendError(reply, 'Creator not found', 404);
+
+      const deleted = await Follow.findOneAndDelete({
+        followerId: request.user._id,
+        creatorId: targetCreator._id
+      });
+
+      if (deleted) {
+        targetCreator.totalFollowers = Math.max(0, (targetCreator.totalFollowers || 1) - 1);
+        await targetCreator.save();
+      }
+
+      sendSuccess(reply, { 
+        totalFollowers: targetCreator.totalFollowers, 
+        isFollowing: false 
+      }, 'Unfollowed creator successfully');
+    } catch (error) {
+      fastify.log.error(error);
+      sendError(reply, 'Failed to unfollow creator', 500, error.message);
     }
   });
 }
