@@ -1,4 +1,3 @@
-
 const API = '/api';
 const PREVIEW_LIMIT = 30; // Seconds before the video locks
 const state = { 
@@ -161,7 +160,7 @@ async function loadDiscoverEpisodes() {
         const genre = $('#genre-filter')?.value || '';
         const culturalCategory = $('#cultural-filter')?.value || '';
         const language = $('#language-filter')?.value || '';
-        const query = newSearchParams({ sort: 'trending', limit: '12' });
+        const query = new URLSearchParams({ sort: 'trending', limit: '12' });
         if (genre) query.set('genre', genre);
         if (culturalCategory) query.set('culturalCategory', culturalCategory);
         if (language) query.set('language', language);
@@ -292,14 +291,12 @@ async function openEpisode(id) {
                 </div>`; 
             } 
 
-            // FIX: Implemented logic to extract profile image URL or fallback to initial letter for Follow button
             const creatorImgUrl = episode.seriesId?.creatorId?.profileImage;
             const fallbackInitial = esc((episode.seriesId?.creatorId?.brandName || 'A')[0].toUpperCase());
             const profileDisplayHtml = creatorImgUrl 
                 ? `<img src="${image(creatorImgUrl)}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">` 
                 : `<span style="font-weight:bold;color:#fff;font-size:18px;">${fallbackInitial}</span>`;
 
-            // FIX: Retrieve episode number and add it to the feed text overlay
             const epNumText = episode.episodeNumber ? `Episode ${episode.episodeNumber} · ` : '';
 
             card.innerHTML = `
@@ -600,11 +597,22 @@ async function showSubscriptionPlans() {
     } catch (error) { toast(error.message, 'error'); } 
 }
 
+// FIX: Updated HTML to render proper thumbnails and progress bars for History
 async function loadHistory() {
     try {
         const result = await api('/users/history/watch?limit=50') || {};
         const list = result.history || result.data || result || [];
-        $('#history-list').innerHTML = list.filter(item => item.episodeId).map(item => `<button class="data-row history-row" data-history-episode="${esc(item.episodeId._id)}" data-history-series="${esc(item.seriesId?._id)}"><div><strong>${esc(item.seriesId?.title || 'Series')}</strong><p>${esc(item.episodeId.title || 'Episode')}</p></div><span class="data-value">${Math.round(Number(item.watchedPercentage || 0))}%</span></button>`).join('') || '<p>Your watched episodes will appear here.</p>';
+        $('#history-list').innerHTML = list.filter(item => item.episodeId).map(item => `
+            <button class="profile-list-row history-row" data-history-episode="${esc(item.episodeId._id)}" data-history-series="${esc(item.seriesId?._id)}" style="width: 100%; cursor: pointer; text-align: left; margin-bottom: 10px; border-radius: 8px;">
+                <div style="width: 90px; height: 60px; border-radius: 6px; background-color: #333; background-image: url('${image(item.episodeId.thumbnailUrl || item.seriesId?.coverImage)}'); background-size: cover; background-position: center; flex-shrink: 0;"></div>
+                <div style="flex: 1; min-width: 0;">
+                    <strong style="color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">${esc(item.seriesId?.title || 'Series')}</strong>
+                    <p style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(item.episodeId.title || 'Episode')}</p>
+                    <div class="progress" style="width: 100%; max-width: 200px;"><i style="width: ${Math.round(Number(item.watchedPercentage || 0))}%;"></i></div>
+                </div>
+                <span style="color: #d4a017; font-weight: 600; font-size: 13px;">${Math.round(Number(item.watchedPercentage || 0))}%</span>
+            </button>
+        `).join('') || '<p>Your watched episodes will appear here.</p>';
     } catch (error) { toast(error.message, 'error'); }
 }
 
@@ -764,11 +772,22 @@ async function loadTrending() {
     } catch (error) { toast(error.message, 'error'); } 
 } 
 
+// FIX: Updated HTML to render proper thumbnails and progress bars for Continue Watching
 async function loadContinue() {
     try {
         const result = await api('/users/history/watch?limit=50') || {};
         const list = result.history || result.data || result || [];
-        $('#continue-list').innerHTML = list.filter(item => !item.completed && item.episodeId).map(item => `<button class="data-row history-row" data-history-episode="${esc(item.episodeId._id)}" data-history-series="${esc(item.seriesId?._id)}"><div><strong>${esc(item.seriesId?.title || 'Series')}</strong><p>${esc(item.episodeId.title || 'Episode')}</p></div><span class="data-value">${Math.round(Number(item.watchedPercentage || 0))}%</span></button>`).join('') || '<p>Nothing to continue yet.</p>';
+        $('#continue-list').innerHTML = list.filter(item => !item.completed && item.episodeId).map(item => `
+            <button class="profile-list-row history-row" data-history-episode="${esc(item.episodeId._id)}" data-history-series="${esc(item.seriesId?._id)}" style="width: 100%; cursor: pointer; text-align: left; margin-bottom: 10px; border-radius: 8px;">
+                <div style="width: 90px; height: 60px; border-radius: 6px; background-color: #333; background-image: url('${image(item.episodeId.thumbnailUrl || item.seriesId?.coverImage)}'); background-size: cover; background-position: center; flex-shrink: 0;"></div>
+                <div style="flex: 1; min-width: 0;">
+                    <strong style="color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">${esc(item.seriesId?.title || 'Series')}</strong>
+                    <p style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(item.episodeId.title || 'Episode')}</p>
+                    <div class="progress" style="width: 100%; max-width: 200px;"><i style="width: ${Math.round(Number(item.watchedPercentage || 0))}%;"></i></div>
+                </div>
+                <span style="color: #d4a017; font-weight: 600; font-size: 13px;">${Math.round(Number(item.watchedPercentage || 0))}%</span>
+            </button>
+        `).join('') || '<p>Nothing to continue yet.</p>';
     } catch (error) { toast(error.message, 'error'); }
 } 
 
@@ -809,19 +828,29 @@ document.addEventListener('click', async event => {
         const series = event.target.closest('[data-series-id]'); if (series) openSeries(series.dataset.seriesId);
         const episodeRow = event.target.closest('[data-episode-id]'); if (episodeRow && !episodeRow.closest('.feed-video-card')) openEpisode(episodeRow.dataset.episodeId);
 
+        // FIX: Sweeps the entire screen to checkmark ALL buttons for the followed creator
         const followBtn = event.target.closest('[data-action="follow-creator"]');
         if (followBtn) {
             try {
                 const creatorId = followBtn.dataset.creator;
                 if (creatorId && creatorId !== 'undefined') {
-                    await api(`/creators/${creatorId}/follow`, { method: 'POST' });
-                    const iconBadge = followBtn.querySelector('div > div');
-                    if (iconBadge) {
-                        iconBadge.textContent = '✓';
-                        iconBadge.style.background = '#76a86b';
-                        iconBadge.style.color = '#fff';
+                    const res = await api(`/creators/${creatorId}/follow`, { method: 'POST' });
+                    
+                    if (res && res.alreadyFollowing) {
+                        toast('You already follow this creator', 'info');
+                    } else {
+                        toast('Following creator!', 'success');
                     }
-                    toast('Following creator!', 'success');
+
+                    // Update all follow buttons for this specific creator on the screen
+                    $$(`[data-action="follow-creator"][data-creator="${creatorId}"]`).forEach(btn => {
+                        const iconBadge = btn.querySelector('div > div');
+                        if (iconBadge) {
+                            iconBadge.textContent = '✓';
+                            iconBadge.style.background = '#76a86b';
+                            iconBadge.style.color = '#fff';
+                        }
+                    });
                 }
             } catch (error) { toast(error.message, 'error'); }
         }
