@@ -36,9 +36,19 @@ export default async function userRoutes(fastify, opts) {
       const [user, wallet, history, favorites, unlocks, creator] = await Promise.all([
         User.findById(request.user._id).select(privateUserFields),
         Wallet.findOne({ userId: request.user._id }),
-        History.find({ userId: request.user._id }).populate('episodeId', 'title').populate('seriesId').sort({ updatedAt: -1 }).limit(6),
-        Favorite.find({ userId: request.user._id }).populate('seriesId').sort({ createdAt: -1 }).limit(6),
-        Unlock.find({ userId: request.user._id, isActive: true }).populate('episodeId', 'title').populate('seriesId').sort({ unlockedAt: -1 }).limit(20),
+        // FIX: Deeply populate images and duration for history
+        History.find({ userId: request.user._id })
+          .populate('episodeId', 'title thumbnailUrl duration')
+          .populate('seriesId', 'title coverImage')
+          .sort({ updatedAt: -1 }).limit(6),
+        Favorite.find({ userId: request.user._id })
+          .populate('seriesId', 'title coverImage')
+          .sort({ createdAt: -1 }).limit(6),
+        // FIX: Deeply populate images for library unlocks
+        Unlock.find({ userId: request.user._id, isActive: true })
+          .populate('episodeId', 'title thumbnailUrl duration')
+          .populate('seriesId', 'title coverImage')
+          .sort({ unlockedAt: -1 }).limit(20),
         Creator.findOne({ userId: request.user._id }).select('-bankAccount'),
       ]);
 
@@ -146,7 +156,14 @@ export default async function userRoutes(fastify, opts) {
     try {
       await verifyAuth(request, reply);
       if (!request.user) return sendError(reply, 'Unauthorized', 401);
-      const history = await History.find({ userId: request.user._id }).populate('episodeId', 'title').populate('seriesId').sort({ updatedAt: -1 }).limit(100);
+      
+      // FIX: Populate image data
+      const history = await History.find({ userId: request.user._id })
+        .populate('episodeId', 'title thumbnailUrl duration')
+        .populate('seriesId', 'title coverImage')
+        .sort({ updatedAt: -1 })
+        .limit(100);
+        
       sendSuccess(reply, { history });
     } catch (error) {
       fastify.log.error(error);
@@ -183,7 +200,13 @@ export default async function userRoutes(fastify, opts) {
     try {
       await verifyAuth(request, reply);
       if (!request.user) return sendError(reply, 'Unauthorized', 401);
-      const unlocks = await Unlock.find({ userId: request.user._id, isActive: true }).populate('episodeId', 'title').populate('seriesId').sort({ unlockedAt: -1 });
+      
+      // FIX: Populate image data
+      const unlocks = await Unlock.find({ userId: request.user._id, isActive: true })
+        .populate('episodeId', 'title thumbnailUrl duration')
+        .populate('seriesId', 'title coverImage')
+        .sort({ unlockedAt: -1 });
+        
       sendSuccess(reply, { unlocks });
     } catch (error) {
       fastify.log.error(error);
@@ -233,9 +256,10 @@ export default async function userRoutes(fastify, opts) {
 
       const History = (await import('../models/History.js')).default;
 
+      // FIX: Explicitly ask the database to fetch the images and duration so the frontend can render the UI
       const history = await History.find({ userId: request.user._id })
-        .populate('episodeId', 'title')
-        .populate('seriesId', 'title')
+        .populate('episodeId', 'title thumbnailUrl duration')
+        .populate('seriesId', 'title coverImage')
         .sort({ updatedAt: -1 })
         .skip(skip)
         .limit(l);
