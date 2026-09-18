@@ -10,51 +10,6 @@ const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 
 /* ============================================================================ */
-/* PERFORMANCE MONITORING SYSTEM (LIGHTWEIGHT & BATCHED) */
-/* ============================================================================ */
-window.perfData = { longTasks: 0, apiLatencies: [], apiErrors: 0, pageLoadMs: 0 };
-
-window.addEventListener('load', () => {
-    setTimeout(() => {
-        const [nav] = performance.getEntriesByType('navigation');
-        if (nav) window.perfData.pageLoadMs = Math.round(nav.loadEventEnd - nav.startTime);
-    }, 0);
-});
-
-if ('PerformanceObserver' in window) {
-    try {
-        const po = new PerformanceObserver((list) => {
-            for (const entry of list.getEntries()) window.perfData.longTasks++;
-        });
-        po.observe({ type: 'longtask', buffered: true });
-    } catch(e) { /* ignore silently */ }
-}
-
-setInterval(() => {
-    if (!state.user || (window.perfData.apiLatencies.length === 0 && window.perfData.longTasks === 0)) return;
-    const avgLatency = window.perfData.apiLatencies.length 
-        ? Math.round(window.perfData.apiLatencies.reduce((a,b)=>a+b,0) / window.perfData.apiLatencies.length) 
-        : 0;
-
-    const payload = {
-        longTasks: window.perfData.longTasks,
-        avgApiLatency: avgLatency,
-        apiErrors: window.perfData.apiErrors,
-        pageLoadMs: window.perfData.pageLoadMs
-    };
-
-    window.perfData.longTasks = 0;
-    window.perfData.apiLatencies = [];
-    window.perfData.apiErrors = 0;
-
-    fetch('/api/admin/performance/metrics', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    }).catch(()=>{}); // Silent fire and forget
-}, 60000); // Batched reporting every 60s
-
-/* ============================================================================ */
 /* FRONTEND ERROR LOGGING TO RENDER BACKEND */
 /* ============================================================================ */
 async function logFrontendError(type, message, stack) {
@@ -65,7 +20,12 @@ async function logFrontendError(type, message, stack) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                type, message, stack, userId: state.user._id, url: window.location.href, time: new Date().toISOString() 
+                type, 
+                message, 
+                stack, 
+                userId: state.user._id,
+                url: window.location.href, 
+                time: new Date().toISOString() 
             })
         });
     } catch (e) { /* Silent fail if network is down */ }
@@ -85,7 +45,6 @@ window.addEventListener('unhandledrejection', (event) => {
 const api = async (path, options = {}) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), Math.min(options.timeout || 15000, 15000));
-    const startMark = performance.now();
 
     try {
         const response = await fetch(`${API}${path}`, { 
@@ -93,13 +52,6 @@ const api = async (path, options = {}) => {
             signal: controller.signal, 
             ...options 
         });
-        
-        const duration = performance.now() - startMark;
-        if (window.perfData) {
-            window.perfData.apiLatencies.push(duration);
-            if (window.perfData.apiLatencies.length > 50) window.perfData.apiLatencies.shift();
-        }
-
         const data = await response.json().catch(() => ({}));
         
         if (response.status === 401) { 
@@ -108,13 +60,11 @@ const api = async (path, options = {}) => {
         }
         
         if (!response.ok || data.success === false) {
-            if (window.perfData) window.perfData.apiErrors++;
             throw new Error(data.message || 'Request failed');
         }
         
         return data.data !== undefined ? data.data : data;
     } catch (error) {
-        if (window.perfData) window.perfData.apiErrors++;
         if (error.name === 'AbortError') throw new Error('Request timeout');
         throw error;
     } finally {
@@ -241,7 +191,7 @@ function ensureClassificationControls() {
 }
 
 function card(series) { 
-    return `<article class="series-card" data-series-id="${esc(series._id)}"><div class="card-image" style="background-image:url('${image(series.coverImage)}')"><span class="card-tag">${esc(series.genre || 'SERIES')}</span></div><div class="card-body"><h3>${esc(series.title)}</h3><p>★ ${Number(series.averageRating || series.rating || 0).toFixed(1)} &nbsp; · &nbsp; ${esc(series.language || 'English')}</p></div></article>`; 
+    return `<article class="series-card" data-series-id="${esc(series._id)}"><div class="card-image" style="background-image:url('${image(series.coverImage)}')"><span class="card-tag">${esc(series.genre || 'SERIES')}</span></div><div class="card-body"><h3>${esc(series.title)}</h3><p>★ ${Number(series.rating || 0).toFixed(1)} &nbsp; · &nbsp; ${esc(series.language || 'English')}</p></div></article>`; 
 }
 
 function episodeCard(episode) { 
@@ -288,6 +238,27 @@ async function loadDiscover() {
         
         if (creatorGrid) {
             creatorGrid.innerHTML = creatorsList.length > 0 ? creatorsList.map(creator => `<div class="creator-pill"><span class="creator-avatar">${creator.userId?.profileImage ? `<img src="${image(creator.userId.profileImage)}">` : esc((creator.brandName || 'C')[0])}</span><span><strong>${esc(creator.brandName)}</strong><br><small class="muted">${Number(creator.totalViews || 0).toLocaleString()} views</small></span></div>`).join('') : '<p>No creators found yet.</p>';
+        }
+    } catch (error) { 
+        toast(error.message, 'error'); 
+    }
+} 
+
+async function loadDiscoverEpisodes() {
+    try {
+        ensureClassificationControls();
+        const genre = $('#genre-filter')?.value || '';
+        const culturalCategory = $('#cultural-filter')?.value || '';
+        const language = $('#language-filter')?.value || '';
+        const query = new URLSearchParams({ sort: 'trending', limit: '12' });
+        if (genre) query.set('genre', genre);
+        if (culturalCategory) query.set('culturalCategory', culturalCategory);
+        if (language) query.set('language', language);
+        
+        const result = await api(`/episodes/feed?${query}`) || {};
+        const seriesGrid = $('#series-grid');
+        if (seriesGrid) {
+            seriesGrid.innerHTML = (result.episodes || []).map(episodeCard).join('') || '<p>No episodes match these filters.</p>';
         }
     } catch (error) { 
         toast(error.message, 'error'); 
@@ -366,7 +337,7 @@ async function openSeries(id) {
                     <p class="eyebrow" style="position: relative; z-index: 10;">${esc(seriesInfo.genre || 'SERIES')}</p>
                     <h2 style="position: relative; z-index: 10;">${esc(seriesInfo.title)}</h2>
                     <p style="position: relative; z-index: 10; max-width: 600px;">${esc(seriesInfo.description || 'No description available.')}</p>
-                    <p style="color:#d4a017; margin-top:10px; position: relative; z-index: 10;">★ ${Number(seriesInfo.averageRating || seriesInfo.rating || 0).toFixed(1)} &nbsp; · &nbsp; ${esc(seriesInfo.language || 'English')}</p>
+                    <p style="color:#d4a017; margin-top:10px; position: relative; z-index: 10;">★ ${Number(seriesInfo.rating || 0).toFixed(1)} &nbsp; · &nbsp; ${esc(seriesInfo.language || 'English')}</p>
                     ${episodes.length > 0 ? `<button class="button button-primary" data-episode-id="${episodes[0]._id}" style="margin-top:15px; position: relative; z-index: 10;">Play Episode 1</button>` : ''}
                 </article>
             `;
@@ -390,10 +361,6 @@ async function openSeries(id) {
         toast('Could not open story.', 'error'); 
     }
 }
-
-// Watch session tracking variables for View analytics threshold
-const viewThresholdSec = 5; 
-const watchSessions = {}; 
 
 async function openEpisode(id) {
     try {
@@ -446,46 +413,27 @@ async function openEpisode(id) {
                 ? `<div class="follow-badge-icon" style="position: absolute; bottom: 0; right: 0; background: #76a86b; color: #fff; width: 14px; height: 14px; border-radius: 50%; font-size: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid #111;">✓</div>`
                 : `<div class="follow-badge-icon" style="position: absolute; bottom: 0; right: 0; background: #d4a017; color: #111; width: 14px; height: 14px; border-radius: 50%; font-size: 14px; line-height: 14px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid #111;">+</div>`;
 
-            const isLiked = episode.isLiked || false;
-            const likesCount = episode.likesCount || episode.likes || 0;
-            const isSaved = episode.isSaved || false;
-            const viewCount = episode.viewsCount || episode.views || 0;
-            const ratingAvg = episode.averageRating ? Number(episode.averageRating).toFixed(1) : 'No ratings';
-            const ratingCount = episode.ratingCount || 0;
-            const ratingDisplay = ratingCount > 0 ? `★ ${ratingAvg} (${ratingCount})` : `★ No ratings`;
-
             card.innerHTML = `
                 <video poster="${image(episode.thumbnailUrl || episode.seriesId?.coverImage)}" loop playsinline ${episode.hasAccess ? 'controls' : ''}></video> 
                 ${lockScreen} 
                 <div class="feed-overlay"> 
                     <h3 style="margin:0; font-size:18px; font-weight:700;">${esc(episode.title)}</h3> 
                     <p style="margin:4px 0 0 0; font-size:14px; opacity:0.9;">@${esc(episode.seriesId?.creatorId?.brandName || 'AfroStory')} · ${epNumText}${esc(episode.seriesId?.title || '')}</p> 
-                    <p style="margin:4px 0 0 0; font-size:13px; opacity:0.8; display: flex; align-items: center; gap: 8px;">
-                        <button class="text-button" style="color:inherit; font-size:inherit; font-weight:bold; padding:0;" data-action="rate-episode" data-id="${episode._id}" title="Rate this episode">${ratingDisplay}</button>
-                        <span>·</span>
-                        <span style="display:flex; align-items:center; gap:4px;" title="Total Views"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> ${Number(viewCount).toLocaleString()} views</span>
-                        <span>·</span>
-                        <span>${esc(episode.language || 'English')}</span>
-                    </p>
                 </div> 
                 <div class="feed-sidebar"> 
-                    <button class="feed-action-btn" data-action="follow-creator" data-creator="${esc(episode.seriesId?.creatorId?._id)}" ${isFollowing ? 'disabled style="pointer-events:none;"' : ''} title="${isFollowing ? 'Following' : 'Follow Creator'}" aria-label="${isFollowing ? 'Unfollow creator' : 'Follow creator'}"> 
+                    <button class="feed-action-btn" data-action="follow-creator" data-creator="${esc(episode.seriesId?.creatorId?._id)}" ${isFollowing ? 'disabled style="pointer-events:none;"' : ''} title="Follow Creator"> 
                         <div style="width: 42px; height: 42px; border-radius: 50%; overflow: hidden; border: 2px solid #fff; background: #333; margin-bottom: 6px; display: flex; align-items: center; justify-content: center; position: relative;">
                             ${profileDisplayHtml}
                             ${followIconBadge}
                         </div>
                     </button>
-                    <button class="feed-action-btn" data-action="like-episode" data-id="${episode._id}" title="Like" aria-label="${isLiked ? 'Unlike episode' : 'Like episode'}"> 
-                        <svg viewBox="0 0 24 24" width="30" height="30" stroke="${isLiked ? '#e0245e' : 'currentColor'}" stroke-width="2.5" fill="${isLiked ? '#e0245e' : 'none'}"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg> 
-                        <span class="like-count-display">${Number(likesCount).toLocaleString()}</span> 
-                    </button>
-                    <button class="feed-action-btn" onclick="document.getElementById('comments-sheet').classList.remove('hidden')" title="Comments" aria-label="View replies"> 
-                        <svg viewBox="0 0 24 24" width="30" height="30" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg> 
-                        <span>${Number(episode.repliesCount || 0).toLocaleString()}</span> 
-                    </button> 
-                    <button class="feed-action-btn" data-action="save-current" title="Save to Favorites" aria-label="Save episode"> 
-                        <svg viewBox="0 0 24 24" width="30" height="30" stroke="currentColor" stroke-width="2.5" fill="${isSaved ? 'currentColor' : 'none'}"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg> 
+                    <button class="feed-action-btn" data-action="save-current" title="Save to Favorites"> 
+                        <svg viewBox="0 0 24 24" width="30" height="30" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg> 
                         <span>Save</span> 
+                    </button> 
+                    <button class="feed-action-btn" onclick="document.getElementById('comments-sheet').classList.remove('hidden')" title="Comments"> 
+                        <svg viewBox="0 0 24 24" width="30" height="30" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg> 
+                        <span>Reply</span> 
                     </button> 
                 </div>`; 
             
@@ -506,8 +454,10 @@ async function openEpisode(id) {
                 videoEl.src = actualMediaUrl;
             }
 
-            videoEl.addEventListener('timeupdate', () => { 
-                if (!episode.hasAccess) {
+            if (!episode.hasAccess) { 
+                videoEl.addEventListener('timeupdate', () => { 
+                    if (episode.hasAccess) return; 
+                    
                     if (videoEl.currentTime >= PREVIEW_LIMIT) { 
                         if (Math.abs(videoEl.currentTime - PREVIEW_LIMIT) > 1) {
                             videoEl.currentTime = PREVIEW_LIMIT; 
@@ -517,53 +467,21 @@ async function openEpisode(id) {
                         const lockUI = card.querySelector(`#lock-${episode._id}`);
                         if (lockUI) lockUI.classList.remove('hidden'); 
                     } 
-                }
-                
-                // Track Watch Time and Viewer Analytics thresholds locally
-                if (!videoEl.paused) {
-                    if (!watchSessions[episode._id]) {
-                        watchSessions[episode._id] = { start: Date.now(), total: 0, viewLogged: false };
-                    } else if (watchSessions[episode._id].start === 0) {
-                        watchSessions[episode._id].start = Date.now();
-                    }
-                    
-                    const currentSessionMs = Date.now() - watchSessions[episode._id].start;
-                    const totalActiveSecs = (watchSessions[episode._id].total + currentSessionMs) / 1000;
-                    
-                    // Fire View event idempotently when threshold crossed
-                    if (totalActiveSecs >= viewThresholdSec && !watchSessions[episode._id].viewLogged) {
-                        watchSessions[episode._id].viewLogged = true;
-                        api(`/episodes/${episode._id}/view`, { method: 'POST' }).catch(() => {});
-                    }
-                }
-            }); 
-
-            videoEl.addEventListener('seeked', () => { 
-                if (episode.hasAccess) return;
-                if (videoEl.currentTime >= PREVIEW_LIMIT) { 
-                    videoEl.pause(); 
-                    videoEl.currentTime = PREVIEW_LIMIT; 
-                    videoEl.removeAttribute('controls'); 
-                    const lockUI = card.querySelector(`#lock-${episode._id}`);
-                    if (lockUI) lockUI.classList.remove('hidden'); 
-                } 
-            }); 
+                }); 
+                videoEl.addEventListener('seeked', () => { 
+                    if (episode.hasAccess) return;
+                    if (videoEl.currentTime >= PREVIEW_LIMIT) { 
+                        videoEl.pause(); 
+                        videoEl.currentTime = PREVIEW_LIMIT; 
+                        videoEl.removeAttribute('controls'); 
+                        const lockUI = card.querySelector(`#lock-${episode._id}`);
+                        if (lockUI) lockUI.classList.remove('hidden'); 
+                    } 
+                }); 
+            } 
             
-            videoEl.addEventListener('pause', () => {
-                if (watchSessions[episode._id] && watchSessions[episode._id].start > 0) {
-                    watchSessions[episode._id].total += (Date.now() - watchSessions[episode._id].start);
-                    watchSessions[episode._id].start = 0;
-                }
-                saveProgressFeed(episode, videoEl);
-            }); 
-            
-            videoEl.addEventListener('ended', () => {
-                if (watchSessions[episode._id] && watchSessions[episode._id].start > 0) {
-                    watchSessions[episode._id].total += (Date.now() - watchSessions[episode._id].start);
-                    watchSessions[episode._id].start = 0;
-                }
-                saveProgressFeed(episode, videoEl, true);
-            }); 
+            videoEl.addEventListener('pause', () => saveProgressFeed(episode, videoEl)); 
+            videoEl.addEventListener('ended', () => saveProgressFeed(episode, videoEl, true)); 
             
             feedContainer.appendChild(card); 
             feedObserver.observe(card); 
@@ -583,30 +501,17 @@ async function saveProgressFeed(episode, video, completed = false) {
     saveProgressTimeout = setTimeout(async () => {
         let durationToUse = (video.duration && Number.isFinite(video.duration)) ? video.duration : (episode.duration || 60);
         let percentage = Math.min(100, (video.currentTime / durationToUse) * 100);
-        // Include aggregated watch time fraction for this specific flush safely
-        const sessionTimeMs = watchSessions[episode._id] ? watchSessions[episode._id].total : 0;
-        
         try {
             await api(`/episodes/${episode._id}/watch`, { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ 
-                    lastPosition: video.currentTime, 
-                    watchedPercentage: percentage, 
-                    completed,
-                    watchTimeAccumulatedMs: sessionTimeMs
-                }) 
+                body: JSON.stringify({ lastPosition: video.currentTime, watchedPercentage: percentage, completed }) 
             });
-            // Reset accumulated buffer after successful reporting
-            if (watchSessions[episode._id]) watchSessions[episode._id].total = 0;
         } catch {}
     }, 1000); 
 }
 
-/* ... unlocking functions ... */
-// (unlockEpisode kept unchanged as requested, handling Swal UI)
 async function unlockEpisode() {
-    // ... [Original unlockEpisode content preserved] ...
     if (!state.currentEpisode) return;
     try {
         const hasActiveSubscription = state.user?.subscriptionExpiresAt && new Date(state.user.subscriptionExpiresAt) > new Date();
@@ -614,6 +519,7 @@ async function unlockEpisode() {
             toast('✓ This episode is included in your VIP subscription!', 'success');
             return;
         }
+
         const hasAds = state.currentEpisode.adUnlockable && window.AfroStoryAds?.isEnabled; 
         const userAdBalance = state.user?.adUnlocksRemaining || 0; 
         const canUseAd = hasAds && userAdBalance > 0; 
@@ -655,7 +561,6 @@ async function unlockEpisode() {
 }
 
 async function loadComments(id) { 
-    // ... [Original content preserved] ...
     try { 
         const result = await api(`/comments/episode/${id}?limit=50`) || {}; 
         const render = comment => `<article class="comment"><span class="comment-meta">${esc(comment.userId?.username || 'Story lover')}</span><p>${esc(comment.text)}</p><button class="text-button" data-reply-comment="${esc(comment._id)}">Reply</button>${comment.replies?.length ? `<div class="comment-replies">${comment.replies.map(render).join('')}</div>` : ''}</article>`; 
@@ -672,11 +577,85 @@ async function loadComments(id) {
     } catch (error) { toast(error.message, 'error'); } 
 } 
 
-/* ... additional loading functions skipped for brevity, fully preserved below ... */
-// (loadWallet, renderRewardCard, loadRewards)
-async function loadWallet() { /* existing logic */ }
-function renderRewardCard(reward) { /* existing logic */ }
-async function loadRewards() { /* existing logic */ }
+async function loadWallet() { 
+    try { 
+        const [wallet = {}, transactions = {}] = await Promise.all([api('/wallet/me/balance').catch(()=>({})), api('/wallet/me/transactions?limit=10').catch(()=>({}))]); 
+        
+        const balEl = $('#wallet-balance');
+        if (balEl) balEl.textContent = Number(wallet.storyCoins || 0).toLocaleString(); 
+        
+        const earnEl = $('#wallet-earned');
+        if (earnEl) earnEl.textContent = Number(wallet.totalEarned || 0).toLocaleString(); 
+        
+        if(state.user) state.user.adUnlocksRemaining = wallet.adUnlocks || 0; 
+        
+        const adBalanceEl = $('#ad-balance'); 
+        if (adBalanceEl) {
+            adBalanceEl.textContent = Math.max(0, wallet.adUnlocks || 0); 
+            const statBox = adBalanceEl.closest('.wallet-stat');
+            if (statBox) statBox.style.display = 'block'; 
+        }
+        
+        const transList = $('#transactions-list');
+        if (transList) {
+            transList.innerHTML = (transactions.transactions || []).map(item => `<div class="data-row"><div><strong>${esc(item.description || item.type)}</strong><p>${new Date(item.createdAt).toLocaleDateString()}</p></div><span class="data-value">${esc(item.type === 'SPEND' ? '-' : '+')}${Number(item.amount || 0).toLocaleString()}</span></div>`).join('') || '<p>No transactions yet.</p>'; 
+        }
+        
+        if (window.AfroStoryAds) await window.AfroStoryAds.refresh(); 
+    } catch (error) { toast(error.message, 'error'); } 
+} 
+
+function renderRewardCard(reward) {
+    const eligibility = reward.eligibility || { state: reward.claimed ? 'CLAIMED' : 'LOCKED', reason: 'Complete the required activity first.' };
+    const stateVal = eligibility.state;
+    const isSocial = reward.type === 'SOCIAL';
+    const socialUrl = reward.metadata?.targetUrl;
+    let action;
+    
+    if (isSocial && (stateVal === 'CLAIMED' || reward.claimed)) { action = '<p>Completed ✓<br>+20 Coins Earned</p>'; } 
+    else if (stateVal === 'PENDING_VERIFICATION') { action = '<p>Processing...</p>'; } 
+    else if (stateVal === 'LOCKED') { action = `<span class="reward-locked">🔒 ${esc(eligibility.reason)}</span>`; } 
+    else if (stateVal === 'EXPIRED') { action = '<p>Expired</p>'; } 
+    else { action = `${socialUrl ? `<a href="${esc(socialUrl)}" target="_blank" class="button button-quiet">Visit ${esc(reward.metadata?.platform || 'official account')}</a>` : ''}<button class="button button-accent reward-action" data-reward-id="${esc(reward._id)}">Claim reward</button>`; }
+    
+    return `<article class="reward-card reward-state-${stateVal.toLowerCase()}"><p class="eyebrow">${esc(reward.category || 'MISSION')}</p><h3>${esc(reward.name)}</h3><p class="muted">${esc(reward.description || '')}</p><div class="reward-meta">+${Number(reward.rewardAmount).toLocaleString()} Coins</div><div class="reward-state-label">${isSocial ? (stateVal === 'CLAIMED' ? 'COMPLETED' : 'AVAILABLE') : esc(stateVal.replaceAll('_', ' '))}</div>${action}</article>`;
+}
+
+async function loadRewards() {
+    try {
+        const result = await api('/rewards/me') || {};
+        state.rewards = result;
+        
+        const balEl = $('#rewards-balance');
+        if (balEl) balEl.textContent = Number(result.balance || 0).toLocaleString();
+        
+        const currentStreak = $('#reward-current-streak');
+        if (currentStreak) currentStreak.textContent = Number(result.streak?.currentStreak || 0);
+        
+        const bestStreak = $('#reward-best-streak');
+        if (bestStreak) bestStreak.textContent = Number(result.streak?.bestStreak || 0);
+        
+        const daily = result.daily;
+        const rewards = result.rewards || [];
+        
+        const dailyCard = $('#daily-reward-card');
+        if (dailyCard) {
+            dailyCard.innerHTML = daily ? `<p class="eyebrow">DAILY CHECK-IN</p><h2>${daily.claimed ? 'Check-in complete' : 'Your daily reward is ready'}</h2><p class="muted">${esc(daily.description || 'Return each day to keep your streak alive.')}</p><div class="reward-meta">+${Number(daily.rewardAmount).toLocaleString()} coins</div>${daily.claimed ? '<div class="reward-state">Come back after the next calendar day.</div>' : `<button class="button button-accent reward-action" data-reward-id="${esc(daily._id)}">Claim today</button>`}` : '<p>Daily check-in is not available right now.</p>';
+        }
+
+        const social = rewards.filter(reward => reward.type === 'SOCIAL' || reward.category === 'social');
+        const socialGrid = $('#social-rewards-grid');
+        if (socialGrid) socialGrid.innerHTML = social.map(renderRewardCard).join('') || '<p>No active social missions right now.</p>';
+        
+        const standardGrid = $('#rewards-grid');
+        if (standardGrid) standardGrid.innerHTML = rewards.filter(reward => !social.includes(reward) && (!daily || reward._id !== daily._id)).map(renderRewardCard).join('') || '<p>No active missions right now.</p>';
+        
+        const histContainer = $('#rewards-history');
+        if (histContainer) {
+            histContainer.innerHTML = (result.history || []).map(item => `<div class="data-row"><div><strong>${esc(item.description || 'Reward activity')}</strong><p>${new Date(item.createdAt).toLocaleDateString()}</p></div><span class="data-value ${item.type === 'SPEND' ? '' : 'reward-positive'}">${item.type === 'SPEND' ? '-' : '+'}${Number(item.amount || 0).toLocaleString()}</span></div>`).join('') || '<p>Your reward history will appear here.</p>';
+        }
+    } catch (error) { toast(error.message, 'error'); }
+} 
 
 async function loadFollowersList() {
     try {
@@ -699,10 +678,6 @@ async function loadFollowersList() {
                 const mutualBadge = f.isMutual 
                     ? `<span style="font-size:11px; background:#333; color:#aaa; padding:2px 6px; border-radius:10px; margin-top:4px; display:inline-block;">Mutual</span>` 
                     : '';
-                    
-                const actionBtn = f.isMutual 
-                    ? `<button class="button button-quiet" style="font-size:12px; padding:6px 12px;" disabled aria-label="Following">Following</button>`
-                    : `<button class="button button-accent" style="font-size:12px; padding:6px 12px;" data-action="follow-back" data-creator="${esc(f._id)}">Follow back</button>`;
 
                 return `<div class="data-row" style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid #222;">
                     <div style="width:40px; height:40px; border-radius:50%; background:#444; display:flex; align-items:center; justify-content:center; flex-shrink:0;">${avatar}</div>
@@ -711,7 +686,6 @@ async function loadFollowersList() {
                         <p style="margin:0; font-size:12px; color:#888;">@${esc(f.username)}</p>
                         ${mutualBadge}
                     </div>
-                    <div style="margin-left:auto;">${actionBtn}</div>
                 </div>`;
             }).join('') || '<p style="text-align:center; color:#888; padding: 20px;">You have no followers yet.</p>';
         }
@@ -738,9 +712,9 @@ async function loadCreator() {
             statsContainer.innerHTML = [
                 ['TOTAL VIEWS', creator.totalViews, ''], 
                 ['TOTAL EARNINGS', creator.totalEarnings, ''], 
-                ['FOLLOWERS', creator.totalFollowers, 'data-action="view-followers" style="cursor:pointer;" title="Tap to view followers"', '<br><small style="color:#76a86b; font-size:11px; margin-top:4px; display:inline-block;">Tap to view</small>'], 
+                ['FOLLOWERS', creator.totalFollowers, 'data-action="view-followers" style="cursor:pointer;"'], 
                 ['SERIES', series.series?.length || 0, '']
-            ].map(item => `<div class="stat-card" ${item[2] || ''}><span class="eyebrow">${item[0]}</span><strong>${Number(item[1] || 0).toLocaleString()}</strong>${item[3] || ''}</div>`).join(''); 
+            ].map(item => `<div class="stat-card" ${item[2] || ''}><span class="eyebrow">${item[0]}</span><strong>${Number(item[1] || 0).toLocaleString()}</strong></div>`).join(''); 
         }
 
         const seriesGrid = $('#my-series-grid');
@@ -764,152 +738,434 @@ async function loadCreator() {
     } 
 } 
 
-/* ... generic form endpoints skipped below ... */
-// (uploadAsset, submitSeries, submitUpload, loadAdmin, showPackages, showSubscriptionPlans, loadHistory, loadContinue, openHistoryEpisode, renderProfile, loadProfile, openProfileEditor, loadNotifications, refreshNotificationBadge, saveProfile, searchLibrary, searchEpisodes, loadTrending, loadFavorites, loadSettings, saveSettings)
-// Retaining all original functional signatures and handlers unmodified.
+async function uploadAsset(path, file) { 
+    const data = new FormData(); 
+    data.append('file', file); 
+    return api(path, { method: 'POST', body: data, timeout: 600000 }); 
+}
 
-/* ============================================================================ */ 
-/* BULLETPROOF GLOBAL EVENT DELEGATION */ 
-/* ============================================================================ */  
-const globalActionLocks = new Set(); // Prevent race conditions on critical actions
-
-document.addEventListener('change', event => {     
-    try {         
-        const targetId = event.target.id;         
-        if (['genre-filter', 'sort-filter', 'cultural-filter', 'language-filter'].includes(targetId)) {             
-            loadDiscover();         
-        }     
-    } catch (e) {         
-        logFrontendError('filter_change_error', e.message, e.stack);     
+async function submitSeries(event) { 
+    event.preventDefault(); 
+    const form = event.target; 
+    const submit = form.querySelector('button[type="submit"]'); 
+    const values = new FormData(form); 
+    const cover = values.get('cover'); 
+    
+    if (!cover?.size) return toast('Choose a cover image', 'error'); 
+    
+    submit.disabled = true; 
+    submit.textContent = 'Creating series (please wait)...';
+    
+    try { 
+        const upload = await uploadAsset('/upload/image', cover); 
+        await api('/series/create', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ 
+                title: values.get('title'), 
+                description: values.get('description'), 
+                coverImage: upload.url, 
+                genre: values.get('genre'), 
+                language: values.get('language'), 
+                tags: String(values.get('tags') || '').split(',').map(tag => tag.trim()).filter(Boolean), 
+                isPublished: values.get('publish') === 'on', 
+                isPremiumExclusive: values.get('premium') === 'on' 
+            }) 
+        }); 
+        
+        const modal = $('#series-modal');
+        if (modal) modal.classList.add('hidden'); 
+        form.reset(); 
+        await loadCreator(); 
+        toast('Series created', 'success'); 
+    } catch (error) { 
+        toast(error.message, 'error'); 
+    } finally { 
+        submit.disabled = false; 
+        submit.textContent = 'Create series'; 
     } 
-});  
+}
 
-document.addEventListener('click', async event => {     
-    try {         
-        const section = event.target.closest('[data-section]');          
-        if (section) setSection(section.dataset.section);                  
-        const series = event.target.closest('[data-series-id]');          
-        if (series) openSeries(series.dataset.seriesId);                  
-        const episodeRow = event.target.closest('[data-episode-id]');          
-        if (episodeRow && !episodeRow.closest('.feed-video-card')) openEpisode(episodeRow.dataset.episodeId);          
-        if (event.target.closest('[data-action="view-followers"]')) loadFollowersList();          
+async function submitUpload(event) { 
+    event.preventDefault(); 
+    const form = event.target; 
+    const submit = form.querySelector('button[type="submit"]'); 
+    const values = new FormData(form); 
+    const seriesId = values.get('seriesId'); 
+    const file = values.get('video'); 
+    const genre = values.get('genre'); 
+    const culturalCategory = values.get('culturalCategory'); 
+    const language = values.get('language'); 
+    
+    if (!seriesId || !file?.size) return toast('Choose a series and video', 'error'); 
+    if (!genre || !culturalCategory || !language) return toast('Choose a genre, cultural category, and language', 'error'); 
+    
+    submit.disabled = true; 
+    submit.textContent = 'Uploading video (please wait)...'; 
+    
+    try { 
+        const upload = await uploadAsset('/upload/video', file); 
+        const mediaUrl = upload.hlsUrl || upload.mediaUrl || upload.secure_url || upload.url; 
+        if (!mediaUrl || !/^https?:\/\/.+\.(mp4|m3u8)(?:\?.*)?$/i.test(mediaUrl)) throw new Error('Cloudinary did not return a playable MP4 or HLS URL'); 
+        
+        const thumbnail = values.get('thumbnail'); 
+        const thumbnailUpload = thumbnail?.size ? await uploadAsset('/upload/image', thumbnail) : null; 
+        const access = values.get('access'); 
+        
+        await api(`/episodes/series/${encodeURIComponent(seriesId)}/create`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ 
+                title: values.get('title'), 
+                description: values.get('description'), 
+                mediaUrl, 
+                thumbnailUrl: thumbnailUpload?.url || null, 
+                genre, 
+                culturalCategory, 
+                language, 
+                tags: String(values.get('tags') || '').split(',').map(tag => tag.trim()).filter(Boolean), 
+                duration: upload.duration || 0, 
+                coinCost: Number(values.get('coinCost')), 
+                isFree: false, 
+                adUnlockable: access === 'Ad', 
+                isPublished: values.get('publish') === 'on' 
+            }) 
+        }); 
+        
+        const modal = $('#upload-modal');
+        if (modal) modal.classList.add('hidden'); 
+        form.reset(); 
+        await loadCreator(); 
+        toast('Upload successful!', 'success'); 
+    } catch (error) { 
+        toast(error.message, 'error'); 
+    } finally { 
+        submit.disabled = false; 
+        submit.textContent = 'Upload episode'; 
+    } 
+}
 
-        // LIKE / UNLIKE HANDLER
-        const likeBtn = event.target.closest('[data-action="like-episode"]');
-        if (likeBtn) {
-            const epId = likeBtn.dataset.id;
-            if (epId && !globalActionLocks.has(`like_${epId}`)) {
-                globalActionLocks.add(`like_${epId}`);
-                const svg = likeBtn.querySelector('svg');
-                const countSpan = likeBtn.querySelector('.like-count-display');
-                const isCurrentlyLiked = svg.getAttribute('fill') !== 'none';
-                
-                const currentCount = parseInt(countSpan.textContent.replace(/,/g, '')) || 0;
-                const newCount = isCurrentlyLiked ? Math.max(0, currentCount - 1) : currentCount + 1;
-                
-                svg.setAttribute('fill', isCurrentlyLiked ? 'none' : '#e0245e');
-                svg.setAttribute('stroke', isCurrentlyLiked ? 'currentColor' : '#e0245e');
-                likeBtn.setAttribute('aria-label', isCurrentlyLiked ? 'Like episode' : 'Unlike episode');
-                countSpan.textContent = newCount.toLocaleString();
+async function loadAdmin() { 
+    try { 
+        const [stats = {}, reports = {}] = await Promise.all([
+            api('/admin/dashboard/stats').catch(()=>({})), 
+            api('/admin/reports?limit=20').catch(()=>({}))
+        ]); 
+        
+        const statsEl = $('#admin-stats');
+        if (statsEl) {
+            statsEl.innerHTML = Object.entries(stats).map(([key, value]) => `<div class="stat-card"><span class="eyebrow">${esc(key.replace(/([A-Z])/g, ' $1'))}</span><strong>${Number(value).toLocaleString()}</strong></div>`).join(''); 
+        }
+        
+        const reportsEl = $('#reports-list');
+        if (reportsEl) {
+            reportsEl.innerHTML = (reports.reports || []).map(report => `<div class="data-row"><div><strong>${esc(report.reason || report.type || 'Report')}</strong><p>${esc(report.description || '')}</p></div><span class="data-value">${esc(report.status)}</span></div>`).join('') || '<p>The queue is clear.</p>'; 
+        }
+    } catch (error) { toast(error.message, 'error'); } 
+} 
 
-                try {
-                    const res = await api(`/episodes/${epId}/like`, { method: 'POST' });
-                    if (res && typeof res.likesCount !== 'undefined') {
-                        countSpan.textContent = Number(res.likesCount).toLocaleString();
-                    }
-                } catch (err) {
-                    svg.setAttribute('fill', isCurrentlyLiked ? '#e0245e' : 'none');
-                    svg.setAttribute('stroke', isCurrentlyLiked ? 'currentColor' : '#e0245e');
-                    likeBtn.setAttribute('aria-label', isCurrentlyLiked ? 'Unlike episode' : 'Like episode');
-                    countSpan.textContent = currentCount.toLocaleString();
-                    toast('Could not update like', 'error');
-                } finally {
-                    globalActionLocks.delete(`like_${epId}`);
-                }
-            }
+async function showPackages() { 
+    try { 
+        const plans = await api('/payment/packages') || {}; 
+        const choices = Object.entries(plans).map(([key, plan]) => `<button class="plan-option" data-package="${key}"><strong>${key}</strong><span>${plan.coins} coins · ₦${Number(plan.naira).toLocaleString()}</span></button>`).join(''); 
+        
+        const root = $('#modal-root');
+        if (root) {
+            root.innerHTML = `<div class="modal"><div class="modal-header"><div><p class="eyebrow">POWER YOUR WATCHLIST</p><h2>Choose your coins</h2></div><button class="modal-close" data-action="close-modal">×</button></div><div class="plan-grid">${choices}</div></div>`; 
+            root.classList.remove('hidden'); 
+        }
+    } catch (error) { toast(error.message, 'error'); } 
+}
+
+async function showSubscriptionPlans() { 
+    try { 
+        const plans = await api('/vip/plans') || {}; 
+        const choices = Object.entries(plans).map(([tier, plan]) => `<button class="plan-option" data-tier="${tier}"><strong>${tier}</strong><span>${plan.price} coins · ${plan.duration} day${plan.duration === 1 ? '' : 's'}</span></button>`).join(''); 
+        
+        const root = $('#modal-root');
+        if (root) {
+            root.innerHTML = `<div class="modal"><div class="modal-header"><div><p class="eyebrow">UNLOCK EVERY STORY</p><h2>Choose a pass</h2></div><button class="modal-close" data-action="close-modal">×</button></div><div class="plan-grid">${choices}</div></div>`; 
+            root.classList.remove('hidden'); 
+        }
+    } catch (error) { toast(error.message, 'error'); } 
+}
+
+async function loadHistory() {
+    try {
+        const result = await api('/users/history/watch?limit=50') || {};
+        const list = result.history || result.data || result || [];
+        
+        const listEl = $('#history-list');
+        if (listEl) {
+            listEl.innerHTML = list.filter(item => item.episodeId).map(item => `
+                <button class="profile-list-row history-row" data-history-episode="${esc(item.episodeId._id)}" data-history-series="${esc(item.seriesId?._id)}" style="width: 100%; cursor: pointer; text-align: left; margin-bottom: 10px; border-radius: 8px;">
+                    <div style="width: 90px; height: 60px; border-radius: 6px; background-color: #333; background-image: url('${image(item.episodeId.thumbnailUrl || item.seriesId?.coverImage)}'); background-size: cover; background-position: center; flex-shrink: 0;"></div>
+                    <div style="flex: 1; min-width: 0;">
+                        <strong style="color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">${esc(item.seriesId?.title || 'Series')}</strong>
+                        <p style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(item.episodeId.title || 'Episode')}</p>
+                        <div class="progress" style="width: 100%; max-width: 200px;"><i style="width: ${Math.round(Number(item.watchedPercentage || 0))}%;"></i></div>
+                    </div>
+                    <span style="color: #d4a017; font-weight: 600; font-size: 13px;">${Math.round(Number(item.watchedPercentage || 0))}%</span>
+                </button>
+            `).join('') || '<p>Your watched episodes will appear here.</p>';
+        }
+    } catch (error) { toast(error.message, 'error'); }
+}
+
+async function loadContinue() {
+    try {
+        const result = await api('/users/history/watch?limit=50') || {};
+        const list = result.history || result.data || result || [];
+        
+        const listEl = $('#continue-list');
+        if (listEl) {
+            listEl.innerHTML = list.filter(item => !item.completed && item.episodeId).map(item => `
+                <button class="profile-list-row history-row" data-history-episode="${esc(item.episodeId._id)}" data-history-series="${esc(item.seriesId?._id)}" style="width: 100%; cursor: pointer; text-align: left; margin-bottom: 10px; border-radius: 8px;">
+                    <div style="width: 90px; height: 60px; border-radius: 6px; background-color: #333; background-image: url('${image(item.episodeId.thumbnailUrl || item.seriesId?.coverImage)}'); background-size: cover; background-position: center; flex-shrink: 0;"></div>
+                    <div style="flex: 1; min-width: 0;">
+                        <strong style="color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">${esc(item.seriesId?.title || 'Series')}</strong>
+                        <p style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(item.episodeId.title || 'Episode')}</p>
+                        <div class="progress" style="width: 100%; max-width: 200px;"><i style="width: ${Math.round(Number(item.watchedPercentage || 0))}%;"></i></div>
+                    </div>
+                    <span style="color: #d4a017; font-weight: 600; font-size: 13px;">${Math.round(Number(item.watchedPercentage || 0))}%</span>
+                </button>
+            `).join('') || '<p>Nothing to continue yet.</p>';
+        }
+    } catch (error) { toast(error.message, 'error'); }
+} 
+
+async function openHistoryEpisode(seriesId, episodeId) { 
+    try { 
+        const [series, episode] = await Promise.all([api(`/series/${seriesId}`), api(`/episodes/${episodeId}`)]); 
+        if(series && episode) {
+            state.currentSeries = series; 
+            setSection('watch'); 
+            await openEpisode(episode._id); 
+        }
+    } catch (error) { toast(error.message, 'error'); } 
+} 
+
+function renderProfile(profile) {
+    const user = profile.user || {}; 
+    const details = user.profile || {}; 
+    const avatar = details.avatarUrl || user.profileImage;
+    
+    const nameEl = $('#profile-display-name');
+    if (nameEl) nameEl.textContent = details.displayName || user.username || 'Profile';
+    
+    const handleEl = $('#profile-handle');
+    if (handleEl) handleEl.textContent = `@${user.username || 'story-lover'}`;
+    
+    const bioEl = $('#profile-bio');
+    if (bioEl) bioEl.textContent = details.bio || 'Complete your profile to help your story journey feel like home.';
+    
+    const locEl = $('#profile-location');
+    if (locEl) locEl.textContent = [details.region, details.country].filter(Boolean).join(' · ');
+    
+    const avatarEl = $('#profile-avatar');
+    if (avatarEl) avatarEl.innerHTML = avatar ? `<img src="${image(avatar)}" alt="">` : esc((details.displayName || user.username || 'A')[0].toUpperCase());
+    
+    const coverEl = $('#profile-cover');
+    if (coverEl && details.coverUrl) coverEl.style.backgroundImage = `linear-gradient(120deg,#111b,#1118),url('${image(details.coverUrl)}')`;
+    
+    const tabEl = $('.creator-profile-tab');
+    if (tabEl) tabEl.classList.toggle('hidden', !profile.creator);
+}
+
+async function loadProfile(refresh = false) { 
+    try { 
+        if (!state.profile && !refresh) setSection('profile'); 
+        if (state.profile && !refresh) { 
+            renderProfile(state.profile); 
+            setSection('profile'); 
+            loadProfile(true); 
+            return; 
+        } 
+        const profile = await api('/users/me/profile'); 
+        if(profile) {
+            state.profile = profile; 
+            renderProfile(profile); 
+            setSection('profile'); 
+        }
+    } catch (error) { 
+        if (!state.profile) toast(error.message, 'error'); 
+    } 
+}
+
+function openProfileEditor() {
+    const user = state.profile?.user; 
+    const profile = user?.profile || {};
+    if (!user) return;
+    
+    const nameInput = $('#profile-display-name-input');
+    if (nameInput) nameInput.value = profile.displayName || user.username || '';
+    
+    const usernameInput = $('#profile-username');
+    if (usernameInput) usernameInput.value = user.username || ''; 
+    
+    const emailInput = $('#profile-email');
+    if (emailInput) emailInput.value = user.email || '';
+    
+    const editPanel = $('#profile-edit-panel');
+    if (editPanel) {
+        editPanel.classList.remove('hidden'); 
+        editPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+async function loadNotifications() { 
+    try { 
+        const result = await api('/notifications/me?limit=50') || {}; 
+        const listEl = $('#notification-list');
+        if (listEl) {
+            listEl.innerHTML = (result.notifications || []).map(item => `<article class="notification-item ${item.read ? '' : 'notification-unread'}"><span class="notification-item-icon">✧</span><div class="notification-item-content"><strong>${esc(item.title)}</strong><p>${esc(item.message || '')}</p><time>${new Date(item.createdAt).toLocaleString()}</time></div><div class="notification-item-actions"><button class="text-button" data-read-notification="${esc(item._id)}">Read</button></div></article>`).join('') || '<p>No new notifications</p>'; 
+        }
+    } catch (error) { toast(error.message, 'error'); } 
+}
+
+async function refreshNotificationBadge() { 
+    try { 
+        const result = await api('/notifications/me/unread-count') || {}; 
+        const badge = $('#notification-badge'); 
+        if (badge) {
+            badge.textContent = result.unreadCount || 0; 
+            badge.classList.toggle('hidden', !result.unreadCount); 
+        }
+    } catch {} 
+} 
+
+async function saveProfile(event) {
+    event.preventDefault();
+    const form = event.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving profile...';
+    }
+
+    try {
+        const values = new FormData(form);
+
+        const profileImgFile = values.get('profileImage');
+        const coverImgFile = values.get('coverImage');
+
+        let avatarUrl;
+        let coverUrl;
+
+        if (profileImgFile && profileImgFile.size) {
+            const upload = await uploadAsset('/upload/image', profileImgFile);
+            avatarUrl = upload.url || upload.secure_url || upload.mediaUrl;
         }
 
-        // RATING HANDLER
-        const rateBtn = event.target.closest('[data-action="rate-episode"]');
-        if (rateBtn) {
-            const epId = rateBtn.dataset.id;
-            if (epId && window.Swal) {
-                const result = await Swal.fire({
-                    title: 'Rate this episode',
-                    html: `
-                        <div class="rating-stars-container" style="font-size:35px; cursor:pointer; color:#555; display:flex; justify-content:center; gap:8px;">
-                            <span data-val="1">★</span><span data-val="2">★</span><span data-val="3">★</span><span data-val="4">★</span><span data-val="5">★</span>
-                        </div>
-                    `,
-                    background: '#1b1b1b', color: '#f5f5f5',
-                    showCancelButton: true,
-                    confirmButtonText: 'Submit Rating',
-                    confirmButtonColor: '#d4a017',
-                    didOpen: () => {
-                        const stars = document.querySelectorAll('.rating-stars-container span');
-                        stars.forEach(s => {
-                            s.addEventListener('click', (e) => {
-                                const currentRating = parseInt(e.target.dataset.val);
-                                stars.forEach((st, idx) => st.style.color = idx < currentRating ? '#d4a017' : '#555');
-                                Swal.getPopup().setAttribute('data-selected-rating', currentRating);
-                            });
-                        });
-                    },
-                    preConfirm: () => {
-                        const val = Swal.getPopup().getAttribute('data-selected-rating');
-                        if (!val) { Swal.showValidationMessage('Please select a star rating'); return false; }
-                        return parseInt(val);
-                    }
-                });
-
-                if (result.isConfirmed && result.value) {
-                    try {
-                        const res = await api(`/episodes/${epId}/rate`, { 
-                            method: 'POST', 
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({ rating: result.value })
-                        });
-                        const avg = res.averageRating ? res.averageRating.toFixed(1) : result.value.toFixed(1);
-                        const cnt = res.ratingCount || 1;
-                        rateBtn.innerHTML = `★ ${avg} (${cnt})`;
-                        toast('Rating submitted!', 'success');
-                    } catch(e) { toast(e.message, 'error'); }
-                }
-            }
+        if (coverImgFile && coverImgFile.size) {
+            const upload = await uploadAsset('/upload/image', coverImgFile);
+            coverUrl = upload.url || upload.secure_url || upload.mediaUrl;
         }
 
-        // FOLLOW BACK HANDLER (MODAL)
-        const followBackBtn = event.target.closest('[data-action="follow-back"]');
-        if (followBackBtn && !followBackBtn.disabled) {
-            const creatorId = followBackBtn.dataset.creator;
-            if (creatorId && !globalActionLocks.has(`follow_${creatorId}`)) {
-                globalActionLocks.add(`follow_${creatorId}`);
-                followBackBtn.disabled = true;
-                followBackBtn.textContent = '...';
-                
-                try {
-                    await api(`/creators/${creatorId}/follow`, { method: 'POST' });
-                    followBackBtn.className = 'button button-quiet';
-                    followBackBtn.textContent = 'Following';
-                    toast('Following back!', 'success');
-                } catch(e) {
-                    followBackBtn.disabled = false;
-                    followBackBtn.textContent = 'Follow back';
-                    toast(e.message, 'error');
-                } finally {
-                    globalActionLocks.delete(`follow_${creatorId}`);
-                }
+        const payload = {
+            username: values.get('username'),
+            profile: {
+                displayName: values.get('displayName'),
+                bio: values.get('bio'),
+                country: values.get('country'),
+                region: values.get('region'),
+                preferredLanguage: values.get('preferredLanguage')
             }
-        }
+        };
 
-        // FEED FOLLOW HANDLER
-        const followBtn = event.target.closest('[data-action="follow-creator"]');
-        if (followBtn && !followBtn.disabled) {             
-            event.preventDefault();             
-            const creatorId = followBtn.dataset.creator;                          
-            if (creatorId && creatorId !== 'undefined' && !globalActionLocks.has(`follow_${creatorId}`)) {                 
-                globalActionLocks.add(`follow_${creatorId}`);
-                $$(`[data-action="follow-creator"][data-creator="${creatorId}"]`).forEach(btn => {
+        if (avatarUrl) payload.profile.avatarUrl = avatarUrl;
+        if (coverUrl) payload.profile.coverUrl = coverUrl;
+
+        const updated = await api('/users/profile/update', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (updated) {
+            state.user = { ...state.user, ...updated };
+            renderHeaderUser(state.user);
+            const editPanel = $('#profile-edit-panel');
+            if (editPanel) editPanel.classList.add('hidden');
+            form.reset(); 
+            await loadProfile(true); 
+            toast('Profile updated successfully!', 'success');
+        }
+    } catch (error) {
+        toast(error.message, 'error');
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Save profile';
+        }
+    }
+}
+
+async function searchLibrary(event) {
+    event.preventDefault();
+    const input = event.target.querySelector('input');
+    const query = input ? input.value.trim() : '';
+    if (query.length < 2) return toast('Enter at least two characters', 'error');
+    try {
+        const resEl = $('#search-results');
+        if (resEl) resEl.innerHTML = '<p>Searching...</p>';
+        const result = await api(`/search/global?q=${encodeURIComponent(query)}&limit=50`) || {};
+        const seriesHtml = (result.series?.data || []).map(card).join('');
+        const episodesHtml = (result.episodes?.data || []).map(episodeCard).join('');
+        if (resEl) resEl.innerHTML = (seriesHtml + episodesHtml) || '<p>No stories matched your search.</p>';
+    } catch (error) { toast(error.message, 'error'); }
+} 
+
+async function searchEpisodes(event) {
+    event.preventDefault();
+    const input = event.target.querySelector('input');
+    const query = input ? input.value.trim() : '';
+    if (query.length < 2) return toast('Enter at least two characters', 'error');
+    try {
+        const gridEl = $('#series-grid');
+        if (gridEl) gridEl.innerHTML = '<p>Searching...</p>';
+        const result = await api(`/search/global?q=${encodeURIComponent(query)}&type=episodes&limit=50`) || {};
+        if (gridEl) gridEl.innerHTML = (result.episodes?.data || []).map(episodeCard).join('') || '<p>No episodes matched your search.</p>';
+    } catch (error) { toast(error.message, 'error'); }
+} 
+
+async function loadTrending() { 
+    try { 
+        const result = await api('/search/trending') || {}; 
+        const listEl = $('#trending-list');
+        if (listEl) listEl.innerHTML = (result.trending || []).map(episodeCard).join('') || '<p>No trending episodes yet.</p>'; 
+    } catch (error) { toast(error.message, 'error'); } 
+} 
+
+async function loadFavorites() {
+    try {
+        const result = await api('/favorites') || {};
+        const list = result.favorites || result.data || result || [];
+        const favEl = $('#favorites-list');
+        if (favEl) favEl.innerHTML = list.map(card).join('') || '<p>Save stories from the player to build your library.</p>';
+    } catch (error) { toast(error.message, 'error'); }
+} 
+
+async function toggleFavorite() { 
+    if (!state.currentSeries) return toast('Open a story first', 'error'); 
+    try { 
+        const result = await api(`/favorites/${state.currentSeries._id}/toggle`, { method: 'POST' }); 
+        if(result) toast(result.saved ? 'Added to favorites' : 'Removed from favorites', 'success'); 
+    } catch (error) { toast(error.message, 'error'); } 
+}
+
+function loadSettings() {
+    const settings = JSON.parse(localStorage.getItem('afrostory-settings') || '{}');
+    const langEl = $('#settings-language');
+    if (langEl) langEl.value = settings.language || 'en';
+    const notifEl = $('#settings-notifications');
+    if (notifEl) notifEl.checked = settings.notifications !== false;
+}
+
+function saveSettings(event) { 
+    event.preventDefault(); 
+    const langEl = $('#settings-language');
+    const notifEl = $('#settings-notifications');     localStorage.setItem('afrostory-settings', JSON.stringify({          language: langEl ? langEl.value : 'en',          notifications: notifEl ? notifEl.checked : true      }));      toast('Settings saved', 'success');  }  /* ============================================================================ */ /* BULLETPROOF GLOBAL EVENT DELEGATION */ /* ============================================================================ */  document.addEventListener('change', event => {     try {         const targetId = event.target.id;         if (['genre-filter', 'sort-filter', 'cultural-filter', 'language-filter'].includes(targetId)) {             loadDiscover();         }     } catch (e) {         logFrontendError('filter_change_error', e.message, e.stack);     } });  document.addEventListener('click', async event => {     try {         const section = event.target.closest('[data-section]');          if (section) setSection(section.dataset.section);                  const series = event.target.closest('[data-series-id]');          if (series) openSeries(series.dataset.seriesId);                  const episodeRow = event.target.closest('[data-episode-id]');          if (episodeRow && !episodeRow.closest('.feed-video-card')) openEpisode(episodeRow.dataset.episodeId);          if (event.target.closest('[data-action="view-followers"]')) loadFollowersList();          const followBtn = event.target.closest('[data-action="follow-creator"]');         if (followBtn && !followBtn.disabled) {             event.preventDefault();             const creatorId = followBtn.dataset.creator;                          if (creatorId && creatorId !== 'undefined') {                 $$(`[data-action="follow-creator"][data-creator="${creatorId}"]`).forEach(btn => {
                     btn.disabled = true;
                     btn.style.pointerEvents = 'none';
                     const iconBadge = btn.querySelector('.follow-badge-icon');
@@ -927,8 +1183,6 @@ document.addEventListener('click', async event => {
 
                     $$(`[data-action="follow-creator"][data-creator="${creatorId}"]`).forEach(btn => {
                         const iconBadge = btn.querySelector('.follow-badge-icon');
-                        btn.setAttribute('aria-label', 'Unfollow creator');
-                        btn.setAttribute('title', 'Following');
                         if (iconBadge) {
                             iconBadge.textContent = '✓';
                             iconBadge.style.background = '#76a86b';
@@ -941,19 +1195,15 @@ document.addEventListener('click', async event => {
                     $$(`[data-action="follow-creator"][data-creator="${creatorId}"]`).forEach(btn => {
                         btn.disabled = false;
                         btn.style.pointerEvents = 'auto';
-                        btn.setAttribute('aria-label', 'Follow creator');
                         const iconBadge = btn.querySelector('.follow-badge-icon');
                         if (iconBadge) {
                             iconBadge.textContent = '+';
                         }
                     });
-                } finally {
-                    globalActionLocks.delete(`follow_${creatorId}`);
                 }
             }
         }
 
-        /* ... existing modal/tab/upload handlers preserved ... */
         if (event.target.closest('[data-action="back-to-discover"]')) loadDiscover();
         if (event.target.closest('[data-action="unlock-current"]')) unlockEpisode();
         if (event.target.closest('[data-action="refresh-discover"]')) loadDiscover();
@@ -1031,14 +1281,7 @@ document.addEventListener('click', async event => {
         const historyLink = event.target.closest('[data-history-episode]');
         if (historyLink) openHistoryEpisode(historyLink.dataset.historySeries, historyLink.dataset.historyEpisode);
 
-        const saveCurrentBtn = event.target.closest('[data-action="save-current"]');
-        if (saveCurrentBtn) {
-            // Optimistic UI for save (bookmark icon fill toggle)
-            const svg = saveCurrentBtn.querySelector('svg');
-            const isCurrentlySaved = svg.getAttribute('fill') !== 'none';
-            svg.setAttribute('fill', isCurrentlySaved ? 'none' : 'currentColor');
-            toggleFavorite(); // underlying API logic handles the rest
-        }
+        if (event.target.closest('[data-action="save-current"]')) toggleFavorite();
 
         const tab = event.target.closest('[data-profile-tab]');
         if (tab) { 
@@ -1087,8 +1330,79 @@ document.addEventListener('click', async event => {
     }
 });
 
-/* ... existing form submit handlers preserved ... */
-// (uploadForm, seriesForm, searchForm, libSearchForm, profileForm, settingsForm, commentForm, becomeCreatorForm remain identical to original script)
+const uploadForm = $('#upload-form');
+if (uploadForm) uploadForm.addEventListener('submit', submitUpload);
+
+const seriesForm = $('#series-form');
+if (seriesForm) seriesForm.addEventListener('submit', submitSeries);
+
+const searchForm = $('#search-form');
+if (searchForm) {
+    searchForm.addEventListener('submit', event => {
+        event.preventDefault();
+        const input = event.target.querySelector('input');
+        const query = input ? input.value.trim() : '';
+        if (query.length < 2) return toast('Enter at least two characters', 'error');
+        
+        setSection('search');
+        const libraryInput = $('#library-search-input');
+        if (libraryInput) libraryInput.value = query;
+        
+        const libForm = $('#library-search-form');
+        if (libForm) searchLibrary({ preventDefault: () => {}, target: libForm });
+    });
+}
+
+const libSearchForm = $('#library-search-form');
+if (libSearchForm) libSearchForm.addEventListener('submit', searchLibrary);
+
+const profileForm = $('#profile-form');
+if (profileForm) profileForm.addEventListener('submit', saveProfile);
+
+const settingsForm = $('#settings-form');
+if (settingsForm) settingsForm.addEventListener('submit', saveSettings);
+
+const commentForm = $('#comment-form');
+if (commentForm) {
+    commentForm.addEventListener('submit', async event => { 
+        event.preventDefault(); 
+        const input = $('#comment-input'); 
+        const submit = $('#comment-submit'); 
+        if (!state.currentEpisode) return toast('Open an episode before commenting', 'error'); 
+        if (!input || !input.value.trim()) return toast('Write a comment first', 'error'); 
+        if (submit) {
+            submit.disabled = true; 
+            submit.textContent = 'Posting...'; 
+        }
+        try { 
+            await api('/comments/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ episodeId: state.currentEpisode._id, text: input.value.trim() }) }); 
+            input.value = ''; 
+            await loadComments(state.currentEpisode._id); 
+            toast('Comment posted', 'success'); 
+        } catch (error) { 
+            toast(error.message, 'error'); 
+        } finally { 
+            if (submit) {
+                submit.disabled = false; 
+                submit.textContent = 'Post'; 
+            }
+        } 
+    });
+}
+
+const becomeCreatorForm = $('#become-creator-form'); if (becomeCreatorForm) {     becomeCreatorForm.addEventListener('submit', async (event) => {         event.preventDefault();         const form = event.target;         const brandInput = form.querySelector('[name="brandName"]');         const bioInput = form.querySelector('[name="bio"]');         const brandName = brandInput ? brandInput.value.trim() : '';         const bio = bioInput ? bioInput.value.trim() : '';         const submitBtn = form.querySelector('button[type="submit"]');                  if (!brandName) return toast('Brand name is required', 'error');                  if (submitBtn) {             submitBtn.disabled = true;             submitBtn.textContent = 'Creating...';         }                  try {             await api('/creators/become-creator', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ brandName, bio }) });             if(state.user) state.user.role = 'CREATOR';             $$('.creator-only').forEach(el => el.classList.remove('hidden'));
+            toast('Welcome to Creator Studio!', 'success'); 
+            await loadCreator();
+        } catch (error) { 
+            toast(error.message, 'error'); 
+        } finally { 
+            if (submitBtn) {
+                submitBtn.disabled = false; 
+                submitBtn.textContent = 'Start creating'; 
+            }
+        }
+    });
+}
 
 setInterval(refreshNotificationBadge, 30000);
 
@@ -1110,7 +1424,7 @@ async function boot() {
         renderHeaderUser(state.user);
         
         if (state.user?.role && ['CREATOR', 'ADMIN'].includes(state.user.role)) {
-            $$('.creator-only').forEach(el => el.classList.remove('hidden'));                  }                  if (state.user?.role === 'ADMIN') {                          $$
+            $$('.creator-only').forEach(el => el.classList.remove('hidden'));         }         if (state.user?.role === 'ADMIN') {             $$
 ('.admin-only').forEach(el => el.classList.remove('hidden'));
         }
 
