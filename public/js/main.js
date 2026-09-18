@@ -731,10 +731,15 @@ async function loadFollowersList() {
                     ? `<span style="font-size:11px; background:#333; color:#aaa; padding:2px 6px; border-radius:10px; margin-top:4px; display:inline-block;">Mutual</span>` 
                     : '';
 
-                // FEATURE: Follow-back Implementation
-                const followAction = f.isMutual || f.isFollowing
-                    ? `<button class="button button-quiet" style="padding: 4px 10px; font-size:11px;" disabled>Following</button>`
-                    : `<button class="button button-accent" style="padding: 4px 10px; font-size:11px;" data-action="follow-creator" data-creator="${esc(f._id || f.followerId)}">Follow Back</button>`;
+                // FEATURE: Follow-back Implementation (Dual Support for Creator & Normal User)
+                let followAction = '';
+                if (f.isMutual || f.isFollowing) {
+                    followAction = `<button class="button button-quiet" style="padding: 4px 10px; font-size:11px;" disabled>Following</button>`;
+                } else if (f.isCreator && f._id) {
+                    followAction = `<button class="button button-accent" style="padding: 4px 10px; font-size:11px;" data-action="follow-creator" data-creator="${esc(f._id)}">Follow Back</button>`;
+                } else {
+                    followAction = `<button class="button button-accent" style="padding: 4px 10px; font-size:11px;" data-action="follow-user" data-user="${esc(f.userId)}">Follow Back</button>`;
+                }
 
                 return `<div class="data-row" style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid #222;">
                     <div style="width:40px; height:40px; border-radius:50%; background:#444; display:flex; align-items:center; justify-content:center; flex-shrink:0;">${avatar}</div>
@@ -1321,6 +1326,42 @@ function saveSettings(event) {
                         if (btn.tagName.toLowerCase() === 'button' && !iconBadge) {
                             btn.textContent = 'Follow Back';
                         }
+                    });
+                }
+            }
+        }
+
+        // NEW: Handler for Normal User Follows
+        const followUserBtn = event.target.closest('[data-action="follow-user"]');
+        if (followUserBtn && !followUserBtn.disabled) {
+            event.preventDefault();
+            const targetUserId = followUserBtn.dataset.user;
+            
+            if (targetUserId && targetUserId !== 'undefined') {
+                $$(`[data-action="follow-user"][data-user="${targetUserId}"]`).forEach(btn => {
+                    btn.disabled = true;
+                    btn.style.pointerEvents = 'none';
+                    btn.textContent = 'Updating...';
+                });
+
+                try {
+                    const res = await api(`/users/${targetUserId}/follow`, { method: 'POST' });
+                    
+                    if (res && res.alreadyFollowing) {
+                        toast('You already follow this user', 'info');
+                    } else {
+                        toast('Following user!', 'success');
+                    }
+
+                    $$(`[data-action="follow-user"][data-user="${targetUserId}"]`).forEach(btn => {
+                        btn.textContent = 'Following';
+                    });
+                } catch (error) { 
+                    toast(error.message, 'error'); 
+                    $$(`[data-action="follow-user"][data-user="${targetUserId}"]`).forEach(btn => {
+                        btn.disabled = false;
+                        btn.style.pointerEvents = 'auto';
+                        btn.textContent = 'Follow Back';
                     });
                 }
             }
