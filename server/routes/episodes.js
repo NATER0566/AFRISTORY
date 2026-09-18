@@ -67,7 +67,9 @@ export default async function episodeRoutes(fastify, opts) {
       const { episodeId } = request.params;
 
       const episode = await Episode.findById(episodeId)
-        .populate('seriesId')
+        // FIX: Added the exact same deep population used in the feed route
+        // so the very first video has access to the Creator's Image and ID.
+        .populate({ path: 'seriesId', populate: { path: 'creatorId', select: 'brandName profileImage' } })
         .lean(); // Faster, lighter, prevents virtual crashes
 
       if (!episode) {
@@ -364,6 +366,16 @@ export default async function episodeRoutes(fastify, opts) {
       if (!history.lastPosition || lastPosition === 0) {
         episode.totalViews += 1;
         await episode.save();
+
+        // FIX: Now that the episode has a view, we must also add the view to the Creator!
+        const series = await Series.findById(episode.seriesId);
+        if (series && series.creatorId) {
+          const creator = await Creator.findById(series.creatorId);
+          if (creator) {
+            creator.totalViews = (creator.totalViews || 0) + 1;
+            await creator.save();
+          }
+        }
       }
 
       sendSuccess(reply, history, 'Watch history updated successfully');
