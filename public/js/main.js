@@ -1,4 +1,3 @@
-
 const API = '/api';
 const PREVIEW_LIMIT = 30; // Seconds before the video locks
 const state = { 
@@ -217,7 +216,7 @@ function ensureClassificationControls() {
 }
 
 function card(series) { 
-    return `<article class="series-card" data-series-id="${esc(series._id)}"><div class="card-image" style="background-image:url('${image(series.coverImage)}')"><span class="card-tag">${esc(series.genre || 'SERIES')}</span></div><div class="card-body"><h3>${esc(series.title)}</h3><p>${formatRating(series.rating, series.ratingCount)} &nbsp; · &nbsp; ${esc(series.language || 'English')}</p></div></article>`; 
+    return `<article class="series-card" data-series-id="${esc(series._id)}"><div class="card-image" style="background-image:url('${image(series.coverImage)}')"><span class="card-tag">${esc(series.genre || 'SERIES')}</span></div><div class="card-body"><h3>${esc(series.title)}</h3><p>${esc(series.language || 'English')} &nbsp; · &nbsp; ${esc(series.genre || 'Story')}</p></div></article>`; 
 }
 
 function episodeCard(episode) { 
@@ -363,7 +362,7 @@ async function openSeries(id) {
                     <p class="eyebrow" style="position: relative; z-index: 10;">${esc(seriesInfo.genre || 'SERIES')}</p>
                     <h2 style="position: relative; z-index: 10;">${esc(seriesInfo.title)}</h2>
                     <p style="position: relative; z-index: 10; max-width: 600px;">${esc(seriesInfo.description || 'No description available.')}</p>
-                    <p style="color:#d4a017; margin-top:10px; position: relative; z-index: 10;">${formatRating(seriesInfo.rating, seriesInfo.ratingCount)} &nbsp; · &nbsp; ${esc(seriesInfo.language || 'English')}</p>
+                    <p style="color:#d4a017; margin-top:10px; position: relative; z-index: 10;">${esc(seriesInfo.language || 'English')} &nbsp; · &nbsp; ${esc(seriesInfo.genre || 'Story')}</p>
                     ${episodes.length > 0 ? `<button class="button button-primary" data-episode-id="${episodes[0]._id}" style="margin-top:15px; position: relative; z-index: 10;">Play Episode 1</button>` : ''}
                 </article>
             `;
@@ -446,7 +445,7 @@ async function openEpisode(id) {
                     <h3 style="margin:0; font-size:18px; font-weight:700;">${esc(episode.title)}</h3> 
                     <p style="margin:4px 0 0 0; font-size:14px; opacity:0.9;">@${esc(episode.seriesId?.creatorId?.brandName || 'AfroStory')} · ${epNumText}${esc(episode.seriesId?.title || '')}</p> 
                     <p style="margin:4px 0 0 0; font-size:12px; color:#d4a017;">
-                        ${formatRating(episode.rating, episode.ratingCount)} &nbsp;·&nbsp; 👁 ${formatViews(episode.views || 0)} views
+                        ${formatRating(episode.rating, episode.ratingCount)} &nbsp;·&nbsp; 👁 ${formatViews(episode.totalViews || 0)} views
                     </p>
                 </div> 
                 <div class="feed-sidebar"> 
@@ -774,7 +773,7 @@ async function loadCreator() {
                 ['UNIQUE VIEWERS', creator.uniqueViewers || 0, ''],
                 ['RETURNING VIEWERS', creator.returningViewers || 0, ''],
                 ['TOTAL EARNINGS', creator.totalEarnings, ''], 
-                ['FOLLOWERS', creator.totalFollowers, 'data-action="view-followers" style="cursor:pointer;"'], 
+                ['FOLLOWERS (CLICK TO VIEW)', creator.totalFollowers, 'data-action="view-followers" style="cursor:pointer; text-decoration: underline; text-decoration-color: #d4a017;" title="Click to view and follow back"'], 
                 ['SERIES', series.series?.length || 0, '']
             ].map(item => `<div class="stat-card" ${item[2] || ''}><span class="eyebrow">${item[0]}</span><strong>${Number(item[1] || 0).toLocaleString()}</strong></div>`).join(''); 
         }
