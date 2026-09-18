@@ -38,6 +38,16 @@ const creatorSchema = new mongoose.Schema(
       type: mongoose.Decimal128,
       default: 0,
     },
+    // NEW FEATURE: Creator-level unique viewer count
+    uniqueViewers: {
+      type: Number,
+      default: 0,
+    },
+    // NEW FEATURE: Creator-level returning viewer count
+    returningViewers: {
+      type: Number,
+      default: 0,
+    },
     totalEarnings: {
       type: mongoose.Decimal128,
       default: 0,
