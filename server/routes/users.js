@@ -4,6 +4,7 @@ import History from '../models/History.js';
 import Favorite from '../models/Favorite.js';
 import Unlock from '../models/Unlock.js';
 import Creator from '../models/Creator.js';
+import UserFollow from '../models/UserFollow.js'; // NEW: Normal user follow model import
 import { verifyAuth } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { paginate, formatDecimal } from '../utils/helpers.js';
@@ -299,6 +300,64 @@ export default async function userRoutes(fastify, opts) {
     } catch (error) {
       fastify.log.error(error);
       sendError(reply, 'Failed to fetch ad unlocks', 500, error.message);
+    }
+  });
+
+  // NORMAL USER FOLLOW ENDPOINT
+  fastify.post('/:userId/follow', async (request, reply) => {
+    try {
+      await verifyAuth(request, reply);
+      if (!request.user) return sendError(reply, 'Unauthorized', 401);
+
+      const { userId } = request.params;
+      const targetUser = await User.findById(userId);
+
+      if (!targetUser) return sendError(reply, 'User not found', 404);
+
+      if (targetUser._id.toString() === request.user._id.toString()) {
+        return sendError(reply, 'You cannot follow yourself', 400);
+      }
+
+      const existingFollow = await UserFollow.findOne({
+        followerId: request.user._id,
+        followingId: targetUser._id
+      });
+
+      if (existingFollow) {
+        return sendSuccess(reply, { alreadyFollowing: true, isFollowing: true }, 'You already follow this user');
+      }
+
+      await UserFollow.create({
+        followerId: request.user._id,
+        followingId: targetUser._id
+      });
+
+      // Does NOT increment Creator followers! Kept fully isolated.
+      sendSuccess(reply, { alreadyFollowing: false, isFollowing: true }, 'Following user');
+    } catch (error) {
+      if (error.code === 11000) {
+        return sendSuccess(reply, { alreadyFollowing: true, isFollowing: true }, 'You already follow this user');
+      }
+      fastify.log.error(error);
+      sendError(reply, 'Failed to follow user', 500, error.message);
+    }
+  });
+
+  // NORMAL USER UNFOLLOW ENDPOINT
+  fastify.delete('/:userId/follow', async (request, reply) => {
+    try {
+      await verifyAuth(request, reply);
+      if (!request.user) return sendError(reply, 'Unauthorized', 401);
+
+      await UserFollow.findOneAndDelete({
+        followerId: request.user._id,
+        followingId: request.params.userId
+      });
+
+      sendSuccess(reply, { isFollowing: false }, 'Unfollowed user successfully');
+    } catch (error) {
+      fastify.log.error(error);
+      sendError(reply, 'Failed to unfollow user', 500, error.message);
     }
   });
 }
