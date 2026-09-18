@@ -2,6 +2,7 @@ import Creator from '../models/Creator.js';
 import User from '../models/User.js';
 import Series from '../models/Series.js';
 import Follow from '../models/Follow.js'; // NEW: Import dedicated follow model
+import UserFollow from '../models/UserFollow.js'; // NEW: Import normal user follow model
 import { verifyAuth, verifyCreator } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { paginate, formatDecimal } from '../utils/helpers.js';
@@ -247,9 +248,14 @@ export default async function creatorRoutes(fastify, opts) {
         // Find if this follower has a creator profile to check reverse follow
         const followerCreator = await Creator.findOne({ userId: followerUser._id });
         let isMutual = false;
+        
         if (followerCreator) {
           const reverseCheck = await Follow.findOne({ followerId: creator.userId, creatorId: followerCreator._id });
           isMutual = !!reverseCheck;
+        } else {
+          // Normal User Follow Check
+          const reverseUserCheck = await UserFollow.findOne({ followerId: creator.userId, followingId: followerUser._id });
+          isMutual = !!reverseUserCheck;
         }
 
         return {
@@ -262,7 +268,8 @@ export default async function creatorRoutes(fastify, opts) {
           profileImage: followerUser.profile?.avatarUrl || followerUser.profileImage || null,
           createdAt: f.createdAt,
           isMutual,
-          isFollowing: isMutual // Frontend compatibility alias
+          isFollowing: isMutual, // Frontend compatibility alias
+          isCreator: !!followerCreator // Target proper follow endpoint on frontend
         };
       }));
 
