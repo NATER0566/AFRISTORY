@@ -216,7 +216,7 @@ export default async function creatorRoutes(fastify, opts) {
     }
   });
 
-  // FIX: Added the missing follow route
+  // FIX: Safely check for duplicates before following
   fastify.post('/:creatorId/follow', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
@@ -232,10 +232,24 @@ export default async function creatorRoutes(fastify, opts) {
         return sendError(reply, 'Creator not found', 404);
       }
 
+      // Initialize followers array if it doesn't exist to track users
+      if (!creator.followers) {
+        creator.followers = [];
+      }
+
+      // Check if the user is already in the followers list
+      const alreadyFollowing = creator.followers.some(id => id.toString() === request.user._id.toString());
+
+      if (alreadyFollowing) {
+        return sendSuccess(reply, { totalFollowers: creator.totalFollowers, alreadyFollowing: true }, 'You already follow this creator');
+      }
+
+      // If they are not following, add their ID and increase the count
+      creator.followers.push(request.user._id);
       creator.totalFollowers = (creator.totalFollowers || 0) + 1;
       await creator.save();
 
-      sendSuccess(reply, { totalFollowers: creator.totalFollowers }, 'Following creator');
+      sendSuccess(reply, { totalFollowers: creator.totalFollowers, alreadyFollowing: false }, 'Following creator');
     } catch (error) {
       fastify.log.error(error);
       sendError(reply, 'Failed to follow creator', 500, error.message);
