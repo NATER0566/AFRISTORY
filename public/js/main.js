@@ -9,6 +9,28 @@ const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 
 // ============================================================================
+// FRONTEND ERROR LOGGING (Sends browser errors to Render logs)
+// ============================================================================
+async function logFrontendError(type, message, stack) {
+    try {
+        console.error(`[Frontend Error Caught]: ${type} - ${message}`);
+        await fetch('/api/admin/log-client-error', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type, message, stack, url: window.location.href, time: new Date().toISOString() })
+        });
+    } catch (e) { /* Silent fail if network is down */ }
+}
+
+window.addEventListener('error', (event) => {
+    logFrontendError('uncaught_error', event.message, event.error?.stack);
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+    logFrontendError('unhandled_promise', event.reason?.message || String(event.reason), event.reason?.stack);
+});
+
+// ============================================================================
 // NON-BLOCKING, CRASH-PROOF API
 // ============================================================================
 const api = async (path, options = {}) => {
@@ -291,6 +313,7 @@ async function openEpisode(id) {
                 </div>`; 
             } 
 
+            // FIX: Real Profile Image Extractor
             const creatorImgUrl = episode.seriesId?.creatorId?.profileImage;
             const fallbackInitial = esc((episode.seriesId?.creatorId?.brandName || 'A')[0].toUpperCase());
             const profileDisplayHtml = creatorImgUrl 
@@ -298,12 +321,12 @@ async function openEpisode(id) {
                 : `<span style="font-weight:bold;color:#fff;font-size:18px;">${fallbackInitial}</span>`;
 
             const epNumText = episode.episodeNumber ? `Episode ${episode.episodeNumber} · ` : '';
-            const isFollowing = episode.isFollowing; // Flag populated directly from backend
+            const isFollowing = episode.isFollowing;
 
-            // FIX: Synchronized Follow Badge logic
+            // FIX: Safely separated follow badge using specific class .follow-badge-icon
             const followIconBadge = isFollowing 
-                ? `<div style="position: absolute; bottom: 0; right: 0; background: #76a86b; color: #fff; width: 14px; height: 14px; border-radius: 50%; font-size: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid #111;">✓</div>`
-                : `<div style="position: absolute; bottom: 0; right: 0; background: #d4a017; color: #111; width: 14px; height: 14px; border-radius: 50%; font-size: 14px; line-height: 14px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid #111;">+</div>`;
+                ? `<div class="follow-badge-icon" style="position: absolute; bottom: 0; right: 0; background: #76a86b; color: #fff; width: 14px; height: 14px; border-radius: 50%; font-size: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid #111;">✓</div>`
+                : `<div class="follow-badge-icon" style="position: absolute; bottom: 0; right: 0; background: #d4a017; color: #111; width: 14px; height: 14px; border-radius: 50%; font-size: 14px; line-height: 14px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid #111;">+</div>`;
 
             card.innerHTML = `
                 <video src="${mediaUrl}" poster="${image(episode.thumbnailUrl || episode.seriesId?.coverImage)}" loop playsinline ${episode.hasAccess ? 'controls' : ''}></video> 
@@ -493,7 +516,6 @@ async function loadRewards() {
     } catch (error) { toast(error.message, 'error'); }
 } 
 
-// FIX: Added the new async function to fetch and render the actual Follower/Mutual list
 async function loadFollowersList() {
     try {
         $('#modal-root').innerHTML = `<div class="modal"><div class="modal-header"><div><p class="eyebrow">YOUR COMMUNITY</p><h2>Followers</h2></div><button class="modal-close" data-action="close-modal">×</button></div><div id="followers-modal-list" class="data-list" style="max-height: 50vh; overflow-y: auto;"><p style="text-align:center; padding: 20px;">Loading...</p></div></div>`;
@@ -535,7 +557,6 @@ async function loadCreator() {
         $('#creator-dashboard')?.classList.remove('hidden');
         $('#creator-onboarding')?.classList.add('hidden');
 
-        // FIX: The Followers count is now clickable and opens the bottom-sheet UI
         if ($('#creator-stats')) {
             $('#creator-stats').innerHTML = [
                 ['TOTAL VIEWS', creator.totalViews, ''], 
@@ -862,10 +883,10 @@ function loadSettings() {
 
 function saveSettings(event) { 
     event.preventDefault(); 
-    localStorage.setItem('afrostory-settings', JSON.stringify({ language: $('#settings-language').value, notifications: $('#settings-notifications').checked }));      toast('Settings saved', 'success');  }  // ============================================================================ // BULLETPROOF GLOBAL CLICK LISTENER // ============================================================================ document.addEventListener('click', async event => {     try {         const section = event.target.closest('[data-section]'); if (section) setSection(section.dataset.section);         const series = event.target.closest('[data-series-id]'); if (series) openSeries(series.dataset.seriesId);         const episodeRow = event.target.closest('[data-episode-id]'); if (episodeRow && !episodeRow.closest('.feed-video-card')) openEpisode(episodeRow.dataset.episodeId);          if (event.target.closest('[data-action="view-followers"]')) loadFollowersList();          // FIX: The follow button logic is now locked against double clicks and sweeps the entire DOM to synchronize UI state.         const followBtn = event.target.closest('[data-action="follow-creator"]');         if (followBtn && !followBtn.disabled) {             event.preventDefault();             const creatorId = followBtn.dataset.creator;                          if (creatorId && creatorId !== 'undefined') {                 // Instantly lock ALL matching buttons on the screen to prevent spam clicking                 $$(`[data-action="follow-creator"][data-creator="${creatorId}"]`).forEach(btn => {
+    localStorage.setItem('afrostory-settings', JSON.stringify({ language: $('#settings-language').value, notifications: $('#settings-notifications').checked }));      toast('Settings saved', 'success');  }  // ============================================================================ // BULLETPROOF GLOBAL CLICK LISTENER // ============================================================================ document.addEventListener('click', async event => {     try {         const section = event.target.closest('[data-section]'); if (section) setSection(section.dataset.section);         const series = event.target.closest('[data-series-id]'); if (series) openSeries(series.dataset.seriesId);         const episodeRow = event.target.closest('[data-episode-id]'); if (episodeRow && !episodeRow.closest('.feed-video-card')) openEpisode(episodeRow.dataset.episodeId);          if (event.target.closest('[data-action="view-followers"]')) loadFollowersList();          const followBtn = event.target.closest('[data-action="follow-creator"]');         if (followBtn && !followBtn.disabled) {             event.preventDefault();             const creatorId = followBtn.dataset.creator;                          if (creatorId && creatorId !== 'undefined') {                 // Instantly lock ALL matching buttons using the specific badge class                 $$(`[data-action="follow-creator"][data-creator="${creatorId}"]`).forEach(btn => {
                     btn.disabled = true;
                     btn.style.pointerEvents = 'none';
-                    const iconBadge = btn.querySelector('div > div');
+                    const iconBadge = btn.querySelector('.follow-badge-icon');
                     if (iconBadge) iconBadge.innerHTML = '<span style="font-size:8px;">...</span>'; 
                 });
 
@@ -878,9 +899,9 @@ function saveSettings(event) {
                         toast('Following creator!', 'success');
                     }
 
-                    // Sweep the DOM and apply the permanent green checkmark to all of this creator's videos
+                    // Sweep the DOM and apply the permanent green checkmark without destroying the profile picture
                     $$(`[data-action="follow-creator"][data-creator="${creatorId}"]`).forEach(btn => {
-                        const iconBadge = btn.querySelector('div > div');
+                        const iconBadge = btn.querySelector('.follow-badge-icon');
                         if (iconBadge) {
                             iconBadge.textContent = '✓';
                             iconBadge.style.background = '#76a86b';
@@ -890,12 +911,14 @@ function saveSettings(event) {
                     });
                 } catch (error) { 
                     toast(error.message, 'error'); 
-                    // If backend rejects (e.g. self follow), unlock buttons
+                    // Unlock buttons safely if the backend rejects the follow
                     $$(`[data-action="follow-creator"][data-creator="${creatorId}"]`).forEach(btn => {
                         btn.disabled = false;
                         btn.style.pointerEvents = 'auto';
-                        const iconBadge = btn.querySelector('div > div');
-                        if (iconBadge) iconBadge.textContent = '+';
+                        const iconBadge = btn.querySelector('.follow-badge-icon');
+                        if (iconBadge) {
+                            iconBadge.textContent = '+';
+                        }
                     });
                 }
             }
@@ -963,7 +986,7 @@ function saveSettings(event) {
             } catch (error) { rewardBtn.disabled = false; rewardBtn.textContent = 'Claim reward'; toast(error.message, 'error'); }
         }
     } catch (globalError) {
-        console.error("Caught error in global click handler:", globalError);
+        logFrontendError('click_handler_failure', globalError.message, globalError.stack);
     }
 });
 
