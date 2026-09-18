@@ -3,9 +3,20 @@ import Series from '../models/Series.js';
 import Creator from '../models/Creator.js';
 import Unlock from '../models/Unlock.js';
 import History from '../models/History.js';
+import Follow from '../models/Follow.js'; // NEW: Added to check mutual/follow state on the feed
 import { verifyAuth, verifyCreator } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { formatDecimal } from '../utils/helpers.js';
+
+// Deep populate object to ensure we trace the Creator back to their actual User avatar
+const deepSeriesPopulate = {
+  path: 'seriesId',
+  populate: {
+    path: 'creatorId',
+    select: 'brandName profileImage userId',
+    populate: { path: 'userId', select: 'profile profileImage username' }
+  }
+};
 
 export default async function episodeRoutes(fastify, opts) {
   // Database-backed episode feed used by Watch, Discover, and recommendations.
@@ -24,14 +35,16 @@ export default async function episodeRoutes(fastify, opts) {
       const sortBy = sort === 'latest' ? { createdAt: -1 } : { totalViews: -1, createdAt: -1 };
       
       const episodes = await Episode.find(query)
-        .populate({ path: 'seriesId', populate: { path: 'creatorId', select: 'brandName profileImage' } })
+        .populate(deepSeriesPopulate)
         .sort(sortBy)
         .limit(Math.min(Number(limit) || 12, 50))
-        .lean(); // Faster, lighter, prevents virtual crashes
+        .lean(); 
       
       const hasActiveSubscription = request.user && request.user.subscriptionExpiresAt && new Date(request.user.subscriptionExpiresAt) > new Date();
       
       let userUnlocks = [];
+      let followedCreatorIds = [];
+
       if (request.user) {
         const episodeIds = episodes.map(ep => ep._id);
         const unlocks = await Unlock.find({
@@ -40,6 +53,14 @@ export default async function episodeRoutes(fastify, opts) {
           isActive: true
         }).lean();
         userUnlocks = unlocks.map(u => u.episodeId.toString());
+
+        // Extract unique creator IDs from the feed to check follow status in one query
+        const creatorIds = [...new Set(episodes.map(ep => ep.seriesId?.creatorId?._id?.toString()).filter(Boolean))];
+        const follows = await Follow.find({
+          followerId: request.user._id,
+          creatorId: { $in: creatorIds }
+        }).lean();
+        followedCreatorIds = follows.map(f => f.creatorId.toString());
       }
 
       const processedEpisodes = episodes.map(episode => {
@@ -47,10 +68,21 @@ export default async function episodeRoutes(fastify, opts) {
         if (hasActiveSubscription) hasAccess = true;
         if (request.user && userUnlocks.includes(episode._id.toString())) hasAccess = true;
 
+        // Safely resolve the profile image from the deep populated User object
+        if (episode.seriesId && episode.seriesId.creatorId) {
+          const creator = episode.seriesId.creatorId;
+          const user = creator.userId;
+          creator.profileImage = creator.profileImage || user?.profile?.avatarUrl || user?.profileImage || null;
+        }
+
+        const creatorIdStr = episode.seriesId?.creatorId?._id?.toString();
+        const isFollowing = followedCreatorIds.includes(creatorIdStr);
+
         return { 
             ...episode,
             rating: formatDecimal(episode.rating),
-            hasAccess
+            hasAccess,
+            isFollowing
         };
       });
 
@@ -67,10 +99,8 @@ export default async function episodeRoutes(fastify, opts) {
       const { episodeId } = request.params;
 
       const episode = await Episode.findById(episodeId)
-        // FIX: Added the exact same deep population used in the feed route
-        // so the very first video has access to the Creator's Image and ID.
-        .populate({ path: 'seriesId', populate: { path: 'creatorId', select: 'brandName profileImage' } })
-        .lean(); // Faster, lighter, prevents virtual crashes
+        .populate(deepSeriesPopulate)
+        .lean(); 
 
       if (!episode) {
         return sendError(reply, 'Episode not found', 404);
@@ -80,8 +110,8 @@ export default async function episodeRoutes(fastify, opts) {
         return sendError(reply, 'Episode not found', 404);
       }
 
-      // Check if user has access
       let hasAccess = episode.isFree;
+      let isFollowing = false;
 
       if (request.cookies?.token) {
           await verifyAuth(request, reply);
@@ -90,19 +120,35 @@ export default async function episodeRoutes(fastify, opts) {
       const hasActiveSubscription = request.user && request.user.subscriptionExpiresAt && new Date(request.user.subscriptionExpiresAt) > new Date();
       if (hasActiveSubscription) hasAccess = true;
 
-      if (request.user && !episode.isFree) {
-        const unlock = await Unlock.findOne({
-          userId: request.user._id,
-          episodeId,
-          isActive: true,
-        }).lean();
-        hasAccess = hasAccess || !!unlock;
+      if (request.user) {
+        if (!episode.isFree) {
+          const unlock = await Unlock.findOne({
+            userId: request.user._id,
+            episodeId,
+            isActive: true,
+          }).lean();
+          hasAccess = hasAccess || !!unlock;
+        }
+
+        const creatorIdStr = episode.seriesId?.creatorId?._id?.toString();
+        if (creatorIdStr) {
+          const followCheck = await Follow.findOne({ followerId: request.user._id, creatorId: creatorIdStr }).lean();
+          isFollowing = !!followCheck;
+        }
+      }
+
+      // Safely resolve the profile image from the deep populated User object
+      if (episode.seriesId && episode.seriesId.creatorId) {
+        const creator = episode.seriesId.creatorId;
+        const user = creator.userId;
+        creator.profileImage = creator.profileImage || user?.profile?.avatarUrl || user?.profileImage || null;
       }
 
       sendSuccess(reply, {
         ...episode,
         rating: formatDecimal(episode.rating),
         hasAccess,
+        isFollowing
       });
     } catch (error) {
       fastify.log.error(error);
@@ -110,7 +156,7 @@ export default async function episodeRoutes(fastify, opts) {
     }
   });
 
-  // Create episode (Write operations remain as full Mongoose documents to utilize .save())
+  // Create episode
   fastify.post('/series/:seriesId/create', async (request, reply) => {
     try {
       await verifyCreator(request, reply);
@@ -187,7 +233,6 @@ export default async function episodeRoutes(fastify, opts) {
 
       await episode.save();
 
-      // Update series episode count
       series.totalEpisodes = await Episode.countDocuments({ seriesId });
       await series.save();
 
@@ -306,7 +351,6 @@ export default async function episodeRoutes(fastify, opts) {
       await Unlock.deleteMany({ episodeId });
       await History.deleteMany({ episodeId });
 
-      // Update series episode count
       series.totalEpisodes = await Episode.countDocuments({ seriesId: series._id });
       await series.save();
 
@@ -335,13 +379,14 @@ export default async function episodeRoutes(fastify, opts) {
         return sendError(reply, 'Episode not found', 404);
       }
 
-      // FIX: Removed strict access block. 
-      // We want to record history and count views for users watching the 30-second free preview.
-
       let history = await History.findOne({
         userId: request.user._id,
         episodeId,
       });
+
+      // FIX: Store the new view check BEFORE updating the history document 
+      // so it correctly adds +1 view the first time the video is watched.
+      const isNewView = !history || history.lastPosition === 0;
 
       if (!history) {
         history = new History({
@@ -362,12 +407,11 @@ export default async function episodeRoutes(fastify, opts) {
 
       await history.save();
 
-      // Increment total views if not counted yet
-      if (!history.lastPosition || lastPosition === 0) {
+      // If this is a new view, increment both the episode AND the creator safely.
+      if (isNewView) {
         episode.totalViews += 1;
         await episode.save();
 
-        // FIX: Now that the episode has a view, we must also add the view to the Creator!
         const series = await Series.findById(episode.seriesId);
         if (series && series.creatorId) {
           const creator = await Creator.findById(series.creatorId);
