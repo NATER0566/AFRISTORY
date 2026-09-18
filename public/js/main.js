@@ -291,7 +291,6 @@ async function openEpisode(id) {
                 </div>`; 
             } 
 
-            // FIX: Extracts the deeply populated User profile image dynamically
             const creatorImgUrl = episode.seriesId?.creatorId?.profileImage;
             const fallbackInitial = esc((episode.seriesId?.creatorId?.brandName || 'A')[0].toUpperCase());
             const profileDisplayHtml = creatorImgUrl 
@@ -506,7 +505,7 @@ async function loadFollowersList() {
         $('#followers-modal-list').innerHTML = followers.map(f => {
             const avatar = f.profileImage 
                 ? `<img src="${image(f.profileImage)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` 
-                : `<span style="font-weight:bold;color:#fff;">${esc((f.displayName || f.username || 'U')[0].toUpperCase())}</span>`;
+                : `<span style="font-weight:bold;color:#fff;font-size:18px;">${esc((f.displayName || f.username || 'U')[0].toUpperCase())}</span>`;
             
             const mutualBadge = f.isMutual 
                 ? `<span style="font-size:11px; background:#333; color:#aaa; padding:2px 6px; border-radius:10px; margin-top:4px; display:inline-block;">Mutual</span>` 
@@ -543,7 +542,7 @@ async function loadCreator() {
                 ['TOTAL EARNINGS', creator.totalEarnings, ''], 
                 ['FOLLOWERS', creator.totalFollowers, 'data-action="view-followers" style="cursor:pointer;"'], 
                 ['SERIES', series.series?.length || 0, '']
-            ].map(item => `<div class="stat-card" ${item[2]}><span class="eyebrow">${item[0]}</span><strong>${Number(item[1] || 0).toLocaleString()}</strong></div>`).join(''); 
+            ].map(item => `<div class="stat-card" ${item[2] || ''}><span class="eyebrow">${item[0]}</span><strong>${Number(item[1] || 0).toLocaleString()}</strong></div>`).join(''); 
         }
 
         if ($('#my-series-grid')) $('#my-series-grid').innerHTML = (series.series || []).map(card).join('') || '<p>Create your first series.</p>'; 
@@ -647,24 +646,21 @@ async function showSubscriptionPlans() {
     } catch (error) { toast(error.message, 'error'); } 
 }
 
-// FIX: Built full HTML schema specifically for History and Continue cards to load thumbnails and progress bar styles
 async function loadHistory() {
     try {
         const result = await api('/users/history/watch?limit=50') || {};
         const list = result.history || result.data || result || [];
-        $('#history-list').innerHTML = list.filter(item => item.episodeId).map(item => {
-            const progressWidth = Math.round(Number(item.watchedPercentage || 0));
-            const bgImg = image(item.episodeId?.thumbnailUrl || item.seriesId?.coverImage);
-            return `<button class="profile-list-row history-row" data-history-episode="${esc(item.episodeId?._id)}" data-history-series="${esc(item.seriesId?._id)}">
-                <div style="width: 100px; height: 64px; border-radius: 4px; background-color: #222; background-image: url('${bgImg}'); background-size: cover; background-position: center; flex-shrink: 0;"></div>
-                <div style="flex: 1; min-width: 0; text-align: left;">
-                    <strong style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(item.seriesId?.title || 'Series')}</strong>
-                    <p style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 2px 0 0; color: #999; font-size: 13px;">${esc(item.episodeId?.title || 'Episode')}</p>
-                    <div class="progress"><i style="width: ${progressWidth}%;"></i></div>
+        $('#history-list').innerHTML = list.filter(item => item.episodeId).map(item => `
+            <button class="profile-list-row history-row" data-history-episode="${esc(item.episodeId._id)}" data-history-series="${esc(item.seriesId?._id)}" style="width: 100%; cursor: pointer; text-align: left; margin-bottom: 10px; border-radius: 8px;">
+                <div style="width: 90px; height: 60px; border-radius: 6px; background-color: #333; background-image: url('${image(item.episodeId.thumbnailUrl || item.seriesId?.coverImage)}'); background-size: cover; background-position: center; flex-shrink: 0;"></div>
+                <div style="flex: 1; min-width: 0;">
+                    <strong style="color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">${esc(item.seriesId?.title || 'Series')}</strong>
+                    <p style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(item.episodeId.title || 'Episode')}</p>
+                    <div class="progress" style="width: 100%; max-width: 200px;"><i style="width: ${Math.round(Number(item.watchedPercentage || 0))}%;"></i></div>
                 </div>
-                <span style="color: #d4a017; font-size: 13px; font-weight: 600; flex-shrink: 0; margin-left: 10px;">${progressWidth}%</span>
-            </button>`;
-        }).join('') || '<p>Your watched episodes will appear here.</p>';
+                <span style="color: #d4a017; font-weight: 600; font-size: 13px;">${Math.round(Number(item.watchedPercentage || 0))}%</span>
+            </button>
+        `).join('') || '<p>Your watched episodes will appear here.</p>';
     } catch (error) { toast(error.message, 'error'); }
 }
 
@@ -672,19 +668,17 @@ async function loadContinue() {
     try {
         const result = await api('/users/history/watch?limit=50') || {};
         const list = result.history || result.data || result || [];
-        $('#continue-list').innerHTML = list.filter(item => !item.completed && item.episodeId).map(item => {
-            const progressWidth = Math.round(Number(item.watchedPercentage || 0));
-            const bgImg = image(item.episodeId?.thumbnailUrl || item.seriesId?.coverImage);
-            return `<button class="profile-list-row history-row" data-history-episode="${esc(item.episodeId?._id)}" data-history-series="${esc(item.seriesId?._id)}">
-                <div style="width: 100px; height: 64px; border-radius: 4px; background-color: #222; background-image: url('${bgImg}'); background-size: cover; background-position: center; flex-shrink: 0;"></div>
-                <div style="flex: 1; min-width: 0; text-align: left;">
-                    <strong style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(item.seriesId?.title || 'Series')}</strong>
-                    <p style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 2px 0 0; color: #999; font-size: 13px;">${esc(item.episodeId?.title || 'Episode')}</p>
-                    <div class="progress"><i style="width: ${progressWidth}%;"></i></div>
+        $('#continue-list').innerHTML = list.filter(item => !item.completed && item.episodeId).map(item => `
+            <button class="profile-list-row history-row" data-history-episode="${esc(item.episodeId._id)}" data-history-series="${esc(item.seriesId?._id)}" style="width: 100%; cursor: pointer; text-align: left; margin-bottom: 10px; border-radius: 8px;">
+                <div style="width: 90px; height: 60px; border-radius: 6px; background-color: #333; background-image: url('${image(item.episodeId.thumbnailUrl || item.seriesId?.coverImage)}'); background-size: cover; background-position: center; flex-shrink: 0;"></div>
+                <div style="flex: 1; min-width: 0;">
+                    <strong style="color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">${esc(item.seriesId?.title || 'Series')}</strong>
+                    <p style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(item.episodeId.title || 'Episode')}</p>
+                    <div class="progress" style="width: 100%; max-width: 200px;"><i style="width: ${Math.round(Number(item.watchedPercentage || 0))}%;"></i></div>
                 </div>
-                <span style="color: #d4a017; font-size: 13px; font-weight: 600; flex-shrink: 0; margin-left: 10px;">${progressWidth}%</span>
-            </button>`;
-        }).join('') || '<p>Nothing to continue yet.</p>';
+                <span style="color: #d4a017; font-weight: 600; font-size: 13px;">${Math.round(Number(item.watchedPercentage || 0))}%</span>
+            </button>
+        `).join('') || '<p>Nothing to continue yet.</p>';
     } catch (error) { toast(error.message, 'error'); }
 } 
 
