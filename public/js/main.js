@@ -291,6 +291,7 @@ async function openEpisode(id) {
                 </div>`; 
             } 
 
+            // FIX: Extracts the deeply populated User profile image dynamically
             const creatorImgUrl = episode.seriesId?.creatorId?.profileImage;
             const fallbackInitial = esc((episode.seriesId?.creatorId?.brandName || 'A')[0].toUpperCase());
             const profileDisplayHtml = creatorImgUrl 
@@ -298,6 +299,12 @@ async function openEpisode(id) {
                 : `<span style="font-weight:bold;color:#fff;font-size:18px;">${fallbackInitial}</span>`;
 
             const epNumText = episode.episodeNumber ? `Episode ${episode.episodeNumber} · ` : '';
+            const isFollowing = episode.isFollowing; // Flag populated directly from backend
+
+            // FIX: Synchronized Follow Badge logic
+            const followIconBadge = isFollowing 
+                ? `<div style="position: absolute; bottom: 0; right: 0; background: #76a86b; color: #fff; width: 14px; height: 14px; border-radius: 50%; font-size: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid #111;">✓</div>`
+                : `<div style="position: absolute; bottom: 0; right: 0; background: #d4a017; color: #111; width: 14px; height: 14px; border-radius: 50%; font-size: 14px; line-height: 14px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid #111;">+</div>`;
 
             card.innerHTML = `
                 <video src="${mediaUrl}" poster="${image(episode.thumbnailUrl || episode.seriesId?.coverImage)}" loop playsinline ${episode.hasAccess ? 'controls' : ''}></video> 
@@ -307,10 +314,10 @@ async function openEpisode(id) {
                     <p style="margin:4px 0 0 0; font-size:14px; opacity:0.9;">@${esc(episode.seriesId?.creatorId?.brandName || 'AfroStory')} · ${epNumText}${esc(episode.seriesId?.title || '')}</p> 
                 </div> 
                 <div class="feed-sidebar"> 
-                    <button class="feed-action-btn" data-action="follow-creator" data-creator="${esc(episode.seriesId?.creatorId?._id)}" title="Follow Creator"> 
+                    <button class="feed-action-btn" data-action="follow-creator" data-creator="${esc(episode.seriesId?.creatorId?._id)}" ${isFollowing ? 'disabled style="pointer-events:none;"' : ''} title="Follow Creator"> 
                         <div style="width: 42px; height: 42px; border-radius: 50%; overflow: hidden; border: 2px solid #fff; background: #333; margin-bottom: 6px; display: flex; align-items: center; justify-content: center; position: relative;">
                             ${profileDisplayHtml}
-                            <div style="position: absolute; bottom: 0; right: 0; background: #d4a017; color: #111; width: 14px; height: 14px; border-radius: 50%; font-size: 14px; line-height: 14px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid #111;">+</div>
+                            ${followIconBadge}
                         </div>
                     </button>
                     <button class="feed-action-btn" data-action="save-current" title="Save to Favorites"> 
@@ -487,6 +494,40 @@ async function loadRewards() {
     } catch (error) { toast(error.message, 'error'); }
 } 
 
+// FIX: Added the new async function to fetch and render the actual Follower/Mutual list
+async function loadFollowersList() {
+    try {
+        $('#modal-root').innerHTML = `<div class="modal"><div class="modal-header"><div><p class="eyebrow">YOUR COMMUNITY</p><h2>Followers</h2></div><button class="modal-close" data-action="close-modal">×</button></div><div id="followers-modal-list" class="data-list" style="max-height: 50vh; overflow-y: auto;"><p style="text-align:center; padding: 20px;">Loading...</p></div></div>`;
+        $('#modal-root').classList.remove('hidden');
+        
+        const res = await api('/creators/me/followers');
+        const followers = res.followers || [];
+        
+        $('#followers-modal-list').innerHTML = followers.map(f => {
+            const avatar = f.profileImage 
+                ? `<img src="${image(f.profileImage)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` 
+                : `<span style="font-weight:bold;color:#fff;">${esc((f.displayName || f.username || 'U')[0].toUpperCase())}</span>`;
+            
+            const mutualBadge = f.isMutual 
+                ? `<span style="font-size:11px; background:#333; color:#aaa; padding:2px 6px; border-radius:10px; margin-top:4px; display:inline-block;">Mutual</span>` 
+                : '';
+
+            return `<div class="data-row" style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid #222;">
+                <div style="width:40px; height:40px; border-radius:50%; background:#444; display:flex; align-items:center; justify-content:center; flex-shrink:0;">${avatar}</div>
+                <div style="flex:1; min-width:0; text-align:left;">
+                    <strong style="display:block; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(f.displayName || f.username)}</strong>
+                    <p style="margin:0; font-size:12px; color:#888;">@${esc(f.username)}</p>
+                    ${mutualBadge}
+                </div>
+            </div>`;
+        }).join('') || '<p style="text-align:center; color:#888; padding: 20px;">You have no followers yet.</p>';
+
+    } catch(e) {
+        toast(e.message, 'error');
+        $('#modal-root').classList.add('hidden');
+    }
+}
+
 async function loadCreator() { 
     try { 
         const creator = await api('/creators/me/profile') || {}; 
@@ -495,7 +536,16 @@ async function loadCreator() {
         $('#creator-dashboard')?.classList.remove('hidden');
         $('#creator-onboarding')?.classList.add('hidden');
 
-        if ($('#creator-stats')) $('#creator-stats').innerHTML = [['TOTAL VIEWS', creator.totalViews], ['TOTAL EARNINGS', creator.totalEarnings], ['FOLLOWERS', creator.totalFollowers], ['SERIES', series.series?.length || 0]].map(item => `<div class="stat-card"><span class="eyebrow">${item[0]}</span><strong>${Number(item[1] || 0).toLocaleString()}</strong></div>`).join(''); 
+        // FIX: The Followers count is now clickable and opens the bottom-sheet UI
+        if ($('#creator-stats')) {
+            $('#creator-stats').innerHTML = [
+                ['TOTAL VIEWS', creator.totalViews, ''], 
+                ['TOTAL EARNINGS', creator.totalEarnings, ''], 
+                ['FOLLOWERS', creator.totalFollowers, 'data-action="view-followers" style="cursor:pointer;"'], 
+                ['SERIES', series.series?.length || 0, '']
+            ].map(item => `<div class="stat-card" ${item[2]}><span class="eyebrow">${item[0]}</span><strong>${Number(item[1] || 0).toLocaleString()}</strong></div>`).join(''); 
+        }
+
         if ($('#my-series-grid')) $('#my-series-grid').innerHTML = (series.series || []).map(card).join('') || '<p>Create your first series.</p>'; 
         if ($('#upload-series')) $('#upload-series').innerHTML = (series.series || []).map(item => `<option value="${esc(item._id)}">${esc(item.title)}</option>`).join(''); 
     } catch (error) { 
@@ -597,24 +647,46 @@ async function showSubscriptionPlans() {
     } catch (error) { toast(error.message, 'error'); } 
 }
 
-// FIX: Updated HTML to render proper thumbnails and progress bars for History
+// FIX: Built full HTML schema specifically for History and Continue cards to load thumbnails and progress bar styles
 async function loadHistory() {
     try {
         const result = await api('/users/history/watch?limit=50') || {};
         const list = result.history || result.data || result || [];
-        $('#history-list').innerHTML = list.filter(item => item.episodeId).map(item => `
-            <button class="profile-list-row history-row" data-history-episode="${esc(item.episodeId._id)}" data-history-series="${esc(item.seriesId?._id)}" style="width: 100%; cursor: pointer; text-align: left; margin-bottom: 10px; border-radius: 8px;">
-                <div style="width: 90px; height: 60px; border-radius: 6px; background-color: #333; background-image: url('${image(item.episodeId.thumbnailUrl || item.seriesId?.coverImage)}'); background-size: cover; background-position: center; flex-shrink: 0;"></div>
-                <div style="flex: 1; min-width: 0;">
-                    <strong style="color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">${esc(item.seriesId?.title || 'Series')}</strong>
-                    <p style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(item.episodeId.title || 'Episode')}</p>
-                    <div class="progress" style="width: 100%; max-width: 200px;"><i style="width: ${Math.round(Number(item.watchedPercentage || 0))}%;"></i></div>
+        $('#history-list').innerHTML = list.filter(item => item.episodeId).map(item => {
+            const progressWidth = Math.round(Number(item.watchedPercentage || 0));
+            const bgImg = image(item.episodeId?.thumbnailUrl || item.seriesId?.coverImage);
+            return `<button class="profile-list-row history-row" data-history-episode="${esc(item.episodeId?._id)}" data-history-series="${esc(item.seriesId?._id)}">
+                <div style="width: 100px; height: 64px; border-radius: 4px; background-color: #222; background-image: url('${bgImg}'); background-size: cover; background-position: center; flex-shrink: 0;"></div>
+                <div style="flex: 1; min-width: 0; text-align: left;">
+                    <strong style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(item.seriesId?.title || 'Series')}</strong>
+                    <p style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 2px 0 0; color: #999; font-size: 13px;">${esc(item.episodeId?.title || 'Episode')}</p>
+                    <div class="progress"><i style="width: ${progressWidth}%;"></i></div>
                 </div>
-                <span style="color: #d4a017; font-weight: 600; font-size: 13px;">${Math.round(Number(item.watchedPercentage || 0))}%</span>
-            </button>
-        `).join('') || '<p>Your watched episodes will appear here.</p>';
+                <span style="color: #d4a017; font-size: 13px; font-weight: 600; flex-shrink: 0; margin-left: 10px;">${progressWidth}%</span>
+            </button>`;
+        }).join('') || '<p>Your watched episodes will appear here.</p>';
     } catch (error) { toast(error.message, 'error'); }
 }
+
+async function loadContinue() {
+    try {
+        const result = await api('/users/history/watch?limit=50') || {};
+        const list = result.history || result.data || result || [];
+        $('#continue-list').innerHTML = list.filter(item => !item.completed && item.episodeId).map(item => {
+            const progressWidth = Math.round(Number(item.watchedPercentage || 0));
+            const bgImg = image(item.episodeId?.thumbnailUrl || item.seriesId?.coverImage);
+            return `<button class="profile-list-row history-row" data-history-episode="${esc(item.episodeId?._id)}" data-history-series="${esc(item.seriesId?._id)}">
+                <div style="width: 100px; height: 64px; border-radius: 4px; background-color: #222; background-image: url('${bgImg}'); background-size: cover; background-position: center; flex-shrink: 0;"></div>
+                <div style="flex: 1; min-width: 0; text-align: left;">
+                    <strong style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(item.seriesId?.title || 'Series')}</strong>
+                    <p style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 2px 0 0; color: #999; font-size: 13px;">${esc(item.episodeId?.title || 'Episode')}</p>
+                    <div class="progress"><i style="width: ${progressWidth}%;"></i></div>
+                </div>
+                <span style="color: #d4a017; font-size: 13px; font-weight: 600; flex-shrink: 0; margin-left: 10px;">${progressWidth}%</span>
+            </button>`;
+        }).join('') || '<p>Nothing to continue yet.</p>';
+    } catch (error) { toast(error.message, 'error'); }
+} 
 
 async function openHistoryEpisode(seriesId, episodeId) { 
     try { 
@@ -772,25 +844,6 @@ async function loadTrending() {
     } catch (error) { toast(error.message, 'error'); } 
 } 
 
-// FIX: Updated HTML to render proper thumbnails and progress bars for Continue Watching
-async function loadContinue() {
-    try {
-        const result = await api('/users/history/watch?limit=50') || {};
-        const list = result.history || result.data || result || [];
-        $('#continue-list').innerHTML = list.filter(item => !item.completed && item.episodeId).map(item => `
-            <button class="profile-list-row history-row" data-history-episode="${esc(item.episodeId._id)}" data-history-series="${esc(item.seriesId?._id)}" style="width: 100%; cursor: pointer; text-align: left; margin-bottom: 10px; border-radius: 8px;">
-                <div style="width: 90px; height: 60px; border-radius: 6px; background-color: #333; background-image: url('${image(item.episodeId.thumbnailUrl || item.seriesId?.coverImage)}'); background-size: cover; background-position: center; flex-shrink: 0;"></div>
-                <div style="flex: 1; min-width: 0;">
-                    <strong style="color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">${esc(item.seriesId?.title || 'Series')}</strong>
-                    <p style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(item.episodeId.title || 'Episode')}</p>
-                    <div class="progress" style="width: 100%; max-width: 200px;"><i style="width: ${Math.round(Number(item.watchedPercentage || 0))}%;"></i></div>
-                </div>
-                <span style="color: #d4a017; font-weight: 600; font-size: 13px;">${Math.round(Number(item.watchedPercentage || 0))}%</span>
-            </button>
-        `).join('') || '<p>Nothing to continue yet.</p>';
-    } catch (error) { toast(error.message, 'error'); }
-} 
-
 async function loadFavorites() {
     try {
         const result = await api('/favorites') || {};
@@ -815,25 +868,14 @@ function loadSettings() {
 
 function saveSettings(event) { 
     event.preventDefault(); 
-    localStorage.setItem('afrostory-settings', JSON.stringify({ language: $('#settings-language').value, notifications: $('#settings-notifications').checked })); 
-    toast('Settings saved', 'success'); 
-}
+    localStorage.setItem('afrostory-settings', JSON.stringify({ language: $('#settings-language').value, notifications: $('#settings-notifications').checked }));      toast('Settings saved', 'success');  }  // ============================================================================ // BULLETPROOF GLOBAL CLICK LISTENER // ============================================================================ document.addEventListener('click', async event => {     try {         const section = event.target.closest('[data-section]'); if (section) setSection(section.dataset.section);         const series = event.target.closest('[data-series-id]'); if (series) openSeries(series.dataset.seriesId);         const episodeRow = event.target.closest('[data-episode-id]'); if (episodeRow && !episodeRow.closest('.feed-video-card')) openEpisode(episodeRow.dataset.episodeId);          if (event.target.closest('[data-action="view-followers"]')) loadFollowersList();          // FIX: The follow button logic is now locked against double clicks and sweeps the entire DOM to synchronize UI state.         const followBtn = event.target.closest('[data-action="follow-creator"]');         if (followBtn && !followBtn.disabled) {             event.preventDefault();             const creatorId = followBtn.dataset.creator;                          if (creatorId && creatorId !== 'undefined') {                 // Instantly lock ALL matching buttons on the screen to prevent spam clicking                 $$(`[data-action="follow-creator"][data-creator="${creatorId}"]`).forEach(btn => {
+                    btn.disabled = true;
+                    btn.style.pointerEvents = 'none';
+                    const iconBadge = btn.querySelector('div > div');
+                    if (iconBadge) iconBadge.innerHTML = '<span style="font-size:8px;">...</span>'; 
+                });
 
-// ============================================================================
-// BULLETPROOF GLOBAL CLICK LISTENER
-// ============================================================================
-document.addEventListener('click', async event => {
-    try {
-        const section = event.target.closest('[data-section]'); if (section) setSection(section.dataset.section);
-        const series = event.target.closest('[data-series-id]'); if (series) openSeries(series.dataset.seriesId);
-        const episodeRow = event.target.closest('[data-episode-id]'); if (episodeRow && !episodeRow.closest('.feed-video-card')) openEpisode(episodeRow.dataset.episodeId);
-
-        // FIX: Sweeps the entire screen to checkmark ALL buttons for the followed creator
-        const followBtn = event.target.closest('[data-action="follow-creator"]');
-        if (followBtn) {
-            try {
-                const creatorId = followBtn.dataset.creator;
-                if (creatorId && creatorId !== 'undefined') {
+                try {
                     const res = await api(`/creators/${creatorId}/follow`, { method: 'POST' });
                     
                     if (res && res.alreadyFollowing) {
@@ -842,17 +884,27 @@ document.addEventListener('click', async event => {
                         toast('Following creator!', 'success');
                     }
 
-                    // Update all follow buttons for this specific creator on the screen
+                    // Sweep the DOM and apply the permanent green checkmark to all of this creator's videos
                     $$(`[data-action="follow-creator"][data-creator="${creatorId}"]`).forEach(btn => {
                         const iconBadge = btn.querySelector('div > div');
                         if (iconBadge) {
                             iconBadge.textContent = '✓';
                             iconBadge.style.background = '#76a86b';
                             iconBadge.style.color = '#fff';
+                            iconBadge.style.fontSize = '10px';
                         }
                     });
+                } catch (error) { 
+                    toast(error.message, 'error'); 
+                    // If backend rejects (e.g. self follow), unlock buttons
+                    $$(`[data-action="follow-creator"][data-creator="${creatorId}"]`).forEach(btn => {
+                        btn.disabled = false;
+                        btn.style.pointerEvents = 'auto';
+                        const iconBadge = btn.querySelector('div > div');
+                        if (iconBadge) iconBadge.textContent = '+';
+                    });
                 }
-            } catch (error) { toast(error.message, 'error'); }
+            }
         }
 
         if (event.target.closest('[data-action="back-to-discover"]')) loadDiscover();
