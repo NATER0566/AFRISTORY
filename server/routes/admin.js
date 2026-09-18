@@ -244,4 +244,29 @@ export default async function adminRoutes(fastify, opts) {
       sendError(reply, 'Failed to fetch analytics', 500, error.message);
     }
   });
+
+  // NEW FEATURE: Lightweight Performance & Error Logger
+  // Note: No verifyAdmin here so regular users can submit errors!
+  fastify.post('/log-client-error', async (request, reply) => {
+    try {
+      const { type, message, stack, url, time, userId } = request.body || {};
+
+      // Log directly to the Fastify logger (which admins/system monitors can read via terminal/logs)
+      fastify.log.warn({
+        event: 'CLIENT_PERFORMANCE_LOG',
+        userId: userId || 'unauthenticated',
+        type: type || 'unknown',
+        message: message || 'No message',
+        stack: stack || 'No stack',
+        url: url || 'Unknown URL',
+        clientTime: time || new Date().toISOString()
+      });
+
+      return sendSuccess(reply, { logged: true });
+    } catch (error) {
+      // Fail silently for performance loggers to avoid interrupting the client
+      fastify.log.error('Failed to process client log', error);
+      return reply.code(200).send({ success: true, data: { logged: false }});
+    }
+  });
 }
