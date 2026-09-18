@@ -26,6 +26,8 @@ export default async function creatorRoutes(fastify, opts) {
       sendSuccess(reply, {
         ...creator.toObject(),
         totalViews: formatDecimal(creator.totalViews),
+        uniqueViewers: creator.uniqueViewers || 0, // NEW FEATURE: Pass analytics to frontend
+        returningViewers: creator.returningViewers || 0, // NEW FEATURE: Pass analytics to frontend
         totalEarnings: formatDecimal(creator.totalEarnings),
         totalSeries: seriesCount,
       });
@@ -203,6 +205,8 @@ export default async function creatorRoutes(fastify, opts) {
       sendSuccess(reply, {
         ...creator.toObject(),
         totalViews: formatDecimal(creator.totalViews),
+        uniqueViewers: creator.uniqueViewers || 0, // NEW FEATURE: Dashboard Support
+        returningViewers: creator.returningViewers || 0, // NEW FEATURE: Dashboard Support
         totalEarnings: formatDecimal(creator.totalEarnings),
       });
     } catch (error) {
@@ -249,13 +253,16 @@ export default async function creatorRoutes(fastify, opts) {
         }
 
         return {
-          _id: f._id,
+          // CRITICAL FIX: To allow "Follow Back", the target MUST be the follower's Creator ID, not the Follow Record ID.
+          _id: followerCreator ? followerCreator._id : null,
+          followerId: followerUser._id, // Fallback strictly used if they aren't a creator
           userId: followerUser._id,
           username: followerUser.username,
           displayName: followerUser.profile?.displayName || followerUser.username,
           profileImage: followerUser.profile?.avatarUrl || followerUser.profileImage || null,
           createdAt: f.createdAt,
-          isMutual
+          isMutual,
+          isFollowing: isMutual // Frontend compatibility alias
         };
       }));
 
