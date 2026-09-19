@@ -1628,8 +1628,8 @@ async function boot() {
             // BULLETPROOF WEBPUSHR REGISTRATION
             // 1. Fallback: Standard Async Array Push (Never crashes, guarantees array)
             try {
-                window._webpushr = window._webpushr || [];
-                window._webpushr.push(['fetch_id', function (sid) {
+                window.webpushr = window.webpushr || [];
+                window.webpushr.push(['fetch_id', function (sid) {
                     if (sid) {
                         api('/notifications/push/register', { 
                             method: 'POST', 
