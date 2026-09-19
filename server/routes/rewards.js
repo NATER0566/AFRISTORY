@@ -11,6 +11,7 @@ import Favorite from '../models/Favorite.js';
 import { verifyAuth, verifyAdmin } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { generateReference, formatDecimal } from '../utils/helpers.js';
+import { createNotification } from '../utils/notificationService.js'; // NEW: Central push orchestrator
 
 const timezone = process.env.REWARD_TIMEZONE || 'Africa/Lagos';
 const periodKey = (date = new Date(), type = 'once') => {
@@ -31,12 +32,10 @@ const periodKey = (date = new Date(), type = 'once') => {
 const activeQuery = () => ({
   status: 'ACTIVE',
   $and: [
-    { $or: [{ startAt: null }, { startAt: { $lte: new Date() } }] },
-    { $or: [{ endAt: null }, { endAt: { $gt: new Date() } }] },
+    { $or: [{ startAt: null }, { startAt: {$lte: new Date() } }] },
+    { $or: [{ endAt: null }, { endAt: {$gt: new Date() } }] },
   ],
 });
-
-const dateDistance = (left, right) => Math.round((new Date(`${left}T12:00:00Z`) - new Date(`${right}T12:00:00Z`)) / 86400000);
 
 async function ensureDefaultRewards() {
   const defaults = [
@@ -66,7 +65,7 @@ async function ensureDefaultRewards() {
     });
   });
   for (const item of defaults) {
-    const update = item.type === 'SOCIAL' ? { $set: { ...item, status: 'ACTIVE' }, $setOnInsert: { createdAt: new Date() } } : { $setOnInsert: { ...item, status: 'ACTIVE' } };
+    const update = item.type === 'SOCIAL' ? { $set: { ...item, status: 'ACTIVE' }, $setOnInsert: { createdAt: new Date() } } : {$setOnInsert: { ...item, status: 'ACTIVE' } };
     await Reward.updateOne({ 'metadata.key': item.metadata.key }, update, { upsert: true });
   }
 }
@@ -135,8 +134,9 @@ async function issueReward({ reward, user, request, session, period, metadata = 
   const claim = await RewardClaim.create([{ rewardId: reward._id, taskId, userId: user._id, amount, periodKey: period, referenceId, verifiedAt: reward.verificationMode === 'server' ? new Date() : null, metadata }], { session });
   await Transaction.create([{ walletId: wallet._id, userId: user._id, type: 'BONUS', amount: mongoose.Types.Decimal128.fromString(amount.toFixed(2)), reference: referenceId, description: reward.name, status: 'SUCCESS', balanceBefore: mongoose.Types.Decimal128.fromString(before.toFixed(2)), balanceAfter: mongoose.Types.Decimal128.fromString(after.toFixed(2)), metadata: { source: reward.type, rewardId: reward._id } }], { session });
   await RewardAudit.create([{ userId: user._id, rewardId: reward._id, claimId: claim[0]._id, amount, source: reward.type, action: 'ISSUED', status: 'SUCCESS', referenceId, ip: request.ip, userAgent: request.headers['user-agent'] }], { session });
-  await Notification.create([{ userId: user._id, type: 'REWARD_EARNED', title: `You earned ${amount} coins`, message: reward.name, data: { rewardId: reward._id, claimId: claim[0]._id } }], { session });
-  return { claim: claim[0], balance: after };
+  
+  // NOTE: Notification.create is deliberately removed from here so we can dispatch the Push + DB save AFTER the transaction commits
+  return { claim: claim[0], balance: after, amount, rewardName: reward.name, rewardId: reward._id };
 }
 
 export default async function rewardRoutes(fastify) {
@@ -171,6 +171,20 @@ export default async function rewardRoutes(fastify) {
       const result = await issueReward({ reward, user: request.user, request, session, period: periodKey(new Date(), reward.recurrenceType) });
       if (result.duplicate) { await session.abortTransaction(); return sendError(reply, 'Reward already claimed for this period', 409); }
       await session.commitTransaction();
+
+      // NEW: Trigger DB Notification + Push asynchronously OUTSIDE the transaction
+      if (!result.pending && result.claim) {
+        createNotification({
+          userId: request.user._id,
+          type: 'REWARD_EARNED',
+          title: `You earned ${result.amount} coins 🎉`,
+          message: result.rewardName,
+          targetUrl: '#rewards',
+          data: { rewardId: result.rewardId, claimId: result.claim._id },
+          dedupeKey: `reward_${result.claim._id}`
+        }).catch(err => fastify.log.error('Push error:', err));
+      }
+
       sendSuccess(reply, { claim: result.claim, balance: result.balance || null, pending: Boolean(result.pending) }, result.pending ? 'Reward submitted for verification' : 'Reward claimed');
     } catch (error) {
       await session.abortTransaction();
@@ -203,6 +217,20 @@ export default async function rewardRoutes(fastify) {
       claim.verifiedAt = new Date();
       await claim.save({ session });
       await session.commitTransaction();
+
+      // NEW: Trigger DB Notification + Push asynchronously OUTSIDE the transaction
+      if (result.claim) {
+        createNotification({
+          userId: user._id,
+          type: 'REWARD_EARNED',
+          title: `You earned ${result.amount} coins 🎉`,
+          message: result.rewardName,
+          targetUrl: '#rewards',
+          data: { rewardId: result.rewardId, claimId: result.claim._id },
+          dedupeKey: `reward_${result.claim._id}`
+        }).catch(err => fastify.log.error('Push error:', err));
+      }
+
       sendSuccess(reply, result, 'Reward claim approved');
     } catch (error) {
       await session.abortTransaction();
@@ -212,6 +240,38 @@ export default async function rewardRoutes(fastify) {
 
   fastify.post('/admin/grant', async (request, reply) => {
     const session = await mongoose.startSession(); session.startTransaction();
-    try { if (!(await verifyAdmin(request, reply))) { await session.abortTransaction(); return; } const { userId, amount, reason = 'Administrative reward' } = request.body || {}; if (!userId || !Number.isInteger(Number(amount)) || Number(amount) <= 0) { await session.abortTransaction(); return sendError(reply, 'User and positive amount are required', 400); } const user = await User.findById(userId).session(session); if (!user) { await session.abortTransaction(); return sendError(reply, 'User not found', 404); } const wallet = await Wallet.findOne({ userId }).session(session); if (!wallet) { await session.abortTransaction(); return sendError(reply, 'Wallet not found', 404); } const before = Number(wallet.storyCoins.toString()); const after = before + Number(amount); const referenceId = generateReference('ADMIN'); wallet.storyCoins = mongoose.Types.Decimal128.fromString(after.toFixed(2)); wallet.totalEarned = mongoose.Types.Decimal128.fromString((Number(wallet.totalEarned.toString()) + Number(amount)).toFixed(2)); await wallet.save({ session }); await Transaction.create([{ walletId: wallet._id, userId, type: 'BONUS', amount: mongoose.Types.Decimal128.fromString(Number(amount).toFixed(2)), reference: referenceId, description: reason, status: 'SUCCESS', balanceBefore: before, balanceAfter: after, metadata: { source: 'ADMIN', adminId: request.user._id } }], { session }); await RewardAudit.create([{ userId, amount: Number(amount), source: 'ADMIN', action: 'ISSUED', status: 'SUCCESS', referenceId, adminId: request.user._id, reason, ip: request.ip, userAgent: request.headers['user-agent'] }], { session }); await session.commitTransaction(); sendSuccess(reply, { balance: after }, 'Reward granted'); } catch (error) { await session.abortTransaction(); sendError(reply, 'Failed to grant reward', 400, error.message); } finally { session.endSession(); }
+    try { 
+      if (!(await verifyAdmin(request, reply))) { await session.abortTransaction(); return; } 
+      const { userId, amount, reason = 'Administrative reward' } = request.body || {}; 
+      if (!userId || !Number.isInteger(Number(amount)) || Number(amount) <= 0) { await session.abortTransaction(); return sendError(reply, 'User and positive amount are required', 400); } 
+      const user = await User.findById(userId).session(session); 
+      if (!user) { await session.abortTransaction(); return sendError(reply, 'User not found', 404); } 
+      const wallet = await Wallet.findOne({ userId }).session(session); 
+      if (!wallet) { await session.abortTransaction(); return sendError(reply, 'Wallet not found', 404); } 
+      const before = Number(wallet.storyCoins.toString()); 
+      const after = before + Number(amount); 
+      const referenceId = generateReference('ADMIN'); 
+      wallet.storyCoins = mongoose.Types.Decimal128.fromString(after.toFixed(2)); 
+      wallet.totalEarned = mongoose.Types.Decimal128.fromString((Number(wallet.totalEarned.toString()) + Number(amount)).toFixed(2)); 
+      await wallet.save({ session }); 
+      await Transaction.create([{ walletId: wallet._id, userId, type: 'BONUS', amount: mongoose.Types.Decimal128.fromString(Number(amount).toFixed(2)), reference: referenceId, description: reason, status: 'SUCCESS', balanceBefore: before, balanceAfter: after, metadata: { source: 'ADMIN', adminId: request.user._id } }], { session }); 
+      await RewardAudit.create([{ userId, amount: Number(amount), source: 'ADMIN', action: 'ISSUED', status: 'SUCCESS', referenceId, adminId: request.user._id, reason, ip: request.ip, userAgent: request.headers['user-agent'] }], { session }); 
+      await session.commitTransaction(); 
+
+      // NEW: Notify the user they received an admin grant
+      createNotification({
+        userId,
+        type: 'REWARD_EARNED',
+        title: `You received ${amount} coins 🪙`,
+        message: reason,
+        targetUrl: '#wallet',
+        dedupeKey: `admin_grant_${referenceId}`
+      }).catch(err => fastify.log.error('Push error:', err));
+
+      sendSuccess(reply, { balance: after }, 'Reward granted'); 
+    } catch (error) { 
+      await session.abortTransaction(); 
+      sendError(reply, 'Failed to grant reward', 400, error.message); 
+    } finally { session.endSession(); }
   });
 }
