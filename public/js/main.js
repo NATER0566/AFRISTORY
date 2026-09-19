@@ -757,8 +757,6 @@ async function loadFollowersList() {
         const root = $('#modal-root');
         if (root) root.classList.add('hidden');
     }
-}
-
 async function loadCreator() { 
     try { 
         const creator = await api('/creators/me/profile') || {}; 
@@ -772,7 +770,6 @@ async function loadCreator() {
 
         const statsContainer = $('#creator-stats');
         if (statsContainer) {
-            // FEATURE: Advanced Analytics inclusion (Unique / Returning Viewers)
             statsContainer.innerHTML = [
                 ['TOTAL VIEWS', creator.totalViews, ''],
                 ['UNIQUE VIEWERS', creator.uniqueViewers || 0, ''],
@@ -1586,9 +1583,24 @@ async function boot() {
         state.user = await api('/auth/me').catch(() => null); 
         renderHeaderUser(state.user);
         
-        if (state.user?.role && ['CREATOR', 'ADMIN'].includes(state.user.role)) {
-            $$('.creator-only').forEach(el => el.classList.remove('hidden'));         }         if (state.user?.role === 'ADMIN') {             $$
+        if (state.user) {
+            if (state.user.role && ['CREATOR', 'ADMIN'].includes(state.user.role)) {
+                $$('.creator-only').forEach(el => el.classList.remove('hidden'));                      }                      if (state.user.role === 'ADMIN') {                              $$
 ('.admin-only').forEach(el => el.classList.remove('hidden'));
+            }
+
+            // NEW: Webpushr Subscriber ID Registration
+            if (typeof _webpushr !== 'undefined') {
+                _webpushr('fetch_id', function (sid) {
+                    if (sid) {
+                        api('/notifications/push/register', { 
+                            method: 'POST', 
+                            headers: { 'Content-Type': 'application/json' }, 
+                            body: JSON.stringify({ sid }) 
+                        }).catch(e => console.warn('Push registration failed', e));
+                    }
+                });
+            }
         }
 
         ensureClassificationControls(); 
@@ -1604,3 +1616,6 @@ async function boot() {
 }
 
 (async () => { if (await boot()) setSection(location.hash.slice(1) || 'discover'); })();
+
+    
+}
