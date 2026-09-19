@@ -6,6 +6,7 @@ import UserFollow from '../models/UserFollow.js'; // NEW: Import normal user fol
 import { verifyAuth, verifyCreator } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { paginate, formatDecimal } from '../utils/helpers.js';
+import { createNotification } from '../utils/notificationService.js'; // NEW: Added central service
 
 export default async function creatorRoutes(fastify, opts) {
   // Get creator profile
@@ -327,6 +328,16 @@ export default async function creatorRoutes(fastify, opts) {
       // Increment count safely
       targetCreator.totalFollowers = (targetCreator.totalFollowers || 0) + 1;
       await targetCreator.save();
+
+      // NEW: Trigger Central Notification asynchronously
+      createNotification({
+        userId: targetCreator.userId,
+        type: 'NEW_FOLLOWER',
+        title: 'New Follower',
+        message: `${request.user.username} is now following you!`,
+        targetUrl: '#profile',
+        dedupeKey: `follow_${request.user._id}_${targetCreator._id}`
+      }).catch(err => fastify.log.error('Push error:', err));
 
       sendSuccess(reply, { 
         totalFollowers: targetCreator.totalFollowers, 
