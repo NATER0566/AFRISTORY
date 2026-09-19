@@ -6,6 +6,7 @@ import Episode from '../models/Episode.js';
 import { verifyAdmin } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { paginate, formatDecimal } from '../utils/helpers.js';
+import { createNotification } from '../utils/notificationService.js'; // NEW: Central notification service
 
 export default async function adminRoutes(fastify, opts) {
   // Get admin dashboard stats
@@ -200,6 +201,16 @@ export default async function adminRoutes(fastify, opts) {
       creator.isVerified = true;
       await creator.save();
 
+      // NEW: Notify the creator that they have been verified
+      createNotification({
+        userId: creator.userId,
+        type: 'CREATOR_VERIFIED',
+        title: 'Account Verified ✅',
+        message: 'Congratulations! Your creator account has been officially verified.',
+        targetUrl: '#creator',
+        dedupeKey: `creator_verify_${creator._id}`
+      }).catch(err => fastify.log.error('Push error:', err));
+
       sendSuccess(reply, null, 'Creator verified');
     } catch (error) {
       fastify.log.error(error);
@@ -217,8 +228,7 @@ export default async function adminRoutes(fastify, opts) {
       let query = {};
       if (startDate && endDate) {
         query.createdAt = {
-          $gte: new Date(startDate),
-          $lte: new Date(endDate),
+          $gte: new Date(startDate),$lte: new Date(endDate),
         };
       }
 
