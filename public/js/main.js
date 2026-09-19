@@ -757,6 +757,8 @@ async function loadFollowersList() {
         const root = $('#modal-root');
         if (root) root.classList.add('hidden');
     }
+}
+
 async function loadCreator() { 
     try { 
         const creator = await api('/creators/me/profile') || {}; 
@@ -1228,7 +1230,35 @@ function loadSettings() {
 function saveSettings(event) { 
     event.preventDefault(); 
     const langEl = $('#settings-language');
-    const notifEl = $('#settings-notifications');     localStorage.setItem('afrostory-settings', JSON.stringify({          language: langEl ? langEl.value : 'en',          notifications: notifEl ? notifEl.checked : true      }));      toast('Settings saved', 'success');  }  /* ============================================================================ */ /* BULLETPROOF GLOBAL EVENT DELEGATION */ /* ============================================================================ */  document.addEventListener('change', event => {     try {         const targetId = event.target.id;         if (['genre-filter', 'sort-filter', 'cultural-filter', 'language-filter'].includes(targetId)) {             loadDiscover();         }     } catch (e) {         logFrontendError('filter_change_error', e.message, e.stack);     } });  document.addEventListener('click', async event => {     try {         const section = event.target.closest('[data-section]');          if (section) setSection(section.dataset.section);                  const series = event.target.closest('[data-series-id]');          if (series) openSeries(series.dataset.seriesId);                  const episodeRow = event.target.closest('[data-episode-id]');          if (episodeRow && !episodeRow.closest('.feed-video-card')) openEpisode(episodeRow.dataset.episodeId);          if (event.target.closest('[data-action="view-followers"]')) loadFollowersList();          
+    const notifEl = $('#settings-notifications');     localStorage.setItem('afrostory-settings', JSON.stringify({          language: langEl ? langEl.value : 'en',          notifications: notifEl ? notifEl.checked : true      }));      toast('Settings saved', 'success');  
+}
+
+/* ============================================================================ */ 
+/* BULLETPROOF GLOBAL EVENT DELEGATION */ 
+/* ============================================================================ */  
+document.addEventListener('change', event => {     
+    try {         
+        const targetId = event.target.id;         
+        if (['genre-filter', 'sort-filter', 'cultural-filter', 'language-filter'].includes(targetId)) {             
+            loadDiscover();         
+        }     
+    } catch (e) {         
+        logFrontendError('filter_change_error', e.message, e.stack);     
+    } 
+});  
+
+document.addEventListener('click', async event => {     
+    try {         
+        const section = event.target.closest('[data-section]');          
+        if (section) setSection(section.dataset.section);                  
+        
+        const series = event.target.closest('[data-series-id]');          
+        if (series) openSeries(series.dataset.seriesId);                  
+        
+        const episodeRow = event.target.closest('[data-episode-id]');          
+        if (episodeRow && !episodeRow.closest('.feed-video-card')) openEpisode(episodeRow.dataset.episodeId);          
+        
+        if (event.target.closest('[data-action="view-followers"]')) loadFollowersList();          
 
         // FEATURE: Like / Unlike Handler
         const likeBtn = event.target.closest('[data-action="toggle-like"]');
@@ -1279,7 +1309,12 @@ function saveSettings(event) {
             }
         }
 
-        const followBtn = event.target.closest('[data-action="follow-creator"]');         if (followBtn && !followBtn.disabled) {             event.preventDefault();             const creatorId = followBtn.dataset.creator;                          if (creatorId && creatorId !== 'undefined') {                 $$(`[data-action="follow-creator"][data-creator="${creatorId}"]`).forEach(btn => {
+        const followBtn = event.target.closest('[data-action="follow-creator"]');         
+        if (followBtn && !followBtn.disabled) {             
+            event.preventDefault();             
+            const creatorId = followBtn.dataset.creator;                          
+            if (creatorId && creatorId !== 'undefined') {                 
+                $$(`[data-action="follow-creator"][data-creator="${creatorId}"]`).forEach(btn => {
                     btn.disabled = true;
                     btn.style.pointerEvents = 'none';
                     const iconBadge = btn.querySelector('.follow-badge-icon');
@@ -1550,7 +1585,7 @@ if (commentForm) {
     });
 }
 
-const becomeCreatorForm = $('#become-creator-form'); if (becomeCreatorForm) {     becomeCreatorForm.addEventListener('submit', async (event) => {         event.preventDefault();         const form = event.target;         const brandInput = form.querySelector('[name="brandName"]');         const bioInput = form.querySelector('[name="bio"]');         const brandName = brandInput ? brandInput.value.trim() : '';         const bio = bioInput ? bioInput.value.trim() : '';         const submitBtn = form.querySelector('button[type="submit"]');                  if (!brandName) return toast('Brand name is required', 'error');                  if (submitBtn) {             submitBtn.disabled = true;             submitBtn.textContent = 'Creating...';         }                  try {             await api('/creators/become-creator', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ brandName, bio }) });             if(state.user) state.user.role = 'CREATOR';             $$('.creator-only').forEach(el => el.classList.remove('hidden'));
+const becomeCreatorForm = $('#become-creator-form');  if (becomeCreatorForm) {          becomeCreatorForm.addEventListener('submit', async (event) => {                  event.preventDefault();                  const form = event.target;                  const brandInput = form.querySelector('[name="brandName"]');                  const bioInput = form.querySelector('[name="bio"]');                  const brandName = brandInput ? brandInput.value.trim() : '';                  const bio = bioInput ? bioInput.value.trim() : '';                  const submitBtn = form.querySelector('button[type="submit"]');                           if (!brandName) return toast('Brand name is required', 'error');                           if (submitBtn) {                          submitBtn.disabled = true;                          submitBtn.textContent = 'Creating...';                  }                           try {                          await api('/creators/become-creator', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ brandName, bio }) });                          if(state.user) state.user.role = 'CREATOR';                          $$('.creator-only').forEach(el => el.classList.remove('hidden'));
             toast('Welcome to Creator Studio!', 'success'); 
             await loadCreator();
         } catch (error) { 
@@ -1589,17 +1624,21 @@ async function boot() {
 ('.admin-only').forEach(el => el.classList.remove('hidden'));
             }
 
-            // NEW: Webpushr Subscriber ID Registration
-            if (typeof _webpushr !== 'undefined') {
-                _webpushr('fetch_id', function (sid) {
-                    if (sid) {
-                        api('/notifications/push/register', { 
-                            method: 'POST', 
-                            headers: { 'Content-Type': 'application/json' }, 
-                            body: JSON.stringify({ sid }) 
-                        }).catch(e => console.warn('Push registration failed', e));
-                    }
-                });
+            // NEW: Webpushr Subscriber ID Registration (Safely wrapped so it NEVER crashes the site)
+            try {
+                if (typeof _webpushr !== 'undefined') {
+                    _webpushr('fetch_id', function (sid) {
+                        if (sid) {
+                            api('/notifications/push/register', { 
+                                method: 'POST', 
+                                headers: { 'Content-Type': 'application/json' }, 
+                                body: JSON.stringify({ sid }) 
+                            }).catch(e => console.warn('Push registration failed', e));
+                        }
+                    });
+                }
+            } catch (err) {
+                console.warn('Webpushr fetch_id skipped:', err);
             }
         }
 
@@ -1616,6 +1655,3 @@ async function boot() {
 }
 
 (async () => { if (await boot()) setSection(location.hash.slice(1) || 'discover'); })();
-
-    
-}
