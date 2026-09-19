@@ -136,6 +136,10 @@ const userSchema = new mongoose.Schema(
         type: Boolean,
         default: false,
       },
+      pushEnabled: { // NEW: Master push preference for Webpushr Delivery
+        type: Boolean,
+        default: true,
+      },
     },
     rewardStats: {
       currentStreak: { type: Number, default: 0, min: 0 },
