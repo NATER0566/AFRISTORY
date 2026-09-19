@@ -1,9 +1,47 @@
 import Notification from '../models/Notification.js';
+import WebpushrSubscriber from '../models/WebpushrSubscriber.js'; // NEW: Added Webpushr model
 import { verifyAuth } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { paginate } from '../utils/helpers.js';
+import { createNotification } from '../utils/notificationService.js'; // NEW: Added central service
 
 export default async function notificationRoutes(fastify, opts) {
+  
+  // NEW: Securely link a Webpushr SID to the authenticated user
+  fastify.post('/push/register', async (request, reply) => {
+    try {
+      await verifyAuth(request, reply);
+      if (!request.user) return sendError(reply, 'Unauthorized', 401);
+
+      const { sid } = request.body || {};
+      if (!sid) return sendError(reply, 'Subscriber ID is required', 400);
+
+      const existing = await WebpushrSubscriber.findOne({ webpushrSid: sid });
+
+      if (existing) {
+        if (existing.userId.toString() !== request.user._id.toString()) {
+          // Reassign if a new user logged into the same browser
+          existing.userId = request.user._id;
+        }
+        existing.active = true;
+        existing.lastSeenAt = new Date();
+        await existing.save();
+        return sendSuccess(reply, existing, 'Push subscription updated');
+      }
+
+      const subscriber = await WebpushrSubscriber.create({
+        userId: request.user._id,
+        webpushrSid: sid,
+        active: true
+      });
+
+      sendSuccess(reply, subscriber, 'Push subscription registered', 201);
+    } catch (error) {
+      fastify.log.error(error);
+      sendError(reply, 'Failed to register push subscription', 500, error.message);
+    }
+  });
+
   // Get user notifications
   fastify.get('/me', async (request, reply) => {
     try {
@@ -160,23 +198,23 @@ export default async function notificationRoutes(fastify, opts) {
       if (request.user.role !== 'ADMIN') {
         return sendError(reply, 'Forbidden', 403);
       }
-      const { userId, type, title, message, data } = request.body || {};
+      const { userId, type, title, message, data, targetUrl } = request.body || {};
 
       if (!userId || !type || !title) {
         return sendError(reply, 'Missing required fields', 400);
       }
 
-      const notification = new Notification({
+      // NEW: Use the central service to handle DB save + Push routing
+      await createNotification({
         userId,
         type,
         title,
-        message: message || '',
-        data: data || {},
+        message,
+        data,
+        targetUrl
       });
 
-      await notification.save();
-
-      sendSuccess(reply, notification, 'Notification created', 201);
+      sendSuccess(reply, null, 'Notification processed successfully', 201);
     } catch (error) {
       fastify.log.error(error);
       sendError(reply, 'Failed to create notification', 500, error.message);
