@@ -1621,27 +1621,24 @@ async function boot() {
         
         if (state.user) {
             if (state.user.role && ['CREATOR', 'ADMIN'].includes(state.user.role)) {
-                $$('.creator-only').forEach(el => el.classList.remove('hidden'));                      }                      if (state.user.role === 'ADMIN') {$$
+                $$('.creator-only').forEach(el => el.classList.remove('hidden'));                      }                      if (state.user.role === 'ADMIN') {                              $$
 ('.admin-only').forEach(el => el.classList.remove('hidden'));
             }
 
-            // FIXED: Correct Webpushr Array Push Syntax
+            // BULLETPROOF WEBPUSHR REGISTRATION
+            // 1. Fallback: Standard Async Array Push (Never crashes, guarantees array)
             try {
-                if (typeof _webpushr !== 'undefined') {
-                    _webpushr.push(['fetch_id', function (sid) {
-                        if (sid) {
-                            api('/notifications/push/register', { 
-                                method: 'POST', 
-                                headers: { 'Content-Type': 'application/json' }, 
-                                body: JSON.stringify({ sid }) 
-                            }).then(() => console.log('Webpushr SID registered!'))
-                              .catch(e => console.warn('Push registration failed', e));
-                        }
-                    }]);
-                }
-            } catch (err) {
-                console.warn('Webpushr fetch_id skipped:', err);
-            }
+                window._webpushr = window._webpushr || [];
+                window._webpushr.push(['fetch_id', function (sid) {
+                    if (sid) {
+                        api('/notifications/push/register', { 
+                            method: 'POST', 
+                            headers: { 'Content-Type': 'application/json' }, 
+                            body: JSON.stringify({ sid }) 
+                        }).catch(() => {});
+                    }
+                }]);
+            } catch (err) {}
         }
 
         ensureClassificationControls(); 
@@ -1655,5 +1652,16 @@ async function boot() {
         return true; 
     }
 }
+
+// Event listener fires when Webpushr is fully loaded and SID is ready
+window.addEventListener('webpushr_subscriber_id', function(e) {
+    if (e.detail && state.user) {
+        api('/notifications/push/register', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ sid: e.detail }) 
+        }).catch(() => {});
+    }
+});
 
 (async () => { if (await boot()) setSection(location.hash.slice(1) || 'discover'); })();
