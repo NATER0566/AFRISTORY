@@ -4,13 +4,14 @@ import Series from '../models/Series.js';
 import Creator from '../models/Creator.js';
 import Unlock from '../models/Unlock.js';
 import History from '../models/History.js';
-import Follow from '../models/Follow.js'; // NEW: Added to check mutual/follow state on the feed
-import Like from '../models/Like.js'; // NEW FEATURE: Like Model
-import Rating from '../models/Rating.js'; // NEW FEATURE: Rating Model
-import EpisodeView from '../models/EpisodeView.js'; // NEW FEATURE: Viewer Analytics Model
+import Follow from '../models/Follow.js'; 
+import Like from '../models/Like.js'; 
+import Rating from '../models/Rating.js'; 
+import EpisodeView from '../models/EpisodeView.js'; 
 import { verifyAuth, verifyCreator } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { formatDecimal } from '../utils/helpers.js';
+import { createNotification } from '../utils/notificationService.js'; // NEW: Central notification service
 
 // Deep populate object to ensure we trace the Creator back to their actual User avatar
 const deepSeriesPopulate = {
@@ -48,7 +49,7 @@ export default async function episodeRoutes(fastify, opts) {
       
       let userUnlocks = [];
       let followedCreatorIds = [];
-      let userLikes = []; // NEW FEATURE: Bulk Like mapping
+      let userLikes = []; 
 
       if (request.user) {
         const episodeIds = episodes.map(ep => ep._id);
@@ -67,7 +68,7 @@ export default async function episodeRoutes(fastify, opts) {
         }).lean();
         followedCreatorIds = follows.map(f => f.creatorId.toString());
 
-        // NEW FEATURE: Efficiently map all likes for the user in this feed batch
+        // Efficiently map all likes for the user in this feed batch
         const likes = await Like.find({
           userId: request.user._id,
           episodeId: { $in: episodeIds }
@@ -89,7 +90,7 @@ export default async function episodeRoutes(fastify, opts) {
 
         const creatorIdStr = episode.seriesId?.creatorId?._id?.toString();
         const isFollowing = followedCreatorIds.includes(creatorIdStr);
-        const isLiked = userLikes.includes(episode._id.toString()); // NEW FEATURE: Flag frontend Like icon
+        const isLiked = userLikes.includes(episode._id.toString()); 
 
         return { 
             ...episode,
@@ -126,7 +127,7 @@ export default async function episodeRoutes(fastify, opts) {
 
       let hasAccess = episode.isFree;
       let isFollowing = false;
-      let isLiked = false; // NEW FEATURE
+      let isLiked = false; 
 
       if (request.cookies?.token) {
           await verifyAuth(request, reply);
@@ -151,7 +152,6 @@ export default async function episodeRoutes(fastify, opts) {
           isFollowing = !!followCheck;
         }
 
-        // NEW FEATURE: Verify Single Like state
         const likeCheck = await Like.findOne({ userId: request.user._id, episodeId }).lean();
         isLiked = !!likeCheck;
       }
@@ -256,6 +256,22 @@ export default async function episodeRoutes(fastify, opts) {
       series.totalEpisodes = await Episode.countDocuments({ seriesId });
       await series.save();
 
+      // NEW: Notify Followers if published immediately
+      if (episode.isPublished) {
+        const followers = await Follow.find({ creatorId: creator._id });
+        followers.forEach(follow => {
+          createNotification({
+            userId: follow.followerId,
+            type: 'NEW_EPISODE',
+            title: 'New Episode Published! 🎬',
+            message: `${creator.brandName} just published a new episode: ${episode.title}`,
+            targetUrl: '#watch',
+            data: { episodeId: episode._id, seriesId: series._id },
+            dedupeKey: `new_ep_${episode._id}_${follow.followerId}`
+          }).catch(err => fastify.log.error('Push error:', err));
+        });
+      }
+
       sendSuccess(reply, episode, 'Episode created successfully', 201);
     } catch (error) {
       fastify.log.error(error);
@@ -305,6 +321,8 @@ export default async function episodeRoutes(fastify, opts) {
         return sendError(reply, 'Forbidden - not series creator', 403);
       }
 
+      const wasPublished = episode.isPublished; // NEW: Track state before saving
+
       if (title) episode.title = title;
       if (description !== undefined) episode.description = description;
       
@@ -335,6 +353,22 @@ export default async function episodeRoutes(fastify, opts) {
       }
 
       await episode.save();
+
+      // NEW: Notify Followers if episode was just transitioned to Published
+      if (isPublished === true && !wasPublished) {
+        const followers = await Follow.find({ creatorId: creator._id });
+        followers.forEach(follow => {
+          createNotification({
+            userId: follow.followerId,
+            type: 'NEW_EPISODE',
+            title: 'New Episode Published! 🎬',
+            message: `${creator.brandName} just published a new episode: ${episode.title}`,
+            targetUrl: '#watch',
+            data: { episodeId: episode._id, seriesId: series._id },
+            dedupeKey: `new_ep_${episode._id}_${follow.followerId}`
+          }).catch(err => fastify.log.error('Push error:', err));
+        });
+      }
 
       sendSuccess(reply, episode, 'Episode updated successfully');
     } catch (error) {
@@ -435,10 +469,6 @@ export default async function episodeRoutes(fastify, opts) {
     }
   });
 
-  /* ============================================================================ */
-  /* NEW FEATURE ROUTES: LIKES, RATINGS & UNIQUE VIEWS */
-  /* ============================================================================ */
-
   fastify.post('/:episodeId/like/toggle', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
@@ -505,7 +535,7 @@ export default async function episodeRoutes(fastify, opts) {
       // Recalculate average atomically and accurately via Aggregation
       const stats = await Rating.aggregate([
         { $match: { episodeId: new mongoose.Types.ObjectId(episodeId) } },
-        { $group: { _id: null, average: { $avg: '$rating' }, count: { $sum: 1 } } }
+        { $group: { _id: null, average: {$avg: '$rating' }, count: {$sum: 1 } } }
       ]);
 
       const avg = stats.length > 0 ? stats[0].average : 0;
