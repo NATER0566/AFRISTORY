@@ -4,10 +4,11 @@ import History from '../models/History.js';
 import Favorite from '../models/Favorite.js';
 import Unlock from '../models/Unlock.js';
 import Creator from '../models/Creator.js';
-import UserFollow from '../models/UserFollow.js'; // NEW: Normal user follow model import
+import UserFollow from '../models/UserFollow.js'; 
 import { verifyAuth } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { paginate, formatDecimal } from '../utils/helpers.js';
+import { createNotification } from '../utils/notificationService.js'; // NEW: Import central service
 
 export default async function userRoutes(fastify, opts) {
   const privateUserFields = '-passwordHash -pinHash -verificationCode -verificationCodeExpires -resetPasswordCode -resetPasswordExpires';
@@ -331,6 +332,16 @@ export default async function userRoutes(fastify, opts) {
         followerId: request.user._id,
         followingId: targetUser._id
       });
+
+      // NEW: Trigger Central Notification asynchronously
+      createNotification({
+        userId: targetUser._id,
+        type: 'NEW_FOLLOWER',
+        title: 'New Follower',
+        message: `${request.user.username} is now following you!`,
+        targetUrl: '#profile',
+        dedupeKey: `user_follow_${request.user._id}_${targetUser._id}`
+      }).catch(err => fastify.log.error('Push error:', err));
 
       // Does NOT increment Creator followers! Kept fully isolated.
       sendSuccess(reply, { alreadyFollowing: false, isFollowing: true }, 'Following user');
