@@ -3,6 +3,7 @@ import Episode from '../models/Episode.js';
 import { verifyAuth } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { paginate } from '../utils/helpers.js';
+import { createNotification } from '../utils/notificationService.js'; // NEW: Central notification service
 
 export default async function commentRoutes(fastify, opts) {
   // Get episode comments
@@ -101,6 +102,23 @@ export default async function commentRoutes(fastify, opts) {
 
       await comment.save();
       await comment.populate('userId', 'username profileImage');
+
+      // NEW: Trigger Comment Reply Notification asynchronously
+      if (parentCommentId) {
+        const parentComment = await Comment.findById(parentCommentId);
+        // Do not notify a user if they reply to themselves
+        if (parentComment && parentComment.userId.toString() !== request.user._id.toString()) {
+          createNotification({
+            userId: parentComment.userId,
+            type: 'COMMENT_REPLY',
+            title: 'New Reply 💬',
+            message: `${request.user.username} replied to your comment.`,
+            targetUrl: '#watch',
+            data: { episodeId, commentId: comment._id, parentCommentId },
+            dedupeKey: `reply_${comment._id}`
+          }).catch(err => fastify.log.error('Push error:', err));
+        }
+      }
 
       sendSuccess(reply, comment, 'Comment created successfully', 201);
     } catch (error) {
