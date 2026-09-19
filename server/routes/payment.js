@@ -7,6 +7,7 @@ import { sendSuccess, sendError } from '../utils/response.js';
 import { generateReference, formatDecimal } from '../utils/helpers.js';
 import mongoose from 'mongoose';
 import crypto from 'crypto';
+import { createNotification } from '../utils/notificationService.js'; // NEW: Central notification service
 
 // Coin packages
 const COIN_PACKAGES = {
@@ -173,6 +174,16 @@ export default async function paymentRoutes(fastify, opts) {
 
         await session.commitTransaction();
 
+        // NEW: Notify user of successful payment asynchronously
+        createNotification({
+          userId: request.user._id,
+          type: 'PAYMENT_SUCCESS',
+          title: 'Payment Successful 🪙',
+          message: `Your wallet has been credited with ${coins} coins.`,
+          targetUrl: '#wallet',
+          dedupeKey: `pay_verify_${reference}`
+        }).catch(err => fastify.log.error('Push error:', err));
+
         sendSuccess(reply, {
           coins: transaction.metadata.coins,
           newBalance: formatDecimal(wallet.storyCoins),
@@ -261,6 +272,16 @@ export default async function paymentRoutes(fastify, opts) {
       await txn.save({ session });
 
       await session.commitTransaction();
+
+      // NEW: Notify user of successful payment via webhook asynchronously
+      createNotification({
+        userId,
+        type: 'PAYMENT_SUCCESS',
+        title: 'Payment Successful 🪙',
+        message: `Your wallet has been credited with ${coins} coins.`,
+        targetUrl: '#wallet',
+        dedupeKey: `pay_webhook_${reference}`
+      }).catch(err => fastify.log.error('Push error:', err));
 
       sendSuccess(reply, null, 'Webhook processed');
     } catch (error) {
