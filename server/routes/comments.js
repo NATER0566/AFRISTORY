@@ -104,7 +104,7 @@ export default async function commentRoutes(fastify, opts) {
       await comment.save();
       await comment.populate('userId', 'username profileImage');
 
-      // NEW: Trigger Notifications asynchronously
+      // NEW: Trigger Beautiful Branded Notifications asynchronously
       if (parentCommentId) {
         const parentComment = await Comment.findById(parentCommentId);
         // Do not notify a user if they reply to themselves
@@ -115,6 +115,8 @@ export default async function commentRoutes(fastify, opts) {
             title: 'New Reply 💬',
             message: `${request.user.username} replied to your comment.`,
             targetUrl: '#watch',
+            icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192', // ADDED GOLD BRANDING
+            image: episode.thumbnailUrl || null, // ADDED: Shows the actual video thumbnail in the pop-up!
             data: { episodeId, commentId: comment._id, parentCommentId },
             dedupeKey: `reply_${comment._id}`
           }).catch(err => fastify.log.error('Push error:', err));
@@ -129,6 +131,8 @@ export default async function commentRoutes(fastify, opts) {
              title: 'New Comment 💬',
              message: `${request.user.username} commented on your episode.`,
              targetUrl: '#watch',
+             icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192', // ADDED GOLD BRANDING
+             image: episode.thumbnailUrl || null, // ADDED: Shows the actual video thumbnail in the pop-up!
              dedupeKey: `comment_${comment._id}`
            }).catch(err => fastify.log.error('Push error:', err));
         }
