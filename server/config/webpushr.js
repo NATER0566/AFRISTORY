@@ -20,7 +20,6 @@ const webpushrClient = axios.create({
   },
 });
 
-// NEW: Added the options parameter to receive images and campaign names
 export const sendToSubscriber = async (sid, title, message, targetUrl = '/', traceId = 'unknown', options = {}) => {
   if (!WEBPUSHR_API_KEY || !WEBPUSHR_AUTH_TOKEN) {
     return { success: false, stage: 'WEBPUSHR_CREDENTIALS', reason: 'CREDENTIALS_MISSING' };
@@ -29,20 +28,34 @@ export const sendToSubscriber = async (sid, title, message, targetUrl = '/', tra
   const maskedSid = sid ? `${sid.substring(0, 8)}***` : 'undefined';
   console.log(`[WEBPUSHR_API] trace=${traceId} stage=REQUEST endpoint=/notification/send/sid sid=${maskedSid}`);
 
+  // WEB PUSHR STRICT IMAGE VALIDATION
+  // Webpushr silently drops any image that doesn't end in .png, .jpg, or .jpeg
+  
+  // REPLACE THIS URL WITH YOUR ACTUAL AFROSTORY LOGO (Must end in .png or .jpg)
+  // For now, I am using a guaranteed high-quality gold bell .png so you can see it work.
+  let safeIcon = 'https://cdn-icons-png.flaticon.com/512/3114/3114931.png'; 
+  
+  if (options.icon && (options.icon.includes('.png') || options.icon.includes('.jpg') || options.icon.includes('.jpeg'))) {
+      safeIcon = options.icon;
+  }
+
+  let safeImage = undefined;
+  if (options.image && (options.image.includes('.png') || options.image.includes('.jpg') || options.image.includes('.jpeg'))) {
+      safeImage = options.image;
+  }
+
   try {
-    // FIX: Added 'name', 'icon', and 'image' to fix the dashboard and visual design
     const payload = {
       title,
       message: message || 'New notification',
       target_url: targetUrl,
       sid,
-      name: options.name || 'AfriStory API Notification', // Forces Webpushr to log this in the dashboard
-      icon: options.icon || 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192', // Branded AfriStory gold logo
+      name: options.name || 'AfriStory API Notification', // Tells Webpushr to group these
+      icon: safeIcon, 
     };
 
-    // If an episode thumbnail or banner is provided, add it to the payload
-    if (options.image) {
-      payload.image = options.image; // Big beautiful banner
+    if (safeImage) {
+      payload.image = safeImage; // Adds the big beautiful banner/thumbnail
     }
 
     const response = await webpushrClient.post('/notification/send/sid', payload);
