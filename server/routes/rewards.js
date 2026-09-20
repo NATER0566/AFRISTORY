@@ -37,6 +37,9 @@ const activeQuery = () => ({
   ],
 });
 
+// FIXED: Restored the missing dateDistance function to prevent backend crashes on Daily check-ins
+const dateDistance = (left, right) => Math.round((new Date(`${left}T12:00:00Z`) - new Date(`${right}T12:00:00Z`)) / 86400000);
+
 async function ensureDefaultRewards() {
   const defaults = [
     { name: 'Welcome to AfroStory', description: 'A one-time welcome gift for verified members.', type: 'ONE_TIME', category: 'welcome', rewardAmount: 20, metadata: { key: 'welcome' } },
