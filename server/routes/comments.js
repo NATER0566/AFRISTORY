@@ -1,5 +1,6 @@
 import Comment from '../models/Comment.js';
 import Episode from '../models/Episode.js';
+import Series from '../models/Series.js'; // NEW: Imported to resolve creator for top-level comments
 import { verifyAuth } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { paginate } from '../utils/helpers.js';
@@ -103,7 +104,7 @@ export default async function commentRoutes(fastify, opts) {
       await comment.save();
       await comment.populate('userId', 'username profileImage');
 
-      // NEW: Trigger Comment Reply Notification asynchronously
+      // NEW: Trigger Notifications asynchronously
       if (parentCommentId) {
         const parentComment = await Comment.findById(parentCommentId);
         // Do not notify a user if they reply to themselves
@@ -117,6 +118,19 @@ export default async function commentRoutes(fastify, opts) {
             data: { episodeId, commentId: comment._id, parentCommentId },
             dedupeKey: `reply_${comment._id}`
           }).catch(err => fastify.log.error('Push error:', err));
+        }
+      } else {
+        // NEW: Top-level comment logic
+        const series = await Series.findById(episode.seriesId);
+        if (series && series.creatorId.toString() !== request.user._id.toString()) {
+           createNotification({
+             userId: series.creatorId,
+             type: 'COMMENT',
+             title: 'New Comment 💬',
+             message: `${request.user.username} commented on your episode.`,
+             targetUrl: '#watch',
+             dedupeKey: `comment_${comment._id}`
+           }).catch(err => fastify.log.error('Push error:', err));
         }
       }
 
