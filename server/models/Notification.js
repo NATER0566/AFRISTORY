@@ -11,6 +11,7 @@ const notificationSchema = new mongoose.Schema(
       type: String,
       enum: [
         'NEW_EPISODE',
+        'COMMENT',          // NEW: Top-level comments
         'COMMENT_REPLY',
         'LIKE',
         'SERIES_UPDATED',
@@ -19,6 +20,8 @@ const notificationSchema = new mongoose.Schema(
         'NEW_FOLLOWER',
         'REWARD_AVAILABLE',
         'REWARD_EARNED',
+        'PAYMENT_SUCCESS',  // NEW: Copilot found this was missing
+        'CREATOR_VERIFIED', // NEW: Copilot found this was missing
         'SYSTEM',
       ],
       required: true,
@@ -34,6 +37,16 @@ const notificationSchema = new mongoose.Schema(
     data: {
       type: mongoose.Schema.Types.Mixed,
       default: {},
+    },
+    targetUrl: {          // NEW: Required to route push clicks correctly
+      type: String,
+      default: null,
+    },
+    dedupeKey: {          // NEW: Required to prevent duplicate push spam
+      type: String,
+      default: null,
+      index: true,
+      sparse: true,
     },
     read: {
       type: Boolean,
