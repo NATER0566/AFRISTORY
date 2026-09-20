@@ -157,7 +157,22 @@ export default async function rewardRoutes(fastify) {
       const dailyAmount = daily?.metadata?.schedule?.length ? daily.metadata.schedule[dailyClaims % daily.metadata.schedule.length] : daily?.rewardAmount;
       const history = await Transaction.find({ userId: request.user._id }).sort({ createdAt: -1 }).limit(20);
       const rewardStates = await Promise.all(rewards.map(async reward => ({ ...reward.toObject(), eligibility: await getEligibility(request.user, reward, claims), claimed: Boolean(claimMap.get(`${reward._id}:${periodKey(new Date(), reward.recurrenceType)}`)) })));
-      sendSuccess(reply, { balance: wallet ? formatDecimal(wallet.storyCoins) : 0, streak: request.user.rewardStats || {}, daily: daily ? { ...daily.toObject(), rewardAmount: dailyAmount, claimed: Boolean(todayClaim), periodKey: periodKey(new Date(), 'daily') } : null, rewards: rewardStates, history: history.map(item => ({ ...item.toObject(), amount: formatDecimal(item.amount) })) });
+      
+      // FIXED UI: Filter out exhausted one-time rewards completely so they stop cluttering the UI
+      const visibleRewards = rewardStates.filter(r => {
+        const isOneTimeCategory = ['ONE_TIME', 'PROFILE', 'DISCOVERY'].includes(r.type);
+        // If it's a non-repeatable reward and already claimed, hide it completely!
+        if (isOneTimeCategory && r.eligibility.state === 'CLAIMED') return false;
+        return true;
+      });
+
+      sendSuccess(reply, { 
+        balance: wallet ? formatDecimal(wallet.storyCoins) : 0, 
+        streak: request.user.rewardStats || {}, 
+        daily: daily ? { ...daily.toObject(), rewardAmount: dailyAmount, claimed: Boolean(todayClaim), periodKey: periodKey(new Date(), 'daily') } : null, 
+        rewards: visibleRewards, 
+        history: history.map(item => ({ ...item.toObject(), amount: formatDecimal(item.amount) })) 
+      });
     } catch (error) {
       fastify.log.error(error);
       sendError(reply, 'Failed to load rewards', 500, error.message);
@@ -175,7 +190,7 @@ export default async function rewardRoutes(fastify) {
       if (result.duplicate) { await session.abortTransaction(); return sendError(reply, 'Reward already claimed for this period', 409); }
       await session.commitTransaction();
 
-      // NEW: Trigger DB Notification + Push asynchronously OUTSIDE the transaction
+      // NEW: Trigger beautiful branded Push Notification asynchronously OUTSIDE the transaction
       if (!result.pending && result.claim) {
         createNotification({
           userId: request.user._id,
@@ -183,6 +198,7 @@ export default async function rewardRoutes(fastify) {
           title: `You earned ${result.amount} coins 🎉`,
           message: result.rewardName,
           targetUrl: '#rewards',
+          icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192', // ADDED GOLD BRANDING
           data: { rewardId: result.rewardId, claimId: result.claim._id },
           dedupeKey: `reward_${result.claim._id}`
         }).catch(err => fastify.log.error('Push error:', err));
@@ -221,7 +237,6 @@ export default async function rewardRoutes(fastify) {
       await claim.save({ session });
       await session.commitTransaction();
 
-      // NEW: Trigger DB Notification + Push asynchronously OUTSIDE the transaction
       if (result.claim) {
         createNotification({
           userId: user._id,
@@ -229,6 +244,7 @@ export default async function rewardRoutes(fastify) {
           title: `You earned ${result.amount} coins 🎉`,
           message: result.rewardName,
           targetUrl: '#rewards',
+          icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192', // ADDED GOLD BRANDING
           data: { rewardId: result.rewardId, claimId: result.claim._id },
           dedupeKey: `reward_${result.claim._id}`
         }).catch(err => fastify.log.error('Push error:', err));
@@ -261,13 +277,13 @@ export default async function rewardRoutes(fastify) {
       await RewardAudit.create([{ userId, amount: Number(amount), source: 'ADMIN', action: 'ISSUED', status: 'SUCCESS', referenceId, adminId: request.user._id, reason, ip: request.ip, userAgent: request.headers['user-agent'] }], { session }); 
       await session.commitTransaction(); 
 
-      // NEW: Notify the user they received an admin grant
       createNotification({
         userId,
         type: 'REWARD_EARNED',
         title: `You received ${amount} coins 🪙`,
         message: reason,
         targetUrl: '#wallet',
+        icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192', // ADDED GOLD BRANDING
         dedupeKey: `admin_grant_${referenceId}`
       }).catch(err => fastify.log.error('Push error:', err));
 
