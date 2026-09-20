@@ -5,6 +5,7 @@ import { sendSuccess, sendError } from '../utils/response.js';
 import Wallet from '../models/Wallet.js';
 import paystackClient from '../config/paystack.js';
 import { generateReference } from '../utils/helpers.js';
+import { createNotification } from '../utils/notificationService.js'; // NEW: Central notification service
 
 // The VIP passes your platform uses
 const VIP_PLANS = {
@@ -137,6 +138,17 @@ export default async function vipRoutes(fastify, opts) {
       user.subscriptionExpiresAt = expiresAt;
       await user.save();
 
+      // NEW: Trigger beautiful branded VIP Notification asynchronously
+      createNotification({
+        userId: request.user._id,
+        type: 'SYSTEM',
+        title: 'Gate Pass Activated 🌟',
+        message: `Your ${tier} VIP pass is active for ${plan.duration} days. Enjoy unlimited stories!`,
+        targetUrl: '#discover',
+        icon: 'https://ui-avatars.com/api/?name=AfriStory+VIP&background=d4a017&color=fff&size=192', // ADDED GOLD VIP BRANDING
+        dedupeKey: `vip_sub_${subscription._id}`
+      }).catch(err => fastify.log.error('Push error:', err));
+
       // Return both the subscription AND the updated user expiration date
       sendSuccess(reply, {
           subscription,
@@ -184,6 +196,17 @@ export default async function vipRoutes(fastify, opts) {
       
       await User.findByIdAndUpdate(request.user._id, { subscriptionExpiresAt: expiresAt });
       
+      // NEW: Trigger beautiful branded VIP Notification asynchronously
+      createNotification({
+        userId: request.user._id,
+        type: 'SYSTEM',
+        title: 'Gate Pass Activated 🌟',
+        message: `Your ${tier} VIP pass is active for ${plan.duration} days. Enjoy unlimited stories!`,
+        targetUrl: '#discover',
+        icon: 'https://ui-avatars.com/api/?name=AfriStory+VIP&background=d4a017&color=fff&size=192', // ADDED GOLD VIP BRANDING
+        dedupeKey: `vip_sub_${subscription._id}`
+      }).catch(err => fastify.log.error('Push error:', err));
+
       sendSuccess(reply, subscription, 'Gate Pass activated successfully', 201);
     } catch (error) {
       fastify.log.error(error);
