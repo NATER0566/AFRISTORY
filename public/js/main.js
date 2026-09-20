@@ -1614,6 +1614,20 @@ window.addEventListener('hashchange', () => {
     }
 });
 
+// Event listener fires when Webpushr is fully loaded and SID is ready
+window.addEventListener('webpushr_subscriber_id', function(e) {
+    if (e.detail) {
+        localStorage.setItem('afrostory_webpushr_sid', e.detail);
+        if (state.user) {
+            api('/notifications/push/register', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ sid: e.detail }) 
+            }).catch(err => logFrontendError('webpushr_event_registration', err.message, ''));
+        }
+    }
+});
+
 async function boot() {
     try {
         state.user = await api('/auth/me').catch(() => null); 
@@ -1625,20 +1639,34 @@ async function boot() {
 ('.admin-only').forEach(el => el.classList.remove('hidden'));
             }
 
-            // BULLETPROOF WEBPUSHR REGISTRATION
-            // 1. Fallback: Standard Async Array Push (Never crashes, guarantees array)
+            // GUARANTEED WEBPUSHR REGISTRATION RECOVERY
             try {
-                window.webpushr = window.webpushr || [];
-                window.webpushr.push(['fetch_id', function (sid) {
-                    if (sid) {
-                        api('/notifications/push/register', { 
-                            method: 'POST', 
-                            headers: { 'Content-Type': 'application/json' }, 
-                            body: JSON.stringify({ sid }) 
-                        }).catch(() => {});
-                    }
-                }]);
-            } catch (err) {}
+                // First check if the event listener caught the SID while the user was logging in
+                const savedSid = localStorage.getItem('afrostory_webpushr_sid');
+                if (savedSid) {
+                    api('/notifications/push/register', { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify({ sid: savedSid }) 
+                    }).catch(err => logFrontendError('webpushr_cache_registration', err.message, ''));
+                }
+
+                // Actively request it just in case we missed the event entirely
+                if (typeof window.webpushr === 'function') {
+                    window.webpushr('fetch_id', function (sid) {
+                        if (sid) {
+                            localStorage.setItem('afrostory_webpushr_sid', sid);
+                            api('/notifications/push/register', { 
+                                method: 'POST', 
+                                headers: { 'Content-Type': 'application/json' }, 
+                                body: JSON.stringify({ sid }) 
+                            }).catch(err => logFrontendError('webpushr_active_registration', err.message, ''));
+                        }
+                    });
+                }
+            } catch (err) {
+                logFrontendError('webpushr_initialization', err.message, '');
+            }
         }
 
         ensureClassificationControls(); 
@@ -1652,16 +1680,5 @@ async function boot() {
         return true; 
     }
 }
-
-// Event listener fires when Webpushr is fully loaded and SID is ready
-window.addEventListener('webpushr_subscriber_id', function(e) {
-    if (e.detail && state.user) {
-        api('/notifications/push/register', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ sid: e.detail }) 
-        }).catch(() => {});
-    }
-});
 
 (async () => { if (await boot()) setSection(location.hash.slice(1) || 'discover'); })();
