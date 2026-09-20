@@ -256,7 +256,7 @@ export default async function episodeRoutes(fastify, opts) {
       series.totalEpisodes = await Episode.countDocuments({ seriesId });
       await series.save();
 
-      // FIXED: Safely process all notifications with Promise.allSettled
+      // FIXED: Safely process all notifications with Promise.allSettled + BEAUTIFUL BRANDING
       if (episode.isPublished) {
         const followers = await Follow.find({ creatorId: creator._id });
         Promise.allSettled(
@@ -267,6 +267,8 @@ export default async function episodeRoutes(fastify, opts) {
               title: 'New Episode Published! 🎬',
               message: `${creator.brandName} just published a new episode: ${episode.title}`,
               targetUrl: '#watch',
+              icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192', // ADDED GOLD BRANDING
+              image: episode.thumbnailUrl || null, // ADDED: Shows the episode thumbnail in the push!
               data: { episodeId: episode._id, seriesId: series._id },
               dedupeKey: `new_ep_${episode._id}_${follow.followerId}`
             })
@@ -356,7 +358,7 @@ export default async function episodeRoutes(fastify, opts) {
 
       await episode.save();
 
-      // FIXED: Safely process all notifications with Promise.allSettled
+      // FIXED: Safely process all notifications with Promise.allSettled + BEAUTIFUL BRANDING
       if (isPublished === true && !wasPublished) {
         const followers = await Follow.find({ creatorId: creator._id });
         Promise.allSettled(
@@ -367,6 +369,8 @@ export default async function episodeRoutes(fastify, opts) {
               title: 'New Episode Published! 🎬',
               message: `${creator.brandName} just published a new episode: ${episode.title}`,
               targetUrl: '#watch',
+              icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192', // ADDED GOLD BRANDING
+              image: episode.thumbnailUrl || null, // ADDED: Shows the episode thumbnail in the push!
               data: { episodeId: episode._id, seriesId: series._id },
               dedupeKey: `new_ep_${episode._id}_${follow.followerId}`
             })
@@ -504,7 +508,7 @@ export default async function episodeRoutes(fastify, opts) {
         );
         isLiked = true;
 
-        // FIXED: Safely notify creator about the like
+        // FIXED: Safely notify creator about the like + BEAUTIFUL BRANDING
         const series = await Series.findById(updatedEpisode.seriesId);
         if (series && series.creatorId.toString() !== userId.toString()) {
            createNotification({
@@ -513,6 +517,8 @@ export default async function episodeRoutes(fastify, opts) {
              title: 'New Like ❤️',
              message: `${request.user.username} liked your episode.`,
              targetUrl: '#watch',
+             icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192', // ADDED GOLD BRANDING
+             image: updatedEpisode.thumbnailUrl || null, // ADDED: Shows the episode thumbnail in the push!
              dedupeKey: `like_${episodeId}_${userId}`
            }).catch(err => fastify.log.error('Push error:', err));
         }
