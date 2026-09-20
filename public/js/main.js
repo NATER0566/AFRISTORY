@@ -46,7 +46,6 @@ const api = async (path, options = {}) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), Math.min(options.timeout || 15000, 15000));
     
-    // FEATURE: Lightweight Performance Monitoring
     const startTime = performance.now();
 
     try {
@@ -56,7 +55,6 @@ const api = async (path, options = {}) => {
             ...options 
         });
         
-        // FEATURE: Monitor slow responses without heavy libraries
         const duration = performance.now() - startTime;
         if (duration > 3000) {
             logFrontendError('performance_warning', `Slow API call: ${path} took ${Math.round(duration)}ms`, '');
@@ -475,7 +473,6 @@ async function openEpisode(id) {
             
             const videoEl = card.querySelector('video'); 
             
-            // Native HLS parsing logic
             if (actualMediaUrl.includes('.m3u8')) {
                 if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
                     videoEl.src = actualMediaUrl; 
@@ -490,11 +487,10 @@ async function openEpisode(id) {
                 videoEl.src = actualMediaUrl;
             }
 
-            let hasTrackedView = false; // FEATURE: View event threshold tracking
+            let hasTrackedView = false;
 
             if (!episode.hasAccess) { 
                 videoEl.addEventListener('timeupdate', () => { 
-                    // FEATURE: Unique viewer tracking trigger
                     if (!hasTrackedView && videoEl.currentTime > 10) {
                         hasTrackedView = true;
                         api(`/episodes/${episode._id}/record-view`, { method: 'POST' }).catch(() => {});
@@ -523,7 +519,6 @@ async function openEpisode(id) {
                     } 
                 }); 
             } else {
-                // Ensure view is tracked for premium content as well
                 videoEl.addEventListener('timeupdate', () => { 
                     if (!hasTrackedView && videoEl.currentTime > 10) {
                         hasTrackedView = true;
@@ -544,7 +539,6 @@ async function openEpisode(id) {
     }
 }
 
-/* DEBOUNCED API SAVES */
 let saveProgressTimeout = null;
 async function saveProgressFeed(episode, video, completed = false) {
     if (!episode || video.currentTime === 0) return;
@@ -731,7 +725,6 @@ async function loadFollowersList() {
                     ? `<span style="font-size:11px; background:#333; color:#aaa; padding:2px 6px; border-radius:10px; margin-top:4px; display:inline-block;">Mutual</span>` 
                     : '';
 
-                // FEATURE: Follow-back Implementation (Dual Support for Creator & Normal User)
                 let followAction = '';
                 if (f.isMutual || f.isFollowing) {
                     followAction = `<button class="button button-quiet" style="padding: 4px 10px; font-size:11px;" disabled>Following</button>`;
@@ -772,7 +765,6 @@ async function loadCreator() {
 
         const statsContainer = $('#creator-stats');
         if (statsContainer) {
-            // FEATURE: Advanced Analytics inclusion (Unique / Returning Viewers)
             statsContainer.innerHTML = [
                 ['TOTAL VIEWS', creator.totalViews, ''],
                 ['UNIQUE VIEWERS', creator.uniqueViewers || 0, ''],
@@ -804,10 +796,55 @@ async function loadCreator() {
     } 
 } 
 
+/* ============================================================================ */
+/* FAST DIRECT-TO-CLOUD UPLOAD SYSTEM (BYPASSES RENDER TIMEOUTS)                */
+/* ============================================================================ */
 async function uploadAsset(path, file) { 
-    const data = new FormData(); 
-    data.append('file', file); 
-    return api(path, { method: 'POST', body: data, timeout: 600000 }); 
+    // 1. Get the VIP signature from our server
+    const isVideo = path.includes('video');
+    const signRes = await api(`/upload/sign?type=${isVideo ? 'video' : 'image'}`);
+    
+    if (!signRes || !signRes.signature) {
+        throw new Error('Failed to secure upload connection');
+    }
+
+    // 2. Upload DIRECTLY to Cloudinary from the browser! Bypasses Render entirely.
+    const resourceType = isVideo ? 'video' : 'image';
+    const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${signRes.cloudName}/${resourceType}/upload`;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('api_key', signRes.apiKey);
+    formData.append('timestamp', signRes.timestamp);
+    formData.append('signature', signRes.signature);
+    formData.append('folder', signRes.folder);
+
+    // Fetch directly using native fetch to avoid the custom 15s API timeout wrapper
+    try {
+        const response = await fetch(cloudinaryUrl, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.error?.message || 'Cloudinary direct upload failed');
+        }
+
+        const data = await response.json();
+
+        // Return the exact same format the rest of main.js expects
+        return {
+            url: data.secure_url,
+            mediaUrl: data.secure_url,
+            secure_url: data.secure_url,
+            publicId: data.public_id,
+            duration: data.duration || 0
+        };
+    } catch (error) {
+        console.error('Direct upload failed:', error);
+        throw new Error('Upload failed. Please check your internet connection and try again.');
+    }
 }
 
 async function submitSeries(event) { 
@@ -867,7 +904,7 @@ async function submitUpload(event) {
     if (!genre || !culturalCategory || !language) return toast('Choose a genre, cultural category, and language', 'error'); 
     
     submit.disabled = true; 
-    submit.textContent = 'Uploading video (please wait)...'; 
+    submit.textContent = 'Uploading directly to cloud...'; 
     
     try { 
         const upload = await uploadAsset('/upload/video', file); 
@@ -1261,7 +1298,6 @@ document.addEventListener('click', async event => {
         
         if (event.target.closest('[data-action="view-followers"]')) loadFollowersList();          
 
-        // FEATURE: Like / Unlike Handler
         const likeBtn = event.target.closest('[data-action="toggle-like"]');
         if (likeBtn && !likeBtn.disabled) {
             event.preventDefault();
@@ -1285,7 +1321,6 @@ document.addEventListener('click', async event => {
             finally { likeBtn.disabled = false; }
         }
 
-        // FEATURE: Real Rating System Handler
         const rateBtn = event.target.closest('[data-action="rate-episode"]');
         if (rateBtn) {
             event.preventDefault();
@@ -1320,7 +1355,6 @@ document.addEventListener('click', async event => {
                     btn.style.pointerEvents = 'none';
                     const iconBadge = btn.querySelector('.follow-badge-icon');
                     if (iconBadge) iconBadge.innerHTML = '<span style="font-size:8px;">...</span>'; 
-                    // Handle button variant updates
                     if (btn.tagName.toLowerCase() === 'button' && !iconBadge) {
                         btn.textContent = 'Updating...';
                     }
@@ -1364,7 +1398,6 @@ document.addEventListener('click', async event => {
             }
         }
 
-        // NEW: Handler for Normal User Follows
         const followUserBtn = event.target.closest('[data-action="follow-user"]');
         if (followUserBtn && !followUserBtn.disabled) {
             event.preventDefault();
@@ -1586,7 +1619,7 @@ if (commentForm) {
     });
 }
 
-const becomeCreatorForm = $('#become-creator-form');  if (becomeCreatorForm) {          becomeCreatorForm.addEventListener('submit', async (event) => {                  event.preventDefault();                  const form = event.target;                  const brandInput = form.querySelector('[name="brandName"]');                  const bioInput = form.querySelector('[name="bio"]');                  const brandName = brandInput ? brandInput.value.trim() : '';                  const bio = bioInput ? bioInput.value.trim() : '';                  const submitBtn = form.querySelector('button[type="submit"]');                           if (!brandName) return toast('Brand name is required', 'error');                           if (submitBtn) {                          submitBtn.disabled = true;                          submitBtn.textContent = 'Creating...';                  }                           try {                          await api('/creators/become-creator', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ brandName, bio }) });                          if(state.user) state.user.role = 'CREATOR';                          $$('.creator-only').forEach(el => el.classList.remove('hidden'));
+const becomeCreatorForm = $('#become-creator-form');   if (becomeCreatorForm) {               becomeCreatorForm.addEventListener('submit', async (event) => {                           event.preventDefault();                           const form = event.target;                           const brandInput = form.querySelector('[name="brandName"]');                           const bioInput = form.querySelector('[name="bio"]');                           const brandName = brandInput ? brandInput.value.trim() : '';                           const bio = bioInput ? bioInput.value.trim() : '';                           const submitBtn = form.querySelector('button[type="submit"]');                                    if (!brandName) return toast('Brand name is required', 'error');                                    if (submitBtn) {                                       submitBtn.disabled = true;                                       submitBtn.textContent = 'Creating...';                           }                                    try {                                       await api('/creators/become-creator', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ brandName, bio }) });                                       if(state.user) state.user.role = 'CREATOR';                                       $$('.creator-only').forEach(el => el.classList.remove('hidden'));
             toast('Welcome to Creator Studio!', 'success'); 
             await loadCreator();
         } catch (error) { 
@@ -1614,7 +1647,6 @@ window.addEventListener('hashchange', () => {
     }
 });
 
-// Event listener fires when Webpushr is fully loaded and SID is ready
 window.addEventListener('webpushr_subscriber_id', function(e) {
     if (e.detail) {
         localStorage.setItem('afrostory_webpushr_sid', e.detail);
@@ -1635,13 +1667,11 @@ async function boot() {
         
         if (state.user) {
             if (state.user.role && ['CREATOR', 'ADMIN'].includes(state.user.role)) {
-                $$('.creator-only').forEach(el => el.classList.remove('hidden'));                      }                      if (state.user.role === 'ADMIN') {                              $$
+                $$('.creator-only').forEach(el => el.classList.remove('hidden'));                                   }                                   if (state.user.role === 'ADMIN') {                                               $$
 ('.admin-only').forEach(el => el.classList.remove('hidden'));
             }
 
-            // GUARANTEED WEBPUSHR REGISTRATION RECOVERY
             try {
-                // First check if the event listener caught the SID while the user was logging in
                 const savedSid = localStorage.getItem('afrostory_webpushr_sid');
                 if (savedSid) {
                     api('/notifications/push/register', { 
@@ -1651,7 +1681,6 @@ async function boot() {
                     }).catch(err => logFrontendError('webpushr_cache_registration', err.message, ''));
                 }
 
-                // Actively request it just in case we missed the event entirely
                 if (typeof window.webpushr === 'function') {
                     window.webpushr('fetch_id', function (sid) {
                         if (sid) {
