@@ -4,7 +4,17 @@ import WebpushrSubscriber from '../models/WebpushrSubscriber.js';
 import User from '../models/User.js';
 import { sendToSubscriber } from '../config/webpushr.js';
 
-export const createNotification = async ({ userId, type, title, message, data = {}, targetUrl, dedupeKey }) => {
+export const createNotification = async ({ 
+  userId, 
+  type, 
+  title, 
+  message, 
+  data = {}, 
+  targetUrl, 
+  dedupeKey, 
+  icon = null, 
+  image = null 
+}) => {
   const traceId = crypto.randomUUID();
   console.log(`[NOTIFICATION] trace=${traceId} event=${type} user=${userId} stage=START`);
 
@@ -26,6 +36,8 @@ export const createNotification = async ({ userId, type, title, message, data = 
       message: message || '',
       data,
       targetUrl,
+      icon,
+      image,
       dedupeKey,
     });
 
@@ -38,7 +50,16 @@ export const createNotification = async ({ userId, type, title, message, data = 
 
     if (!pushEnabled) {
       console.log(`[NOTIFICATION] trace=${traceId} stage=PUSH_PREFERENCE status=DISABLED`);
-      return { success: true, notificationCreated: true, pushAttempted: false, pushSent: false, traceId, stage: 'PUSH_PREFERENCE', reason: 'USER_DISABLED_PUSH', notification };
+      return { 
+        success: true, 
+        notificationCreated: true, 
+        pushAttempted: false, 
+        pushSent: false, 
+        traceId, 
+        stage: 'PUSH_PREFERENCE', 
+        reason: 'USER_DISABLED_PUSH', 
+        notification 
+      };
     }
     console.log(`[NOTIFICATION] trace=${traceId} stage=PUSH_PREFERENCE status=ENABLED`);
 
@@ -47,16 +68,37 @@ export const createNotification = async ({ userId, type, title, message, data = 
     console.log(`[NOTIFICATION] trace=${traceId} stage=SUBSCRIBER_LOOKUP activeSubscribers=${subscribers.length}`);
     
     if (!subscribers.length) {
-      return { success: true, notificationCreated: true, pushAttempted: false, pushSent: false, traceId, stage: 'SUBSCRIBER_LOOKUP', reason: 'NO_ACTIVE_SUBSCRIBER', notification };
+      return { 
+        success: true, 
+        notificationCreated: true, 
+        pushAttempted: false, 
+        pushSent: false, 
+        traceId, 
+        stage: 'SUBSCRIBER_LOOKUP', 
+        reason: 'NO_ACTIVE_SUBSCRIBER', 
+        notification 
+      };
     }
 
-    // 5. Send Targeted Webpushr Push
+    // 5. Send Targeted Webpushr Push with Styling & Campaign Grouping
     let successCount = 0;
     let lastResult = null;
 
+    const pushOptions = {
+      name: `AfriStory - ${type}`,
+      ...(icon ? { icon } : {}),
+      ...(image ? { image } : {}),
+    };
+
     for (const sub of subscribers) {
-      // Pass the traceId to the Webpushr config so the API logs share the same ID
-      const pushResult = await sendToSubscriber(sub.webpushrSid, title, message, targetUrl, traceId);
+      const pushResult = await sendToSubscriber(
+        sub.webpushrSid, 
+        title, 
+        message, 
+        targetUrl, 
+        traceId, 
+        pushOptions
+      );
       lastResult = pushResult;
       
       // 6. Automatically deactivate invalid/unsubscribed browsers
@@ -86,7 +128,6 @@ export const createNotification = async ({ userId, type, title, message, data = 
     };
 
   } catch (error) {
-    // A push failure NEVER breaks the main business transaction (e.g. reward or payment)
     console.log(`[NOTIFICATION] trace=${traceId} stage=FAILED status=ERROR reason="${error.message}"`);
     return { success: false, stage: 'FAILED', reason: error.message, traceId };
   }
