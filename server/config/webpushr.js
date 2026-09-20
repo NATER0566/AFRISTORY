@@ -20,7 +20,8 @@ const webpushrClient = axios.create({
   },
 });
 
-export const sendToSubscriber = async (sid, title, message, targetUrl = '/', traceId = 'unknown') => {
+// NEW: Added the options parameter to receive images and campaign names
+export const sendToSubscriber = async (sid, title, message, targetUrl = '/', traceId = 'unknown', options = {}) => {
   if (!WEBPUSHR_API_KEY || !WEBPUSHR_AUTH_TOKEN) {
     return { success: false, stage: 'WEBPUSHR_CREDENTIALS', reason: 'CREDENTIALS_MISSING' };
   }
@@ -29,12 +30,20 @@ export const sendToSubscriber = async (sid, title, message, targetUrl = '/', tra
   console.log(`[WEBPUSHR_API] trace=${traceId} stage=REQUEST endpoint=/notification/send/sid sid=${maskedSid}`);
 
   try {
+    // FIX: Added 'name', 'icon', and 'image' to fix the dashboard and visual design
     const payload = {
       title,
       message: message || 'New notification',
       target_url: targetUrl,
       sid,
+      name: options.name || 'AfriStory API Notification', // Forces Webpushr to log this in the dashboard
+      icon: options.icon || 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192', // Branded AfriStory gold logo
     };
+
+    // If an episode thumbnail or banner is provided, add it to the payload
+    if (options.image) {
+      payload.image = options.image; // Big beautiful banner
+    }
 
     const response = await webpushrClient.post('/notification/send/sid', payload);
     
