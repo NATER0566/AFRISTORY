@@ -38,11 +38,19 @@ const notificationSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.Mixed,
       default: {},
     },
-    targetUrl: {          // NEW: Required to route push clicks correctly
+    targetUrl: {          
       type: String,
       default: null,
     },
-    dedupeKey: {          // NEW: Required to prevent duplicate push spam
+    icon: {               // NEW: Supports beautiful branding (e.g., AfriStory logo)
+      type: String,
+      default: null,
+    },
+    image: {              // NEW: Supports rich media (e.g., Episode thumbnail or Reward banner)
+      type: String,
+      default: null,
+    },
+    dedupeKey: {          
       type: String,
       default: null,
       index: true,
