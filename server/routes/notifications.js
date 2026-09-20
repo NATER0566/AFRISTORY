@@ -11,21 +11,33 @@ export default async function notificationRoutes(fastify, opts) {
   fastify.post('/push/register', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
-      if (!request.user) return sendError(reply, 'Unauthorized', 401);
+      if (!request.user) {
+        console.log(`[WEBPUSHR_REGISTER] FAILED reason=authentication_failed`);
+        return sendError(reply, 'Unauthorized', 401);
+      }
 
       const { sid } = request.body || {};
-      if (!sid) return sendError(reply, 'Subscriber ID is required', 400);
+      if (!sid) {
+        console.log(`[WEBPUSHR_REGISTER] FAILED user=${request.user._id} reason=missing_sid`);
+        return sendError(reply, 'Subscriber ID is required', 400);
+      }
+
+      const maskedSid = `${sid.substring(0, 8)}***`;
+      console.log(`[WEBPUSHR_REGISTER] request received user=${request.user._id} SID=${maskedSid}`);
 
       const existing = await WebpushrSubscriber.findOne({ webpushrSid: sid });
 
       if (existing) {
+        let reassigned = false;
         if (existing.userId.toString() !== request.user._id.toString()) {
           // Reassign if a new user logged into the same browser
           existing.userId = request.user._id;
+          reassigned = true;
         }
         existing.active = true;
         existing.lastSeenAt = new Date();
         await existing.save();
+        console.log(`[WEBPUSHR_REGISTER] subscriber updated reassigned=${reassigned} SUCCESS`);
         return sendSuccess(reply, existing, 'Push subscription updated');
       }
 
@@ -35,8 +47,10 @@ export default async function notificationRoutes(fastify, opts) {
         active: true
       });
 
+      console.log(`[WEBPUSHR_REGISTER] subscriber created SUCCESS`);
       sendSuccess(reply, subscriber, 'Push subscription registered', 201);
     } catch (error) {
+      console.log(`[WEBPUSHR_REGISTER] FAILED reason=database_error message="${error.message}"`);
       fastify.log.error(error);
       sendError(reply, 'Failed to register push subscription', 500, error.message);
     }
@@ -218,6 +232,33 @@ export default async function notificationRoutes(fastify, opts) {
     } catch (error) {
       fastify.log.error(error);
       sendError(reply, 'Failed to create notification', 500, error.message);
+    }
+  });
+
+  // NEW: Admin Safe Diagnostics Endpoint
+  fastify.get('/admin/diagnostics/push', async (request, reply) => {
+    try {
+      await verifyAuth(request, reply);
+      if (!request.user || request.user.role !== 'ADMIN') {
+        return sendError(reply, 'Forbidden', 403);
+      }
+
+      const activeCount = await WebpushrSubscriber.countDocuments({ active: true });
+      const totalCount = await WebpushrSubscriber.countDocuments();
+      
+      sendSuccess(reply, {
+        webpushrConfiguration: {
+          apiKeyPresent: !!process.env.WEBPUSHR_API_KEY,
+          authTokenPresent: !!process.env.WEBPUSHR_AUTH_TOKEN,
+        },
+        subscribers: {
+          active: activeCount,
+          total: totalCount
+        },
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      sendError(reply, 'Diagnostics failed', 500, error.message);
     }
   });
 }
