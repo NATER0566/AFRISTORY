@@ -256,20 +256,22 @@ export default async function episodeRoutes(fastify, opts) {
       series.totalEpisodes = await Episode.countDocuments({ seriesId });
       await series.save();
 
-      // NEW: Notify Followers if published immediately
+      // FIXED: Safely process all notifications with Promise.allSettled
       if (episode.isPublished) {
         const followers = await Follow.find({ creatorId: creator._id });
-        followers.forEach(follow => {
-          createNotification({
-            userId: follow.followerId,
-            type: 'NEW_EPISODE',
-            title: 'New Episode Published! 🎬',
-            message: `${creator.brandName} just published a new episode: ${episode.title}`,
-            targetUrl: '#watch',
-            data: { episodeId: episode._id, seriesId: series._id },
-            dedupeKey: `new_ep_${episode._id}_${follow.followerId}`
-          }).catch(err => fastify.log.error('Push error:', err));
-        });
+        Promise.allSettled(
+          followers.map(follow =>
+            createNotification({
+              userId: follow.followerId,
+              type: 'NEW_EPISODE',
+              title: 'New Episode Published! 🎬',
+              message: `${creator.brandName} just published a new episode: ${episode.title}`,
+              targetUrl: '#watch',
+              data: { episodeId: episode._id, seriesId: series._id },
+              dedupeKey: `new_ep_${episode._id}_${follow.followerId}`
+            })
+          )
+        ).catch(err => fastify.log.error('Push loop error:', err));
       }
 
       sendSuccess(reply, episode, 'Episode created successfully', 201);
@@ -354,20 +356,22 @@ export default async function episodeRoutes(fastify, opts) {
 
       await episode.save();
 
-      // NEW: Notify Followers if episode was just transitioned to Published
+      // FIXED: Safely process all notifications with Promise.allSettled
       if (isPublished === true && !wasPublished) {
         const followers = await Follow.find({ creatorId: creator._id });
-        followers.forEach(follow => {
-          createNotification({
-            userId: follow.followerId,
-            type: 'NEW_EPISODE',
-            title: 'New Episode Published! 🎬',
-            message: `${creator.brandName} just published a new episode: ${episode.title}`,
-            targetUrl: '#watch',
-            data: { episodeId: episode._id, seriesId: series._id },
-            dedupeKey: `new_ep_${episode._id}_${follow.followerId}`
-          }).catch(err => fastify.log.error('Push error:', err));
-        });
+        Promise.allSettled(
+          followers.map(follow =>
+            createNotification({
+              userId: follow.followerId,
+              type: 'NEW_EPISODE',
+              title: 'New Episode Published! 🎬',
+              message: `${creator.brandName} just published a new episode: ${episode.title}`,
+              targetUrl: '#watch',
+              data: { episodeId: episode._id, seriesId: series._id },
+              dedupeKey: `new_ep_${episode._id}_${follow.followerId}`
+            })
+          )
+        ).catch(err => fastify.log.error('Push loop error:', err));
       }
 
       sendSuccess(reply, episode, 'Episode updated successfully');
@@ -499,6 +503,19 @@ export default async function episodeRoutes(fastify, opts) {
           { new: true }
         );
         isLiked = true;
+
+        // FIXED: Safely notify creator about the like
+        const series = await Series.findById(updatedEpisode.seriesId);
+        if (series && series.creatorId.toString() !== userId.toString()) {
+           createNotification({
+             userId: series.creatorId,
+             type: 'LIKE',
+             title: 'New Like ❤️',
+             message: `${request.user.username} liked your episode.`,
+             targetUrl: '#watch',
+             dedupeKey: `like_${episodeId}_${userId}`
+           }).catch(err => fastify.log.error('Push error:', err));
+        }
       }
 
       const currentCount = Math.max(updatedEpisode?.likeCount || updatedEpisode?.likes || 0, 0);
