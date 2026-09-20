@@ -174,13 +174,14 @@ export default async function paymentRoutes(fastify, opts) {
 
         await session.commitTransaction();
 
-        // NEW: Notify user of successful payment asynchronously
+        // NEW: Notify user of successful payment asynchronously + BEAUTIFUL BRANDING
         createNotification({
           userId: request.user._id,
           type: 'PAYMENT_SUCCESS',
           title: 'Payment Successful 🪙',
           message: `Your wallet has been credited with ${coins} coins.`,
           targetUrl: '#wallet',
+          icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192', // ADDED GOLD BRANDING
           dedupeKey: `pay_verify_${reference}`
         }).catch(err => fastify.log.error('Push error:', err));
 
@@ -273,13 +274,14 @@ export default async function paymentRoutes(fastify, opts) {
 
       await session.commitTransaction();
 
-      // NEW: Notify user of successful payment via webhook asynchronously
+      // NEW: Notify user of successful payment via webhook asynchronously + BEAUTIFUL BRANDING
       createNotification({
         userId,
         type: 'PAYMENT_SUCCESS',
         title: 'Payment Successful 🪙',
         message: `Your wallet has been credited with ${coins} coins.`,
         targetUrl: '#wallet',
+        icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192', // ADDED GOLD BRANDING
         dedupeKey: `pay_webhook_${reference}`
       }).catch(err => fastify.log.error('Push error:', err));
 
