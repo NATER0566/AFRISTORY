@@ -329,13 +329,19 @@ export default async function creatorRoutes(fastify, opts) {
       targetCreator.totalFollowers = (targetCreator.totalFollowers || 0) + 1;
       await targetCreator.save();
 
-      // NEW: Trigger Central Notification asynchronously
+      // Fetch the follower's profile picture to make the push notification beautiful
+      const followerUser = await User.findById(request.user._id).select('profile profileImage');
+      const followerAvatar = followerUser?.profile?.avatarUrl || followerUser?.profileImage || null;
+
+      // NEW: Trigger Central Notification asynchronously + BEAUTIFUL BRANDING
       createNotification({
         userId: targetCreator.userId,
         type: 'NEW_FOLLOWER',
-        title: 'New Follower',
+        title: 'New Follower 🎉',
         message: `${request.user.username} is now following you!`,
         targetUrl: '#profile',
+        icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192', // ADDED GOLD BRANDING
+        image: followerAvatar, // ADDED: Shows the new follower's face in the pop-up!
         dedupeKey: `follow_${request.user._id}_${targetCreator._id}`
       }).catch(err => fastify.log.error('Push error:', err));
 
