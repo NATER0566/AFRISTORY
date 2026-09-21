@@ -558,7 +558,7 @@ async function saveProgressFeed(episode, video, completed = false) {
 }
 
 /* ============================================================================ */
-/* PREMIUM EPISODE UNLOCK (PHASE 1: COINS ONLY UNTIL VERIFIED PROVIDER EXISTS) */
+/* PREMIUM EPISODE UNLOCK & ADSCOD SPONSOR INTEGRATION */
 /* ============================================================================ */
 async function unlockEpisode() {
     if (!state.currentEpisode) return;
@@ -569,24 +569,45 @@ async function unlockEpisode() {
             return;
         }
 
+        let choice = 'CANCEL';
+
         if (window.Swal) { 
+            const showSponsor = state.currentEpisode.adUnlockable && window.AfroStoryAds && window.AfroStoryAds.isEnabled;
+            
             const result = await Swal.fire({ 
-                title: '🎬 Unlock this episode', 
+                title: '🎬 Episode Locked', 
                 html: `<p style="font-size:15px; line-height:1.6;"><strong style="color:#d4a017;">💰 Premium Story</strong></p>
-                       <p style="font-size:13px; color:#999; margin-top:10px;">Ad unlocks are currently unavailable.</p>
-                       <p style="font-size:15px; margin-top:15px;">Use <strong style="color:#d4a017;">${state.currentEpisode.coinCost || 10} coins</strong> to unlock and continue</p>`, 
+                       <p style="font-size:15px; margin-top:15px;">Use <strong style="color:#d4a017;">${state.currentEpisode.coinCost || 10} coins</strong> to unlock permanently.</p>`, 
                 showCancelButton: true, 
-                confirmButtonText: `💰 Unlock with ${state.currentEpisode.coinCost || 10} Coins`, 
+                showDenyButton: showSponsor,
+                confirmButtonText: `💰 Unlock (${state.currentEpisode.coinCost || 10} Coins)`, 
+                denyButtonText: 'View Sponsored Message',
                 cancelButtonText: 'Cancel', 
                 confirmButtonColor: '#d4a017', 
+                denyButtonColor: '#242424',
                 background: '#1b1b1b', 
                 color: '#f5f5f5', 
                 allowOutsideClick: false, 
                 allowEscapeKey: false 
             }); 
-            if (result.isDismissed) return; 
+            
+            if (result.isConfirmed) choice = 'COIN';
+            else if (result.isDenied) choice = 'SPONSOR';
+            else return; 
         } 
         
+        // PHASE 4 SECURITY: If the user chooses the sponsor, show the ad and HALT.
+        // No unlock is granted. Adscod impressions do not equal verified reward completions.
+        if (choice === 'SPONSOR') {
+            try {
+                await window.AfroStoryAds.showSponsoredMessage();
+            } catch (e) {
+                toast(e.message, 'error');
+            }
+            return; // Execution stops here. The video remains locked.
+        }
+        
+        // --- COIN UNLOCK LOGIC REMAINS UNCHANGED ---
         const unlockRes = await api('/wallet/unlock-episode', { 
             method: 'POST', 
             headers: { 'Content-Type': 'application/json' }, 
@@ -1657,7 +1678,7 @@ async function boot() {
         
         if (state.user) {
             if (state.user.role && ['CREATOR', 'ADMIN'].includes(state.user.role)) {
-                $$('.creator-only').forEach(el => el.classList.remove('hidden'));                                   }                                   if (state.user.role === 'ADMIN') {                                               $$
+                $$('.creator-only').forEach(el => el.classList.remove('hidden'));                                   }                                   if (state.user.role === 'ADMIN') {$$
 ('.admin-only').forEach(el => el.classList.remove('hidden'));
             }
 
