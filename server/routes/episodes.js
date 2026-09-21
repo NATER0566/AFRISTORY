@@ -24,8 +24,9 @@ const deepSeriesPopulate = {
 };
 
 export default async function episodeRoutes(fastify, opts) {
-  // PHASE 5: AUTHORITATIVE MEDIA BOUNDARY ROUTE
+  // PHASE 5.1 FIX: AUTHORITATIVE MEDIA BOUNDARY ROUTE
   // Redirects to full media if authorized, or a restricted 30s preview slice if unauthorized.
+  // Fails closed for non-Cloudinary premium media.
   fastify.get('/:episodeId/media', async (request, reply) => {
     try {
       const { episodeId } = request.params;
@@ -51,10 +52,15 @@ export default async function episodeRoutes(fastify, opts) {
       } else {
           let previewUrl = episode.mediaUrl;
           // Apply Cloudinary End-Offset (eo_30) securely via authoritative backend redirect
-          if (previewUrl && previewUrl.includes('cloudinary.com') && !previewUrl.includes('/eo_')) {
-              previewUrl = previewUrl.replace('/upload/', '/upload/eo_30/');
+          if (previewUrl && previewUrl.includes('cloudinary.com')) {
+              if (!previewUrl.includes('/eo_')) {
+                  previewUrl = previewUrl.replace('/upload/', '/upload/eo_30/');
+              }
+              return reply.redirect(previewUrl);
           }
-          return reply.redirect(previewUrl);
+          
+          // PHASE 5.1 FIX: Fail closed for non-Cloudinary premium media.
+          return sendError(reply, 'Premium content requires authorization. Preview unavailable for this media type.', 403);
       }
     } catch (error) {
       fastify.log.error(error);
