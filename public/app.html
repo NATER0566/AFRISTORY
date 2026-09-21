@@ -356,8 +356,86 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
         </div>
       </section>
 
-      <section id="section-wallet" class="app-section hidden"><div class="section-heading"><div><p class="eyebrow">YOUR STORY ECONOMY</p><h1>Wallet</h1></div><div><button class="button button-primary" data-action="buy-coins">Get coins <span>↗</span></button><button class="button button-accent" data-action="buy-pass">Get a pass</button></div></div><div class="wallet-overview"><div class="balance-card"><span class="eyebrow">AVAILABLE COINS</span><strong id="wallet-balance">0</strong><span class="balance-caption">Use coins to unlock premium episodes.</span></div><div class="wallet-stat"><span class="eyebrow">TOTAL EARNED</span><strong id="wallet-earned">0</strong><span>Creator earnings</span></div><div class="wallet-stat"><span class="eyebrow">AD UNLOCKS</span><strong id="ad-balance">3</strong><span>Available today</span></div></div><div class="section-heading compact-heading"><h2>Recent transactions</h2></div><div id="transactions-list" class="data-list"></div></section>
-      <section id="section-rewards" class="app-section hidden"><div class="rewards-hero"><div><p class="eyebrow">AFROSTORY REWARDS</p><h1>Return. Discover. Earn.</h1><p class="muted">Complete activities on AfroStory and earn coins.</p></div><div class="rewards-balance"><span class="eyebrow">CURRENT BALANCE</span><strong id="rewards-balance">0</strong><span>story coins</span><div class="reward-streak"><b id="reward-current-streak">0</b> day streak <small>Best <span id="reward-best-streak">0</span></small></div></div></div><div id="daily-reward-card" class="daily-reward-card"></div><div class="section-heading compact-heading"><div><p class="eyebrow">SOCIAL MEDIA REWARDS</p><h2>Support AfroStory</h2><p class="muted">Support AfroStory on social media and earn bonus coins.</p></div></div><div id="social-rewards-grid" class="rewards-grid"></div><div class="section-heading compact-heading"><div><p class="eyebrow">EARN COINS</p><h2>Available missions</h2></div></div><div id="rewards-grid" class="rewards-grid"></div><div class="section-heading compact-heading"><div><p class="eyebrow">REWARD HISTORY</p><h2>Recent activity</h2></div></div><div id="rewards-history" class="data-list"></div></section>
+      <!-- WALLET SECTION -->
+      <section id="section-wallet" class="app-section hidden">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">YOUR STORY ECONOMY</p>
+            <h1>Wallet</h1>
+          </div>
+          <div>
+            <button class="button button-primary" data-action="buy-coins">Get coins <span>↗</span></button>
+            <button class="button button-accent" data-action="buy-pass">Get a pass</button>
+          </div>
+        </div>
+        <div class="wallet-overview">
+          <div class="balance-card">
+            <span class="eyebrow">AVAILABLE COINS</span>
+            <strong style="display: inline-flex; align-items: center; gap: 6px;">
+              <span style="color: #d4a017; font-size: 0.9em;">◈</span>
+              <span id="wallet-balance">0</span>
+            </strong>
+            <span class="balance-caption">Use coins to unlock premium episodes.</span>
+          </div>
+          <div class="wallet-stat">
+            <span class="eyebrow">TOTAL EARNED</span>
+            <strong style="display: inline-flex; align-items: center; gap: 4px;">
+              <span style="color: #2ecc71; font-size: 0.9em;">₦</span>
+              <span id="wallet-earned">0</span>
+            </strong>
+            <span>Creator earnings</span>
+          </div>
+        </div>
+        <div class="section-heading compact-heading">
+          <h2>Recent transactions</h2>
+        </div>
+        <div id="transactions-list" class="data-list"></div>
+      </section>
+
+      <!-- REWARDS SECTION -->
+      <section id="section-rewards" class="app-section hidden">
+        <div class="rewards-hero">
+          <div>
+            <p class="eyebrow">AFROSTORY REWARDS</p>
+            <h1>Return. Discover. Earn.</h1>
+            <p class="muted">Complete activities on AfroStory and earn coins.</p>
+          </div>
+          <div class="rewards-balance">
+            <span class="eyebrow">CURRENT BALANCE</span>
+            <strong style="display: inline-flex; align-items: center; gap: 6px;">
+              <span style="color: #d4a017; font-size: 0.9em;">◈</span>
+              <span id="rewards-balance">0</span>
+            </strong>
+            <span>story coins</span>
+            <div class="reward-streak">
+              <b id="reward-current-streak">0</b> day streak <small>Best <span id="reward-best-streak">0</span></small>
+            </div>
+          </div>
+        </div>
+        <div id="daily-reward-card" class="daily-reward-card"></div>
+        <div class="section-heading compact-heading">
+          <div>
+            <p class="eyebrow">SOCIAL MEDIA REWARDS</p>
+            <h2>Support AfroStory</h2>
+            <p class="muted">Support AfroStory on social media and earn bonus coins.</p>
+          </div>
+        </div>
+        <div id="social-rewards-grid" class="rewards-grid"></div>
+        <div class="section-heading compact-heading">
+          <div>
+            <p class="eyebrow">EARN COINS</p>
+            <h2>Available missions</h2>
+          </div>
+        </div>
+        <div id="rewards-grid" class="rewards-grid"></div>
+        <div class="section-heading compact-heading">
+          <div>
+            <p class="eyebrow">REWARD HISTORY</p>
+            <h2>Recent activity</h2>
+          </div>
+        </div>
+        <div id="rewards-history" class="data-list"></div>
+      </section>
       
       <!-- CREATOR DASHBOARD SECTION -->
       <section id="section-creator" class="app-section hidden">
@@ -463,7 +541,7 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
   </script>
 
 
-<!-- start webpushr code --> <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4GZnLNpMUBg35mzdNgBSOcMQ4YlZaZ0SY' });</script><!-- end webpushr code -->
+<!-- start webpushr code --> <script>(function(w,d, s, id) {if(typeof(w.webpushr)!undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4GZnLNpMUBg35mzdNgBSOcMQ4YlZaZ0SY' });</script><!-- end webpushr code -->
 
 
      
