@@ -27,7 +27,7 @@ function validateHttpsUrl(urlStr) {
 
 export default async function adsRoutes(fastify, opts) {
   // PHASE 3 CLEANUP: All legacy routes (/unlocks/remaining, /verify-completion)
-  // and the placeholder Monetag /webhook have been permanently removed.
+  // and the placeholder /webhook have been permanently removed.
 
   // PHASE 4/5: Secure Adscod Advertising Proxy
   // This endpoint fetches an ad from Adscod server-side.
