@@ -1,6 +1,8 @@
 import Series from '../models/Series.js';
 import Creator from '../models/Creator.js';
 import Episode from '../models/Episode.js';
+import Unlock from '../models/Unlock.js'; // PHASE 5.1 FIX: Added
+import { verifyAuth } from '../middleware/auth.js'; // PHASE 5.1 FIX: Added
 import { sendSuccess, sendError } from '../utils/response.js';
 import { paginate, formatDecimal } from '../utils/helpers.js';
 
@@ -14,9 +16,13 @@ export default async function searchRoutes(fastify, opts) {
         return sendError(reply, 'Search query too short', 400);
       }
 
-      const { skip, limit: l, page: p } = paginate(page, limit);
+      // PHASE 5.1 FIX: Optionally authenticate user to evaluate access limits
+      if (request.cookies?.token) {
+         await verifyAuth(request, reply, false).catch(() => false);
+      }
+      const hasActiveSubscription = request.user && request.user.subscriptionExpiresAt && new Date(request.user.subscriptionExpiresAt) > new Date();
 
-      // FIX: Split the search query into individual keywords for broad TikTok-style searching
+      const { skip, limit: l, page: p } = paginate(page, limit);
       const words = q.trim().split(/\s+/).filter(w => w.length > 0);
       let results = {};
 
@@ -114,11 +120,32 @@ export default async function searchRoutes(fastify, opts) {
 
         const total = await Episode.countDocuments(episodeQuery);
 
+        // PHASE 5.1 FIX: Authoritative Media Hiding in Search
+        let userUnlocks = [];
+        if (request.user) {
+          const episodeIds = episodes.map(ep => ep._id);
+          const unlocks = await Unlock.find({ userId: request.user._id, episodeId: { $in: episodeIds }, isActive: true }).lean();
+          userUnlocks = unlocks.map(u => u.episodeId.toString());
+        }
+
         results.episodes = {
-          data: episodes.map(e => ({
-            ...e,
-            rating: formatDecimal(e.rating),
-          })),
+          data: episodes.map(e => {
+            let hasAccess = e.isFree;
+            if (hasActiveSubscription) hasAccess = true;
+            if (request.user && userUnlocks.includes(e._id.toString())) hasAccess = true;
+
+            let safeMediaUrl = e.mediaUrl;
+            if (!hasAccess && safeMediaUrl) {
+                safeMediaUrl = `/api/episodes/${e._id}/media`;
+            }
+
+            return {
+              ...e,
+              mediaUrl: safeMediaUrl, // Authoritative route for unauthorized users
+              hasAccess,
+              rating: formatDecimal(e.rating),
+            };
+          }),
           total,
           pages: Math.ceil(total / l),
         };
@@ -257,17 +284,44 @@ export default async function searchRoutes(fastify, opts) {
     try {
       const { limit = 10 } = request.query;
 
+      // PHASE 5.1 FIX: Optionally authenticate user to evaluate access limits
+      if (request.cookies?.token) {
+         await verifyAuth(request, reply, false).catch(() => false);
+      }
+      const hasActiveSubscription = request.user && request.user.subscriptionExpiresAt && new Date(request.user.subscriptionExpiresAt) > new Date();
+
       const trendingEpisodes = await Episode.find({ isPublished: true })
         .populate({ path: 'seriesId', populate: { path: 'creatorId', select: 'brandName profileImage' } })
         .sort({ totalViews: -1, createdAt: -1 })
         .limit(parseInt(limit))
         .lean(); 
 
+      // PHASE 5.1 FIX: Authoritative Media Hiding in Trending
+      let userUnlocks = [];
+      if (request.user) {
+        const episodeIds = trendingEpisodes.map(ep => ep._id);
+        const unlocks = await Unlock.find({ userId: request.user._id, episodeId: { $in: episodeIds }, isActive: true }).lean();
+        userUnlocks = unlocks.map(u => u.episodeId.toString());
+      }
+
       sendSuccess(reply, {
-        trending: trendingEpisodes.map(episode => ({
-          ...episode,
-          rating: formatDecimal(episode.rating),
-        })),
+        trending: trendingEpisodes.map(e => {
+          let hasAccess = e.isFree;
+          if (hasActiveSubscription) hasAccess = true;
+          if (request.user && userUnlocks.includes(e._id.toString())) hasAccess = true;
+
+          let safeMediaUrl = e.mediaUrl;
+          if (!hasAccess && safeMediaUrl) {
+              safeMediaUrl = `/api/episodes/${e._id}/media`;
+          }
+
+          return {
+            ...e,
+            mediaUrl: safeMediaUrl, // Authoritative route for unauthorized users
+            hasAccess,
+            rating: formatDecimal(e.rating),
+          };
+        }),
       });
     } catch (error) {
       fastify.log.error(error);
