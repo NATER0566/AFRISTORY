@@ -59,14 +59,7 @@ const userSchema = new mongoose.Schema(
       enum: ['USER', 'ADMIN', 'CREATOR'],
       default: 'USER',
     },
-    adUnlocksRemaining: {
-      type: Number,
-      default: 3,
-    },
-    adUnlocksResetDate: {
-      type: Date,
-      default: () => new Date(),
-    },
+    // PHASE 5.1 CLEANUP: adUnlocksRemaining and adUnlocksResetDate removed permanently.
     profileImage: {
       type: String,
       default: null,
