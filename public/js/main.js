@@ -109,7 +109,7 @@ const image = value => {
 };
 
 /* ============================================================================ */
-/* NEW FORMATTERS: RATING & VIEWS */
+/* FORMATTERS: RATING & VIEWS */
 /* ============================================================================ */
 function formatRating(rating, count) {
     if (!count || count === 0) return '★ No ratings';
@@ -557,6 +557,9 @@ async function saveProgressFeed(episode, video, completed = false) {
     }, 1000); 
 }
 
+/* ============================================================================ */
+/* PREMIUM EPISODE UNLOCK (PHASE 1: COINS ONLY UNTIL VERIFIED PROVIDER EXISTS) */
+/* ============================================================================ */
 async function unlockEpisode() {
     if (!state.currentEpisode) return;
     try {
@@ -566,31 +569,31 @@ async function unlockEpisode() {
             return;
         }
 
-        const hasAds = state.currentEpisode.adUnlockable && window.AfroStoryAds?.isEnabled; 
-        const userAdBalance = state.user?.adUnlocksRemaining || 0; 
-        const canUseAd = hasAds && userAdBalance > 0; 
-        let choice = 'coins'; 
-        
-        if (canUseAd) { 
-            if (window.Swal) { 
-                const result = await Swal.fire({ title: '🎬 Unlock this episode', html: `<div style="text-align:left; font-size:14px;"><p><strong>📺 Watch Ad (Free)</strong></p><p style="color:#76a86b; font-weight:bold;">${userAdBalance} ad unlock${userAdBalance !== 1 ? 's' : ''} available today</p><hr style="border-color:#343434; margin:15px 0;"><p><strong>💰 Use Coins</strong></p><p style="color:#d4a017; font-weight:bold;">${state.currentEpisode.coinCost || 10} coins</p></div>`, showDenyButton: true, showCancelButton: true, confirmButtonText: '📺 Watch Ad Now', denyButtonText: `💰 Use ${state.currentEpisode.coinCost || 10} Coins`, cancelButtonText: 'Cancel', confirmButtonColor: '#76a86b', denyButtonColor: '#d4a017', background: '#1b1b1b', color: '#f5f5f5', allowOutsideClick: false, allowEscapeKey: false }); 
-                if (result.isDismissed) return; choice = result.isDenied ? 'coins' : 'ad'; 
-            } 
-        } else { 
-            if (window.Swal) { 
-                const result = await Swal.fire({ title: '🎬 Unlock this episode', html: `<p style="font-size:15px; line-height:1.6;"><strong style="color:#d4a017;">💰 Only coins available now</strong></p><p style="font-size:13px; color:#999; margin-top:10px;">Ad unlocks are coming soon!</p><p style="font-size:15px; margin-top:15px;">Use <strong style="color:#d4a017;">${state.currentEpisode.coinCost || 10} coins</strong> to unlock and continue</p>`, showCancelButton: true, confirmButtonText: `💰 Unlock with ${state.currentEpisode.coinCost || 10} Coins`, cancelButtonText: 'Cancel', confirmButtonColor: '#d4a017', background: '#1b1b1b', color: '#f5f5f5', allowOutsideClick: false, allowEscapeKey: false }); 
-                if (result.isDismissed) return; choice = 'coins'; 
-            } 
+        if (window.Swal) { 
+            const result = await Swal.fire({ 
+                title: '🎬 Unlock this episode', 
+                html: `<p style="font-size:15px; line-height:1.6;"><strong style="color:#d4a017;">💰 Premium Story</strong></p>
+                       <p style="font-size:13px; color:#999; margin-top:10px;">Ad unlocks are currently unavailable.</p>
+                       <p style="font-size:15px; margin-top:15px;">Use <strong style="color:#d4a017;">${state.currentEpisode.coinCost || 10} coins</strong> to unlock and continue</p>`, 
+                showCancelButton: true, 
+                confirmButtonText: `💰 Unlock with ${state.currentEpisode.coinCost || 10} Coins`, 
+                cancelButtonText: 'Cancel', 
+                confirmButtonColor: '#d4a017', 
+                background: '#1b1b1b', 
+                color: '#f5f5f5', 
+                allowOutsideClick: false, 
+                allowEscapeKey: false 
+            }); 
+            if (result.isDismissed) return; 
         } 
         
-        if (choice === 'ad') { 
-            if(window.AfroStoryAds) await window.AfroStoryAds.showRewarded(state.currentEpisode._id); 
-            const unlockRes = await api('/wallet/unlock-episode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ episodeId: state.currentEpisode._id, method: 'AD' }) }); 
-            if (!unlockRes) return toast('Failed to unlock via Ad', 'error');
-        } else { 
-            const unlockRes = await api('/wallet/unlock-episode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ episodeId: state.currentEpisode._id, method: 'COIN' }) }); 
-            if (!unlockRes) return toast('Failed to unlock (not enough coins)', 'error');
-        } 
+        const unlockRes = await api('/wallet/unlock-episode', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ episodeId: state.currentEpisode._id, method: 'COIN' }) 
+        }); 
+        
+        if (!unlockRes) return toast('Failed to unlock (not enough coins)', 'error');
         
         state.currentEpisode.hasAccess = true; 
         const lockScreen = document.getElementById(`lock-${state.currentEpisode._id}`); 
@@ -633,21 +636,12 @@ async function loadWallet() {
         const earnEl = $('#wallet-earned');
         if (earnEl) earnEl.textContent = Number(wallet.totalEarned || 0).toLocaleString(); 
         
-        if(state.user) state.user.adUnlocksRemaining = wallet.adUnlocks || 0; 
-        
-        const adBalanceEl = $('#ad-balance'); 
-        if (adBalanceEl) {
-            adBalanceEl.textContent = Math.max(0, wallet.adUnlocks || 0); 
-            const statBox = adBalanceEl.closest('.wallet-stat');
-            if (statBox) statBox.style.display = 'block'; 
-        }
-        
         const transList = $('#transactions-list');
         if (transList) {
             transList.innerHTML = (transactions.transactions || []).map(item => `<div class="data-row"><div><strong>${esc(item.description || item.type)}</strong><p>${new Date(item.createdAt).toLocaleDateString()}</p></div><span class="data-value">${esc(item.type === 'SPEND' ? '-' : '+')}${Number(item.amount || 0).toLocaleString()}</span></div>`).join('') || '<p>No transactions yet.</p>'; 
         }
         
-        if (window.AfroStoryAds) await window.AfroStoryAds.refresh(); 
+        if (window.AfroStoryAds && window.AfroStoryAds.refresh) await window.AfroStoryAds.refresh().catch(e => console.warn(e)); 
     } catch (error) { toast(error.message, 'error'); } 
 } 
 
@@ -800,7 +794,6 @@ async function loadCreator() {
 /* FAST DIRECT-TO-CLOUD UPLOAD SYSTEM (BYPASSES RENDER TIMEOUTS)                */
 /* ============================================================================ */
 async function uploadAsset(path, file) { 
-    // 1. Get the VIP signature from our server
     const isVideo = path.includes('video');
     const signRes = await api(`/upload/sign?type=${isVideo ? 'video' : 'image'}`);
     
@@ -808,7 +801,6 @@ async function uploadAsset(path, file) {
         throw new Error('Failed to secure upload connection');
     }
 
-    // 2. Upload DIRECTLY to Cloudinary from the browser! Bypasses Render entirely.
     const resourceType = isVideo ? 'video' : 'image';
     const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${signRes.cloudName}/${resourceType}/upload`;
 
@@ -819,7 +811,6 @@ async function uploadAsset(path, file) {
     formData.append('signature', signRes.signature);
     formData.append('folder', signRes.folder);
 
-    // Fetch directly using native fetch to avoid the custom 15s API timeout wrapper
     try {
         const response = await fetch(cloudinaryUrl, {
             method: 'POST',
@@ -833,7 +824,6 @@ async function uploadAsset(path, file) {
 
         const data = await response.json();
 
-        // Return the exact same format the rest of main.js expects
         return {
             url: data.secure_url,
             mediaUrl: data.secure_url,
