@@ -97,10 +97,7 @@ const episodeSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    totalAdUnlocks: {
-      type: Number,
-      default: 0,
-    },
+    // PHASE 5.1 CLEANUP: totalAdUnlocks removed permanently.
     averageWatchTime: {
       type: Number,
       default: 0, // in seconds
