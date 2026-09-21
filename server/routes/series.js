@@ -1,13 +1,12 @@
 import Series from '../models/Series.js';
 import Episode from '../models/Episode.js';
 import Creator from '../models/Creator.js';
-import Unlock from '../models/Unlock.js'; // PHASE 5.1 FIX: Added to check access
+import Unlock from '../models/Unlock.js';
 import { verifyAuth, verifyCreator } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { paginate, formatDecimal } from '../utils/helpers.js';
 
 export default async function seriesRoutes(fastify, opts) {
-  // Get all published series
   fastify.get('/discover/all', async (request, reply) => {
     try {
       if (request.cookies?.token && !(await verifyAuth(request, reply))) return;
@@ -60,7 +59,6 @@ export default async function seriesRoutes(fastify, opts) {
     }
   });
 
-  // Get single series
   fastify.get('/:seriesId', async (request, reply) => {
     try {
       if (request.cookies?.token && !(await verifyAuth(request, reply))) return;
@@ -96,72 +94,39 @@ export default async function seriesRoutes(fastify, opts) {
     }
   });
 
-  // Create series
   fastify.post('/create', async (request, reply) => {
     try {
       await verifyCreator(request, reply);
-
-      if (!request.user) {
-        return sendError(reply, 'Unauthorized', 401);
-      }
-
+      if (!request.user) return sendError(reply, 'Unauthorized', 401);
       const { title, description, coverImage, tags, genre, language, isPublished, isPremiumExclusive } = request.body || {};
 
-      if (!title || !coverImage) {
-        return sendError(reply, 'Title and cover image are required', 400);
-      }
+      if (!title || !coverImage) return sendError(reply, 'Title and cover image are required', 400);
 
       const creator = await Creator.findOne({ userId: request.user._id });
-
-      if (!creator) {
-        return sendError(reply, 'Creator profile not found', 404);
-      }
+      if (!creator) return sendError(reply, 'Creator profile not found', 404);
 
       const series = new Series({
-        creatorId: creator._id,
-        title,
-        description: description || '',
-        coverImage,
-        tags: tags || [],
-        genre: genre || '',
-        language: language || 'English',
-        status: 'ONGOING',
-        isPublished: isPublished === true,
-        isPremiumExclusive: isPremiumExclusive === true,
+        creatorId: creator._id, title, description: description || '', coverImage,
+        tags: tags || [], genre: genre || '', language: language || 'English',
+        status: 'ONGOING', isPublished: isPublished === true, isPremiumExclusive: isPremiumExclusive === true,
       });
-
       await series.save();
-
       sendSuccess(reply, series, 'Series created successfully', 201);
-    } catch (error) {
-      fastify.log.error(error);
-      sendError(reply, 'Failed to create series', 500, error.message);
-    }
+    } catch (error) { fastify.log.error(error); sendError(reply, 'Failed to create series', 500, error.message); }
   });
 
-  // Update series
   fastify.put('/:seriesId/update', async (request, reply) => {
     try {
       await verifyCreator(request, reply);
-
-      if (!request.user) {
-        return sendError(reply, 'Unauthorized', 401);
-      }
-
+      if (!request.user) return sendError(reply, 'Unauthorized', 401);
       const { seriesId } = request.params;
       const { title, description, coverImage, tags, status, genre, language, isPublished, isPremiumExclusive } = request.body || {};
 
       const series = await Series.findById(seriesId);
-
-      if (!series) {
-        return sendError(reply, 'Series not found', 404);
-      }
+      if (!series) return sendError(reply, 'Series not found', 404);
 
       const creator = await Creator.findOne({ userId: request.user._id });
-
-      if (!creator || series.creatorId.toString() !== creator._id.toString()) {
-        return sendError(reply, 'Forbidden - not series creator', 403);
-      }
+      if (!creator || series.creatorId.toString() !== creator._id.toString()) return sendError(reply, 'Forbidden - not series creator', 403);
 
       if (title) series.title = title;
       if (description !== undefined) series.description = description;
@@ -172,50 +137,27 @@ export default async function seriesRoutes(fastify, opts) {
       if (language) series.language = language;
       if (isPublished !== undefined) series.isPublished = isPublished;
       if (isPremiumExclusive !== undefined) series.isPremiumExclusive = isPremiumExclusive;
-
       await series.save();
-
       sendSuccess(reply, series, 'Series updated successfully');
-    } catch (error) {
-      fastify.log.error(error);
-      sendError(reply, 'Failed to update series', 500, error.message);
-    }
+    } catch (error) { fastify.log.error(error); sendError(reply, 'Failed to update series', 500, error.message); }
   });
 
-  // Delete series
   fastify.delete('/:seriesId', async (request, reply) => {
     try {
       await verifyCreator(request, reply);
-
-      if (!request.user) {
-        return sendError(reply, 'Unauthorized', 401);
-      }
-
+      if (!request.user) return sendError(reply, 'Unauthorized', 401);
       const { seriesId } = request.params;
-
       const series = await Series.findById(seriesId);
-
-      if (!series) {
-        return sendError(reply, 'Series not found', 404);
-      }
-
+      if (!series) return sendError(reply, 'Series not found', 404);
       const creator = await Creator.findOne({ userId: request.user._id });
-
-      if (!creator || series.creatorId.toString() !== creator._id.toString()) {
-        return sendError(reply, 'Forbidden - not series creator', 403);
-      }
+      if (!creator || series.creatorId.toString() !== creator._id.toString()) return sendError(reply, 'Forbidden - not series creator', 403);
 
       await Series.findByIdAndDelete(seriesId);
       await Episode.deleteMany({ seriesId });
-
       sendSuccess(reply, null, 'Series deleted successfully');
-    } catch (error) {
-      fastify.log.error(error);
-      sendError(reply, 'Failed to delete series', 500, error.message);
-    }
+    } catch (error) { fastify.log.error(error); sendError(reply, 'Failed to delete series', 500, error.message); }
   });
 
-  // Get series episodes
   fastify.get('/:seriesId/episodes', async (request, reply) => {
     try {
       if (request.cookies?.token && !(await verifyAuth(request, reply))) return;
@@ -223,26 +165,20 @@ export default async function seriesRoutes(fastify, opts) {
       const { page = 1, limit = 10 } = request.query;
       const { skip, limit: l, page: p } = paginate(page, limit);
 
-      const episodes = await Episode.find({
-        seriesId,
-        isPublished: true,
-      })
-        .skip(skip)
-        .limit(l)
-        .sort({ episodeNumber: 1 });
-
+      const episodes = await Episode.find({ seriesId, isPublished: true }).skip(skip).limit(l).sort({ episodeNumber: 1 });
       const total = await Episode.countDocuments({ seriesId, isPublished: true });
 
-      // PHASE 5.1 FIX: Authoritative Media Hiding in Series Listing
       const hasActiveSubscription = request.user && request.user.subscriptionExpiresAt && new Date(request.user.subscriptionExpiresAt) > new Date();
       
       let userUnlocks = [];
       if (request.user) {
         const episodeIds = episodes.map(ep => ep._id);
+        // PHASE 5.2 FIX: Temporal unlock expiration check
         const unlocks = await Unlock.find({
           userId: request.user._id,
           episodeId: { $in: episodeIds },
-          isActive: true
+          isActive: true,
+          $or: [{ expiresAt: null }, { expiresAt: {$gt: new Date() } }]
         }).lean();
         userUnlocks = unlocks.map(u => u.episodeId.toString());
       }
@@ -262,21 +198,13 @@ export default async function seriesRoutes(fastify, opts) {
 
           return {
             ...ep,
-            mediaUrl: safeMediaUrl, // Authoritative route for unauthorized users
+            mediaUrl: safeMediaUrl,
             hasAccess,
             rating: formatDecimal(ep.rating),
           };
         }),
-        pagination: {
-          page: p,
-          limit: l,
-          total,
-          pages: Math.ceil(total / l),
-        },
+        pagination: { page: p, limit: l, total, pages: Math.ceil(total / l) },
       });
-    } catch (error) {
-      fastify.log.error(error);
-      sendError(reply, 'Failed to fetch episodes', 500, error.message);
-    }
+    } catch (error) { fastify.log.error(error); sendError(reply, 'Failed to fetch episodes', 500, error.message); }
   });
 }
