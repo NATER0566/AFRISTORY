@@ -1,203 +1,114 @@
 # AFROSTORY Backend Implementation Summary
-
 ## ✅ Completion Status
-
 ### Core Components Delivered
-- ✅ Fastify server entry point (`server/server.js`)
-- ✅ MongoDB connection and configuration
-- ✅ All 11 Mongoose models with proper schemas and indexing
-- ✅ Complete JWT authentication with HttpOnly cookies
-- ✅ 14 API route modules with full CRUD operations
-- ✅ Cloudinary integration for video/image hosting
-- ✅ Paystack payment gateway integration
-- ✅ OneSignal push notification setup
-- ✅ Utility helpers and consistent response formatting
-
+*   ✅ Fastify server entry point (`server/server.js`)
+*   ✅ MongoDB connection and configuration (`server/config/db.js`)
+*   ✅ All 11 Mongoose models with proper schemas and indexing
+*   ✅ Complete JWT authentication with HttpOnly cookies
+*   ✅ 14 API route modules with full CRUD operations
+*   ✅ Cloudinary integration for video/image hosting with authoritative media boundary proxy
+*   ✅ Paystack payment gateway integration
+*   ✅ OneSignal push notification setup
+*   ✅ Utility helpers and consistent response formatting
+---
 ### Database Models (11 Total)
-1. **User** - Identity, authentication, ad unlock tracking
-2. **Creator** - Extended creator profile with earnings
-3. **Wallet** - Financial account with coin balance
-4. **Series** - Show/collection metadata
-5. **Episode** - Individual content with unlock mechanics
-6. **Transaction** - Audit trail for all money movements
-7. **Subscription** - VIP tier management
-8. **Unlock** - Access ledger (COIN, AD, VIP, FREE methods)
-9. **History** - Watch progress and completion tracking
-10. **Comment** - Nested comment system for episodes
-11. **Notification** - User notification queue
-12. **Report** - Content moderation system
-
+*   **User** — Identity, authentication, and user profile management
+*   **Creator** — Extended creator profile with earnings
+*   **Wallet** — Financial account with coin balance
+*   **Series** — Show/collection metadata
+*   **Episode** — Individual content with unlock mechanics and secure proxy routing
+*   **Transaction** — Audit trail for all money movements
+*   **Subscription** — VIP tier management
+*   **Unlock** — Access ledger (COIN, VIP, FREE methods; `AD` method reserved for future providers)
+*   **History** — Watch progress and completion tracking
+*   **Comment** — Nested comment system for episodes
+*   **Notification** — User notification queue
+*   **Report** — Content moderation system
+---
 ### API Routes (14 Modules)
-```
-/api/auth           - Registration, login, password reset, PIN setup
-/api/users          - Profile, watch history, ad unlock status
-/api/creators       - Creator accounts, profiles, series lists
-/api/series         - Discover, create, update series (CRUD)
-/api/episodes       - Episode CRUD + watch history tracking
-/api/wallet         - Balance queries, coin spending with transactions
-/api/vip            - Subscription plans and management
-/api/comments       - Nested comments with likes
-/api/notifications  - Notification management and delivery
-/api/search         - Global search, trending, by type
-/api/ads            - Ad unlock verification with rewarded system
-/api/payment        - Paystack integration + coin packages
-/api/upload         - Image/video upload to Cloudinary
-/api/admin          - Dashboard, user management, moderation
-```
-
-### Security Implementation
-- ✅ JWT + HttpOnly Secure Cookies (XSS-proof)
-- ✅ Password hashing with bcryptjs (10 salt rounds)
-- ✅ PIN hashing for high-value operations
-- ✅ MongoDB Transactions for atomic financial operations
-- ✅ Idempotent webhook processing (reference-based)
-- ✅ RBAC middleware (USER, CREATOR, ADMIN roles)
-- ✅ CORS configured for frontend domain
-- ✅ Input validation on all endpoints
-
-### Monetization Systems
-#### Premium Coins
-- Paystack integration with naira/kobo conversion
-- Coin packages: STARTER (100), GROWTH (300), PREMIUM (1000), ELITE (3000)
-- 60/40 split: Creator/Platform
-- Transaction logging with Paystack reference
-
-#### Rewarded Ads
-- 3 free ad unlocks per day (midnight reset)
-- Ad payload verification with actual network integration points
-- Creator reward: 20% of normal episode cost
-- Idempotent webhook handling
-
-#### VIP Subscriptions
-- Tiered plans: BASIC (free), VIP ($9.99), GOLD ($24.99)
-- Auto-renewal configuration ready
-- Subscription status tracking
-
-### Video Streaming
-- Cloudinary HLS (HTTP Live Streaming) integration
-- Adaptive bitrate encoding
-- Global CDN distribution
-- Temporary file cleanup after upload
-- Public ID tracking for asset management
-
-### Financial Precision
-- **Decimal128** used for all monetary fields
-- No floating-point arithmetic errors
-- ACID transactions with MongoDB sessions
-- Audit trail via Transaction model
-- Creator earnings tracked in lockedEarnings
-
-### Watch & Engagement Tracking
-- **History Model**: Watch position, completion percentage, completion timestamp
-- **Unlock Model**: Access method tracking (COIN/AD/VIP/FREE)
-- **Episode Stats**: View counts, unlock counts, average watch time, ratings
-- **Creator Stats**: Total views, earnings, follower counts
-
-### Moderation & Safety
-- Report system with severity levels
-- Admin dashboard for review queue
-- Creator verification status
-- User suspension/unsuspension
-- Content status control (DRAFT/ONGOING/COMPLETED)
-
+*   `/api/auth` — Registration, login, password reset, PIN setup
+*   `/api/users` — Profile, watch history management
+*   `/api/creators` — Creator accounts, profiles, series lists
+*   `/api/series` — Discover, create, update series (CRUD)
+*   `/api/episodes` — Episode CRUD + secure media proxy (`/:episodeId/media`) + watch history tracking
+*   `/api/wallet` — Balance queries, coin spending with transactions
+*   `/api/vip` — Subscription plans and management
+*   `/api/comments` — Nested comments with likes
+*   `/api/notifications` — Notification management and delivery
+*   `/api/search` — Global search, trending, by type
+*   `/api/ads` — Secure Adscod display advertising server-to-server proxy (`/serve`)
+*   `/api/payment` — Paystack integration + coin packages
+*   `/api/upload` — Image/video upload to Cloudinary
+*   `/api/admin` — Dashboard, user management, moderation
+---
+## 🔐 Security Implementation
+*   ✅ **JWT + HttpOnly Secure Cookies:** XSS-proof token handling.
+*   ✅ **Password Hashing:** `bcryptjs` with 10 salt rounds.
+*   ✅ **PIN Hashing:** Secured for high-value operations.
+*   ✅ **MongoDB Transactions:** Atomic operations for financial flows.
+*   ✅ **Idempotent Webhooks:** Reference-based processing to prevent duplicates.
+*   ✅ **Authoritative Media Boundary:** Server-side enforcement prevents unauthorized clients from extracting raw Cloudinary streaming URLs.
+*   ✅ **Safe HTML Sanitization:** Frontend ad rendering utilizes `DOMParser` to eliminate XSS risks from third-party ad payloads.
+*   ✅ **RBAC Middleware:** Role-based access control (`USER`, `CREATOR`, `ADMIN` roles).
+*   ✅ **CORS & Input Validation:** Configured across all endpoints.
+---
+## 💰 Monetization Systems
+### Premium Coins
+*   Paystack integration with naira/kobo conversion.
+*   Coin packages: `STARTER` (100), `GROWTH` (300), `PREMIUM` (1000), `ELITE` (3000).
+*   60/40 split: Creator/Platform revenue allocation.
+*   Transaction logging with Paystack references.
+### VIP Subscriptions
+*   Tiered plans: `BASIC` (free), `VIP` ($9.99), `GOLD` ($24.99).
+*   Auto-renewal configuration ready.
+*   Subscription status tracking with seamless frontend/backend state synchronization.
+### Advertising (Adscod Display Integration)
+*   Server-to-server proxy route (`GET /api/ads/serve`) securely fetches display ads using server-side environment variables (`ADSCOD_PUBLISHER_KEY`).
+*   *Strictly Display-Only:* Viewing or clicking sponsored messages does **not** grant episode unlocks. 
+*   `method: "AD"` requests are strictly rejected server-side with HTTP 403.
+---
+## 🎬 Video Streaming
+*   Cloudinary HLS (HTTP Live Streaming) integration.
+*   Adaptive bitrate encoding and global CDN distribution.
+*   Temporary file cleanup after upload.
+*   Secure streaming flow backed by the authoritative `/:episodeId/media` proxy.
+---
+## 📊 Financial Precision & Tracking
+*   **Decimal128** used for all monetary fields to prevent floating-point errors.
+*   **ACID Transactions** with MongoDB sessions.
+*   **Audit Trail** via the `Transaction` model.
+*   **Creator Earnings** tracked in `lockedEarnings`.
+*   **Watch & Engagement Metrics:** View counts, unlock counts, average watch time, ratings, and unique/returning viewer analytics.
+---
 ## 🔌 Integration Points (Ready to Configure)
 
-All third-party services are configured and ready for credentials:
-
-| Service | Status | File | Required Credentials |
-|---------|--------|------|---------------------|
-| MongoDB Atlas | Ready | `/server/config/db.js` | MONGO_URI |
-| Paystack | Ready | `/server/config/paystack.js` | PAYSTACK_SECRET_KEY, PAYSTACK_PUBLIC_KEY |
-| Cloudinary | Ready | `/server/config/cloudinary.js` | CLOUDINARY_CLOUD_NAME, API_KEY, API_SECRET |
-| OneSignal | Ready | `/server/config/onesignal.js` | ONESIGNAL_APP_ID, API_KEY |
-| JWT | Ready | `/server/middleware/auth.js` | JWT_SECRET |
-
-## 🧪 Quick Start
-
-```bash
-# 1. Install dependencies
-npm install
-
-# 2. Configure .env with your credentials
-cp .env.example .env
-# Edit .env with real values
-
-# 3. Run development server
-npm run dev
-
-# 4. Test registration
-curl -X POST http://localhost:3000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"username":"test","email":"test@example.com","password":"Pass123!","confirmPassword":"Pass123!"}'
-
-# 5. Test health check
-curl http://localhost:3000/health
-```
-
-## 📊 Database Indices
-
-Optimized for production queries:
-- User: email (unique), username (unique)
-- Series: creatorId + status, full-text search
-- Episode: seriesId + episodeNumber, seriesId + publishedAt
-- Unlock: userId + episodeId (unique), isActive
-- History: userId + episodeId (unique), userId + updatedAt
-- Transaction: userId + createdAt, reference (unique)
-- Comment: episodeId + createdAt, userId + createdAt
-
-## 🎯 Core Features Ready for Frontend
-
-### Auth Flow
-- Register → Auto-wallet creation → JWT cookie → Redirect to app.html
-- Login → Verify → JWT cookie
-- Protected routes check auth middleware
-
-### Episode Access System
-```
-IF isFree → Allow playback
-ELSE IF hasUnlock AND isActive → Allow playback
-ELSE → Show unlock modal:
-  Option A: "Spend 10 coins" → POST /wallet/unlock-episode
-  Option B: "Watch ad" → Trigger ads.js SDK → POST /ads/verify-completion
-  Option C: "Get VIP" → Redirect to VIP subscribe
-```
-
-### Creator Earning Flow
-```
-User purchases coins → Paystack → Verify → Wallet credited
-User unlocks episode → 60% goes to lockedEarnings (creator)
-Creator requests payout → Verify PIN → Process via Paystack Transfer API
-```
-
-## 📝 Notes
-
-- All date fields use ISO 8601 format
-- All IDs are MongoDB ObjectIds (24-char hex)
-- Decimal128 values returned as formatted decimals in responses
-- Pagination defaults: page=1, limit=10, max=100
-- All passwords/PINs are salted and hashed (never stored plaintext)
-- Watch history auto-creates on first view
-- Ad unlocks reset daily at midnight UTC
-
-## 🚀 Ready for Production?
-
-The backend is production-ready with:
-- ✅ Error handling on all endpoints
-- ✅ Validation on all inputs
-- ✅ Decimal precision for finances
-- ✅ Transaction atomicity
-- ✅ Idempotent webhooks
-- ✅ Role-based access control
-- ✅ Secure cookie storage
-- ✅ Comprehensive logging
-
-**Next Steps:**
-1. Build frontend (public/index.html, public/app.html, public/js/)
-2. Add Socket.IO for real-time notifications
-3. Deploy to Render or cloud provider
-4. Configure production environment variables
-5. Set up monitoring and alerts
+| Service | Status | File Location | Required Credentials |
+| :--- | :--- | :--- | :--- |
+| **MongoDB Atlas** | Ready | `server/config/db.js` | `MONGO_URI` |
+| **Paystack** | Ready | `server/config/paystack.js` | `PAYSTACK_SECRET_KEY`, `PAYSTACK_PUBLIC_KEY` |
+| **Cloudinary** | Ready | `server/config/cloudinary.js` | `CLOUDINARY_CLOUD_NAME`, `API_KEY`, `API_SECRET` |
+| **OneSignal** | Ready | `server/config/onesignal.js` | `ONESIGNAL_APP_ID`, `API_KEY` |
+| **Adscod** | Ready | `server/routes/ads.js` | `ADSCOD_PUBLISHER_KEY`, `ADSCOD_API_URL` |
+| **JWT** | Ready | `server/middleware/auth.js` | `JWT_SECRET` |
 
 ---
-
-**All source code follows the AFROSTORY specification exactly. Zero frameworks injected. Production-safe.**
+## 🎯 Core Features Ready for Frontend
+### Auth Flow
+1. Register → Auto-wallet creation → JWT cookie → Redirect to `app.html`
+2. Login → Verify → JWT cookie set
+3. Protected routes check auth middleware automatically
+### Episode Access System
+*   **If `isFree`** → Allow playback
+*   **Else if `hasUnlock` AND `isActive`** → Allow playback (via full media stream)
+*   **Else** → Show unlock modal:
+    *   *Option A:* "Spend coins" → `POST /wallet/unlock-episode`
+    *   *Option B:* "View Sponsored Message" → Open safe Adscod display modal (Display-only)
+    *   *Option C:* "Get VIP" → Redirect to VIP subscription plans
+### Creator Earning Flow
+1. User purchases coins via Paystack → Verify → Wallet credited
+2. User unlocks episode → 60% goes to creator's `lockedEarnings`
+3. Creator requests payout → Verify PIN → Process via Paystack Transfer API
+---
+## 🚀 Ready for Production?
+The backend is secure, decoupled, and production-ready with full error handling, input validation, atomic transactions, and role-based access control.
+*All source code follows the AFROSTORY specification exactly. Zero frameworks injected. Production-safe.*
