@@ -36,7 +36,7 @@ const Ads = (() => {
     }
   }
 
-  // PHASE 5: SAFE RENDERING IMPLEMENTATION
+  // PHASE 5.1: RIGOROUS SAFE RENDERING IMPLEMENTATION
   function renderAdModal(adData) {
     const modal = document.createElement('div');
     modal.className = 'modal-root';
@@ -61,29 +61,88 @@ const Ads = (() => {
     header.appendChild(closeBtn);
     modalContent.appendChild(header);
 
+    // Helper: Safely parse and validate URLs on the client
+    function isValidHttpsUrl(urlStr) {
+        if (!urlStr) return false;
+        try {
+            const parsed = new URL(urlStr);
+            return parsed.protocol === 'https:';
+        } catch (e) {
+            return false;
+        }
+    }
+
     // Media (Strict HTTPS Validation)
-    if (adData.videoUrl && String(adData.videoUrl).startsWith('https://')) {
+    if (adData.videoUrl && isValidHttpsUrl(adData.videoUrl)) {
        const video = document.createElement('video');
        video.src = adData.videoUrl;
        video.controls = true;
        video.autoplay = true;
        video.style.cssText = 'width:100%; max-height:300px; background:#000;';
        modalContent.appendChild(video);
-    } else if (adData.imageUrl && String(adData.imageUrl).startsWith('https://')) {
+    } else if (adData.imageUrl && isValidHttpsUrl(adData.imageUrl)) {
        const img = document.createElement('img');
        img.src = adData.imageUrl;
        img.style.cssText = 'width:100%; max-height:300px; object-fit:contain; background:#000;';
        modalContent.appendChild(img);
     } else if (adData.adContent) {
-       // DOMParser Sanitization to prevent XSS script injection
+       // DOMParser Sanitization
        const parser = new DOMParser();
        const doc = parser.parseFromString(adData.adContent, 'text/html');
-       const unsafeTags = doc.querySelectorAll('script, iframe, object, embed');
-       unsafeTags.forEach(tag => tag.remove());
        
        const contentDiv = document.createElement('div');
        contentDiv.style.cssText = 'padding:10px; background:#fff; color:#000; max-height: 300px; overflow-y: auto;';
-       contentDiv.innerHTML = doc.body.innerHTML; 
+       
+       // PHASE 5.1 FIX: Recursive DOM Sanitizer
+       // Eliminates event handlers (onerror), unsafe tags (svg, script), and javascript: schemes.
+       function sanitizeAndAppend(sourceNode, targetNode) {
+           const safeTags = ['B','I','U','STRONG','EM','P','BR','DIV','SPAN','A','IMG','H1','H2','H3','H4','H5','H6','UL','OL','LI','BLOCKQUOTE'];
+           
+           for (let i = 0; i < sourceNode.childNodes.length; i++) {
+               const child = sourceNode.childNodes[i];
+               
+               if (child.nodeType === Node.TEXT_NODE) {
+                   targetNode.appendChild(document.createTextNode(child.textContent));
+               } else if (child.nodeType === Node.ELEMENT_NODE) {
+                   const tagName = child.tagName.toUpperCase();
+                   if (!safeTags.includes(tagName)) continue; // Drop unsafe tags
+
+                   const el = document.createElement(tagName);
+                   
+                   // Sanitize attributes
+                   for (let j = 0; j < child.attributes.length; j++) {
+                       const attr = child.attributes[j];
+                       const name = attr.name.toLowerCase();
+                       const val = attr.value;
+                       
+                       // Block event handlers entirely
+                       if (name.startsWith('on')) continue;
+                       
+                       // Validate URLs
+                       if (name === 'href' || name === 'src') {
+                           try {
+                               const parsed = new URL(val, window.location.origin);
+                               if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') continue;
+                           } catch(e) { continue; }
+                       }
+                       
+                       el.setAttribute(name, val);
+                   }
+                   
+                   // Security for links to prevent Reverse Tabnabbing
+                   if (tagName === 'A') {
+                       el.setAttribute('target', '_blank');
+                       el.setAttribute('rel', 'noopener noreferrer'); 
+                   }
+                   
+                   // Recurse children
+                   sanitizeAndAppend(child, el);
+                   targetNode.appendChild(el);
+               }
+           }
+       }
+       
+       sanitizeAndAppend(doc.body, contentDiv);
        modalContent.appendChild(contentDiv);
     }
 
@@ -101,11 +160,13 @@ const Ads = (() => {
     desc.textContent = adData.description || '';
     body.appendChild(desc);
 
-    // Click URL (Strict HTTPS Validation to prevent Javascript execution)
-    if (adData.clickUrl && String(adData.clickUrl).startsWith('https://')) {
+    // Click URL (Strict Parsing Validation & Tabnabbing Fix)
+    if (isValidHttpsUrl(adData.clickUrl)) {
        const link = document.createElement('a');
        link.href = adData.clickUrl;
        link.target = '_blank';
+       // PHASE 5.1 FIX: Prevent Reverse Tabnabbing
+       link.rel = 'noopener noreferrer'; 
        link.className = 'button button-primary';
        link.style.cssText = 'display:block; text-align:center; text-decoration:none;';
        link.textContent = 'Learn More';
