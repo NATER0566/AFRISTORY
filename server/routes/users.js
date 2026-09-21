@@ -8,7 +8,7 @@ import UserFollow from '../models/UserFollow.js';
 import { verifyAuth } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { paginate, formatDecimal } from '../utils/helpers.js';
-import { createNotification } from '../utils/notificationService.js'; // NEW: Import central service
+import { createNotification } from '../utils/notificationService.js';
 
 export default async function userRoutes(fastify, opts) {
   const privateUserFields = '-passwordHash -pinHash -verificationCode -verificationCodeExpires -resetPasswordCode -resetPasswordExpires';
@@ -38,7 +38,6 @@ export default async function userRoutes(fastify, opts) {
       const [user, wallet, history, favorites, unlocks, creator] = await Promise.all([
         User.findById(request.user._id).select(privateUserFields),
         Wallet.findOne({ userId: request.user._id }),
-        // FIX: Deeply populate images and duration for history
         History.find({ userId: request.user._id })
           .populate('episodeId', 'title thumbnailUrl duration')
           .populate('seriesId', 'title coverImage')
@@ -46,7 +45,6 @@ export default async function userRoutes(fastify, opts) {
         Favorite.find({ userId: request.user._id })
           .populate('seriesId', 'title coverImage')
           .sort({ createdAt: -1 }).limit(6),
-        // FIX: Deeply populate images for library unlocks
         Unlock.find({ userId: request.user._id, isActive: true })
           .populate('episodeId', 'title thumbnailUrl duration')
           .populate('seriesId', 'title coverImage')
@@ -159,7 +157,6 @@ export default async function userRoutes(fastify, opts) {
       await verifyAuth(request, reply);
       if (!request.user) return sendError(reply, 'Unauthorized', 401);
       
-      // FIX: Populate image data
       const history = await History.find({ userId: request.user._id })
         .populate('episodeId', 'title thumbnailUrl duration')
         .populate('seriesId', 'title coverImage')
@@ -203,7 +200,6 @@ export default async function userRoutes(fastify, opts) {
       await verifyAuth(request, reply);
       if (!request.user) return sendError(reply, 'Unauthorized', 401);
       
-      // FIX: Populate image data
       const unlocks = await Unlock.find({ userId: request.user._id, isActive: true })
         .populate('episodeId', 'title thumbnailUrl duration')
         .populate('seriesId', 'title coverImage')
@@ -258,7 +254,6 @@ export default async function userRoutes(fastify, opts) {
 
       const History = (await import('../models/History.js')).default;
 
-      // FIX: Explicitly ask the database to fetch the images and duration so the frontend can render the UI
       const history = await History.find({ userId: request.user._id })
         .populate('episodeId', 'title thumbnailUrl duration')
         .populate('seriesId', 'title coverImage')
@@ -283,26 +278,7 @@ export default async function userRoutes(fastify, opts) {
     }
   });
 
-  // Get ad unlocks remaining
-  fastify.get('/ads/remaining', async (request, reply) => {
-    try {
-      await verifyAuth(request, reply);
-
-      if (!request.user) {
-        return sendError(reply, 'Unauthorized', 401);
-      }
-
-      const user = await User.findById(request.user._id);
-
-      sendSuccess(reply, {
-        adUnlocksRemaining: user.adUnlocksRemaining,
-        adUnlocksResetDate: user.adUnlocksResetDate,
-      });
-    } catch (error) {
-      fastify.log.error(error);
-      sendError(reply, 'Failed to fetch ad unlocks', 500, error.message);
-    }
-  });
+  // PHASE 3 CLEANUP: Removed GET /ads/remaining endpoint that queried legacy daily quota.
 
   // NORMAL USER FOLLOW ENDPOINT
   fastify.post('/:userId/follow', async (request, reply) => {
@@ -333,7 +309,6 @@ export default async function userRoutes(fastify, opts) {
         followingId: targetUser._id
       });
 
-      // NEW: Trigger Central Notification asynchronously
       createNotification({
         userId: targetUser._id,
         type: 'NEW_FOLLOWER',
@@ -343,7 +318,6 @@ export default async function userRoutes(fastify, opts) {
         dedupeKey: `user_follow_${request.user._id}_${targetUser._id}`
       }).catch(err => fastify.log.error('Push error:', err));
 
-      // Does NOT increment Creator followers! Kept fully isolated.
       sendSuccess(reply, { alreadyFollowing: false, isFollowing: true }, 'Following user');
     } catch (error) {
       if (error.code === 11000) {
