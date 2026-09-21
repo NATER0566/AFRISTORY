@@ -18,7 +18,7 @@ export default async function adsRoutes(fastify, opts) {
   // trusted provider-verified reward mechanism (like a server-to-server 
   // callback) is available, its secure webhook endpoint will be implemented here.
 
-  // PHASE 4: Secure Adscod Advertising Proxy
+  // PHASE 4/5: Secure Adscod Advertising Proxy
   // This endpoint fetches an ad from Adscod server-side.
   // It DOES NOT grant premium unlocks.
   fastify.get('/serve', async (request, reply) => {
@@ -36,8 +36,8 @@ export default async function adsRoutes(fastify, opts) {
         return sendError(reply, 'Sponsored messages are currently unavailable.', 503);
       }
 
-      // Use the Adscod endpoint from environment, or default fallback
-      const apiUrl = process.env.ADSCOD_API_URL || 'https://api.adscod.com/v1/serve';
+      // PHASE 5 FIX: Corrected Adscod API fallback URL to match provider documentation
+      const apiUrl = process.env.ADSCOD_API_URL || 'https://api.adscod.com/api/v1/serve';
 
       // Request ad securely server-to-server
       const adResponse = await axios.get(apiUrl, {
