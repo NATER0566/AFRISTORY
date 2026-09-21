@@ -11,9 +11,8 @@ import EpisodeView from '../models/EpisodeView.js';
 import { verifyAuth, verifyCreator } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { formatDecimal } from '../utils/helpers.js';
-import { createNotification } from '../utils/notificationService.js'; // NEW: Central notification service
+import { createNotification } from '../utils/notificationService.js';
 
-// Deep populate object to ensure we trace the Creator back to their actual User avatar
 const deepSeriesPopulate = {
   path: 'seriesId',
   populate: {
@@ -24,9 +23,10 @@ const deepSeriesPopulate = {
 };
 
 export default async function episodeRoutes(fastify, opts) {
-  // PHASE 5.1 FIX: AUTHORITATIVE MEDIA BOUNDARY ROUTE
+  // PHASE 5.1 & 5.2 FIX: AUTHORITATIVE MEDIA BOUNDARY ROUTE
   // Redirects to full media if authorized, or a restricted 30s preview slice if unauthorized.
   // Fails closed for non-Cloudinary premium media.
+  // Enforces temporal unlock expiration.
   fastify.get('/:episodeId/media', async (request, reply) => {
     try {
       const { episodeId } = request.params;
@@ -41,7 +41,13 @@ export default async function episodeRoutes(fastify, opts) {
             if (request.user.subscriptionExpiresAt && new Date(request.user.subscriptionExpiresAt) > new Date()) {
                 hasAccess = true;
             } else {
-                const unlock = await Unlock.findOne({ userId: request.user._id, episodeId, isActive: true }).lean();
+                // PHASE 5.2 FIX: Temporal unlock expiration check
+                const unlock = await Unlock.findOne({ 
+                  userId: request.user._id, 
+                  episodeId, 
+                  isActive: true,
+                  $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }]
+                }).lean();
                 if (unlock) hasAccess = true;
             }
          }
@@ -51,15 +57,12 @@ export default async function episodeRoutes(fastify, opts) {
           return reply.redirect(episode.mediaUrl);
       } else {
           let previewUrl = episode.mediaUrl;
-          // Apply Cloudinary End-Offset (eo_30) securely via authoritative backend redirect
           if (previewUrl && previewUrl.includes('cloudinary.com')) {
               if (!previewUrl.includes('/eo_')) {
                   previewUrl = previewUrl.replace('/upload/', '/upload/eo_30/');
               }
               return reply.redirect(previewUrl);
           }
-          
-          // PHASE 5.1 FIX: Fail closed for non-Cloudinary premium media.
           return sendError(reply, 'Premium content requires authorization. Preview unavailable for this media type.', 403);
       }
     } catch (error) {
@@ -68,7 +71,6 @@ export default async function episodeRoutes(fastify, opts) {
     }
   });
 
-  // Database-backed episode feed used by Watch, Discover, and recommendations.
   fastify.get('/feed', async (request, reply) => {
     try {
       let userIsAuthenticated = false;
@@ -97,14 +99,15 @@ export default async function episodeRoutes(fastify, opts) {
 
       if (request.user) {
         const episodeIds = episodes.map(ep => ep._id);
+        // PHASE 5.2 FIX: Temporal unlock expiration check
         const unlocks = await Unlock.find({
           userId: request.user._id,
           episodeId: { $in: episodeIds },
-          isActive: true
+          isActive: true,
+          $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }]
         }).lean();
         userUnlocks = unlocks.map(u => u.episodeId.toString());
 
-        // Extract unique creator IDs from the feed to check follow status in one query
         const creatorIds = [...new Set(episodes.map(ep => ep.seriesId?.creatorId?._id?.toString()).filter(Boolean))];
         const follows = await Follow.find({
           followerId: request.user._id,
@@ -112,7 +115,6 @@ export default async function episodeRoutes(fastify, opts) {
         }).lean();
         followedCreatorIds = follows.map(f => f.creatorId.toString());
 
-        // Efficiently map all likes for the user in this feed batch
         const likes = await Like.find({
           userId: request.user._id,
           episodeId: { $in: episodeIds }
@@ -125,7 +127,6 @@ export default async function episodeRoutes(fastify, opts) {
         if (hasActiveSubscription) hasAccess = true;
         if (request.user && userUnlocks.includes(episode._id.toString())) hasAccess = true;
 
-        // Safely resolve the profile image from the deep populated User object
         if (episode.seriesId && episode.seriesId.creatorId) {
           const creator = episode.seriesId.creatorId;
           const user = creator.userId;
@@ -136,7 +137,6 @@ export default async function episodeRoutes(fastify, opts) {
         const isFollowing = followedCreatorIds.includes(creatorIdStr);
         const isLiked = userLikes.includes(episode._id.toString()); 
 
-        // PHASE 5: Secure Media URL Hiding
         let safeMediaUrl = episode.mediaUrl;
         if (!hasAccess && safeMediaUrl) {
             safeMediaUrl = `/api/episodes/${episode._id}/media`;
@@ -144,7 +144,7 @@ export default async function episodeRoutes(fastify, opts) {
 
         return { 
             ...episode,
-            mediaUrl: safeMediaUrl, // Returns authoritative route for unauthorized users
+            mediaUrl: safeMediaUrl,
             rating: formatDecimal(episode.rating),
             hasAccess,
             isFollowing,
@@ -159,20 +159,12 @@ export default async function episodeRoutes(fastify, opts) {
     }
   });
 
-  // Get single episode
   fastify.get('/:episodeId', async (request, reply) => {
     try {
       const { episodeId } = request.params;
+      const episode = await Episode.findById(episodeId).populate(deepSeriesPopulate).lean(); 
 
-      const episode = await Episode.findById(episodeId)
-        .populate(deepSeriesPopulate)
-        .lean(); 
-
-      if (!episode) {
-        return sendError(reply, 'Episode not found', 404);
-      }
-
-      if (!episode.isPublished && !request.user) {
+      if (!episode || (!episode.isPublished && !request.user)) {
         return sendError(reply, 'Episode not found', 404);
       }
 
@@ -189,10 +181,12 @@ export default async function episodeRoutes(fastify, opts) {
 
       if (request.user) {
         if (!episode.isFree) {
+          // PHASE 5.2 FIX: Temporal unlock expiration check
           const unlock = await Unlock.findOne({
             userId: request.user._id,
             episodeId,
             isActive: true,
+            $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }]
           }).lean();
           hasAccess = hasAccess || !!unlock;
         }
@@ -202,19 +196,16 @@ export default async function episodeRoutes(fastify, opts) {
           const followCheck = await Follow.findOne({ followerId: request.user._id, creatorId: creatorIdStr }).lean();
           isFollowing = !!followCheck;
         }
-
         const likeCheck = await Like.findOne({ userId: request.user._id, episodeId }).lean();
         isLiked = !!likeCheck;
       }
 
-      // Safely resolve the profile image from the deep populated User object
       if (episode.seriesId && episode.seriesId.creatorId) {
         const creator = episode.seriesId.creatorId;
         const user = creator.userId;
         creator.profileImage = creator.profileImage || user?.profile?.avatarUrl || user?.profileImage || null;
       }
 
-      // PHASE 5: Secure Media URL Hiding
       let safeMediaUrl = episode.mediaUrl;
       if (!hasAccess && safeMediaUrl) {
           safeMediaUrl = `/api/episodes/${episode._id}/media`;
@@ -222,7 +213,7 @@ export default async function episodeRoutes(fastify, opts) {
 
       sendSuccess(reply, {
         ...episode,
-        mediaUrl: safeMediaUrl, // Returns authoritative route for unauthorized users
+        mediaUrl: safeMediaUrl,
         rating: formatDecimal(episode.rating),
         hasAccess,
         isFollowing,
@@ -234,358 +225,186 @@ export default async function episodeRoutes(fastify, opts) {
     }
   });
 
-  // Create episode
+  // Create episode (unchanged logic)
   fastify.post('/series/:seriesId/create', async (request, reply) => {
     try {
       await verifyCreator(request, reply);
-
-      if (!request.user) {
-        return sendError(reply, 'Unauthorized', 401);
-      }
-
+      if (!request.user) return sendError(reply, 'Unauthorized', 401);
       const { seriesId } = request.params;
-      const {
-        episodeNumber,
-        title,
-        description,
-        mediaUrl,
-        thumbnailUrl,
-        duration,
-        isFree,
-        coinCost,
-        adUnlockable,
-        isPublished,
-        genre,
-        culturalCategory,
-        language,
-        tags,
-      } = request.body || {};
+      const { episodeNumber, title, description, mediaUrl, thumbnailUrl, duration, isFree, coinCost, adUnlockable, isPublished, genre, culturalCategory, language, tags } = request.body || {};
 
-      if (!title || !mediaUrl || !genre || !culturalCategory || !language) {
-        return sendError(reply, 'Title, media URL, genre, cultural category, and language are required', 400);
-      }
-      
-      if (!EPISODE_GENRES.includes(genre) || !CULTURAL_CATEGORIES.includes(culturalCategory) || !EPISODE_LANGUAGES.includes(language)) {
-        return sendError(reply, 'Invalid genre, cultural category, or language', 400);
-      }
-
-      if (!/^https?:\/\/.+/i.test(mediaUrl)) {
-        return sendError(reply, 'Media URL must be a valid secure web link', 400);
-      }
+      if (!title || !mediaUrl || !genre || !culturalCategory || !language) return sendError(reply, 'Title, media URL, genre, cultural category, and language are required', 400);
+      if (!EPISODE_GENRES.includes(genre) || !CULTURAL_CATEGORIES.includes(culturalCategory) || !EPISODE_LANGUAGES.includes(language)) return sendError(reply, 'Invalid genre, cultural category, or language', 400);
+      if (!/^https?:\/\/.+/i.test(mediaUrl)) return sendError(reply, 'Media URL must be a valid secure web link', 400);
 
       const series = await Series.findById(seriesId);
-
-      if (!series) {
-        return sendError(reply, 'Series not found', 404);
-      }
-
+      if (!series) return sendError(reply, 'Series not found', 404);
       const creator = await Creator.findOne({ userId: request.user._id });
-
-      if (!creator || series.creatorId.toString() !== creator._id.toString()) {
-        return sendError(reply, 'Forbidden - not series creator', 403);
-      }
-
-      if (isFree === true) {
-        return sendError(reply, 'Free episodes are no longer supported', 400);
-      }
+      if (!creator || series.creatorId.toString() !== creator._id.toString()) return sendError(reply, 'Forbidden - not series creator', 403);
+      if (isFree === true) return sendError(reply, 'Free episodes are no longer supported', 400);
 
       const nextEpisodeNumber = episodeNumber || ((await Episode.findOne({ seriesId }).sort({ episodeNumber: -1 }))?.episodeNumber || 0) + 1;
       const episode = new Episode({
-        seriesId,
-        episodeNumber: nextEpisodeNumber,
-        title,
-        description: description || '',
-        mediaUrl,
-        thumbnailUrl: thumbnailUrl || null,
-        genre,
-        culturalCategory,
-        language,
-        tags: Array.isArray(tags) ? tags : [],
-        duration: duration || 0,
-        isFree: false,
-        coinCost: coinCost || 10,
-        adUnlockable: adUnlockable !== undefined ? adUnlockable : true,
-        isPublished: isPublished === true,
-        publishedAt: isPublished === true ? new Date() : null,
+        seriesId, episodeNumber: nextEpisodeNumber, title, description: description || '',
+        mediaUrl, thumbnailUrl: thumbnailUrl || null, genre, culturalCategory, language,
+        tags: Array.isArray(tags) ? tags : [], duration: duration || 0, isFree: false,
+        coinCost: coinCost || 10, adUnlockable: adUnlockable !== undefined ? adUnlockable : true,
+        isPublished: isPublished === true, publishedAt: isPublished === true ? new Date() : null,
       });
 
       await episode.save();
-
       series.totalEpisodes = await Episode.countDocuments({ seriesId });
       await series.save();
 
-      // FIXED: Safely process all notifications with Promise.allSettled + BEAUTIFUL BRANDING
       if (episode.isPublished) {
         const followers = await Follow.find({ creatorId: creator._id });
         Promise.allSettled(
           followers.map(follow =>
             createNotification({
-              userId: follow.followerId,
-              type: 'NEW_EPISODE',
-              title: 'New Episode Published! 🎬',
+              userId: follow.followerId, type: 'NEW_EPISODE', title: 'New Episode Published! 🎬',
               message: `${creator.brandName} just published a new episode: ${episode.title}`,
-              targetUrl: '#watch',
-              icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192', // ADDED GOLD BRANDING
-              image: episode.thumbnailUrl || null, // ADDED: Shows the episode thumbnail in the push!
-              data: { episodeId: episode._id, seriesId: series._id },
+              targetUrl: '#watch', icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192',
+              image: episode.thumbnailUrl || null, data: { episodeId: episode._id, seriesId: series._id },
               dedupeKey: `new_ep_${episode._id}_${follow.followerId}`
             })
           )
         ).catch(err => fastify.log.error('Push loop error:', err));
       }
-
       sendSuccess(reply, episode, 'Episode created successfully', 201);
-    } catch (error) {
-      fastify.log.error(error);
-      sendError(reply, 'Failed to create episode', 500, error.message);
-    }
+    } catch (error) { fastify.log.error(error); sendError(reply, 'Failed to create episode', 500, error.message); }
   });
 
-  // Update episode
+  // Update episode (unchanged logic)
   fastify.put('/:episodeId/update', async (request, reply) => {
     try {
       await verifyCreator(request, reply);
-
-      if (!request.user) {
-        return sendError(reply, 'Unauthorized', 401);
-      }
-
+      if (!request.user) return sendError(reply, 'Unauthorized', 401);
       const { episodeId } = request.params;
-      const {
-        title,
-        description,
-        mediaUrl,
-        thumbnailUrl,
-        duration,
-        isFree,
-        coinCost,
-        adUnlockable,
-        isPublished,
-        genre,
-        culturalCategory,
-        language,
-        tags,
-      } = request.body || {};
+      const { title, description, mediaUrl, thumbnailUrl, duration, isFree, coinCost, adUnlockable, isPublished, genre, culturalCategory, language, tags } = request.body || {};
 
       const episode = await Episode.findById(episodeId);
-
-      if (!episode) {
-        return sendError(reply, 'Episode not found', 404);
-      }
-
+      if (!episode) return sendError(reply, 'Episode not found', 404);
       const series = await Series.findById(episode.seriesId);
-      if (!series) {
-        return sendError(reply, 'Series not found', 404);
-      }
+      if (!series) return sendError(reply, 'Series not found', 404);
       const creator = await Creator.findOne({ userId: request.user._id });
+      if (!creator || series.creatorId.toString() !== creator._id.toString()) return sendError(reply, 'Forbidden - not series creator', 403);
 
-      if (!creator || series.creatorId.toString() !== creator._id.toString()) {
-        return sendError(reply, 'Forbidden - not series creator', 403);
-      }
-
-      const wasPublished = episode.isPublished; // NEW: Track state before saving
-
+      const wasPublished = episode.isPublished;
       if (title) episode.title = title;
       if (description !== undefined) episode.description = description;
-      
       if (mediaUrl) {
-        if (!/^https?:\/\/.+/i.test(mediaUrl)) {
-          return sendError(reply, 'Media URL must be a valid secure web link', 400);
-        }
+        if (!/^https?:\/\/.+/i.test(mediaUrl)) return sendError(reply, 'Media URL must be a valid secure web link', 400);
         episode.mediaUrl = mediaUrl;
       }
-      
       if (thumbnailUrl !== undefined) episode.thumbnailUrl = thumbnailUrl;
       if (genre !== undefined) episode.genre = genre;
       if (culturalCategory !== undefined) episode.culturalCategory = culturalCategory;
       if (language !== undefined) episode.language = language;
       if (tags !== undefined) episode.tags = Array.isArray(tags) ? tags : [];
       if (duration !== undefined) episode.duration = duration;
-      if (isFree === true) {
-        return sendError(reply, 'Free episodes are no longer supported', 400);
-      }
+      if (isFree === true) return sendError(reply, 'Free episodes are no longer supported', 400);
       if (isFree !== undefined) episode.isFree = false;
       if (coinCost !== undefined) episode.coinCost = coinCost;
       if (adUnlockable !== undefined) episode.adUnlockable = adUnlockable;
       if (isPublished !== undefined) {
         episode.isPublished = isPublished;
-        if (isPublished && !episode.publishedAt) {
-          episode.publishedAt = new Date();
-        }
+        if (isPublished && !episode.publishedAt) episode.publishedAt = new Date();
       }
 
       await episode.save();
 
-      // FIXED: Safely process all notifications with Promise.allSettled + BEAUTIFUL BRANDING
       if (isPublished === true && !wasPublished) {
         const followers = await Follow.find({ creatorId: creator._id });
         Promise.allSettled(
           followers.map(follow =>
             createNotification({
-              userId: follow.followerId,
-              type: 'NEW_EPISODE',
-              title: 'New Episode Published! 🎬',
+              userId: follow.followerId, type: 'NEW_EPISODE', title: 'New Episode Published! 🎬',
               message: `${creator.brandName} just published a new episode: ${episode.title}`,
-              targetUrl: '#watch',
-              icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192', // ADDED GOLD BRANDING
-              image: episode.thumbnailUrl || null, // ADDED: Shows the episode thumbnail in the push!
-              data: { episodeId: episode._id, seriesId: series._id },
+              targetUrl: '#watch', icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192',
+              image: episode.thumbnailUrl || null, data: { episodeId: episode._id, seriesId: series._id },
               dedupeKey: `new_ep_${episode._id}_${follow.followerId}`
             })
           )
         ).catch(err => fastify.log.error('Push loop error:', err));
       }
-
       sendSuccess(reply, episode, 'Episode updated successfully');
-    } catch (error) {
-      fastify.log.error(error);
-      sendError(reply, 'Failed to update episode', 500, error.message);
-    }
+    } catch (error) { fastify.log.error(error); sendError(reply, 'Failed to update episode', 500, error.message); }
   });
 
-  // Delete episode
+  // Delete episode (unchanged logic)
   fastify.delete('/:episodeId', async (request, reply) => {
     try {
       await verifyCreator(request, reply);
-
-      if (!request.user) {
-        return sendError(reply, 'Unauthorized', 401);
-      }
-
+      if (!request.user) return sendError(reply, 'Unauthorized', 401);
       const { episodeId } = request.params;
-
       const episode = await Episode.findById(episodeId);
-
-      if (!episode) {
-        return sendError(reply, 'Episode not found', 404);
-      }
-
+      if (!episode) return sendError(reply, 'Episode not found', 404);
       const series = await Series.findById(episode.seriesId);
       const creator = await Creator.findOne({ userId: request.user._id });
-
-      if (!creator || series.creatorId.toString() !== creator._id.toString()) {
-        return sendError(reply, 'Forbidden - not series creator', 403);
-      }
+      if (!creator || series.creatorId.toString() !== creator._id.toString()) return sendError(reply, 'Forbidden - not series creator', 403);
 
       await Episode.findByIdAndDelete(episodeId);
       await Unlock.deleteMany({ episodeId });
       await History.deleteMany({ episodeId });
-      
-      // Cleanup new records
       await Like.deleteMany({ episodeId });
       await Rating.deleteMany({ episodeId });
       await EpisodeView.deleteMany({ episodeId });
 
       series.totalEpisodes = await Episode.countDocuments({ seriesId: series._id });
       await series.save();
-
       sendSuccess(reply, null, 'Episode deleted successfully');
-    } catch (error) {
-      fastify.log.error(error);
-      sendError(reply, 'Failed to delete episode', 500, error.message);
-    }
+    } catch (error) { fastify.log.error(error); sendError(reply, 'Failed to delete episode', 500, error.message); }
   });
 
-  // Update watch history
   fastify.post('/:episodeId/watch', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
-
-      if (!request.user) {
-        return sendError(reply, 'Unauthorized', 401);
-      }
-
+      if (!request.user) return sendError(reply, 'Unauthorized', 401);
       const { episodeId } = request.params;
       const { lastPosition, watchedPercentage, completed } = request.body || {};
-
       const episode = await Episode.findById(episodeId);
-
-      if (!episode) {
-        return sendError(reply, 'Episode not found', 404);
-      }
-
-      let history = await History.findOne({
-        userId: request.user._id,
-        episodeId,
-      });
-
-      if (!history) {
-        history = new History({
-          userId: request.user._id,
-          episodeId,
-          seriesId: episode.seriesId,
-        });
-      }
-
+      if (!episode) return sendError(reply, 'Episode not found', 404);
+      let history = await History.findOne({ userId: request.user._id, episodeId });
+      if (!history) history = new History({ userId: request.user._id, episodeId, seriesId: episode.seriesId });
       if (lastPosition !== undefined) history.lastPosition = lastPosition;
       if (watchedPercentage !== undefined) history.watchedPercentage = watchedPercentage;
-      if (completed !== undefined) {
-        history.completed = completed;
-        if (completed && !history.completedAt) {
-          history.completedAt = new Date();
-        }
-      }
-
+      if (completed !== undefined) { history.completed = completed; if (completed && !history.completedAt) history.completedAt = new Date(); }
       await history.save();
-
       sendSuccess(reply, history, 'Watch history updated successfully');
-    } catch (error) {
-      fastify.log.error(error);
-      sendError(reply, 'Failed to update watch history', 500, error.message);
-    }
+    } catch (error) { fastify.log.error(error); sendError(reply, 'Failed to update watch history', 500, error.message); }
   });
 
   fastify.post('/:episodeId/like/toggle', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
       if (!request.user) return sendError(reply, 'Unauthorized', 401);
-
       const { episodeId } = request.params;
       const userId = request.user._id;
-
       const existingLike = await Like.findOne({ userId, episodeId }).lean();
       let isLiked = false;
       let updatedEpisode;
 
       if (existingLike) {
-        // Unlike: Delete atomic record & decrement gracefully
         await Like.deleteOne({ _id: existingLike._id });
-        updatedEpisode = await Episode.findByIdAndUpdate(
-          episodeId, 
-          { $inc: { likeCount: -1, likes: -1 } }, 
-          { new: true }
-        );
+        updatedEpisode = await Episode.findByIdAndUpdate(episodeId, { $inc: { likeCount: -1, likes: -1 } }, { new: true });
         isLiked = false;
       } else {
-        // Like: Create unique record & increment atomically
         await Like.create({ userId, episodeId });
-        updatedEpisode = await Episode.findByIdAndUpdate(
-          episodeId, 
-          { $inc: { likeCount: 1, likes: 1 } }, 
-          { new: true }
-        );
+        updatedEpisode = await Episode.findByIdAndUpdate(episodeId, { $inc: { likeCount: 1, likes: 1 } }, { new: true });
         isLiked = true;
-
-        // FIXED: Safely notify creator about the like + BEAUTIFUL BRANDING
         const series = await Series.findById(updatedEpisode.seriesId);
         if (series && series.creatorId.toString() !== userId.toString()) {
            createNotification({
-             userId: series.creatorId,
-             type: 'LIKE',
-             title: 'New Like ❤️',
-             message: `${request.user.username} liked your episode.`,
-             targetUrl: '#watch',
-             icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192', // ADDED GOLD BRANDING
-             image: updatedEpisode.thumbnailUrl || null, // ADDED: Shows the episode thumbnail in the push!
-             dedupeKey: `like_${episodeId}_${userId}`
+             userId: series.creatorId, type: 'LIKE', title: 'New Like ❤️',
+             message: `${request.user.username} liked your episode.`, targetUrl: '#watch',
+             icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192',
+             image: updatedEpisode.thumbnailUrl || null, dedupeKey: `like_${episodeId}_${userId}`
            }).catch(err => fastify.log.error('Push error:', err));
         }
       }
-
       const currentCount = Math.max(updatedEpisode?.likeCount || updatedEpisode?.likes || 0, 0);
       sendSuccess(reply, { isLiked, likeCount: currentCount }, isLiked ? 'Liked' : 'Unliked');
     } catch (error) {
-      // Race condition safety: If user spams click, MongoDB unique index throws 11000.
       if (error.code === 11000) return sendSuccess(reply, { isLiked: true });
       fastify.log.error(error);
       sendError(reply, 'Failed to toggle like', 500, error.message);
@@ -596,103 +415,58 @@ export default async function episodeRoutes(fastify, opts) {
     try {
       await verifyAuth(request, reply);
       if (!request.user) return sendError(reply, 'Unauthorized', 401);
-
       const { episodeId } = request.params;
       const { rating } = request.body;
       const userId = request.user._id;
-
       const numRating = Number(rating);
-      if (!numRating || numRating < 1 || numRating > 5) {
-        return sendError(reply, 'Invalid rating. Must be between 1 and 5.', 400);
-      }
+      if (!numRating || numRating < 1 || numRating > 5) return sendError(reply, 'Invalid rating. Must be between 1 and 5.', 400);
 
-      // Upsert single rating per user
-      await Rating.findOneAndUpdate(
-        { userId, episodeId },
-        { $set: { rating: numRating } },
-        { upsert: true, new: true }
-      );
-
-      // Recalculate average atomically and accurately via Aggregation
+      await Rating.findOneAndUpdate({ userId, episodeId }, { $set: { rating: numRating } }, { upsert: true, new: true });
       const stats = await Rating.aggregate([
         { $match: { episodeId: new mongoose.Types.ObjectId(episodeId) } },
         { $group: { _id: null, average: {$avg: '$rating' }, count: {$sum: 1 } } }
       ]);
-
       const avg = stats.length > 0 ? stats[0].average : 0;
       const count = stats.length > 0 ? stats[0].count : 0;
-
-      const updated = await Episode.findByIdAndUpdate(
-        episodeId,
-        { $set: { rating: avg, ratingCount: count } },
-        { new: true }
-      );
-
+      const updated = await Episode.findByIdAndUpdate(episodeId, { $set: { rating: avg, ratingCount: count } }, { new: true });
       sendSuccess(reply, { rating: formatDecimal(updated.rating), ratingCount: updated.ratingCount }, 'Rating submitted successfully');
-    } catch (error) {
-      fastify.log.error(error);
-      sendError(reply, 'Failed to submit rating', 500, error.message);
-    }
+    } catch (error) { fastify.log.error(error); sendError(reply, 'Failed to submit rating', 500, error.message); }
   });
 
   fastify.post('/:episodeId/record-view', async (request, reply) => {
     try {
-      // Unique Analytics requires an authenticated user ID.
-      // We do not fail hard if unauthenticated to avoid console errors.
       if (!request.cookies?.token) return sendSuccess(reply, { tracked: false, reason: 'unauthenticated' });
-      
       const isAuthenticated = await verifyAuth(request, reply, false).catch(() => false);
       if (!isAuthenticated || !request.user) return sendSuccess(reply, { tracked: false, reason: 'unauthorized' });
 
       const { episodeId } = request.params;
       const userId = request.user._id;
-
       const episode = await Episode.findById(episodeId).lean();
       if (!episode) return sendError(reply, 'Episode not found', 404);
-
       const series = await Series.findById(episode.seriesId).lean();
       if (!series || !series.creatorId) return sendSuccess(reply, { tracked: false, reason: 'no_creator' });
 
       const creatorId = series.creatorId;
-
-      // 1. Unconditionally increment Total Views for this qualifying 10-second watch event
       await Episode.findByIdAndUpdate(episodeId, { $inc: { totalViews: 1 } });
       await Creator.findByIdAndUpdate(creatorId, { $inc: { totalViews: 1 } });
-
-      // 2. Check if user has EVER viewed this EXACT episode
       const existingEpView = await EpisodeView.findOne({ userId, episodeId }).lean();
 
       if (!existingEpView) {
-        // 3. Count how many UNIQUE episodes from this creator the user has already watched
         const priorCreatorViewsCount = await EpisodeView.countDocuments({ userId, creatorId });
-
-        // 4. Atomically lock this unique view record in place
         await EpisodeView.create({ userId, episodeId, creatorId });
-
-        // 5. Increment Episode Unique Viewers
         await Episode.findByIdAndUpdate(episodeId, { $inc: { uniqueViewers: 1 } });
-
-        // 6. Categorize the Creator Analytics impact exactly ONCE per user status
         if (priorCreatorViewsCount === 0) {
-          // First time this user has ever watched this Creator
           await Creator.findByIdAndUpdate(creatorId, { $inc: { uniqueViewers: 1 } });
         } else if (priorCreatorViewsCount === 1) {
-          // Exactly the second distinct episode -> they transition to a Returning Viewer
           await Creator.findByIdAndUpdate(creatorId, { $inc: { returningViewers: 1 } });
         }
-        // If priorCreatorViewsCount > 1, they are ALREADY a returning viewer, do not increment again.
-
         return sendSuccess(reply, { tracked: true, type: priorCreatorViewsCount > 0 ? 'returning' : 'new' });
       }
-
-      // View was already tracked for this episode + user pair (unique viewers don't increment, but total views did)
       sendSuccess(reply, { tracked: true, type: 'repeat' });
     } catch (error) {
-      // Safe catch for race condition duplicate insert (e.g. user swiped rapidly)
       if (error.code === 11000) return sendSuccess(reply, { tracked: true, type: 'duplicate_race' });
       fastify.log.error(error);
       sendError(reply, 'Failed to record view', 500, error.message);
     }
   });
-
 }
