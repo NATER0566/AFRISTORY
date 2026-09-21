@@ -36,7 +36,7 @@ const Ads = (() => {
     }
   }
 
-  // PHASE 5.1: RIGOROUS SAFE RENDERING IMPLEMENTATION
+  // PHASE 5.1/5.2: RIGOROUS SAFE RENDERING IMPLEMENTATION
   function renderAdModal(adData) {
     const modal = document.createElement('div');
     modal.className = 'modal-root';
@@ -93,10 +93,13 @@ const Ads = (() => {
        const contentDiv = document.createElement('div');
        contentDiv.style.cssText = 'padding:10px; background:#fff; color:#000; max-height: 300px; overflow-y: auto;';
        
-       // PHASE 5.1 FIX: Recursive DOM Sanitizer
-       // Eliminates event handlers (onerror), unsafe tags (svg, script), and javascript: schemes.
+       // PHASE 5.2 FIX: Recursive DOM Sanitizer with Strict Attribute Whitelist
+       // Blocks all attributes except a predefined safe list. 
        function sanitizeAndAppend(sourceNode, targetNode) {
            const safeTags = ['B','I','U','STRONG','EM','P','BR','DIV','SPAN','A','IMG','H1','H2','H3','H4','H5','H6','UL','OL','LI','BLOCKQUOTE'];
+           // PHASE 5.2: Explicit whitelist of allowed attributes. 
+           // Everything else (style, action, poster, all 'on' events) is automatically destroyed.
+           const safeAttributes = ['href', 'src', 'alt', 'title', 'class', 'id', 'target', 'rel', 'controls', 'autoplay', 'muted', 'loop'];
            
            for (let i = 0; i < sourceNode.childNodes.length; i++) {
                const child = sourceNode.childNodes[i];
@@ -109,21 +112,21 @@ const Ads = (() => {
 
                    const el = document.createElement(tagName);
                    
-                   // Sanitize attributes
+                   // Sanitize attributes with a STRICT WHITELIST
                    for (let j = 0; j < child.attributes.length; j++) {
                        const attr = child.attributes[j];
                        const name = attr.name.toLowerCase();
                        const val = attr.value;
                        
-                       // Block event handlers entirely
-                       if (name.startsWith('on')) continue;
+                       // 1. Block any attribute not in the explicitly safe list
+                       if (!safeAttributes.includes(name)) continue;
                        
-                       // Validate URLs
+                       // 2. Validate URL-bearing attributes
                        if (name === 'href' || name === 'src') {
                            try {
                                const parsed = new URL(val, window.location.origin);
-                               if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') continue;
-                           } catch(e) { continue; }
+                               if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') continue; // Drop non-web schemes
+                           } catch(e) { continue; } // Drop malformed URLs
                        }
                        
                        el.setAttribute(name, val);
@@ -165,7 +168,6 @@ const Ads = (() => {
        const link = document.createElement('a');
        link.href = adData.clickUrl;
        link.target = '_blank';
-       // PHASE 5.1 FIX: Prevent Reverse Tabnabbing
        link.rel = 'noopener noreferrer'; 
        link.className = 'button button-primary';
        link.style.cssText = 'display:block; text-align:center; text-decoration:none;';
