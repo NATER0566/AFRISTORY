@@ -1,6 +1,7 @@
 import Series from '../models/Series.js';
 import Episode from '../models/Episode.js';
 import Creator from '../models/Creator.js';
+import Unlock from '../models/Unlock.js'; // PHASE 5.1 FIX: Added to check access
 import { verifyAuth, verifyCreator } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { paginate, formatDecimal } from '../utils/helpers.js';
@@ -232,11 +233,40 @@ export default async function seriesRoutes(fastify, opts) {
 
       const total = await Episode.countDocuments({ seriesId, isPublished: true });
 
+      // PHASE 5.1 FIX: Authoritative Media Hiding in Series Listing
+      const hasActiveSubscription = request.user && request.user.subscriptionExpiresAt && new Date(request.user.subscriptionExpiresAt) > new Date();
+      
+      let userUnlocks = [];
+      if (request.user) {
+        const episodeIds = episodes.map(ep => ep._id);
+        const unlocks = await Unlock.find({
+          userId: request.user._id,
+          episodeId: { $in: episodeIds },
+          isActive: true
+        }).lean();
+        userUnlocks = unlocks.map(u => u.episodeId.toString());
+      }
+
       sendSuccess(reply, {
-        episodes: episodes.map(e => ({
-          ...e.toObject(),
-          rating: formatDecimal(e.rating),
-        })),
+        episodes: episodes.map(e => {
+          const ep = e.toObject();
+          
+          let hasAccess = ep.isFree;
+          if (hasActiveSubscription) hasAccess = true;
+          if (request.user && userUnlocks.includes(ep._id.toString())) hasAccess = true;
+
+          let safeMediaUrl = ep.mediaUrl;
+          if (!hasAccess && safeMediaUrl) {
+              safeMediaUrl = `/api/episodes/${ep._id}/media`;
+          }
+
+          return {
+            ...ep,
+            mediaUrl: safeMediaUrl, // Authoritative route for unauthorized users
+            hasAccess,
+            rating: formatDecimal(ep.rating),
+          };
+        }),
         pagination: {
           page: p,
           limit: l,
