@@ -24,6 +24,44 @@ const deepSeriesPopulate = {
 };
 
 export default async function episodeRoutes(fastify, opts) {
+  // PHASE 5: AUTHORITATIVE MEDIA BOUNDARY ROUTE
+  // Redirects to full media if authorized, or a restricted 30s preview slice if unauthorized.
+  fastify.get('/:episodeId/media', async (request, reply) => {
+    try {
+      const { episodeId } = request.params;
+      const episode = await Episode.findById(episodeId).lean();
+      if (!episode) return sendError(reply, 'Episode not found', 404);
+
+      let hasAccess = episode.isFree;
+      
+      if (!hasAccess && request.cookies?.token) {
+         const isAuthenticated = await verifyAuth(request, reply, false).catch(() => false);
+         if (isAuthenticated && request.user) {
+            if (request.user.subscriptionExpiresAt && new Date(request.user.subscriptionExpiresAt) > new Date()) {
+                hasAccess = true;
+            } else {
+                const unlock = await Unlock.findOne({ userId: request.user._id, episodeId, isActive: true }).lean();
+                if (unlock) hasAccess = true;
+            }
+         }
+      }
+
+      if (hasAccess) {
+          return reply.redirect(episode.mediaUrl);
+      } else {
+          let previewUrl = episode.mediaUrl;
+          // Apply Cloudinary End-Offset (eo_30) securely via authoritative backend redirect
+          if (previewUrl && previewUrl.includes('cloudinary.com') && !previewUrl.includes('/eo_')) {
+              previewUrl = previewUrl.replace('/upload/', '/upload/eo_30/');
+          }
+          return reply.redirect(previewUrl);
+      }
+    } catch (error) {
+      fastify.log.error(error);
+      sendError(reply, 'Failed to authorize media stream', 500);
+    }
+  });
+
   // Database-backed episode feed used by Watch, Discover, and recommendations.
   fastify.get('/feed', async (request, reply) => {
     try {
@@ -92,8 +130,15 @@ export default async function episodeRoutes(fastify, opts) {
         const isFollowing = followedCreatorIds.includes(creatorIdStr);
         const isLiked = userLikes.includes(episode._id.toString()); 
 
+        // PHASE 5: Secure Media URL Hiding
+        let safeMediaUrl = episode.mediaUrl;
+        if (!hasAccess && safeMediaUrl) {
+            safeMediaUrl = `/api/episodes/${episode._id}/media`;
+        }
+
         return { 
             ...episode,
+            mediaUrl: safeMediaUrl, // Returns authoritative route for unauthorized users
             rating: formatDecimal(episode.rating),
             hasAccess,
             isFollowing,
@@ -163,8 +208,15 @@ export default async function episodeRoutes(fastify, opts) {
         creator.profileImage = creator.profileImage || user?.profile?.avatarUrl || user?.profileImage || null;
       }
 
+      // PHASE 5: Secure Media URL Hiding
+      let safeMediaUrl = episode.mediaUrl;
+      if (!hasAccess && safeMediaUrl) {
+          safeMediaUrl = `/api/episodes/${episode._id}/media`;
+      }
+
       sendSuccess(reply, {
         ...episode,
+        mediaUrl: safeMediaUrl, // Returns authoritative route for unauthorized users
         rating: formatDecimal(episode.rating),
         hasAccess,
         isFollowing,
