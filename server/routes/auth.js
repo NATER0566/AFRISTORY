@@ -308,7 +308,7 @@ export default async function authRoutes(fastify, opts) {
         username: request.user.username,
         email: request.user.email,
         role: request.user.role,
-        adUnlocksRemaining: request.user.adUnlocksRemaining || 0,
+        // PHASE 3E CLEANUP: Removed adUnlocksRemaining from response payload
         profileImage: request.user.profile?.avatarUrl || request.user.profileImage || null,
         profile: request.user.profile || {
           displayName: request.user.username,
