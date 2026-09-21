@@ -106,7 +106,7 @@ export default async function walletRoutes(fastify, opts) {
 
       const user = await User.findById(request.user._id).session(session);
 
-      // --- NEW: VIP GATE PASS PROTECTION ---
+      // --- VIP GATE PASS PROTECTION ---
       if (user.subscriptionExpiresAt && new Date(user.subscriptionExpiresAt) > new Date()) {
         await session.abortTransaction();
         return sendError(reply, 'You already have an active Gate Pass. No need to unlock!', 400);
@@ -137,38 +137,13 @@ export default async function walletRoutes(fastify, opts) {
       }
 
       // ============================================
-      // LOGIC 1: UNLOCK USING AN AD
+      // LOGIC 1: UNLOCK USING AN AD (LOCKED DOWN)
       // ============================================
       if (method.toUpperCase() === 'AD') {
-        if (!episode.adUnlockable) {
-            await session.abortTransaction();
-            return sendError(reply, 'This episode cannot be unlocked with an ad.', 400);
-        }
-
-        if (!user.adUnlocksRemaining || user.adUnlocksRemaining <= 0) {
-            await session.abortTransaction();
-            return sendError(reply, 'You have no free ad unlocks remaining today.', 400);
-        }
-
-        // Deduct ad unlock from user profile
-        user.adUnlocksRemaining -= 1;
-        await user.save({ session });
-
-        // Create unlock record
-        const unlock = new Unlock({
-          userId: request.user._id,
-          episodeId,
-          seriesId: episode.seriesId,
-          method: 'AD',
-        });
-        await unlock.save({ session });
-
-        // Update episode stats
-        episode.totalUnlocks += 1;
-        await episode.save({ session });
-
-        await session.commitTransaction();
-        return sendSuccess(reply, { unlocked: true, method: 'AD' }, 'Episode unlocked successfully with an Ad');
+        await session.abortTransaction();
+        // PHASE 2 LOCKDOWN: Reject all client-side AD unlock requests.
+        // The browser is NOT authoritative. Awaiting genuine provider-verified reward integration.
+        return sendError(reply, 'AD unlock requires verified provider completion', 403);
       }
 
       // ============================================
