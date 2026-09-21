@@ -10,13 +10,24 @@ import { isResetTime, generateReference } from '../utils/helpers.js';
 import mongoose from 'mongoose';
 import axios from 'axios';
 
+// PHASE 5.1 FIX: Strict server-side URL validation.
+// Ensures that malicious payloads (e.g. javascript: schemes) never reach the frontend.
+function validateHttpsUrl(urlStr) {
+  if (!urlStr) return null;
+  try {
+    const parsed = new URL(urlStr);
+    if (parsed.protocol === 'https:') {
+      return parsed.toString();
+    }
+  } catch (e) {
+    return null;
+  }
+  return null;
+}
+
 export default async function adsRoutes(fastify, opts) {
   // PHASE 3 CLEANUP: All legacy routes (/unlocks/remaining, /verify-completion)
   // and the placeholder Monetag /webhook have been permanently removed.
-  // 
-  // This file remains securely in the architecture. When a genuinely 
-  // trusted provider-verified reward mechanism (like a server-to-server 
-  // callback) is available, its secure webhook endpoint will be implemented here.
 
   // PHASE 4/5: Secure Adscod Advertising Proxy
   // This endpoint fetches an ad from Adscod server-side.
@@ -53,12 +64,12 @@ export default async function adsRoutes(fastify, opts) {
       }
 
       // Return ONLY the safe rendering data to the browser.
-      // The publisher key and raw API data are strictly stripped.
+      // PHASE 5.1 FIX: The clickUrl, imageUrl, and videoUrl are now rigorously validated server-side.
       sendSuccess(reply, {
         adContent: adResponse.data.adContent || adResponse.data.html || null,
-        clickUrl: adResponse.data.clickUrl || null,
-        imageUrl: adResponse.data.imageUrl || null,
-        videoUrl: adResponse.data.videoUrl || null,
+        clickUrl: validateHttpsUrl(adResponse.data.clickUrl),
+        imageUrl: validateHttpsUrl(adResponse.data.imageUrl),
+        videoUrl: validateHttpsUrl(adResponse.data.videoUrl),
         title: adResponse.data.title || 'Sponsored Message',
         description: adResponse.data.description || ''
       });
