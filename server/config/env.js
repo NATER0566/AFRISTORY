@@ -22,7 +22,6 @@ export const OPTIONAL_ENV = [
   'APPLE_PRIVATE_KEY',
   'ONESIGNAL_APP_ID',
   'ONESIGNAL_API_KEY',
-  // PHASE 5.2 FIX: Replaced obsolete Monetag fields with correct Adscod configuration
   'ADSCOD_PUBLISHER_KEY',
   'ADSCOD_API_URL',
 ];
@@ -48,7 +47,6 @@ const validators = {
   APPLE_PRIVATE_KEY: value => Boolean(value && value.trim()),
   ONESIGNAL_APP_ID: value => Boolean(value && value.trim()),
   ONESIGNAL_API_KEY: value => Boolean(value && value.trim()),
-  // PHASE 5.2 FIX: Added Adscod validation
   ADSCOD_PUBLISHER_KEY: value => Boolean(value && value.trim()),
   ADSCOD_API_URL: value => Boolean(value && value.trim()),
 };
