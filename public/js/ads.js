@@ -1,5 +1,5 @@
 const Ads = (() => {
-  // PHASE 4: Adscod Advertising enabled. This is strictly for display.
+  // PHASE 5: Adscod Advertising enabled. This is strictly for display.
   // It DOES NOT grant premium unlocks.
   const ADS_ENABLED = true; 
 
@@ -15,7 +15,7 @@ const Ads = (() => {
       return true; 
   }
 
-  // Replaces legacy showRewarded. Fetches and displays a sponsored message.
+  // Fetches and displays a sponsored message safely.
   async function showSponsoredMessage() {
     if (!ADS_ENABLED) {
         throw new Error('Sponsored messages are currently unavailable.');
@@ -36,43 +36,85 @@ const Ads = (() => {
     }
   }
 
+  // PHASE 5: SAFE RENDERING IMPLEMENTATION
   function renderAdModal(adData) {
     const modal = document.createElement('div');
     modal.className = 'modal-root';
     modal.style.zIndex = '9999999';
     
-    let mediaHtml = '';
-    if (adData.videoUrl) {
-       mediaHtml = `<video src="${adData.videoUrl}" controls autoplay style="width:100%; max-height:300px; background:#000;"></video>`;
-    } else if (adData.imageUrl) {
-       mediaHtml = `<img src="${adData.imageUrl}" style="width:100%; max-height:300px; object-fit:contain; background:#000;">`;
+    const modalContent = document.createElement('div');
+    modalContent.className = 'modal';
+    modalContent.style.cssText = 'padding:0; overflow:hidden; background:#111; border:1px solid #333;';
+
+    // Header
+    const header = document.createElement('div');
+    header.style.cssText = 'padding:10px 15px; background:#222; display:flex; justify-content:space-between; align-items:center;';
+    header.innerHTML = '<span style="color:#999; font-size:12px; font-weight:bold; letter-spacing:1px; text-transform:uppercase;">Sponsored Message</span>';
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'modal-close';
+    closeBtn.style.cssText = 'background:none; border:none; color:#fff; font-size:24px; cursor:pointer;';
+    closeBtn.innerHTML = '&times;';
+    // Security: Closes the modal without triggering an unlock
+    closeBtn.onclick = () => modal.remove(); 
+    
+    header.appendChild(closeBtn);
+    modalContent.appendChild(header);
+
+    // Media (Strict HTTPS Validation)
+    if (adData.videoUrl && String(adData.videoUrl).startsWith('https://')) {
+       const video = document.createElement('video');
+       video.src = adData.videoUrl;
+       video.controls = true;
+       video.autoplay = true;
+       video.style.cssText = 'width:100%; max-height:300px; background:#000;';
+       modalContent.appendChild(video);
+    } else if (adData.imageUrl && String(adData.imageUrl).startsWith('https://')) {
+       const img = document.createElement('img');
+       img.src = adData.imageUrl;
+       img.style.cssText = 'width:100%; max-height:300px; object-fit:contain; background:#000;';
+       modalContent.appendChild(img);
     } else if (adData.adContent) {
-       mediaHtml = `<div style="padding:10px; background:#fff; color:#000;">${adData.adContent}</div>`;
+       // DOMParser Sanitization to prevent XSS script injection
+       const parser = new DOMParser();
+       const doc = parser.parseFromString(adData.adContent, 'text/html');
+       const unsafeTags = doc.querySelectorAll('script, iframe, object, embed');
+       unsafeTags.forEach(tag => tag.remove());
+       
+       const contentDiv = document.createElement('div');
+       contentDiv.style.cssText = 'padding:10px; background:#fff; color:#000; max-height: 300px; overflow-y: auto;';
+       contentDiv.innerHTML = doc.body.innerHTML; 
+       modalContent.appendChild(contentDiv);
     }
 
-    modal.innerHTML = `
-      <div class="modal" style="padding:0; overflow:hidden; background:#111; border:1px solid #333;">
-        <div style="padding:10px 15px; background:#222; display:flex; justify-content:space-between; align-items:center;">
-          <span style="color:#999; font-size:12px; font-weight:bold; letter-spacing:1px; text-transform:uppercase;">Sponsored Message</span>
-          <button class="modal-close" style="background:none; border:none; color:#fff; font-size:24px; cursor:pointer;">&times;</button>
-        </div>
-        ${mediaHtml}
-        <div style="padding:20px;">
-          <h3 style="margin:0 0 10px 0; color:#fff;">${adData.title || 'Sponsored Content'}</h3>
-          <p style="color:#ccc; font-size:14px; margin:0 0 20px 0;">${adData.description || ''}</p>
-          ${adData.clickUrl ? `<a href="${adData.clickUrl}" target="_blank" class="button button-primary" style="display:block; text-align:center; text-decoration:none;">Learn More</a>` : ''}
-        </div>
-      </div>
-    `;
+    // Body & Text (Safe textContent)
+    const body = document.createElement('div');
+    body.style.padding = '20px';
+    
+    const title = document.createElement('h3');
+    title.style.cssText = 'margin:0 0 10px 0; color:#fff;';
+    title.textContent = adData.title || 'Sponsored Content';
+    body.appendChild(title);
 
+    const desc = document.createElement('p');
+    desc.style.cssText = 'color:#ccc; font-size:14px; margin:0 0 20px 0;';
+    desc.textContent = adData.description || '';
+    body.appendChild(desc);
+
+    // Click URL (Strict HTTPS Validation to prevent Javascript execution)
+    if (adData.clickUrl && String(adData.clickUrl).startsWith('https://')) {
+       const link = document.createElement('a');
+       link.href = adData.clickUrl;
+       link.target = '_blank';
+       link.className = 'button button-primary';
+       link.style.cssText = 'display:block; text-align:center; text-decoration:none;';
+       link.textContent = 'Learn More';
+       body.appendChild(link);
+    }
+
+    modalContent.appendChild(body);
+    modal.appendChild(modalContent);
     document.body.appendChild(modal);
-
-    // CRITICAL SECURITY: Closing the ad simply removes the DOM element. 
-    // It DOES NOT send an unlock request to the server.
-    const closeBtn = modal.querySelector('.modal-close');
-    closeBtn.addEventListener('click', () => {
-      modal.remove();
-    });
   }
 
   return { 
