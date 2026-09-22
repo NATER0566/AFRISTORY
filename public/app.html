@@ -442,7 +442,7 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
           </form>
         </div>
 
-        <!-- NEW: PENDING SCREEN (Shown while waiting for admin approval) -->
+        <!-- PENDING SCREEN (Shown while waiting for admin approval) -->
         <div id="creator-pending" class="hidden" style="text-align:center; max-width:400px; margin:100px auto;">
           <p class="eyebrow" style="color: #d4a017;">APPLICATION RECEIVED</p>
           <h2>Under Review</h2>
@@ -467,8 +467,6 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
           <div id="my-series-grid" class="content-grid"></div>
         </div>
       </section>
-
-      <!-- NOTE: Removed the redundant inline #section-admin since it opens a separate page now -->
 
       <section id="section-history" class="app-section hidden"><div class="section-heading"><div><p class="eyebrow">YOUR JOURNEY</p><h1>Watch history</h1></div><button class="button button-quiet" data-section="discover">Discover stories</button></div><div id="history-list" class="data-list"></div></section>
       <section id="section-profile" class="app-section hidden"><div id="profile-cover" class="profile-cover"><div class="profile-header"><div id="profile-avatar" class="profile-avatar">A</div><div class="profile-identity"><p class="eyebrow">YOUR STORY SPACE</p><h1 id="profile-display-name">Profile</h1><p id="profile-handle" class="muted">@username</p><p id="profile-bio" class="profile-bio">Complete your profile to help your story journey feel like home.</p><div id="profile-location" class="profile-location"></div></div><div class="profile-actions"><button class="button button-primary" data-action="edit-profile">Edit profile</button><button class="button button-quiet" data-section="settings">Settings</button></div></div></div><nav class="profile-tabs" aria-label="Profile sections"><button class="profile-tab active" data-profile-tab="overview">Overview</button><button class="profile-tab" data-profile-tab="watchlist">Watchlist</button><button class="profile-tab" data-profile-tab="history">History</button><button class="profile-tab" data-profile-tab="library">My library</button><button class="profile-tab" data-profile-tab="about">About</button><button class="profile-tab creator-profile-tab hidden" data-section="creator">My content</button></nav><div id="profile-panel-overview" class="profile-panel"><div class="profile-summary-grid"><div><p class="eyebrow">RECENTLY WATCHED</p><div id="profile-recent" class="profile-list"></div></div><div><p class="eyebrow">SAVED STORIES</p><div id="profile-saved" class="profile-story-grid"></div></div></div><div class="profile-section-heading"><div><p class="eyebrow">YOUR INTERESTS</p><h2 id="profile-interest-title">Shape your next discovery</h2></div><button class="text-button" data-action="edit-profile">Edit interests</button></div><div id="profile-interests" class="interest-list"></div></div><div id="profile-panel-watchlist" class="profile-panel hidden"><div class="profile-section-heading"><div><p class="eyebrow">YOUR COLLECTION</p><h2>Watchlist</h2></div></div><div id="profile-watchlist" class="profile-story-grid"></div></div><div id="profile-panel-history" class="profile-panel hidden"><div class="profile-section-heading"><div><p class="eyebrow">YOUR JOURNEY</p><h2>Watch history</h2></div></div><div id="profile-history" class="profile-list"></div></div><div id="profile-panel-library" class="profile-panel hidden"><div class="profile-section-heading"><div><p class="eyebrow">UNLOCKED STORIES</p><h2>My library</h2></div></div><div id="profile-library" class="profile-list"></div></div><div id="profile-panel-about" class="profile-panel hidden"><div class="profile-section-heading"><div><p class="eyebrow">ACCOUNT DETAILS</p><h2>About your AfroStory account</h2></div></div><div id="profile-about" class="profile-about"></div></div><div id="profile-edit-panel" class="profile-edit-panel hidden"><div class="profile-section-heading"><div><p class="eyebrow">MAKE IT YOURS</p><h2>Edit profile</h2></div><button class="text-button" data-action="close-profile-edit">Close</button></div><form id="profile-form" class="profile-form"><div class="profile-edit-grid"><label>Display name<input id="profile-display-name-input" name="displayName" maxlength="80"></label><label>Username<input id="profile-username" name="username" required maxlength="30"></label><label>Email<input id="profile-email" name="email" type="email" readonly></label><label>Country<input id="profile-country" name="country" maxlength="80" placeholder="Nigeria"></label><label>Region<input id="profile-region" name="region" maxlength="80" placeholder="North Central"></label><label>Preferred language<select id="profile-language" name="preferredLanguage"><option>English</option><option>Nigerian Pidgin</option><option>Tiv</option><option>Igbo</option><option>Yoruba</option><option>Hausa</option><option>French</option><option>Arabic</option><option>Swahili</option><option>Other</option></select></label></div><label>Bio<textarea id="profile-bio-input" name="bio" maxlength="280" rows="3" placeholder="What kinds of stories stay with you?"></textarea></label><label>Profile photo<input id="profile-image" name="profileImage" type="file" accept="image/jpeg,image/png,image/webp"></label><label>Cover image<input id="profile-cover-image" name="coverImage" type="file" accept="image/jpeg,image/png,image/webp"></label><label>Favorite genres<select id="profile-genres" name="favoriteGenres" multiple><option>Action</option><option>Drama</option><option>Comedy</option><option>Romance</option><option>Thriller</option><option>Sci-Fi</option><option>Horror</option><option>Documentary</option><option>Afro-Futurism</option><option>Folklore</option><option>Urban Drama</option><option>Animation</option><option>Historical</option><option>Adventure</option><option>Mystery</option><option>Crime</option><option>Family</option><option>Faith &amp; Inspirational</option><option>Musical</option><option>Biography</option><option>Short Film</option></select></label><label>Favorite cultures / communities<input id="profile-cultures" name="favoriteCultures" maxlength="500" placeholder="Tiv, Igbo, Yoruba"></label><div class="profile-privacy"><label class="checkbox-label"><input id="profile-public" name="profileVisibility" type="checkbox"> Make my profile public</label><label class="checkbox-label"><input id="profile-show-favorites" name="showFavorites" type="checkbox"> Show favorites publicly</label></div><button class="button button-primary" type="submit">Save profile</button></form></div></section>
@@ -495,8 +493,8 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
         <button class="sheet-item" data-section="history"><i>◴</i><span>History</span></button>
         <button class="sheet-item" data-section="settings"><i>⚙</i><span>Settings</span></button>
         
-        <!-- ADMIN BUTTON: Bold, distinct, positioned immediately before the logout button -->
-        <button id="mobile-admin-btn" class="sheet-item hidden" style="display: none; border: 1px solid #d4a017; background: rgba(212, 160, 23, 0.05);" onclick="window.location.href='/admin.html'">
+        <!-- ADMIN BUTTON: Bold, full-width, positioned immediately before the logout button -->
+        <button id="mobile-admin-btn" class="sheet-item hidden" style="display: none; grid-column: 1 / -1; border: 1px solid #d4a017; background: rgba(212, 160, 23, 0.05); margin-top: 5px;" onclick="window.location.href='/admin.html'">
           <i style="color: #d4a017;">▦</i>
           <span style="font-weight: 700; color: #d4a017;">Admin Panel</span>
         </button>
@@ -514,6 +512,40 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
   
   <script type="module" src="/js/ads.js"></script><script type="module" src="/js/main.js"></script>
 
+  <!-- ROBUST ADMIN CHECK FUNCTION -->
+  <script>
+    function checkAndShowAdminButtons() {
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const userData = JSON.parse(userStr);
+          // Safely check role regardless of how it was saved in localStorage
+          const role = userData.role || (userData.user && userData.user.role);
+          
+          if (role === 'ADMIN' || role === 'admin') {
+            // Un-hide the mobile button
+            const mobileAdminBtn = document.getElementById('mobile-admin-btn');
+            if (mobileAdminBtn) {
+              mobileAdminBtn.classList.remove('hidden');
+              mobileAdminBtn.style.display = 'flex';
+            }
+            // Un-hide the desktop sidebar button
+            const desktopAdminBtn = document.querySelector('.nav-item.admin-only');
+            if (desktopAdminBtn) {
+              desktopAdminBtn.classList.remove('hidden');
+              desktopAdminBtn.style.display = 'flex';
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error verifying admin status:', e);
+      }
+    }
+
+    // Run when the page loads
+    document.addEventListener('DOMContentLoaded', checkAndShowAdminButtons);
+  </script>
+
   <!-- TINY SCRIPT TO OPEN/CLOSE THE "MORE" SHEET -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -524,6 +556,8 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
       if (moreBtn && sheet) {
         moreBtn.addEventListener('click', (e) => {
           e.preventDefault();
+          // FORCE check admin right before the menu opens 
+          checkAndShowAdminButtons(); 
           sheet.classList.remove('hidden');
         });
         
@@ -542,39 +576,12 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
     });
   </script>
 
-  <!-- SCRIPT TO SHOW ADMIN BUTTONS ONLY FOR ADMIN USERS -->
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      try {
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-          const user = JSON.parse(userStr);
-          if (user.role === 'ADMIN') {
-            const mobileAdminBtn = document.getElementById('mobile-admin-btn');
-            if (mobileAdminBtn) {
-              mobileAdminBtn.classList.remove('hidden');
-              mobileAdminBtn.style.display = 'flex';
-            }
-            const desktopAdminBtn = document.querySelector('.nav-item.admin-only');
-            if (desktopAdminBtn) {
-              desktopAdminBtn.classList.remove('hidden');
-            }
-          }
-        }
-      } catch (e) {
-        console.error('Error verifying admin status:', e);
-      }
-    });
-  </script>
-
   <!-- SCRIPT TO HANDLE CREATOR FORM UI TRANSITION -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const creatorForm = document.getElementById('become-creator-form');
       if (creatorForm) {
         creatorForm.addEventListener('submit', () => {
-          // Once the user submits, immediately switch to the pending screen.
-          // main.js will still handle the backend API call smoothly in the background.
           setTimeout(() => {
             document.getElementById('creator-onboarding').classList.add('hidden');
             document.getElementById('creator-pending').classList.remove('hidden');
