@@ -493,6 +493,8 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
       <div class="sheet-handle"></div>
       <h3>More</h3>
       <div class="sheet-grid">
+        <!-- ADMIN BUTTON: Hidden by default, revealed via JS if user is admin -->
+        <button id="mobile-admin-btn" class="sheet-item hidden" style="display: none;" onclick="window.location.href='/admin.html'"><i>▦</i><span>Admin Panel</span></button>
         <button class="sheet-item" data-section="trending"><i>↗</i><span>Trending</span></button>
         <button class="sheet-item" data-section="rewards"><i>✧</i><span>Rewards</span></button>
         <button class="sheet-item" data-section="continue"><i>◷</i><span>Continue</span></button>
@@ -540,8 +542,34 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
     });
   </script>
 
+  <!-- SCRIPT TO SHOW ADMIN BUTTONS ONLY FOR ADMIN USERS -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          if (user.role === 'ADMIN' || user.role === 'admin') {
+            // Show mobile More menu admin button
+            const mobileAdminBtn = document.getElementById('mobile-admin-btn');
+            if (mobileAdminBtn) {
+              mobileAdminBtn.classList.remove('hidden');
+              mobileAdminBtn.style.display = 'flex';
+            }
+            // Show desktop sidebar admin button if it exists
+            const desktopAdminBtn = document.querySelector('.nav-item.admin-only');
+            if (desktopAdminBtn) {
+              desktopAdminBtn.classList.remove('hidden');
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error verifying admin status:', e);
+      }
+    });
+  </script>
 
-<!-- start webpushr code --> <script>(function(w,d, s, id) {if(typeof(w.webpushr)!undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4GZnLNpMUBg35mzdNgBSOcMQ4YlZaZ0SY' });</script><!-- end webpushr code -->
+<!-- start webpushr code --> <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4GZnLNpMUBg35mzdNgBSOcMQ4YlZaZ0SY' });</script><!-- end webpushr code -->
 
 
      
