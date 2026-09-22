@@ -10,6 +10,40 @@ const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 
 /* ============================================================================ */
+/* ADMIN VISIBILITY CHECKER */
+/* ============================================================================ */
+function applyAdminVisibility() {
+    let isAdmin = false;
+    
+    // Check state first
+    if (state.user && String(state.user.role).toUpperCase() === 'ADMIN') {
+        isAdmin = true;
+    } else {
+        // Fallback: Check token in localStorage
+        try {
+            const token = localStorage.getItem('token');
+            if (token) {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const role = payload.role || (payload.user && payload.user.role);
+                if (role && String(role).toUpperCase() === 'ADMIN') isAdmin = true;
+            }
+        } catch (e) {}
+    }
+
+    const desktopBtn = $('#desktop-admin-btn');
+    if (desktopBtn) {
+        desktopBtn.classList.toggle('hidden', !isAdmin);
+        desktopBtn.style.display = isAdmin ? 'flex' : 'none';
+    }
+
+    const mobileBtn = $('#mobile-admin-btn');
+    if (mobileBtn) {
+        mobileBtn.classList.toggle('hidden', !isAdmin);
+        mobileBtn.style.display = isAdmin ? 'flex' : 'none';
+    }
+}
+
+/* ============================================================================ */
 /* FRONTEND ERROR LOGGING TO RENDER BACKEND */
 /* ============================================================================ */
 async function logFrontendError(type, message, stack) {
@@ -40,7 +74,7 @@ window.addEventListener('unhandledrejection', (event) => {
 });
 
 /* ============================================================================ */
-/* NON-BLOCKING, CRASH-PROOF API WITH PERFORMANCE MONITORING */
+/* NON-BLOCKING API WRAPPER */
 /* ============================================================================ */
 const api = async (path, options = {}) => {
     const controller = new AbortController();
@@ -109,7 +143,7 @@ const image = value => {
 };
 
 /* ============================================================================ */
-/* FORMATTERS: RATING & VIEWS */
+/* FORMATTERS */
 /* ============================================================================ */
 function formatRating(rating, count) {
     if (!count || count === 0) return '★ No ratings';
@@ -179,14 +213,15 @@ function setSection(name) {
     $('#genre-filter')?.closest('.discover-filters')?.classList.toggle('hidden', name !== 'discover');
     $('#save-current')?.classList.toggle('hidden', name !== 'watch');
     $$('.modal-root').forEach(m => m.classList.add('hidden'));
+    
     $('#mobile-more-sheet')?.classList.add('hidden');
+    
     location.hash = name;
 
     if (name === 'watch' && !state.currentEpisode) openDefaultFeed();
     if (name === 'wallet') loadWallet();
     if (name === 'rewards') loadRewards();
     if (name === 'creator') loadCreator();
-    if (name === 'admin') loadAdmin();
     if (name === 'history') loadHistory();
     if (name === 'continue') loadContinue();
     if (name === 'favorites') loadFavorites();
@@ -267,27 +302,6 @@ async function loadDiscover() {
     }
 } 
 
-async function loadDiscoverEpisodes() {
-    try {
-        ensureClassificationControls();
-        const genre = $('#genre-filter')?.value || '';
-        const culturalCategory = $('#cultural-filter')?.value || '';
-        const language = $('#language-filter')?.value || '';
-        const query = new URLSearchParams({ sort: 'trending', limit: '12' });
-        if (genre) query.set('genre', genre);
-        if (culturalCategory) query.set('culturalCategory', culturalCategory);
-        if (language) query.set('language', language);
-        
-        const result = await api(`/episodes/feed?${query}`) || {};
-        const seriesGrid = $('#series-grid');
-        if (seriesGrid) {
-            seriesGrid.innerHTML = (result.episodes || []).map(episodeCard).join('') || '<p>No episodes match these filters.</p>';
-        }
-    } catch (error) { 
-        toast(error.message, 'error'); 
-    }
-} 
-
 /* ============================================================================ */
 /* RESILIENT TIKTOK STYLE FEED & OBSERVERS */
 /* ============================================================================ */
@@ -326,7 +340,7 @@ async function openDefaultFeed() {
         if (feedData.episodes && feedData.episodes.length > 0) {
             openEpisode(feedData.episodes[0]._id);
         } else if (feedContainer) {
-            feedContainer.innerHTML = '<p>No stories available right now.</p>';
+            feedContainer.innerHTML = '<p style="text-align:center; margin-top:50px;">No stories available right now.</p>';
         }
     } catch (e) { 
         toast('Could not load feed.', 'error'); 
@@ -596,18 +610,15 @@ async function unlockEpisode() {
             else return; 
         } 
         
-        // PHASE 4 SECURITY: If the user chooses the sponsor, show the ad and HALT.
-        // No unlock is granted. Adscod impressions do not equal verified reward completions.
         if (choice === 'SPONSOR') {
             try {
                 await window.AfroStoryAds.showSponsoredMessage();
             } catch (e) {
                 toast(e.message, 'error');
             }
-            return; // Execution stops here. The video remains locked.
+            return; 
         }
         
-        // --- COIN UNLOCK LOGIC REMAINS UNCHANGED ---
         const unlockRes = await api('/wallet/unlock-episode', { 
             method: 'POST', 
             headers: { 'Content-Type': 'application/json' }, 
@@ -767,53 +778,71 @@ async function loadFollowersList() {
     }
 }
 
+/* ============================================================================ */
+/* FIX: CREATOR APPROVAL FLOW */
+/* ============================================================================ */
 async function loadCreator() { 
     try { 
-        const creator = await api('/creators/me/profile') || {}; 
-        const series = await api(`/creators/${creator._id}/series?limit=100`) || {}; 
-        
+        // Force the section containers to reset visibility
         const dashboard = $('#creator-dashboard');
         const onboarding = $('#creator-onboarding');
+        const pending = $('#creator-pending');
         
-        if (dashboard) dashboard.classList.remove('hidden');
-        if (onboarding) onboarding.classList.add('hidden');
+        // Ensure elements exist
+        if (!dashboard || !onboarding || !pending) return;
 
-        const statsContainer = $('#creator-stats');
-        if (statsContainer) {
-            statsContainer.innerHTML = [
-                ['TOTAL VIEWS', creator.totalViews, ''],
-                ['UNIQUE VIEWERS', creator.uniqueViewers || 0, ''],
-                ['RETURNING VIEWERS', creator.returningViewers || 0, ''],
-                ['TOTAL EARNINGS', creator.totalEarnings, ''], 
-                ['FOLLOWERS (CLICK TO VIEW)', creator.totalFollowers, 'data-action="view-followers" style="cursor:pointer; text-decoration: underline; text-decoration-color: #d4a017;" title="Click to view and follow back"'], 
-                ['SERIES', series.series?.length || 0, '']
-            ].map(item => `<div class="stat-card" ${item[2] || ''}><span class="eyebrow">${item[0]}</span><strong>${Number(item[1] || 0).toLocaleString()}</strong></div>`).join(''); 
+        // Fetch the creator profile
+        const creator = await api('/creators/me/profile'); 
+        
+        // If the API returns successfully but they are NOT verified yet
+        if (creator && creator.isVerified === false) {
+            dashboard.classList.add('hidden');
+            onboarding.classList.add('hidden');
+            pending.classList.remove('hidden');
+            return; // Stop execution here. Do not load the series or show the dashboard.
         }
 
-        const seriesGrid = $('#my-series-grid');
-        if (seriesGrid) {
-            seriesGrid.innerHTML = (series.series || []).map(card).join('') || '<p>Create your first series.</p>'; 
-        }
-        
-        const uploadSelect = $('#upload-series');
-        if (uploadSelect) {
-            uploadSelect.innerHTML = (series.series || []).map(item => `<option value="${esc(item._id)}">${esc(item.title)}</option>`).join(''); 
+        // If they ARE verified
+        if (creator && creator.isVerified === true) {
+            dashboard.classList.remove('hidden');
+            onboarding.classList.add('hidden');
+            pending.classList.add('hidden');
+
+            const series = await api(`/creators/${creator._id}/series?limit=100`) || {}; 
+            const statsContainer = $('#creator-stats');
+            if (statsContainer) {
+                statsContainer.innerHTML = [
+                    ['TOTAL VIEWS', creator.totalViews, ''],
+                    ['UNIQUE VIEWERS', creator.uniqueViewers || 0, ''],
+                    ['RETURNING VIEWERS', creator.returningViewers || 0, ''],
+                    ['TOTAL EARNINGS', creator.totalEarnings, ''], 
+                    ['FOLLOWERS (CLICK TO VIEW)', creator.totalFollowers, 'data-action="view-followers" style="cursor:pointer; text-decoration: underline; text-decoration-color: #d4a017;" title="Click to view and follow back"'], 
+                    ['SERIES', series.series?.length || 0, '']
+                ].map(item => `<div class="stat-card" ${item[2] || ''}><span class="eyebrow">${item[0]}</span><strong>${Number(item[1] || 0).toLocaleString()}</strong></div>`).join(''); 
+            }
+
+            const seriesGrid = $('#my-series-grid');
+            if (seriesGrid) {
+                seriesGrid.innerHTML = (series.series || []).map(card).join('') || '<p>Create your first series.</p>'; 
+            }
+            
+            const uploadSelect = $('#upload-series');
+            if (uploadSelect) {
+                uploadSelect.innerHTML = (series.series || []).map(item => `<option value="${esc(item._id)}">${esc(item.title)}</option>`).join(''); 
+            }
         }
     } catch (error) { 
-        if (error.message?.includes('creator')) { 
-            const dashboard = $('#creator-dashboard');
-            const onboarding = $('#creator-onboarding');
-            if (dashboard) dashboard.classList.add('hidden');
-            if (onboarding) onboarding.classList.remove('hidden');
-        } else {
-            toast(error.message, 'error'); 
-        } 
+        // If the API throws a 404/Error (because the user has never applied)
+        const dashboard = $('#creator-dashboard');
+        const onboarding = $('#creator-onboarding');
+        const pending = $('#creator-pending');
+
+        if (dashboard) dashboard.classList.add('hidden');
+        if (pending) pending.classList.add('hidden');
+        if (onboarding) onboarding.classList.remove('hidden');
     } 
 } 
 
-/* ============================================================================ */
-/* FAST DIRECT-TO-CLOUD UPLOAD SYSTEM (BYPASSES RENDER TIMEOUTS)                */
-/* ============================================================================ */
 async function uploadAsset(path, file) { 
     const isVideo = path.includes('video');
     const signRes = await api(`/upload/sign?type=${isVideo ? 'video' : 'image'}`);
@@ -958,25 +987,6 @@ async function submitUpload(event) {
         submit.textContent = 'Upload episode'; 
     } 
 }
-
-async function loadAdmin() { 
-    try { 
-        const [stats = {}, reports = {}] = await Promise.all([
-            api('/admin/dashboard/stats').catch(()=>({})), 
-            api('/admin/reports?limit=20').catch(()=>({}))
-        ]); 
-        
-        const statsEl = $('#admin-stats');
-        if (statsEl) {
-            statsEl.innerHTML = Object.entries(stats).map(([key, value]) => `<div class="stat-card"><span class="eyebrow">${esc(key.replace(/([A-Z])/g, ' $1'))}</span><strong>${Number(value).toLocaleString()}</strong></div>`).join(''); 
-        }
-        
-        const reportsEl = $('#reports-list');
-        if (reportsEl) {
-            reportsEl.innerHTML = (reports.reports || []).map(report => `<div class="data-row"><div><strong>${esc(report.reason || report.type || 'Report')}</strong><p>${esc(report.description || '')}</p></div><span class="data-value">${esc(report.status)}</span></div>`).join('') || '<p>The queue is clear.</p>'; 
-        }
-    } catch (error) { toast(error.message, 'error'); } 
-} 
 
 async function showPackages() { 
     try { 
@@ -1230,19 +1240,6 @@ async function searchLibrary(event) {
     } catch (error) { toast(error.message, 'error'); }
 } 
 
-async function searchEpisodes(event) {
-    event.preventDefault();
-    const input = event.target.querySelector('input');
-    const query = input ? input.value.trim() : '';
-    if (query.length < 2) return toast('Enter at least two characters', 'error');
-    try {
-        const gridEl = $('#series-grid');
-        if (gridEl) gridEl.innerHTML = '<p>Searching...</p>';
-        const result = await api(`/search/global?q=${encodeURIComponent(query)}&type=episodes&limit=50`) || {};
-        if (gridEl) gridEl.innerHTML = (result.episodes?.data || []).map(episodeCard).join('') || '<p>No episodes matched your search.</p>';
-    } catch (error) { toast(error.message, 'error'); }
-} 
-
 async function loadTrending() { 
     try { 
         const result = await api('/search/trending') || {}; 
@@ -1279,11 +1276,16 @@ function loadSettings() {
 function saveSettings(event) { 
     event.preventDefault(); 
     const langEl = $('#settings-language');
-    const notifEl = $('#settings-notifications');     localStorage.setItem('afrostory-settings', JSON.stringify({          language: langEl ? langEl.value : 'en',          notifications: notifEl ? notifEl.checked : true      }));      toast('Settings saved', 'success');  
+    const notifEl = $('#settings-notifications');     
+    localStorage.setItem('afrostory-settings', JSON.stringify({          
+        language: langEl ? langEl.value : 'en',          
+        notifications: notifEl ? notifEl.checked : true      
+    }));      
+    toast('Settings saved', 'success');  
 }
 
 /* ============================================================================ */ 
-/* BULLETPROOF GLOBAL EVENT DELEGATION */ 
+/* GLOBAL EVENT DELEGATION */ 
 /* ============================================================================ */  
 document.addEventListener('change', event => {     
     try {         
@@ -1298,6 +1300,19 @@ document.addEventListener('change', event => {
 
 document.addEventListener('click', async event => {     
     try {         
+        // MOBILE MORE MENU TOGGLE
+        if (event.target.closest('#mobile-more-btn')) {
+            event.preventDefault();
+            applyAdminVisibility();
+            $('#mobile-more-sheet')?.classList.remove('hidden');
+            return;
+        }
+
+        if (event.target.id === 'mobile-more-sheet' || event.target.closest('.sheet-item')) {
+            $('#mobile-more-sheet')?.classList.add('hidden');
+            // Do not return here if clicking a sheet item, let the rest of the script process the data-section
+        }
+
         const section = event.target.closest('[data-section]');          
         if (section) setSection(section.dataset.section);                  
         
@@ -1474,6 +1489,7 @@ document.addEventListener('click', async event => {
         if (event.target.closest('[data-action="open-upload"]')) { 
             const el = $('#upload-modal');
             if (el) el.classList.remove('hidden'); 
+            // Only reload creator stats if they are already verified
             loadCreator(); 
         }
 
@@ -1630,9 +1646,41 @@ if (commentForm) {
     });
 }
 
-const becomeCreatorForm = $('#become-creator-form');   if (becomeCreatorForm) {               becomeCreatorForm.addEventListener('submit', async (event) => {                           event.preventDefault();                           const form = event.target;                           const brandInput = form.querySelector('[name="brandName"]');                           const bioInput = form.querySelector('[name="bio"]');                           const brandName = brandInput ? brandInput.value.trim() : '';                           const bio = bioInput ? bioInput.value.trim() : '';                           const submitBtn = form.querySelector('button[type="submit"]');                                    if (!brandName) return toast('Brand name is required', 'error');                                    if (submitBtn) {                                       submitBtn.disabled = true;                                       submitBtn.textContent = 'Creating...';                           }                                    try {                                       await api('/creators/become-creator', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ brandName, bio }) });                                       if(state.user) state.user.role = 'CREATOR';                                       $$('.creator-only').forEach(el => el.classList.remove('hidden'));
-            toast('Welcome to Creator Studio!', 'success'); 
-            await loadCreator();
+const becomeCreatorForm = $('#become-creator-form');   
+if (becomeCreatorForm) {               
+    becomeCreatorForm.addEventListener('submit', async (event) => {                           
+        event.preventDefault();                           
+        const form = event.target;                           
+        const brandInput = form.querySelector('[name="brandName"]');                           
+        const bioInput = form.querySelector('[name="bio"]');                           
+        const brandName = brandInput ? brandInput.value.trim() : '';                           
+        const bio = bioInput ? bioInput.value.trim() : '';                           
+        const submitBtn = form.querySelector('button[type="submit"]');                                    
+        
+        if (!brandName) return toast('Brand name is required', 'error');                                    
+        
+        if (submitBtn) {                                       
+            submitBtn.disabled = true;                                       
+            submitBtn.textContent = 'Submitting Application...';                           
+        }                                    
+        
+        try {                                       
+            await api('/creators/become-creator', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ brandName, bio }) 
+            });                                       
+            
+            // Immediately switch to the pending screen
+            const dashboard = $('#creator-dashboard');
+            const onboarding = $('#creator-onboarding');
+            const pending = $('#creator-pending');
+            
+            if (dashboard) dashboard.classList.add('hidden');
+            if (onboarding) onboarding.classList.add('hidden');
+            if (pending) pending.classList.remove('hidden');
+
+            toast('Application submitted for review!', 'success'); 
         } catch (error) { 
             toast(error.message, 'error'); 
         } finally { 
@@ -1650,11 +1698,6 @@ window.addEventListener('hashchange', () => {
     const name = location.hash.slice(1);
     if (['discover', 'search', 'watch', 'history', 'wallet', 'rewards', 'creator', 'admin', 'profile', 'trending', 'continue', 'favorites', 'settings'].includes(name)) {
         setSection(name);
-        if (name === 'history') loadHistory();
-        if (name === 'trending') loadTrending();
-        if (name === 'continue') loadContinue();
-        if (name === 'favorites') loadFavorites();
-        if (name === 'settings') loadSettings();
     }
 });
 
@@ -1676,12 +1719,10 @@ async function boot() {
         state.user = await api('/auth/me').catch(() => null); 
         renderHeaderUser(state.user);
         
+        // Force evaluation of Admin buttons the moment the user object loads
+        applyAdminVisibility();
+        
         if (state.user) {
-            if (state.user.role && ['CREATOR', 'ADMIN'].includes(state.user.role)) {
-                $$('.creator-only').forEach(el => el.classList.remove('hidden'));                                   }                                   if (state.user.role === 'ADMIN') {$$
-('.admin-only').forEach(el => el.classList.remove('hidden'));
-            }
-
             try {
                 const savedSid = localStorage.getItem('afrostory_webpushr_sid');
                 if (savedSid) {
