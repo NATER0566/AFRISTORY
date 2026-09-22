@@ -142,14 +142,41 @@
     <script>
         const API_BASE = '/api/admin'; // Points to your server/routes/admin.js
 
-        // Check authentication on load
+        // STRICT AUTHENTICATION CHECK ON PAGE LOAD
         window.onload = () => {
             const token = localStorage.getItem('token');
-            if (!token) {
-                alert('Access Denied. Please log in as an administrator.');
-                window.location.href = '/login.html';
+            let isAdmin = false;
+
+            try {
+                // Check localStorage user object first
+                const userStr = localStorage.getItem('user');
+                if (userStr) {
+                    const u = JSON.parse(userStr);
+                    const role = u.role || (u.user && u.user.role);
+                    if (role && String(role).toUpperCase() === 'ADMIN') {
+                        isAdmin = true;
+                    }
+                }
+                
+                // Fallback: Decrypt JWT token directly if needed
+                if (!isAdmin && token) {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    const role = payload.role || (payload.user && payload.user.role);
+                    if (role && String(role).toUpperCase() === 'ADMIN') {
+                        isAdmin = true;
+                    }
+                }
+            } catch (e) {
+                console.error("Auth check failed", e);
+            }
+
+            // Bounce back to index page if not explicitly an ADMIN
+            if (!token || !isAdmin) {
+                alert('Access Denied. ADMIN role required to view this panel.');
+                window.location.href = '/'; // Redirects directly to your app root
                 return;
             }
+            
             loadDashboardStats();
         };
 
@@ -169,8 +196,8 @@
                 const result = await response.json();
                 
                 if (response.status === 401 || response.status === 403) {
-                    alert('Admin access revoked or unauthorized.');
-                    window.location.href = '/login.html';
+                    alert('ADMIN access revoked or session expired.');
+                    window.location.href = '/'; // Redirects directly to your app root
                     return null;
                 }
                 
@@ -244,12 +271,12 @@
             if (res) loadUsers();
         }
 
-        // 3. Load Creators
+        // 3. Load Creators (Approval Queue)
         async function loadCreators() {
             const tbody = document.getElementById('creators-tbody');
             tbody.innerHTML = '<tr><td colspan="5">Loading creators...</td></tr>';
             
-            // Only fetch pending creators for the approval queue
+            // Fetch pending creators (isVerified = false)
             const data = await adminApi('/creators?verified=false');
             if (!data || !data.creators.length) {
                 tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No pending creator applications.</td></tr>';
@@ -270,17 +297,26 @@
             `).join('');
         }
 
+        // Creator Approval Logic
         async function verifyCreator(id) {
-            if (!confirm('Approve this creator? This grants them publishing rights.')) return;
+            if (!confirm('Approve this creator? This grants them full publishing rights on AfroStory.')) return;
+            // Calls backend PUT /creators/:id/verify
             const res = await adminApi(`/creators/${id}/verify`, 'PUT');
-            if (res) { alert('Creator Approved!'); loadCreators(); loadDashboardStats(); }
+            if (res) { 
+                alert('Creator Approved! They can now upload content.'); 
+                loadCreators(); 
+                loadDashboardStats(); 
+            }
         }
 
         async function rejectCreator(id) {
-            const reason = prompt('Reason for rejection (sent to user):');
+            const reason = prompt('Reason for rejection (this will be sent to the user):');
             if (reason === null) return;
             const res = await adminApi(`/creators/${id}/reject`, 'PUT', { reason });
-            if (res) { alert('Creator Rejected.'); loadCreators(); }
+            if (res) { 
+                alert('Creator Rejected.'); 
+                loadCreators(); 
+            }
         }
 
         // 4. Load Reports
