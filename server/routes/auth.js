@@ -310,7 +310,6 @@ export default async function authRoutes(fastify, opts) {
         role: request.user.role,
         // PHASE 5 VIP FIX: Keep frontend and backend in sync
         subscriptionExpiresAt: request.user.subscriptionExpiresAt || null,
-        // PHASE 3E CLEANUP: Removed adUnlocksRemaining from response payload
         profileImage: request.user.profile?.avatarUrl || request.user.profileImage || null,
         profile: request.user.profile || {
           displayName: request.user.username,
