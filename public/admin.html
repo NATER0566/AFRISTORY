@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AfriStory | Admin Portal</title>
+    <!-- Add SweetAlert2 for beautiful popups -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root { 
             --bg: #f4f7f6; --text: #333; --primary: #ff5722; 
@@ -109,12 +111,12 @@
                 top: 0;
                 left: 0;
                 height: 100%;
-                width: 50vw; /* Takes exactly half the screen */
+                width: 50vw; 
                 min-width: 200px;
-                transform: translateX(-100%); /* Hidden by default */
+                transform: translateX(-100%); 
             }
             .sidebar.open {
-                transform: translateX(0); /* Slides in when opened */
+                transform: translateX(0); 
                 box-shadow: 5px 0 15px rgba(0,0,0,0.5);
             }
             .sidebar-close-btn { display: block; }
@@ -217,7 +219,6 @@
             sidebar.classList.toggle('open');
         }
 
-        // Add auto-close logic to the navigation buttons on mobile
         document.querySelectorAll('.nav-item').forEach(btn => {
             btn.addEventListener('click', () => {
                 if (window.innerWidth <= 800) {
