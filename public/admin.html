@@ -15,17 +15,51 @@
             background: var(--bg); color: var(--text); 
             display: flex; height: 100vh; overflow: hidden; 
         }
+        
+        /* Mobile Header (Hidden on Desktop) */
+        .mobile-header {
+            display: none;
+            background: var(--dark);
+            color: #fff;
+            padding: 15px 20px;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 998;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        .mobile-header-brand { font-size: 18px; font-weight: bold; color: var(--primary); letter-spacing: 1px; }
+        .mobile-menu-btn { background: transparent; border: none; color: #fff; font-size: 26px; cursor: pointer; padding: 0; }
+
         /* Sidebar layout */
         .sidebar { 
             width: 260px; background: var(--dark); color: #fff; 
             display: flex; flex-direction: column; padding-top: 20px;
+            transition: transform 0.3s ease-in-out;
+            z-index: 1000;
         }
         .sidebar-brand { font-size: 22px; font-weight: bold; text-align: center; color: var(--primary); margin-bottom: 30px; letter-spacing: 1px; }
-        .nav-item { padding: 15px 25px; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; color: #a0a0b5; }
+        .nav-item { padding: 15px 25px; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; color: #a0a0b5; display: block; width: 100%; text-align: left; background: none; font-size: 16px; font-family: inherit; }
         .nav-item:hover, .nav-item.active { background: #16213e; border-left-color: var(--primary); color: #fff; }
         
+        /* Sidebar Close Button (Hidden on Desktop) */
+        .sidebar-close-btn {
+            display: none;
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 28px;
+            cursor: pointer;
+        }
+        
         /* Main content */
-        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; background: var(--bg); }
         .view-section { display: none; }
         .view-section.active { display: block; animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
@@ -40,13 +74,13 @@
         
         /* Tables */
         .table-container { background: var(--white); border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; text-align: left; }
+        table { width: 100%; border-collapse: collapse; text-align: left; min-width: 600px; }
         th, td { padding: 16px 20px; border-bottom: 1px solid var(--border); font-size: 14px; }
         th { background: #fafafa; font-weight: 600; color: #555; text-transform: uppercase; font-size: 12px; }
         tr:last-child td { border-bottom: none; }
         
         /* Badges & Buttons */
-        .btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500; transition: 0.2s; }
+        .btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500; transition: 0.2s; margin-right: 5px; margin-bottom: 5px; }
         .btn-success { background: var(--success); color: white; }
         .btn-success:hover { background: #218838; }
         .btn-danger { background: var(--danger); color: white; }
@@ -62,6 +96,30 @@
         
         /* Initial Loader */
         #page-loader { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; font-weight: bold; color: var(--dark); }
+
+        /* =========================================
+           MOBILE RESPONSIVENESS
+        ========================================= */
+        @media (max-width: 800px) {
+            .mobile-header { display: flex; }
+            .main-content { padding-top: 80px; padding-left: 15px; padding-right: 15px; }
+            
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 50vw; /* Takes exactly half the screen */
+                min-width: 200px;
+                transform: translateX(-100%); /* Hidden by default */
+            }
+            .sidebar.open {
+                transform: translateX(0); /* Slides in when opened */
+                box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+            }
+            .sidebar-close-btn { display: block; }
+            .sidebar-brand { margin-top: 10px; }
+        }
     </style>
 </head>
 <body>
@@ -69,15 +127,22 @@
     <!-- Security Loader -->
     <div id="page-loader">Verifying Admin Access...</div>
 
+    <!-- Mobile Header (Hamburger Menu) -->
+    <div class="mobile-header">
+        <div class="mobile-header-brand">ADMIN PORTAL</div>
+        <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+    </div>
+
     <!-- Sidebar Navigation -->
-    <div class="sidebar">
-        <div class="sidebar-brand">AFRISTORY ADMIN</div>
-        <div class="nav-item active" onclick="switchTab('dashboard')">Overview</div>
-        <div class="nav-item" onclick="switchTab('users'); loadUsers();">Users</div>
-        <div class="nav-item" onclick="switchTab('creators'); loadCreators();">Creator Approvals</div>
-        <div class="nav-item" onclick="switchTab('moderation'); loadReports();">Moderation</div>
-        <div class="nav-item" onclick="switchTab('payouts'); loadPayouts();">Financial Payouts</div>
-        <div class="nav-item" onclick="window.location.href='/'" style="margin-top: auto; border-top: 1px solid #333;">Exit Admin</div>
+    <div class="sidebar" id="admin-sidebar">
+        <button class="sidebar-close-btn" onclick="toggleSidebar()">×</button>
+        <div class="sidebar-brand">AFRISTORY</div>
+        <button class="nav-item active" onclick="switchTab('dashboard')">Overview</button>
+        <button class="nav-item" onclick="switchTab('users'); loadUsers();">Users</button>
+        <button class="nav-item" onclick="switchTab('creators'); loadCreators();">Creator Approvals</button>
+        <button class="nav-item" onclick="switchTab('moderation'); loadReports();">Moderation</button>
+        <button class="nav-item" onclick="switchTab('payouts'); loadPayouts();">Financial Payouts</button>
+        <button class="nav-item" onclick="window.location.href='/'" style="margin-top: auto; border-top: 1px solid #333;">Exit Admin</button>
     </div>
 
     <!-- Main Content Area -->
@@ -144,6 +209,23 @@
         </div>
 
     </div>
+
+    <!-- UI Toggle Script -->
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('admin-sidebar');
+            sidebar.classList.toggle('open');
+        }
+
+        // Add auto-close logic to the navigation buttons on mobile
+        document.querySelectorAll('.nav-item').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (window.innerWidth <= 800) {
+                    document.getElementById('admin-sidebar').classList.remove('open');
+                }
+            });
+        });
+    </script>
 
     <!-- Load the external Admin JS file -->
     <script src="/js/admin.js"></script>
