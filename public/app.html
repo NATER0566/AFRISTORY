@@ -493,7 +493,7 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
         <button class="sheet-item" data-section="history"><i>◴</i><span>History</span></button>
         <button class="sheet-item" data-section="settings"><i>⚙</i><span>Settings</span></button>
         
-        <!-- HTML MODIFICATION: Removed the 'hidden' class entirely so CSS cannot conflict -->
+        <!-- ADMIN BUTTON -->
         <button id="mobile-admin-btn" class="sheet-item" style="display: none; grid-column: 1 / -1; border: 1px solid #d4a017; background: rgba(212, 160, 23, 0.05); margin-top: 5px;" onclick="window.location.href='/admin.html'">
           <i style="color: #d4a017;">▦</i>
           <span style="font-weight: 700; color: #d4a017;">Admin Panel</span>
@@ -510,97 +510,8 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
   <div id="notification-modal" class="modal-root hidden"><div class="modal notification-panel" role="dialog" aria-modal="true" aria-labelledby="notification-title"><div class="modal-header"><div><p class="eyebrow">YOUR INBOX</p><h2 id="notification-title">Notifications</h2></div><button class="modal-close" data-action="close-notifications" aria-label="Close notifications">×</button></div><div class="modal-actions"><button class="text-button" data-action="read-all">Mark all as read</button></div><div id="notification-list" class="data-list"></div></div></div>
   <div id="modal-root" class="modal-root hidden"></div><div id="toast-region" class="toast-region" aria-live="polite"></div>
   
-  <script type="module" src="/js/ads.js"></script><script type="module" src="/js/main.js"></script>
-
-  <!-- BULLETPROOF ADMIN CHECK FUNCTION -->
-  <script>
-    function isUserAdmin() {
-      try {
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-          const u = JSON.parse(userStr);
-          const role = u.role || (u.user && u.user.role);
-          // Forcefully capitalize to catch any backend mismatches
-          if (role && String(role).toUpperCase() === 'ADMIN') return true;
-        }
-      } catch (e) {}
-
-      try {
-        const token = localStorage.getItem('token');
-        if (token) {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          const role = payload.role || (payload.user && payload.user.role);
-          if (role && String(role).toUpperCase() === 'ADMIN') return true;
-        }
-      } catch (e) {}
-
-      return false; 
-    }
-
-    function applyAdminVisibility() {
-      const isAdmin = isUserAdmin();
-      
-      const desktopBtn = document.getElementById('desktop-admin-btn');
-      if (desktopBtn) {
-        // JS Modification: explicitly remove any conflicting hidden class just in case
-        desktopBtn.classList.remove('hidden');
-        desktopBtn.style.display = isAdmin ? 'flex' : 'none';
-      }
-
-      const mobileBtn = document.getElementById('mobile-admin-btn');
-      if (mobileBtn) {
-        mobileBtn.classList.remove('hidden');
-        mobileBtn.style.display = isAdmin ? 'flex' : 'none';
-      }
-    }
-
-    // Run when the page loads
-    document.addEventListener('DOMContentLoaded', applyAdminVisibility);
-  </script>
-
-  <!-- SCRIPT TO OPEN/CLOSE THE "MORE" SHEET -->
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const moreBtn = document.getElementById('mobile-more-btn');
-      const sheet = document.getElementById('mobile-more-sheet');
-      const sheetItems = document.querySelectorAll('.sheet-item');
-
-      if (moreBtn && sheet) {
-        moreBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          // FORCE the script to re-evaluate the admin token exactly when the menu is tapped
-          applyAdminVisibility(); 
-          sheet.classList.remove('hidden');
-        });
-        
-        sheet.addEventListener('click', (e) => {
-          if (e.target === sheet) {
-            sheet.classList.add('hidden');
-          }
-        });
-        
-        sheetItems.forEach(item => {
-          item.addEventListener('click', () => {
-            sheet.classList.add('hidden');
-          });
-        });
-      }
-    });
-  </script>
-
-  <!-- SCRIPT TO HANDLE CREATOR PENDING UI TRANSITION -->
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const creatorForm = document.getElementById('become-creator-form');
-      if (creatorForm) {
-        creatorForm.addEventListener('submit', () => {
-          setTimeout(() => {
-            document.getElementById('creator-onboarding').classList.add('hidden');
-            document.getElementById('creator-pending').classList.remove('hidden');
-          }, 300);
-        });
-      }
-    });
-  </script>
+  <script type="module" src="/js/ads.js"></script>
+  <script type="module" src="/js/main.js"></script>
 </body>
 </html>
+
