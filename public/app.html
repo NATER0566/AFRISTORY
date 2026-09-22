@@ -309,8 +309,8 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
         <button class="nav-item desktop-only" data-section="history"><i class="nav-icon">◴</i><span>History</span></button>
         <button class="nav-item desktop-only" data-section="rewards"><i class="nav-icon">✧</i><span>Rewards</span></button>
         
-        <!-- DESKTOP ADMIN BUTTON: Now explicitly routes to the separate page -->
-        <button class="nav-item admin-only hidden desktop-only" onclick="window.location.href='/admin.html'"><i class="nav-icon">▦</i><span>Admin</span></button>
+        <!-- DESKTOP ADMIN BUTTON -->
+        <button id="desktop-admin-btn" class="nav-item desktop-only" style="display: none;" onclick="window.location.href='/admin.html'"><i class="nav-icon">▦</i><span>Admin</span></button>
       </nav>
       <div class="sidebar-bottom">
         <button class="nav-item" data-section="settings"><i class="nav-icon">⚙</i><span>Settings</span></button>
@@ -493,8 +493,8 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
         <button class="sheet-item" data-section="history"><i>◴</i><span>History</span></button>
         <button class="sheet-item" data-section="settings"><i>⚙</i><span>Settings</span></button>
         
-        <!-- ADMIN BUTTON: Bold, full-width, positioned immediately before the logout button -->
-        <button id="mobile-admin-btn" class="sheet-item hidden" style="display: none; grid-column: 1 / -1; border: 1px solid #d4a017; background: rgba(212, 160, 23, 0.05); margin-top: 5px;" onclick="window.location.href='/admin.html'">
+        <!-- HTML MODIFICATION: Removed the 'hidden' class entirely so CSS cannot conflict -->
+        <button id="mobile-admin-btn" class="sheet-item" style="display: none; grid-column: 1 / -1; border: 1px solid #d4a017; background: rgba(212, 160, 23, 0.05); margin-top: 5px;" onclick="window.location.href='/admin.html'">
           <i style="color: #d4a017;">▦</i>
           <span style="font-weight: 700; color: #d4a017;">Admin Panel</span>
         </button>
@@ -512,41 +512,53 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
   
   <script type="module" src="/js/ads.js"></script><script type="module" src="/js/main.js"></script>
 
-  <!-- ROBUST ADMIN CHECK FUNCTION -->
+  <!-- BULLETPROOF ADMIN CHECK FUNCTION -->
   <script>
-    function checkAndShowAdminButtons() {
+    function isUserAdmin() {
       try {
         const userStr = localStorage.getItem('user');
         if (userStr) {
-          const userData = JSON.parse(userStr);
-          // Safely check role regardless of how it was saved in localStorage
-          const role = userData.role || (userData.user && userData.user.role);
-          
-          if (role === 'ADMIN' || role === 'admin') {
-            // Un-hide the mobile button
-            const mobileAdminBtn = document.getElementById('mobile-admin-btn');
-            if (mobileAdminBtn) {
-              mobileAdminBtn.classList.remove('hidden');
-              mobileAdminBtn.style.display = 'flex';
-            }
-            // Un-hide the desktop sidebar button
-            const desktopAdminBtn = document.querySelector('.nav-item.admin-only');
-            if (desktopAdminBtn) {
-              desktopAdminBtn.classList.remove('hidden');
-              desktopAdminBtn.style.display = 'flex';
-            }
-          }
+          const u = JSON.parse(userStr);
+          const role = u.role || (u.user && u.user.role);
+          // Forcefully capitalize to catch any backend mismatches
+          if (role && String(role).toUpperCase() === 'ADMIN') return true;
         }
-      } catch (e) {
-        console.error('Error verifying admin status:', e);
+      } catch (e) {}
+
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const role = payload.role || (payload.user && payload.user.role);
+          if (role && String(role).toUpperCase() === 'ADMIN') return true;
+        }
+      } catch (e) {}
+
+      return false; 
+    }
+
+    function applyAdminVisibility() {
+      const isAdmin = isUserAdmin();
+      
+      const desktopBtn = document.getElementById('desktop-admin-btn');
+      if (desktopBtn) {
+        // JS Modification: explicitly remove any conflicting hidden class just in case
+        desktopBtn.classList.remove('hidden');
+        desktopBtn.style.display = isAdmin ? 'flex' : 'none';
+      }
+
+      const mobileBtn = document.getElementById('mobile-admin-btn');
+      if (mobileBtn) {
+        mobileBtn.classList.remove('hidden');
+        mobileBtn.style.display = isAdmin ? 'flex' : 'none';
       }
     }
 
     // Run when the page loads
-    document.addEventListener('DOMContentLoaded', checkAndShowAdminButtons);
+    document.addEventListener('DOMContentLoaded', applyAdminVisibility);
   </script>
 
-  <!-- TINY SCRIPT TO OPEN/CLOSE THE "MORE" SHEET -->
+  <!-- SCRIPT TO OPEN/CLOSE THE "MORE" SHEET -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const moreBtn = document.getElementById('mobile-more-btn');
@@ -556,8 +568,8 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
       if (moreBtn && sheet) {
         moreBtn.addEventListener('click', (e) => {
           e.preventDefault();
-          // FORCE check admin right before the menu opens 
-          checkAndShowAdminButtons(); 
+          // FORCE the script to re-evaluate the admin token exactly when the menu is tapped
+          applyAdminVisibility(); 
           sheet.classList.remove('hidden');
         });
         
@@ -576,7 +588,7 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
     });
   </script>
 
-  <!-- SCRIPT TO HANDLE CREATOR FORM UI TRANSITION -->
+  <!-- SCRIPT TO HANDLE CREATOR PENDING UI TRANSITION -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const creatorForm = document.getElementById('become-creator-form');
