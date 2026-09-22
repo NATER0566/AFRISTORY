@@ -2,22 +2,15 @@
 <html lang="en">
 <head>
 
-
 <!-- start webpushr tracking code --> 
 <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js";
 fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));
 webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4GZnLNpMUBg35mzdNgBSOcMQ4YlZaZ0SY' });</script>
 <!-- end webpushr tracking code -->
 
-
-
-     
-
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4661775522120249"
      crossorigin="anonymous"></script>
 
-
-  
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#111111">
@@ -61,7 +54,7 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
       ============================================================== */
       #section-watch {
         position: fixed !important; 
-        top: 80px !important;       /* Starts exactly below top header */
+        top: 80px !important;       
         left: 0 !important;
         right: 0 !important;
         height: calc(100vh - 80px) !important;
@@ -75,8 +68,6 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
 
       @media(max-width: 800px) {
         #section-watch {
-          /* EXACTLY subtracts Top Bar (80px) + Bottom Bar (80px) = 160px */
-          /* Video CANNOT slide under the navs with this exact math */
           height: calc(100vh - 160px) !important;
           height: calc(100dvh - 160px) !important;
         }
@@ -106,14 +97,12 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
       .feed-video-card video {
         width: 100%;
         height: 100%;
-        /* FIX: cover removes all black borders perfectly, stretching the video to edges */
         object-fit: cover !important; 
         background-color: #000;
         outline: none;
         display: block;
       }
 
-      /* Dark gradient to ensure text readability against bright videos */
       .feed-video-card::after {
         content: '';
         position: absolute;
@@ -128,7 +117,7 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
 
       .feed-overlay {
         position: absolute;
-        bottom: 15px; /* Neatly spaced from bottom */
+        bottom: 15px; 
         left: 15px;
         right: 65px; 
         color: #fff;
@@ -145,7 +134,7 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
 
       .feed-sidebar {
         position: absolute;
-        bottom: 25px; /* Aligned nicely with overlay */
+        bottom: 25px; 
         right: 10px;
         z-index: 10;
         display: flex;
@@ -195,7 +184,6 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
         justify-content: center !important;
         height: 100% !important;
         margin: 0 !important;
-        /* Hides the ugly inline text injected by main.js immediately */
         color: transparent !important; 
         position: absolute;
         top: 0; left: 0; right: 0; bottom: 0;
@@ -303,7 +291,6 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
             <div class="header-online-dot"></div>
         </div>
       </button>
-
     </div>
   </header>
   <div class="app-layout">
@@ -321,7 +308,9 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
         <button class="nav-item desktop-only" data-section="favorites"><i class="nav-icon">♡</i><span>Favorites</span></button>
         <button class="nav-item desktop-only" data-section="history"><i class="nav-icon">◴</i><span>History</span></button>
         <button class="nav-item desktop-only" data-section="rewards"><i class="nav-icon">✧</i><span>Rewards</span></button>
-        <button class="nav-item admin-only hidden desktop-only" data-section="admin"><i class="nav-icon">▦</i><span>Admin</span></button>
+        
+        <!-- DESKTOP ADMIN BUTTON: Now explicitly routes to the separate page -->
+        <button class="nav-item admin-only hidden desktop-only" onclick="window.location.href='/admin.html'"><i class="nav-icon">▦</i><span>Admin</span></button>
       </nav>
       <div class="sidebar-bottom">
         <button class="nav-item" data-section="settings"><i class="nav-icon">⚙</i><span>Settings</span></button>
@@ -334,12 +323,9 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
       
       <!-- LOCKED WATCH SECTION -->
       <section id="section-watch" class="app-section hidden">
-        <!-- Infinite Scroll Feed Container -->
         <div id="tiktok-feed" class="tiktok-feed">
-          <!-- Videos will be injected here by JavaScript -->
         </div>
 
-        <!-- Comments Bottom Sheet -->
         <div id="comments-sheet" class="bottom-sheet-overlay hidden" style="z-index: 99999;">
           <div class="bottom-sheet" style="height: 65vh; overflow-y: auto; position: relative; padding-bottom: 80px;">
             <div class="sheet-handle"></div>
@@ -456,7 +442,15 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
           </form>
         </div>
 
-        <!-- ACTUAL DASHBOARD: Shown when user is a creator -->
+        <!-- NEW: PENDING SCREEN (Shown while waiting for admin approval) -->
+        <div id="creator-pending" class="hidden" style="text-align:center; max-width:400px; margin:100px auto;">
+          <p class="eyebrow" style="color: #d4a017;">APPLICATION RECEIVED</p>
+          <h2>Under Review</h2>
+          <p style="color: #999; margin-bottom: 24px;">Your creator profile is currently being reviewed by our administrators. We will get back to you shortly. Once approved, you will be able to upload your content here.</p>
+          <button class="button button-quiet" type="button" onclick="document.querySelector('[data-section=\'discover\']').click()">Explore stories meanwhile</button>
+        </div>
+
+        <!-- ACTUAL DASHBOARD: Shown when user is a verified creator -->
         <div id="creator-dashboard" class="hidden">
           <div class="section-heading">
             <div>
@@ -474,7 +468,8 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
         </div>
       </section>
 
-      <section id="section-admin" class="app-section hidden admin-only"><div class="section-heading"><div><p class="eyebrow">KEEPING THE STORY GOING</p><h1>Admin dashboard</h1></div></div><div id="admin-stats" class="stats-row"></div><div class="section-heading compact-heading"><h2>Moderation queue</h2></div><div id="reports-list" class="data-list"></div></section>
+      <!-- NOTE: Removed the redundant inline #section-admin since it opens a separate page now -->
+
       <section id="section-history" class="app-section hidden"><div class="section-heading"><div><p class="eyebrow">YOUR JOURNEY</p><h1>Watch history</h1></div><button class="button button-quiet" data-section="discover">Discover stories</button></div><div id="history-list" class="data-list"></div></section>
       <section id="section-profile" class="app-section hidden"><div id="profile-cover" class="profile-cover"><div class="profile-header"><div id="profile-avatar" class="profile-avatar">A</div><div class="profile-identity"><p class="eyebrow">YOUR STORY SPACE</p><h1 id="profile-display-name">Profile</h1><p id="profile-handle" class="muted">@username</p><p id="profile-bio" class="profile-bio">Complete your profile to help your story journey feel like home.</p><div id="profile-location" class="profile-location"></div></div><div class="profile-actions"><button class="button button-primary" data-action="edit-profile">Edit profile</button><button class="button button-quiet" data-section="settings">Settings</button></div></div></div><nav class="profile-tabs" aria-label="Profile sections"><button class="profile-tab active" data-profile-tab="overview">Overview</button><button class="profile-tab" data-profile-tab="watchlist">Watchlist</button><button class="profile-tab" data-profile-tab="history">History</button><button class="profile-tab" data-profile-tab="library">My library</button><button class="profile-tab" data-profile-tab="about">About</button><button class="profile-tab creator-profile-tab hidden" data-section="creator">My content</button></nav><div id="profile-panel-overview" class="profile-panel"><div class="profile-summary-grid"><div><p class="eyebrow">RECENTLY WATCHED</p><div id="profile-recent" class="profile-list"></div></div><div><p class="eyebrow">SAVED STORIES</p><div id="profile-saved" class="profile-story-grid"></div></div></div><div class="profile-section-heading"><div><p class="eyebrow">YOUR INTERESTS</p><h2 id="profile-interest-title">Shape your next discovery</h2></div><button class="text-button" data-action="edit-profile">Edit interests</button></div><div id="profile-interests" class="interest-list"></div></div><div id="profile-panel-watchlist" class="profile-panel hidden"><div class="profile-section-heading"><div><p class="eyebrow">YOUR COLLECTION</p><h2>Watchlist</h2></div></div><div id="profile-watchlist" class="profile-story-grid"></div></div><div id="profile-panel-history" class="profile-panel hidden"><div class="profile-section-heading"><div><p class="eyebrow">YOUR JOURNEY</p><h2>Watch history</h2></div></div><div id="profile-history" class="profile-list"></div></div><div id="profile-panel-library" class="profile-panel hidden"><div class="profile-section-heading"><div><p class="eyebrow">UNLOCKED STORIES</p><h2>My library</h2></div></div><div id="profile-library" class="profile-list"></div></div><div id="profile-panel-about" class="profile-panel hidden"><div class="profile-section-heading"><div><p class="eyebrow">ACCOUNT DETAILS</p><h2>About your AfroStory account</h2></div></div><div id="profile-about" class="profile-about"></div></div><div id="profile-edit-panel" class="profile-edit-panel hidden"><div class="profile-section-heading"><div><p class="eyebrow">MAKE IT YOURS</p><h2>Edit profile</h2></div><button class="text-button" data-action="close-profile-edit">Close</button></div><form id="profile-form" class="profile-form"><div class="profile-edit-grid"><label>Display name<input id="profile-display-name-input" name="displayName" maxlength="80"></label><label>Username<input id="profile-username" name="username" required maxlength="30"></label><label>Email<input id="profile-email" name="email" type="email" readonly></label><label>Country<input id="profile-country" name="country" maxlength="80" placeholder="Nigeria"></label><label>Region<input id="profile-region" name="region" maxlength="80" placeholder="North Central"></label><label>Preferred language<select id="profile-language" name="preferredLanguage"><option>English</option><option>Nigerian Pidgin</option><option>Tiv</option><option>Igbo</option><option>Yoruba</option><option>Hausa</option><option>French</option><option>Arabic</option><option>Swahili</option><option>Other</option></select></label></div><label>Bio<textarea id="profile-bio-input" name="bio" maxlength="280" rows="3" placeholder="What kinds of stories stay with you?"></textarea></label><label>Profile photo<input id="profile-image" name="profileImage" type="file" accept="image/jpeg,image/png,image/webp"></label><label>Cover image<input id="profile-cover-image" name="coverImage" type="file" accept="image/jpeg,image/png,image/webp"></label><label>Favorite genres<select id="profile-genres" name="favoriteGenres" multiple><option>Action</option><option>Drama</option><option>Comedy</option><option>Romance</option><option>Thriller</option><option>Sci-Fi</option><option>Horror</option><option>Documentary</option><option>Afro-Futurism</option><option>Folklore</option><option>Urban Drama</option><option>Animation</option><option>Historical</option><option>Adventure</option><option>Mystery</option><option>Crime</option><option>Family</option><option>Faith &amp; Inspirational</option><option>Musical</option><option>Biography</option><option>Short Film</option></select></label><label>Favorite cultures / communities<input id="profile-cultures" name="favoriteCultures" maxlength="500" placeholder="Tiv, Igbo, Yoruba"></label><div class="profile-privacy"><label class="checkbox-label"><input id="profile-public" name="profileVisibility" type="checkbox"> Make my profile public</label><label class="checkbox-label"><input id="profile-show-favorites" name="showFavorites" type="checkbox"> Show favorites publicly</label></div><button class="button button-primary" type="submit">Save profile</button></form></div></section>
       <section id="section-search" class="app-section hidden"><div class="section-heading"><div><p class="eyebrow">EXPLORE THE LIBRARY</p><h1>Search</h1></div></div><form id="library-search-form" class="search-box library-search"><span>⌕</span><input id="library-search-input" type="search" placeholder="Search series and creators" aria-label="Search the library"><button type="submit">Search</button></form><div id="search-results" class="content-grid"></div></section>
@@ -493,14 +488,19 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
       <div class="sheet-handle"></div>
       <h3>More</h3>
       <div class="sheet-grid">
-        <!-- ADMIN BUTTON: Hidden by default, revealed via JS if user is admin -->
-        <button id="mobile-admin-btn" class="sheet-item hidden" style="display: none;" onclick="window.location.href='/admin.html'"><i>▦</i><span>Admin Panel</span></button>
         <button class="sheet-item" data-section="trending"><i>↗</i><span>Trending</span></button>
         <button class="sheet-item" data-section="rewards"><i>✧</i><span>Rewards</span></button>
         <button class="sheet-item" data-section="continue"><i>◷</i><span>Continue</span></button>
         <button class="sheet-item" data-section="favorites"><i>♡</i><span>Favorite</span></button>
         <button class="sheet-item" data-section="history"><i>◴</i><span>History</span></button>
         <button class="sheet-item" data-section="settings"><i>⚙</i><span>Settings</span></button>
+        
+        <!-- ADMIN BUTTON: Bold, distinct, positioned immediately before the logout button -->
+        <button id="mobile-admin-btn" class="sheet-item hidden" style="display: none; border: 1px solid #d4a017; background: rgba(212, 160, 23, 0.05);" onclick="window.location.href='/admin.html'">
+          <i style="color: #d4a017;">▦</i>
+          <span style="font-weight: 700; color: #d4a017;">Admin Panel</span>
+        </button>
+
         <button class="sheet-item sheet-logout" data-action="logout"><i>↪</i><span>Sign out</span></button>
       </div>
     </div>
@@ -549,14 +549,12 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
         const userStr = localStorage.getItem('user');
         if (userStr) {
           const user = JSON.parse(userStr);
-          if (user.role === 'ADMIN' || user.role === 'admin') {
-            // Show mobile More menu admin button
+          if (user.role === 'ADMIN') {
             const mobileAdminBtn = document.getElementById('mobile-admin-btn');
             if (mobileAdminBtn) {
               mobileAdminBtn.classList.remove('hidden');
               mobileAdminBtn.style.display = 'flex';
             }
-            // Show desktop sidebar admin button if it exists
             const desktopAdminBtn = document.querySelector('.nav-item.admin-only');
             if (desktopAdminBtn) {
               desktopAdminBtn.classList.remove('hidden');
@@ -569,9 +567,21 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
     });
   </script>
 
-<!-- start webpushr code --> <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4GZnLNpMUBg35mzdNgBSOcMQ4YlZaZ0SY' });</script><!-- end webpushr code -->
-
-
-     
+  <!-- SCRIPT TO HANDLE CREATOR FORM UI TRANSITION -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const creatorForm = document.getElementById('become-creator-form');
+      if (creatorForm) {
+        creatorForm.addEventListener('submit', () => {
+          // Once the user submits, immediately switch to the pending screen.
+          // main.js will still handle the backend API call smoothly in the background.
+          setTimeout(() => {
+            document.getElementById('creator-onboarding').classList.add('hidden');
+            document.getElementById('creator-pending').classList.remove('hidden');
+          }, 300);
+        });
+      }
+    });
+  </script>
 </body>
 </html>
