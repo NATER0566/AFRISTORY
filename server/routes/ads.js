@@ -45,10 +45,13 @@ export default async function adsRoutes(fastify, opts) {
         return sendError(reply, 'Sponsored messages are currently unavailable.', 503);
       }
 
-      // Exact integration parameters required by Adscod
+      // Exact integration parameters required by Adscod, including the video slot hint
       const params = new URLSearchParams({
         source: 'publisher',
-        placementId: '9c206398-e10f-4e3f-893b-481196e8f191'
+        placementId: '9c206398-e10f-4e3f-893b-481196e8f191',
+        placement: 'video',
+        country: 'NG',
+        device: 'MOBILE'
       });
 
       const apiUrl = process.env.ADSCOD_API_URL || 'https://api.adscod.com/api/v1/serve';
@@ -71,15 +74,20 @@ export default async function adsRoutes(fastify, opts) {
       // Extract the first ad from the array
       const ad = adResponse.data.ads[0];
 
+      // Temporary diagnostic logging to verify raw Adscod payload in Render logs
+      fastify.log.info({
+        adscodAd: ad
+      }, 'Adscod returned ad');
+
       // Return ONLY the safe rendering data to the browser mapped to Adscod's response structure
       sendSuccess(reply, {
-        adContent: ad.body || ad.html || null,
-        clickUrl: validateHttpsUrl(ad.clickUrl),
-        imageUrl: validateHttpsUrl(ad.imageUrl),
-        videoUrl: validateHttpsUrl(ad.videoUrl),
         title: ad.title || 'Sponsored Message',
         description: ad.description || '',
-        ctaLabel: ad.ctaLabel || 'Click Here'
+        adContent: ad.body || null,
+        imageUrl: validateHttpsUrl(ad.imageUrl),
+        videoUrl: validateHttpsUrl(ad.videoUrl),
+        clickUrl: validateHttpsUrl(ad.clickUrl),
+        ctaLabel: ad.ctaLabel || 'Learn More'
       });
     } catch (error) {
       // Graceful failure: If Adscod is down, the user simply sees an unavailable message.
