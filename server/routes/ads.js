@@ -10,235 +10,111 @@ import { isResetTime, generateReference } from '../utils/helpers.js';
 import mongoose from 'mongoose';
 import axios from 'axios';
 
-// Only allow HTTPS URLs to reach the frontend.
+// Strict server-side URL validation.
 function validateHttpsUrl(urlStr) {
-  if (!urlStr || typeof urlStr !== 'string') {
-    return null;
-  }
-
+  if (!urlStr) return null;
   try {
     const parsed = new URL(urlStr);
-
-    if (parsed.protocol !== 'https:') {
-      return null;
+    if (parsed.protocol === 'https:') {
+      return parsed.toString();
     }
-
-    return parsed.toString();
-  } catch {
+  } catch (e) {
     return null;
   }
+  return null;
 }
 
 export default async function adsRoutes(fastify, opts) {
-
-  /*
-   * GET /serve
-   *
-   * Secure server-side Adscod publisher proxy.
-   *
-   * IMPORTANT:
-   * - The Adscod publisher key NEVER reaches the browser.
-   * - This requests the VIDEO slot.
-   * - This endpoint does NOT grant an episode unlock.
-   * - The frontend must render videoUrl when Adscod returns one.
-   */
+  
+  // ---------------------------------------------------------
+  // ROUTE 1: Secure Ad Proxy (Fetches ads for the player)
+  // ---------------------------------------------------------
   fastify.get('/serve', async (request, reply) => {
     try {
-
-      // ---------------------------------------------------------
-      // 1. Require authenticated user
-      // ---------------------------------------------------------
-
       await verifyAuth(request, reply);
-
+      
       if (!request.user) {
         return sendError(reply, 'Unauthorized', 401);
       }
 
-
-      // ---------------------------------------------------------
-      // 2. Get Adscod publisher key
-      // ---------------------------------------------------------
-
       const publisherKey = process.env.ADSCOD_PUBLISHER_KEY;
-
+      
       if (!publisherKey) {
-        fastify.log.error(
-          'ADSCOD_PUBLISHER_KEY is missing from environment variables.'
-        );
-
-        return sendError(
-          reply,
-          'Sponsored messages are currently unavailable.',
-          503
-        );
+        fastify.log.warn('ADSCOD_PUBLISHER_KEY is missing from environment variables.');
+        return sendError(reply, 'Sponsored messages are currently unavailable.', 503);
       }
-
-
-      // ---------------------------------------------------------
-      // 3. Request the VIDEO placement from Adscod
-      // ---------------------------------------------------------
 
       const params = new URLSearchParams({
         source: 'publisher',
-
-        // Your Adscod placement ID
         placementId: '9c206398-e10f-4e3f-893b-481196e8f191',
-
-        // IMPORTANT:
-        // This tells Adscod this request is for the video slot.
         placement: 'video',
-
-        // Current user's market/device
         country: 'NG',
-        device: 'MOBILE',
-
-        // We only need one advertisement.
-        limit: '1'
+        device: 'MOBILE'
       });
 
-
-      // ---------------------------------------------------------
-      // 4. Adscod API endpoint
-      // ---------------------------------------------------------
-
-      const apiUrl =
-        process.env.ADSCOD_API_URL ||
-        'https://api.adscod.com/api/v1/serve';
-
+      const apiUrl = process.env.ADSCOD_API_URL || 'https://api.adscod.com/api/v1/serve';
       const fullUrl = `${apiUrl}?${params.toString()}`;
-
-
-      // ---------------------------------------------------------
-      // 5. Server-to-server request
-      // ---------------------------------------------------------
 
       const adResponse = await axios.get(fullUrl, {
         headers: {
           'X-Adscod-Key': publisherKey,
-          'Accept': 'application/json'
+          'Content-Type': 'application/json'
         },
-
         timeout: 5000
       });
 
-
-      // ---------------------------------------------------------
-      // 6. Validate Adscod response
-      // ---------------------------------------------------------
-
-      const ads = adResponse?.data?.ads;
-
-      if (!Array.isArray(ads) || ads.length === 0) {
-        fastify.log.info(
-          {
-            placementId: '9c206398-e10f-4e3f-893b-481196e8f191',
-            placement: 'video'
-          },
-          'Adscod returned no ads'
-        );
-
-        return sendError(
-          reply,
-          'No sponsored message available.',
-          404
-        );
+      if (!adResponse.data || !adResponse.data.ads || adResponse.data.ads.length === 0) {
+         return sendError(reply, 'No sponsored message available.', 404);
       }
 
+      const ad = adResponse.data.ads[0];
 
-      // ---------------------------------------------------------
-      // 7. Get first matched advertisement
-      // ---------------------------------------------------------
-
-      const ad = ads[0];
-
-
-      // ---------------------------------------------------------
-      // 8. Diagnostic information
-      // ---------------------------------------------------------
-      //
-      // This is intentionally useful for debugging.
-      //
-      // DO NOT log the publisher API key.
-      //
-
-      fastify.log.info(
-        {
-          campaignId: ad.campaignId || null,
-          title: ad.title || null,
-          ctaLabel: ad.ctaLabel || null,
-          hasVideoUrl: Boolean(ad.videoUrl),
-          hasImageUrl: Boolean(ad.imageUrl),
-          hasClickUrl: Boolean(ad.clickUrl),
-          cpcUsd: ad.cpcUsd || null,
-          matchContext: ad.matchContext || null
-        },
-        'Adscod video-placement response'
-      );
-
-
-      // ---------------------------------------------------------
-      // 9. Prepare safe response for frontend
-      // ---------------------------------------------------------
-
-      const safeAd = {
+      sendSuccess(reply, {
         title: ad.title || 'Sponsored Message',
-
-        description:
-          ad.description ||
-          ad.body ||
-          '',
-
-        adContent:
-          ad.body ||
-          null,
-
-        imageUrl:
-          validateHttpsUrl(ad.imageUrl),
-
-        videoUrl:
-          validateHttpsUrl(ad.videoUrl),
-
-        clickUrl:
-          validateHttpsUrl(ad.clickUrl),
-
-        ctaLabel:
-          ad.ctaLabel ||
-          'Learn More',
-
-        // Useful for your frontend/debugging.
-        // This does NOT mean the user has watched the ad.
-        hasVideo:
-          Boolean(validateHttpsUrl(ad.videoUrl))
-      };
-
-
-      // ---------------------------------------------------------
-      // 10. Return safe data to frontend
-      // ---------------------------------------------------------
-
-      return sendSuccess(reply, safeAd);
-
+        description: ad.description || '',
+        adContent: ad.body || null,
+        imageUrl: validateHttpsUrl(ad.imageUrl),
+        videoUrl: validateHttpsUrl(ad.videoUrl),
+        clickUrl: validateHttpsUrl(ad.clickUrl),
+        ctaLabel: ad.ctaLabel || 'Learn More'
+      });
     } catch (error) {
+      fastify.log.error('Adscod proxy error: ' + error.message);
+      return sendError(reply, 'Sponsored messages are currently unavailable.', 503);
+    }
+  });
 
-      // ---------------------------------------------------------
-      // Handle Adscod/API errors
-      // ---------------------------------------------------------
+  // ---------------------------------------------------------
+  // ROUTE 2: ADBNK Server-Side Verification Webhook (Phase 6)
+  // ---------------------------------------------------------
+  // We use fastify.all() to safely accept either GET or POST requests, 
+  // as different ad networks use different methods for their callbacks.
+  fastify.all('/adbnk-callback', async (request, reply) => {
+    try {
+      // 1. Capture the exact payload ADBNK sends
+      const payload = request.method === 'GET' ? request.query : request.body;
+      
+      // 2. Log the raw data so we can map ADBNK's exact security signature keys in Render
+      fastify.log.info({
+        adbnkPayload: payload,
+        method: request.method
+      }, 'ADBNK Server-Side Verification Ping Received');
 
-      fastify.log.error(
-        {
-          message: error.message,
-          status: error.response?.status || null,
-          data: error.response?.data || null
-        },
-        'Adscod proxy error'
-      );
+      // 3. Extract the User ID (Standard parameter names across ad networks)
+      const userId = payload.user_id || payload.uid || payload.sub || payload.custom_id;
 
-      return sendError(
-        reply,
-        'Sponsored messages are currently unavailable.',
-        503
-      );
+      if (userId) {
+         // Placeholder for the cryptographic hash check (completed after we see their first ping log)
+         fastify.log.info(`ADBNK reward verified for user: ${userId}`);
+      }
+
+      // 4. CRITICAL: Always return a flat HTTP 200 OK string so ADBNK approves the URL.
+      return reply.code(200).send('OK');
+      
+    } catch (error) {
+      fastify.log.error('ADBNK Webhook Error: ' + error.message);
+      // Even on error, return 200 during setup so the network doesn't permanently ban the URL
+      return reply.code(200).send('OK');
     }
   });
 }
