@@ -118,20 +118,35 @@ async function verifyAppleIdentity(idToken, clientId, nonce) {
 }
 
 export default async function authRoutes(fastify, opts) {
+  // ============================================================================
+  // REGISTRATION & LOGIN (With Exact Detail Validation)
+  // ============================================================================
   fastify.post('/register', async (request, reply) => {
     try {
       const { username, email, password, confirmPassword } = request.body || {};
       const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
 
-      if (!username || !email || !password) return sendError(reply, 'All fields are required', 400);
-      if (!isValidUsername(username)) return sendError(reply, 'Username must be 3-30 characters', 400);
-      if (!isValidEmail(normalizedEmail)) return sendError(reply, 'Invalid email format', 400);
-      if (password.length < 8) return sendError(reply, 'Password must be at least 8 characters', 400);
-      if (confirmPassword && password !== confirmPassword) return sendError(reply, 'Passwords do not match', 400);
-      if (!isResendReady()) return sendError(reply, 'Email delivery is not configured on the server.', 503);
+      // Exact criteria validation errors
+      if (!username) return sendError(reply, 'Username is required.', 400);
+      if (username.length < 3) return sendError(reply, 'Username must be at least 3 characters long.', 400);
+      if (username.length > 30) return sendError(reply, 'Username cannot exceed 30 characters.', 400);
+      if (!isValidUsername(username)) return sendError(reply, 'Username can only contain letters, numbers, and underscores (no spaces or special characters).', 400);
+      
+      if (!email) return sendError(reply, 'Email address is required.', 400);
+      if (!isValidEmail(normalizedEmail)) return sendError(reply, 'Please enter a valid email address (e.g., name@example.com).', 400);
+      
+      if (!password) return sendError(reply, 'Password is required.', 400);
+      if (password.length < 8) return sendError(reply, 'Password must be at least 8 characters long for security.', 400);
+      
+      if (confirmPassword !== undefined && password !== confirmPassword) return sendError(reply, 'Passwords do not match. Please type them exactly the same.', 400);
+      
+      if (!isResendReady()) return sendError(reply, 'System Configuration Error: Email delivery is not configured on the server.', 503);
 
       const existingUser = await User.findOne({ $or: [{ email: normalizedEmail }, { username }] });
-      if (existingUser) return sendError(reply, 'Email or username already exists', 409);
+      if (existingUser) {
+        if (existingUser.email === normalizedEmail) return sendError(reply, 'An account with this email address already exists.', 409);
+        return sendError(reply, 'This username is already taken. Please choose another.', 409);
+      }
 
       const newUser = new User({
         username,
@@ -149,7 +164,7 @@ export default async function authRoutes(fastify, opts) {
         await sendVerificationCodeEmail({ email: newUser.email, code: newUser.verificationCode });
       } catch (emailError) {
         fastify.log.error(emailError);
-        return sendError(reply, 'Verification email failed.', 503);
+        return sendError(reply, 'Account created, but the verification email failed to send. Please try logging in to request a new code.', 503);
       }
 
       await Wallet.create({ userId: newUser._id });
@@ -167,16 +182,17 @@ export default async function authRoutes(fastify, opts) {
       const { email, password } = request.body || {};
       const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
 
-      if (!email || !password) return sendError(reply, 'Email and password are required', 400);
+      if (!email) return sendError(reply, 'Please provide your email address to log in.', 400);
+      if (!password) return sendError(reply, 'Please provide your password to log in.', 400);
       
       const user = await User.findOne({ email: normalizedEmail });
-      if (!user) return sendError(reply, 'Invalid email or password', 401);
+      if (!user) return sendError(reply, 'Invalid email or password.', 401); // Generic for security
       
       const passwordMatch = await user.comparePassword(password);
-      if (!passwordMatch) return sendError(reply, 'Invalid email or password', 401);
-      if (!user.isActive) return sendError(reply, 'Account deactivated', 403);
+      if (!passwordMatch) return sendError(reply, 'Invalid email or password.', 401);
+      
+      if (!user.isActive) return sendError(reply, 'Your account has been deactivated. Please contact support.', 403);
 
-      // FIX: Only check Resend status IF the user actually needs an email sent
       if (!user.isVerified) {
         if (!isResendReady()) return sendError(reply, 'Email delivery is not configured on the server.', 503);
         
@@ -186,9 +202,9 @@ export default async function authRoutes(fastify, opts) {
         try {
           await sendVerificationCodeEmail({ email: user.email, code: user.verificationCode });
         } catch (emailError) {
-          return sendError(reply, 'Verification email failed.', 503);
+          return sendError(reply, 'Verification email failed to send.', 503);
         }
-        return reply.status(403).send({ success: false, code: 'UNVERIFIED', message: 'Please verify your email before logging in' });
+        return reply.status(403).send({ success: false, code: 'UNVERIFIED', message: 'Please verify your email before logging in. A new code has been sent.' });
       }
 
       user.lastLogin = new Date();
@@ -208,6 +224,124 @@ export default async function authRoutes(fastify, opts) {
     return sendSuccess(reply, null, 'Logout successful');
   });
 
+  // ============================================================================
+  // RESTORED ROUTES: OTP VERIFICATION & PASSWORD RESET
+  // ============================================================================
+  
+  fastify.post('/verify-email', async (request, reply) => {
+    try {
+      const { email, code } = request.body || {};
+      const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+      
+      if (!email) return sendError(reply, 'Email address is required for verification.', 400);
+      if (!code) return sendError(reply, 'Verification code is required.', 400);
+
+      const user = await User.findOne({ email: normalizedEmail });
+
+      if (!user || user.isVerified || user.verificationCode !== String(code) || !user.verificationCodeExpires || user.verificationCodeExpires <= new Date()) {
+        return sendError(reply, 'Invalid or expired verification code. Please request a new one.', 400);
+      }
+
+      user.isVerified = true;
+      user.verificationCode = null;
+      user.verificationCodeExpires = null;
+      await user.save();
+
+      const token = generateToken(user._id);
+      reply.setCookie('token', token, authCookieOptions);
+      return sendSuccess(reply, null, 'Email verified successfully! Welcome to AfriStory.');
+    } catch (error) {
+      fastify.log.error(error);
+      return sendError(reply, 'Failed to verify email', 500, error.message);
+    }
+  });
+
+  fastify.post('/resend-otp', async (request, reply) => {
+    try {
+      const { email } = request.body || {};
+      const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+      
+      if (!email) return sendError(reply, 'Email address is required.', 400);
+
+      const user = await User.findOne({ email: normalizedEmail });
+      if (!user) return sendError(reply, 'Account not found.', 404);
+      if (user.isVerified) return sendError(reply, 'Your account is already verified. You can log in.', 400);
+      if (!isResendReady()) return sendError(reply, 'Email delivery is not configured on the server.', 503);
+
+      user.verificationCode = generateCode();
+      user.verificationCodeExpires = codeExpiry(15);
+      await user.save();
+      
+      try {
+        await sendVerificationCodeEmail({ email: user.email, code: user.verificationCode });
+      } catch (emailError) {
+        fastify.log.error(emailError);
+        return sendError(reply, 'Failed to send verification email.', 503);
+      }
+      return sendSuccess(reply, null, 'A new verification code has been sent to your email.');
+    } catch (error) {
+      fastify.log.error(error);
+      return sendError(reply, 'Failed to resend verification code', 500, error.message);
+    }
+  });
+
+  fastify.post('/forgot-password', async (request, reply) => {
+    try {
+      const { email } = request.body || {};
+      if (!email) return sendError(reply, 'Email address is required.', 400);
+
+      const user = await User.findOne({ email: email.trim().toLowerCase() });
+      if (!user) return sendSuccess(reply, null, 'If that email exists in our system, a reset link has been sent.', 200);
+      if (!isResendReady()) return sendError(reply, 'Email delivery is not configured on the server.', 503);
+
+      user.resetPasswordCode = generateCode();
+      user.resetPasswordExpires = codeExpiry(15);
+      await user.save();
+      
+      try {
+        await sendPasswordResetEmail({ email: user.email, code: user.resetPasswordCode });
+      } catch (emailError) {
+        fastify.log.error(emailError);
+        return sendError(reply, 'Failed to send password reset email.', 503);
+      }
+      return sendSuccess(reply, null, 'If that email exists in our system, a reset link has been sent.', 200);
+    } catch (error) {
+      fastify.log.error(error);
+      return sendError(reply, 'Failed to process request', 500, error.message);
+    }
+  });
+
+  fastify.post('/reset-password', async (request, reply) => {
+    try {
+      const { email, code, newPassword } = request.body || {};
+      const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+      
+      if (!email) return sendError(reply, 'Email address is required.', 400);
+      if (!code) return sendError(reply, 'Reset code is required.', 400);
+      if (!newPassword) return sendError(reply, 'New password is required.', 400);
+      if (newPassword.length < 8) return sendError(reply, 'New password must be at least 8 characters long.', 400);
+
+      const user = await User.findOne({ email: normalizedEmail });
+
+      if (!user || user.resetPasswordCode !== String(code) || !user.resetPasswordExpires || user.resetPasswordExpires <= new Date()) {
+        return sendError(reply, 'Invalid or expired reset code. Please request a new password reset.', 400);
+      }
+
+      user.passwordHash = newPassword;
+      user.resetPasswordCode = null;
+      user.resetPasswordExpires = null;
+      await user.save();
+      
+      return sendSuccess(reply, null, 'Password reset successfully. You can now log in.');
+    } catch (error) {
+      fastify.log.error(error);
+      return sendError(reply, 'Failed to reset password', 500, error.message);
+    }
+  });
+
+  // ============================================================================
+  // USER PROFILE & OAUTH ROUTES
+  // ============================================================================
   fastify.get('/me', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
@@ -263,7 +397,6 @@ export default async function authRoutes(fastify, opts) {
             profile = await verifyGoogleIdentity(token, config.clientId);
           } else if (provider === 'github') {
             const token = await axios.post(config.token, { code, client_id: config.clientId, client_secret: config.clientSecret, redirect_uri: oauthCallback(provider), code_verifier: verifier }, { headers: { Accept: 'application/json' } });
-            // FIX: Added User-Agent header required by GitHub API
             const headers = { Authorization: `Bearer ${token.data.access_token}`, Accept: 'application/vnd.github+json', 'User-Agent': 'AfriStory-App' };
             const result = await axios.get('https://api.github.com/user', { headers });
             const emails = await axios.get('https://api.github.com/user/emails', { headers });
