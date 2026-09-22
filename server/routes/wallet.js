@@ -26,9 +26,6 @@ export default async function walletRoutes(fastify, opts) {
         return sendError(reply, 'Wallet not found', 404);
       }
 
-      // PHASE 3E CLEANUP: Legacy User.findById query for adUnlocksRemaining removed.
-      // Obsolete adUnlocks field safely removed from the response.
-
       sendSuccess(reply, {
         storyCoins: formatDecimal(wallet.storyCoins),
         lockedEarnings: formatDecimal(wallet.lockedEarnings),
