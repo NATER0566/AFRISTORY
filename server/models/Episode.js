@@ -70,7 +70,7 @@ const episodeSchema = new mongoose.Schema(
     },
     duration: {
       type: Number,
-      default: 0, // in seconds
+      default: 0,
     },
     isFree: {
       type: Boolean,
@@ -88,7 +88,6 @@ const episodeSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    // NEW FEATURE: Unique viewer count
     uniqueViewers: {
       type: Number,
       default: 0,
@@ -97,15 +96,19 @@ const episodeSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    // RESTORED FOR PHASE 7 STRICT COMPLIANCE
+    totalAdUnlocks: {
+      type: Number,
+      default: 0,
+    },
     averageWatchTime: {
       type: Number,
-      default: 0, // in seconds
+      default: 0,
     },
     likes: {
       type: Number,
       default: 0,
     },
-    // NEW FEATURE: Explicitly map to frontend likeCount
     likeCount: {
       type: Number,
       default: 0,
@@ -114,7 +117,6 @@ const episodeSchema = new mongoose.Schema(
       type: mongoose.Decimal128,
       default: 0.0,
     },
-    // NEW FEATURE: Necessary to properly calculate ★ 4.7 (23)
     ratingCount: {
       type: Number,
       default: 0,
@@ -131,7 +133,6 @@ const episodeSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Index for better query performance
 episodeSchema.index({ seriesId: 1, episodeNumber: 1 });
 episodeSchema.index({ seriesId: 1, isPublished: 1 });
 episodeSchema.index({ isPublished: 1, genre: 1, culturalCategory: 1, language: 1, createdAt: -1 });
