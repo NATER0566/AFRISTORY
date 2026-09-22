@@ -1,5 +1,5 @@
 const API = '/api';
-const PREVIEW_LIMIT = 30; // Seconds before the video locks
+const PREVIEW_LIMIT = 2; // Seconds before the video locks
 const state = { 
     user: null, profile: null, rewards: null, series: [], 
     currentSeries: null, currentEpisode: null, hls: null, 
