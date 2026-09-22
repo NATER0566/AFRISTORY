@@ -140,72 +140,50 @@
     </div>
 
     <script>
-        const API_BASE = '/api/admin'; // Points to your server/routes/admin.js
+        const API_BASE = '/api/admin'; 
 
-        // STRICT AUTHENTICATION CHECK ON PAGE LOAD
+        // Launch backend verification immediately on load
         window.onload = () => {
-            const token = localStorage.getItem('token');
-            let isAdmin = false;
-
-            try {
-                // Check localStorage user object first
-                const userStr = localStorage.getItem('user');
-                if (userStr) {
-                    const u = JSON.parse(userStr);
-                    const role = u.role || (u.user && u.user.role);
-                    if (role && String(role).toUpperCase() === 'ADMIN') {
-                        isAdmin = true;
-                    }
-                }
-                
-                // Fallback: Decrypt JWT token directly if needed
-                if (!isAdmin && token) {
-                    const payload = JSON.parse(atob(token.split('.')[1]));
-                    const role = payload.role || (payload.user && payload.user.role);
-                    if (role && String(role).toUpperCase() === 'ADMIN') {
-                        isAdmin = true;
-                    }
-                }
-            } catch (e) {
-                console.error("Auth check failed", e);
-            }
-
-            // Bounce back to index page if not explicitly an ADMIN
-            if (!token || !isAdmin) {
-                alert('Access Denied. ADMIN role required to view this panel.');
-                window.location.href = '/'; // Redirects directly to your app root
-                return;
-            }
-            
             loadDashboardStats();
         };
 
-        // Core API Fetch Wrapper
+        // Core API Fetch Wrapper (Handles Real Backend Verification)
         async function adminApi(endpoint, method = 'GET', body = null) {
+            const token = localStorage.getItem('token');
+            
+            // If no token exists at all, silently bounce to index
+            if (!token) {
+                window.location.replace('/');
+                return null;
+            }
+
             const options = {
                 method,
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${token}`
                 }
             };
+            
             if (body) options.body = JSON.stringify(body);
 
             try {
                 const response = await fetch(`${API_BASE}${endpoint}`, options);
-                const result = await response.json();
                 
+                // REAL BACKEND VERIFICATION: 
+                // If the backend says this token doesn't belong to an ADMIN, instantly bounce to index.
+                // No alerts, no popups.
                 if (response.status === 401 || response.status === 403) {
-                    alert('ADMIN access revoked or session expired.');
-                    window.location.href = '/'; // Redirects directly to your app root
+                    window.location.replace('/');
                     return null;
                 }
+                
+                const result = await response.json();
                 
                 if (!result.success) throw new Error(result.message || 'API Error');
                 return result.data;
             } catch (error) {
-                console.error(error);
-                alert('Action failed: ' + error.message);
+                console.error("Admin API Error:", error);
                 return null;
             }
         }
@@ -222,7 +200,7 @@
         // 1. Load Dashboard Stats
         async function loadDashboardStats() {
             const data = await adminApi('/dashboard/stats');
-            if (!data) return;
+            if (!data) return; // If unauthorized, adminApi handles the redirect
 
             document.getElementById('stats-grid').innerHTML = `
                 <div class="card"><h3>Total Users</h3><p>${data.totalUsers.toLocaleString()}</p></div>
