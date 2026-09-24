@@ -5,7 +5,6 @@
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4661775522120249"
      crossorigin="anonymous"></script>
 
-  
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AfroStory | Premium Digital Storytelling</title>
@@ -17,13 +16,75 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/zxcvbn/4.4.2/zxcvbn.js"></script>
+  <!-- Added HLS.js to support streaming video formats -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif']},colors:{background:'#111111',surface:'#1B1B1B',accent:'#D4A017',action:'#E67E22',success:'#2ECC71',danger:'#E74C3C'}}}};</script>
   <style>
     .auth-form{animation:rise .35s ease}@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}.field{background:#111;border:1px solid #444;border-radius:10px;padding:.85rem 1rem;width:100%;color:#f5f5f5}.field:focus{outline:1px solid #D4A017;border-color:#D4A017}.password-field{position:relative}.password-field .field{padding-right:3rem}.password-toggle{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);border:0;background:none;color:#999;cursor:pointer;padding:.25rem}.password-toggle:hover,.password-toggle:focus{color:#D4A017}.primary{background:#E67E22;color:#fff;border:0;border-radius:10px;padding:.9rem;font-weight:700;width:100%;cursor:pointer}.primary.gold{background:#D4A017;color:#111}.link{background:none;border:0;color:#D4A017;cursor:pointer;font-weight:700}.code{letter-spacing:.7em;text-align:center;font-size:1.5rem}.bar{height:5px;flex:1;background:#444;border-radius:9px}.auth-page .topbar{padding:0 6vw}.auth-page .auth-shell{min-height:calc(100vh - 74px)}.auth-panel-inner>header{display:none}.auth-panel .field{border-radius:6px}.auth-panel .primary{border-radius:6px}
+    
     /* BIGGER SWEETALERT STYLES */
     .swal2-popup.big-alert { padding: 2em; font-size: 1.2rem; border-radius: 12px; }
     .swal2-title.big-title { font-size: 1.5rem !important; }
+
+    /* =========================================
+       CINEMATIC VIDEO SLIDESHOW STYLES
+    ========================================= */
+    .auth-showcase {
+      position: relative;
+      overflow: hidden;
+      background-color: #000; /* Fallback color */
+    }
+    
+    .showcase-video-container {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    .showcase-video-container video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity 1.5s ease-in-out;
+    }
+
+    .showcase-video-container video.active {
+      opacity: 0.6; /* Keeps the video slightly dark so text remains readable */
+    }
+
+    /* Dark gradient overlay to ensure text is always readable over bright videos */
+    .showcase-gradient-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to right, rgba(17,17,17,0.9) 0%, rgba(17,17,17,0.4) 50%, rgba(17,17,17,0.8) 100%);
+      z-index: 2;
+    }
+
+    /* Elevate text above the video */
+    .showcase-copy, .showcase-stamp, .brand-light, .dynamic-video-title {
+      position: relative;
+      z-index: 10;
+    }
+
+    .dynamic-video-title {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #D4A017;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.5s ease;
+    }
+    .dynamic-video-title.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
   </style>
 </head>
 <body class="auth-page">
@@ -34,11 +95,19 @@
   
   <div class="auth-shell">
     <section class="auth-showcase">
+      <!-- CINEMATIC VIDEO BACKGROUND -->
+      <div class="showcase-video-container">
+        <video id="showcase-bg-video" muted playsinline></video>
+      </div>
+      <div class="showcase-gradient-overlay"></div>
+
       <a class="brand brand-light" href="/"><span class="brand-mark">A</span><span>AFRO<span>STORY</span></span></a>
       <div class="showcase-copy">
         <p class="eyebrow">THE HOME OF AFRICAN STORIES</p>
         <h1>Find your next<br><em>favorite world</em></h1>
         <p>Stories with rhythm, roots, and a point of view. Sign in to continue watching.</p>
+        <!-- Displays the title of the video currently playing -->
+        <div id="dynamic-video-title" class="dynamic-video-title"></div>
       </div>
       <div class="showcase-stamp"><strong>01</strong><span>Real stories.<br>Made here.</span></div>
     </section>
@@ -97,9 +166,6 @@
         <!-- FORGOT PASSWORD FORM -->
         <form id="forgot-form" class="auth-form hidden space-y-4" novalidate>
           <h2 class="text-2xl font-bold">Reset password</h2>
-
-
-             
           <p class="text-gray-400 text-sm">We will send a secure 15-minute code.</p>
           <input class="field" id="forgot-email" type="email" placeholder="Registered email" required>
           <button class="primary" type="submit">Send reset code</button>
@@ -138,11 +204,9 @@
           <button id="resend-otp" class="link text-sm w-full" type="button">Resend code</button>
         </form>
 
-           
-
       </div>
       
-      <!-- 🛠️ LEGAL LINKS ADDED TO BOTTOM OF PANEL -->
+      <!-- LEGAL LINKS -->
       <div class="absolute bottom-6 left-0 right-0 text-center flex justify-center gap-4 text-xs text-gray-500">
         <a href="/privacy.html" class="hover:text-accent transition-colors">Privacy Policy</a>
         <span>•</span>
@@ -168,7 +232,6 @@
       ['login','register','forgot','reset','verify'].forEach(name=>$(`${name}-form`).classList.toggle('hidden',name!==mode))
     }
     
-    // 🛠️ ALERTS FIXED: Centered on screen, larger size, longer duration
     function alertMessage(icon,title){
       Swal.fire({
         toast: true,
@@ -192,22 +255,90 @@
     document.querySelectorAll('[data-password-toggle]').forEach(button=>button.addEventListener('click',()=>{const input=$(button.dataset.passwordToggle),visible=input.type==='text';input.type=visible?'password':'text';button.setAttribute('aria-label',visible?'Show password':'Hide password');button.innerHTML=`<i data-lucide="${visible?'eye':'eye-off'}" width="18" height="18"></i>`;window.lucide?.createIcons?.()}));
     document.querySelectorAll('[data-sso]').forEach(button=>button.addEventListener('click',()=>window.location.assign('/api/auth/'+button.dataset.sso)));
     
-    $( 'reg-password'.trim()).addEventListener('input',event=>{const result=zxcvbn(event.target.value);const colors=['#E74C3C','#E74C3C','#D4A017','#2ECC71','#2ECC71'];for(let index=0;index<4;index++)$(`str-bar-${index+1}`).style.background=index<result.score+1?colors[result.score]:'#444';$('password-feedback').textContent=result.feedback.warning||result.feedback.suggestions[0]||''});
-    
-    $('login-form').addEventListener('submit',async event=>{event.preventDefault();const email=$('login-email').value.trim().toLowerCase(),password=$('login-password').value;if(!emailOk(email))return alertMessage('error','Enter a valid email');currentAuthEmail=email;const{response,data}=await request('login',{email,password,rememberMe:$('remember-me').checked});if(response.ok)redirect();else if(response.status===403&&data.code==='UNVERIFIED'){show('verify');alertMessage('info','Verification required')}else alertMessage('error',data.message||'Invalid credentials')});
-    
-    $('register-form').addEventListener('submit',async event=>{event.preventDefault();const username=$('reg-username').value.trim(),email=$('reg-email').value.trim().toLowerCase(),password=$('reg-password').value;if(!/^[a-zA-Z0-9_.\s]{3,30}$/.test(username)||!emailOk(email)||password!==$('reg-confirm').value||!$('reg-terms').checked||zxcvbn(password).score<2)return alertMessage('error','Check your registration details');currentAuthEmail=email;const{response,data}=await request('register',{username,email,password});if(response.ok){show('verify');alertMessage('success','Account created. Enter your code')}else alertMessage('error',data.message||'Registration failed')});
+    $('reg-password').addEventListener('input',event=>{const result=zxcvbn(event.target.value);const colors=['#E74C3C','#E74C3C','#D4A017','#2ECC71','#2ECC71'];for(let index=0;index<4;index++)$(`str-bar-${index+1}`).style.background=index<result.score+1?colors[result.score]:'#444';$('password-feedback').textContent=result.feedback.warning\vert{}\vert{}result.feedback.suggestions[0]\vert{}\vert{}''});$('login-form').addEventListener('submit',async event=>{event.preventDefault();const email=$('login-email').value.trim().toLowerCase(),password=$('login-password').value;if(!emailOk(email))return alertMessage('error','Enter a valid email');currentAuthEmail=email;const{response,data}=await request('login',{email,password,rememberMe:$('remember-me').checked});if(response.ok)redirect();else if(response.status===403&&data.code==='UNVERIFIED'){show('verify');alertMessage('info','Verification required')}else alertMessage('error',data.message\vert{}\vert{}'Invalid credentials')});$('register-form').addEventListener('submit',async event=>{event.preventDefault();const username=$('reg-username').value.trim(),email=$('reg-email').value.trim().toLowerCase(),password=$('reg-password').value;if(!/^[a-zA-Z0-9_.\s]{3,30}$/.test(username)||!emailOk(email)||password!==$('reg-confirm').value\vert{}\vert{}!$('reg-terms').checked||zxcvbn(password).score<2)return alertMessage('error','Check your registration details');currentAuthEmail=email;const{response,data}=await request('register',{username,email,password});if(response.ok){show('verify');alertMessage('success','Account created. Enter your code')}else alertMessage('error',data.message||'Registration failed')});
     
     $('forgot-form').addEventListener('submit',async event=>{event.preventDefault();const email=$('forgot-email').value.trim().toLowerCase();if(!emailOk(email))return alertMessage('error','Enter a valid email');const{response,data}=await request('forgot-password',{email});if(response.ok){currentAuthEmail=email;show('reset');alertMessage('success','Reset code sent')}else alertMessage('error',data.message||'Could not send reset code')});
     
-    $('reset-form').addEventListener('submit',async event=>{event.preventDefault();const code=$('reset-code').value.trim(),newPassword=$('reset-password').value;if(!codeOk(code)||newPassword.length<6)return alertMessage('error','Enter a valid code and password');const{response,data}=await request('reset-password',{email:currentAuthEmail,code,newPassword});if(response.ok){show('login');alertMessage('success','Password updated')}else alertMessage('error',data.message||'Reset failed')});
-    
-    $('verify-form').addEventListener('submit',async event=>{event.preventDefault();const code=$('verify-code').value.trim();if(!codeOk(code))return alertMessage('error','Enter the six-digit code');const{response,data}=await request('verify-email',{email:currentAuthEmail,code});if(response.ok)redirect();else alertMessage('error',data.message||'Invalid or expired code')});
-    
-    $('resend-otp').addEventListener('click',async()=>{if(!currentAuthEmail)return alertMessage('error','Email session lost');const{response,data}=await request('resend-otp',{email:currentAuthEmail});alertMessage(response.ok?'success':'error',data.message||(response.ok?'New code sent':'Could not resend code'))});
+    $('reset-form').addEventListener('submit',async event=>{event.preventDefault();const code=$('reset-code').value.trim(),newPassword=$('reset-password').value;if(!codeOk(code)\vert{}\vert{}newPassword.length<6)return alertMessage('error','Enter a valid code and password');const{response,data}=await request('reset-password',{email:currentAuthEmail,code,newPassword});if(response.ok){show('login');alertMessage('success','Password updated')}else alertMessage('error',data.message\vert{}\vert{}'Reset failed')});$('verify-form').addEventListener('submit',async event=>{event.preventDefault();const code=$('verify-code').value.trim();if(!codeOk(code))return alertMessage('error','Enter the six-digit code');const{response,data}=await request('verify-email',{email:currentAuthEmail,code});if(response.ok)redirect();else alertMessage('error',data.message\vert{}\vert{}'Invalid or expired code')});$('resend-otp').addEventListener('click',async()=>{if(!currentAuthEmail)return alertMessage('error','Email session lost');const{response,data}=await request('resend-otp',{email:currentAuthEmail});alertMessage(response.ok?'success':'error',data.message||(response.ok?'New code sent':'Could not resend code'))});
     
     window.lucide?.createIcons?.();
     const authError = new URLSearchParams(window.location.search).get('authError'); if (authError) { window.history.replaceState({}, '', '/'); alertMessage('error', authError); }
+
+    /* ============================================================================ */
+    /* DYNAMIC VIDEO SLIDESHOW FOR SHOWCASE AREA */
+    /* ============================================================================ */
+    let showcaseVideos = [];
+    let currentVideoIndex = 0;
+    const bgVideoEl = document.getElementById('showcase-bg-video');
+    const titleEl = document.getElementById('dynamic-video-title');
+
+    async function initShowcaseCarousel() {
+      try {
+        // Fetch public trending episodes from your backend
+        const response = await fetch('/api/episodes/feed?sort=trending&limit=5');
+        const data = await response.json();
+        
+        // Filter out episodes that don't have a valid video URL
+        if (data && data.success && data.data && data.data.episodes) {
+          showcaseVideos = data.data.episodes.filter(ep => ep.mediaUrl || ep.hlsUrl || ep.videoUrl);
+        }
+
+        // If we found valid videos, start playing them
+        if (showcaseVideos.length > 0) {
+          playCarouselVideo(0);
+        }
+      } catch (error) {
+        console.error("Failed to load showcase videos:", error);
+      }
+    }
+
+    function playCarouselVideo(index) {
+      if (showcaseVideos.length === 0) return;
+      
+      currentVideoIndex = index % showcaseVideos.length;
+      const videoData = showcaseVideos[currentVideoIndex];
+      const mediaUrl = videoData.mediaUrl || videoData.hlsUrl || videoData.videoUrl;
+
+      // Hide elements for smooth crossfade
+      bgVideoEl.classList.remove('active');
+      titleEl.classList.remove('active');
+
+      setTimeout(() => {
+        // Handle HLS streams (.m3u8) or standard MP4s
+        if (mediaUrl.includes('.m3u8') && window.Hls && window.Hls.isSupported()) {
+            const hls = new window.Hls();
+            hls.loadSource(mediaUrl);
+            hls.attachMedia(bgVideoEl);
+        } else {
+            bgVideoEl.src = mediaUrl;
+        }
+
+        // Apply a poster if available
+        bgVideoEl.poster = videoData.thumbnailUrl || '';
+
+        // Play the video silently
+        bgVideoEl.play().then(() => {
+            bgVideoEl.classList.add('active');
+            
+            // Show the dynamic title
+            titleEl.textContent = `▶ Now Showing: ${videoData.title || 'AfroStory Original'}`;
+            titleEl.classList.add('active');
+        }).catch(err => {
+            console.log("Autoplay blocked by browser. Moving to next video.", err);
+            // If the browser blocks video autoplay completely, skip to the next one
+            setTimeout(() => playCarouselVideo(currentVideoIndex + 1), 2000);
+        });
+      }, 500); // 500ms fade transition gap
+    }
+
+    // When a video finishes, automatically load the next one in the array
+    bgVideoEl.addEventListener('ended', () => {
+      playCarouselVideo(currentVideoIndex + 1);
+    });
+
+    // Start the slideshow when the page loads
+    document.addEventListener('DOMContentLoaded', initShowcaseCarousel);
+
  </script>
 
 </body>
