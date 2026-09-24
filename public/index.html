@@ -1,17 +1,32 @@
 <!doctype html>
 <html lang="en">
 <head>
+  <!-- WebPushr Tracking Code --> 
+  <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js";
+  fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));
+  webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4GZnLNpMUBg35mzdNgBSOcMQ4YlZaZ0SY' });</script>
 
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4661775522120249" crossorigin="anonymous"></script>
+  <!-- Google AdSense Placeholder -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4661775522120249" crossorigin="anonymous"></script>
 
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AfroStory | Premium Digital Storytelling</title>
+  
+  <!-- SEO & META TAGS -->
+  <title>AfroStory | Premium African Digital Storytelling</title>
+  <meta name="description" content="Welcome to AfroStory, the premier digital streaming platform for authentic African narratives. Watch premium original series, short films, and documentaries.">
+  <link rel="canonical" href="https://afristory.onrender.com/">
+  <meta property="og:title" content="AfroStory | Premium African Digital Storytelling">
+  <meta property="og:description" content="Watch premium original series, short films, and documentaries made by African creators.">
+  <meta property="og:image" content="/images/og-image.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#111111">
   <meta name="csrf-token" content="{{ csrfToken }}">
+  
+  <!-- FONTS & EXTERNAL LIBS -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Space+Grotesk:wght@500;600;700;900&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/zxcvbn/4.4.2/zxcvbn.js"></script>
@@ -23,89 +38,91 @@
   </script>
 
   <style>
-    body { background-color: var(--background, #111); color: #f5f5f5; font-family: 'Inter', sans-serif; overflow-x: hidden; margin: 0; }
+    body { background-color: #111111; color: #f5f5f5; font-family: 'Inter', sans-serif; overflow-x: hidden; margin: 0; }
     
-    /* =========================================
-       HEADER NAVIGATION
-    ========================================= */
+    /* ================= HEADER ================= */
     .public-header {
-      position: fixed; top: 0; left: 0; right: 0; height: 80px; z-index: 100;
+      position: fixed; top: 0; left: 0; right: 0; height: 80px; z-index: 1000;
       display: flex; justify-content: space-between; align-items: center; padding: 0 4vw;
-      background: linear-gradient(to bottom, rgba(17,17,17,0.9) 0%, transparent 100%);
-      transition: background 0.3s ease;
+      background: linear-gradient(to bottom, rgba(17,17,17,0.95) 0%, rgba(17,17,17,0) 100%);
+      transition: background 0.3s ease, border-bottom 0.3s ease;
     }
-    .public-header.scrolled { background: rgba(17,17,17,0.95); backdrop-filter: blur(10px); border-bottom: 1px solid #333; }
+    .public-header.scrolled { background: rgba(17,17,17,0.98); backdrop-filter: blur(10px); border-bottom: 1px solid #333; }
     .brand-mark { color: #D4A017; font-weight: 900; font-size: 24px; margin-right: 4px; }
-    .nav-links { display: flex; gap: 20px; align-items: center; }
+    .nav-links a { color: #ccc; font-weight: 500; font-size: 14px; transition: color 0.2s; }
+    .nav-links a:hover { color: #D4A017; }
     .btn-outline { border: 1px solid #D4A017; color: #D4A017; padding: 8px 20px; border-radius: 6px; font-weight: 600; transition: 0.2s; }
     .btn-outline:hover { background: #D4A017; color: #111; }
-    .btn-solid { background: #D4A017; color: #111; padding: 8px 20px; border-radius: 6px; font-weight: 600; transition: 0.2s; border: 1px solid #D4A017;}
-    .btn-solid:hover { background: #b58512; border-color: #b58512; }
+    .btn-solid { background: #E67E22; color: #fff; padding: 8px 20px; border-radius: 6px; font-weight: 600; transition: 0.2s; }
+    .btn-solid:hover { background: #cf6f1b; }
+    
+    /* ================= 1. IMAGE HERO SLIDESHOW ================= */
+    .hero-wrapper { position: relative; height: 90vh; min-height: 600px; width: 100%; overflow: hidden; background: #000; }
+    .hero-slide { position: absolute; inset: 0; opacity: 0; transition: opacity 1.2s ease-in-out; background-size: cover; background-position: center; z-index: 1; }
+    .hero-slide.active { opacity: 1; z-index: 2; }
+    .hero-gradient { position: absolute; inset: 0; z-index: 3; background: linear-gradient(to top, #111111 0%, rgba(17,17,17,0.3) 60%, rgba(17,17,17,0.7) 100%); }
+    .hero-content { position: absolute; bottom: 10%; left: 6vw; z-index: 10; max-width: 700px; }
+    .hero-title { font-family: 'Space Grotesk', sans-serif; font-size: clamp(2.5rem, 5vw, 4.5rem); font-weight: 900; line-height: 1.1; margin-bottom: 15px; text-transform: uppercase; color: #fff; text-shadow: 0 4px 20px rgba(0,0,0,0.8); }
+    .hero-desc { font-size: 1.1rem; color: #eee; margin-bottom: 25px; line-height: 1.6; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
+    
+    .hero-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.5); color: white; border: 1px solid #444; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 50%; transition: 0.3s; }
+    .hero-nav:hover { background: #D4A017; color: #111; border-color: #D4A017; }
+    .hero-nav.prev { left: 2vw; }
+    .hero-nav.next { right: 2vw; }
+    .hero-dots { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; gap: 8px; }
+    .hero-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.3); cursor: pointer; transition: 0.3s; }
+    .hero-dot.active { background: #D4A017; transform: scale(1.3); }
 
-    /* =========================================
-       1. CINEMATIC VIDEO HERO 
-    ========================================= */
-    .hero-section { position: relative; height: 85vh; width: 100vw; overflow: hidden; background: #000; display: flex; align-items: flex-end; padding: 6vw; }
-    .hero-video-layer { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
-    .hero-video-layer video { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.5s ease; }
-    .hero-video-layer video.active { opacity: 0.7; }
-    .hero-gradient { position: absolute; inset: 0; z-index: 2; background: linear-gradient(to top, #111 0%, rgba(17,17,17,0.4) 50%, rgba(17,17,17,0.8) 100%); }
-    
-    .hero-content { position: relative; z-index: 10; max-width: 800px; padding-bottom: 40px;}
-    .hero-tag { display: inline-block; background: rgba(212,160,23,0.2); color: #D4A017; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 700; letter-spacing: 1px; margin-bottom: 15px; }
-    .hero-title { font-family: 'Space Grotesk', sans-serif; font-size: clamp(2.5rem, 5vw, 4.5rem); font-weight: 900; line-height: 1.1; margin-bottom: 15px; text-transform: uppercase; }
-    .hero-desc { font-size: 1.1rem; color: #ccc; margin-bottom: 25px; line-height: 1.6; max-width: 600px; }
-    .dynamic-video-title { margin-top: 20px; font-size: 14px; color: #D4A017; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; opacity: 0; transform: translateY(10px); transition: all 0.5s ease; }
-    .dynamic-video-title.active { opacity: 1; transform: translateY(0); }
+    /* ================= TRUST BAR ================= */
+    .trust-bar { background: #1B1B1B; border-bottom: 1px solid #333; padding: 20px 4vw; display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; color: #aaa; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+    .trust-item { display: flex; align-items: center; gap: 8px; }
 
-    /* =========================================
-       2. IMAGE SLIDESHOW (From Admin)
-    ========================================= */
-    .image-slideshow-wrapper { width: 100%; max-width: 1200px; margin: 0 auto; height: 50vh; min-height: 400px; position: relative; display: none; }
-    .img-slide { position: absolute; inset: 0; opacity: 0; transition: opacity 0.8s ease-in-out; background-size: cover; background-position: center; z-index: 1; }
-    .img-slide.active { opacity: 1; z-index: 2; }
-    .img-slide-overlay { position: absolute; inset: 0; background: linear-gradient(to right, rgba(17,17,17,0.95) 0%, rgba(17,17,17,0.2) 100%); }
-    .img-slide-content { position: relative; z-index: 3; height: 100%; display: flex; flex-direction: column; justify-content: center; padding: 4vw; max-width: 600px; }
-    
-    .slide-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.5); color: white; border: none; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; border-radius: 50%; transition: 0.3s; }
-    .slide-nav:hover { background: #D4A017; color: #111; }
-    .slide-nav.prev { left: 20px; }
-    .slide-nav.next { right: 20px; }
-    
-    .slide-indicators { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; gap: 8px; }
-    .dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.3); cursor: pointer; transition: 0.3s; }
-    .dot.active { background: #D4A017; transform: scale(1.2); }
+    /* ================= 2. VIDEO SHOWCASE ================= */
+    .video-showcase-container { padding: 60px 4vw; background: #111; }
+    .video-showcase-grid { display: flex; gap: 24px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 20px; scrollbar-width: none; }
+    .video-showcase-grid::-webkit-scrollbar { display: none; }
+    .video-card { flex: 0 0 80vw; max-width: 600px; scroll-snap-align: center; position: relative; border-radius: 12px; overflow: hidden; aspect-ratio: 16/9; background: #000; border: 1px solid #333; cursor: pointer; }
+    .video-card video { width: 100%; height: 100%; object-fit: cover; opacity: 0.7; transition: opacity 0.3s; }
+    .video-card:hover video { opacity: 1; }
+    .video-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%); pointer-events: none; display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; }
+    .video-play-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(212,160,23,0.9); color: #111; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; opacity: 0; transition: 0.3s; }
+    .video-card:hover .video-play-btn { opacity: 1; }
 
-    /* =========================================
-       CONTENT GRIDS & COMPONENTS
-    ========================================= */
-    .section-container { padding: 4vw; }
-    .section-title { font-family: 'Space Grotesk', sans-serif; font-size: 1.5rem; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
-    
-    .horizontal-scroll { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 20px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+    /* ================= GRIDS & CONTENT ================= */
+    .section-title { font-family: 'Space Grotesk', sans-serif; font-size: 1.8rem; font-weight: 700; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; color: #fff; }
+    .horizontal-scroll { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 16px; scroll-snap-type: x mandatory; scrollbar-width: none; }
     .horizontal-scroll::-webkit-scrollbar { display: none; }
-    
-    .content-card { flex: 0 0 280px; scroll-snap-align: start; cursor: pointer; transition: transform 0.2s; position: relative; border-radius: 8px; overflow: hidden; background: #1B1B1B; border: 1px solid #333; }
+    .content-card { flex: 0 0 240px; scroll-snap-align: start; cursor: pointer; transition: transform 0.2s; position: relative; border-radius: 8px; overflow: hidden; background: #1B1B1B; border: 1px solid #333; }
     .content-card:hover { transform: translateY(-5px); border-color: #D4A017; }
-    .card-img-wrap { width: 100%; aspect-ratio: 16/9; background: #222; position: relative; }
+    .card-img-wrap { width: 100%; aspect-ratio: 3/4; background: #222; position: relative; }
     .card-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
-    .card-info { padding: 15px; }
-    .card-title { font-weight: 700; font-size: 16px; margin: 0 0 5px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .card-meta { font-size: 12px; color: #999; display: flex; justify-content: space-between; }
-    
+    .card-info { padding: 12px; }
+
+    /* ================= ADSENSE CONTAINERS ================= */
     .ad-container { width: 100%; max-width: 1200px; margin: 40px auto; background: rgba(27, 27, 27, 0.5); border: 1px dashed #444; border-radius: 8px; display: flex; align-items: center; justify-content: center; min-height: 120px; color: #666; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
 
-    /* =========================================
-       AUTH MODAL OVERLAY
-    ========================================= */
+    /* ================= AUTH MODAL (TWO-SIDED) ================= */
     .auth-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 20px; opacity: 0; transition: opacity 0.3s ease; }
     .auth-modal-overlay.active { display: flex; opacity: 1; }
-    .auth-modal-box { background: #1B1B1B; border: 1px solid #333; border-radius: 12px; width: 100%; max-width: 420px; padding: 30px; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); max-height: 90vh; overflow-y: auto;}
-    .modal-close { position: absolute; top: 15px; right: 15px; background: none; border: none; color: #999; font-size: 24px; cursor: pointer; transition: 0.2s; z-index: 10; }
-    .modal-close:hover { color: #fff; transform: scale(1.1); }
+    .auth-modal-box { background: #1B1B1B; border: 1px solid #333; border-radius: 16px; width: 100%; max-width: 900px; display: flex; overflow: hidden; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8); max-height: 90vh; }
+    
+    .auth-modal-left { width: 40%; background: url('https://images.unsplash.com/photo-1516055619834-3dfa1b2416f4?auto=format&fit=crop&w=600&q=80') center/cover; position: relative; padding: 40px; display: flex; flex-direction: column; justify-content: flex-end; color: #fff; }
+    .auth-modal-left::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, #111 0%, rgba(17,17,17,0.2) 100%); }
+    .auth-modal-left-content { position: relative; z-index: 10; }
+    
+    .auth-modal-right { width: 60%; padding: 40px; background: #1B1B1B; overflow-y: auto; }
+    .modal-close { position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.5); border: none; color: #fff; font-size: 20px; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; transition: 0.2s; z-index: 50; display: flex; align-items: center; justify-content: center;}
+    .modal-close:hover { background: #D4A017; color: #111; }
 
-    .auth-form{animation:rise .35s ease}@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}.field{background:#111;border:1px solid #444;border-radius:6px;padding:.85rem 1rem;width:100%;color:#f5f5f5}.field:focus{outline:1px solid #D4A017;border-color:#D4A017}.password-field{position:relative}.password-field .field{padding-right:3rem}.password-toggle{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);border:0;background:none;color:#999;cursor:pointer;padding:.25rem}.password-toggle:hover,.password-toggle:focus{color:#D4A017}.primary{background:#D4A017;color:#111;border:0;border-radius:6px;padding:.9rem;font-weight:700;width:100%;cursor:pointer}.link{background:none;border:0;color:#D4A017;cursor:pointer;font-weight:700}.code{letter-spacing:.7em;text-align:center;font-size:1.5rem}.bar{height:5px;flex:1;background:#444;border-radius:9px}
+    @media (max-width: 768px) {
+        .auth-modal-left { display: none; }
+        .auth-modal-right { width: 100%; padding: 25px; }
+    }
 
+    /* AUTH FORMS CSS */
+    .auth-form{animation:rise .35s ease}@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}.field{background:#111;border:1px solid #444;border-radius:6px;padding:.85rem 1rem;width:100%;color:#f5f5f5}.field:focus{outline:1px solid #D4A017;border-color:#D4A017}.password-field{position:relative}.password-field .field{padding-right:3rem}.password-toggle{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);border:0;background:none;color:#999;cursor:pointer;padding:.25rem}.password-toggle:hover,.password-toggle:focus{color:#D4A017}.primary{background:#E67E22;color:#fff;border:0;border-radius:6px;padding:.9rem;font-weight:700;width:100%;cursor:pointer}.primary.gold{background:#D4A017;color:#111}.link{background:none;border:0;color:#D4A017;cursor:pointer;font-weight:700}.code{letter-spacing:.7em;text-align:center;font-size:1.5rem}.bar{height:5px;flex:1;background:#444;border-radius:9px}
+
+    /* BIGGER SWEETALERT STYLES */
     .swal2-popup.big-alert { padding: 2em; font-size: 1.2rem; border-radius: 12px; }
     .swal2-title.big-title { font-size: 1.5rem !important; }
 
@@ -126,44 +143,58 @@
       <span class="brand-mark">A</span><span>AFRO<span class="text-accent">STORY</span></span>
     </a>
     <nav class="nav-links hidden md:flex">
-      <button class="btn-outline" data-open-auth="login">Sign In</button>
+      <a href="/">Home</a>
+      <a href="#" data-open-auth="login">Series</a>
+      <a href="#" data-open-auth="login">Movies</a>
+      <a href="#" data-open-auth="login">Creators</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/blog.html">Blog</a>
+      <div class="w-px h-6 bg-gray-700 mx-2"></div>
+      <button class="text-gray-300 hover:text-accent" data-open-auth="login"><i data-lucide="search" width="20"></i></button>
+      <button class="btn-outline ml-2" data-open-auth="login">Sign In</button>
       <button class="btn-solid" data-open-auth="register">Join Free</button>
     </nav>
     <button class="md:hidden text-white" data-open-auth="login">
-      <i data-lucide="user"></i>
+      <i data-lucide="menu"></i>
     </button>
   </header>
 
-  <!-- ================= 1. HERO CINEMATIC (VIDEO) ================= -->
-  <section class="hero-section">
-    <div class="hero-video-layer" id="hero-video-container">
-      <video id="hero-bg-video" muted playsinline></video>
+  <!-- ================= 1. IMAGE HERO SLIDESHOW ================= -->
+  <section class="hero-wrapper" id="hero-slider">
+    <div id="hero-slides-track">
+      <!-- Fallback Slide (Will be replaced by JS if API responds) -->
+      <div class="hero-slide active" style="background-image: url('https://images.unsplash.com/photo-1542869781-a272dcbc029f?auto=format&fit=crop&w=1600&q=80');"></div>
     </div>
     <div class="hero-gradient"></div>
     
-    <div class="hero-content">
-      <span class="hero-tag" id="hero-genre">AFROSTORY ORIGINAL</span>
-      <h1 class="hero-title" id="hero-title">Authentic<br>African Stories</h1>
-      <p class="hero-desc" id="hero-desc">Discover premium series, short films, and documentaries made by the best creators across the continent.</p>
+    <div class="hero-content" id="hero-content-box">
+      <span class="hero-tag">WELCOME TO AFROSTORY</span>
+      <h1 class="hero-title">The Home of<br>African Stories</h1>
+      <p class="hero-desc">Discover premium series, short films, and documentaries made by the continent's most visionary creators.</p>
       <div class="flex gap-4">
         <button class="btn-solid flex items-center gap-2" data-open-auth="register"><i data-lucide="play" fill="currentColor"></i> Start Watching</button>
-        <button class="btn-outline" data-open-auth="login">Sign In</button>
+        <button class="btn-outline" data-open-auth="login">Explore Library</button>
       </div>
-      <div id="dynamic-video-title" class="dynamic-video-title"></div>
     </div>
+
+    <!-- Controls -->
+    <button class="hero-nav prev" id="hero-prev"><i data-lucide="chevron-left"></i></button>
+    <button class="hero-nav next" id="hero-next"><i data-lucide="chevron-right"></i></button>
+    <div class="hero-dots" id="hero-dots"></div>
   </section>
 
-  <!-- ================= 2. IMAGE SLIDESHOW (ADMIN BANNER) ================= -->
-  <section class="section-container pt-8 pb-4">
-    <div class="image-slideshow-wrapper rounded-2xl overflow-hidden bg-surface border border-gray-800" id="image-slideshow-container">
-      <div id="image-slides-track" class="w-full h-full relative">
-        <!-- Images injected via JS -->
-      </div>
-      
-      <!-- Controls -->
-      <button class="slide-nav prev" id="slide-prev">❮</button>
-      <button class="slide-nav next" id="slide-next">❯</button>
-      <div class="slide-indicators" id="slide-dots"></div>
+  <!-- ================= TRUST BAR ================= -->
+  <div class="trust-bar">
+    <div class="trust-item"><i data-lucide="users" width="18" class="text-accent"></i> 2M+ Viewers</div>
+    <div class="trust-item"><i data-lucide="film" width="18" class="text-accent"></i> 500+ Original Stories</div>
+    <div class="trust-item"><i data-lucide="globe" width="18" class="text-accent"></i> Made in Nigeria, Ghana, Kenya, SA</div>
+  </div>
+
+  <!-- ================= 2. VIDEO SHOWCASE (Featured Premieres) ================= -->
+  <section class="video-showcase-container">
+    <h2 class="section-title"><i data-lucide="award" class="text-accent"></i> Featured Premieres</h2>
+    <div class="video-showcase-grid" id="video-showcase-feed">
+      <div class="p-8 text-gray-500">Loading showcase...</div>
     </div>
   </section>
 
@@ -174,34 +205,45 @@
   </div>
 
   <!-- ================= TRENDING CONTENT ================= -->
-  <section class="section-container">
+  <section class="section-container" style="padding-top: 20px;">
     <h2 class="section-title"><i data-lucide="trending-up" class="text-accent"></i> Trending Now</h2>
     <div class="horizontal-scroll" id="trending-feed">
-      <!-- Injected via JS -->
       <div class="p-8 text-gray-500">Loading stories...</div>
     </div>
   </section>
 
-  <!-- ================= NEW RELEASES ================= -->
+  <!-- ================= BROWSE BY CATEGORY ================= -->
   <section class="section-container">
-    <h2 class="section-title"><i data-lucide="sparkles" class="text-accent"></i> Just Added</h2>
-    <div class="horizontal-scroll" id="new-feed">
-      <!-- Injected via JS -->
-      <div class="p-8 text-gray-500">Loading stories...</div>
+    <h2 class="section-title"><i data-lucide="compass" class="text-accent"></i> Browse Categories</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div class="bg-surface border border-gray-800 p-6 rounded-lg text-center cursor-pointer hover:border-accent transition" data-open-auth="login"><i data-lucide="theater" class="mx-auto mb-2 text-gray-400"></i><span class="font-semibold">Drama</span></div>
+      <div class="bg-surface border border-gray-800 p-6 rounded-lg text-center cursor-pointer hover:border-accent transition" data-open-auth="login"><i data-lucide="smile" class="mx-auto mb-2 text-gray-400"></i><span class="font-semibold">Comedy</span></div>
+      <div class="bg-surface border border-gray-800 p-6 rounded-lg text-center cursor-pointer hover:border-accent transition" data-open-auth="login"><i data-lucide="swords" class="mx-auto mb-2 text-gray-400"></i><span class="font-semibold">Epic</span></div>
+      <div class="bg-surface border border-gray-800 p-6 rounded-lg text-center cursor-pointer hover:border-accent transition" data-open-auth="login"><i data-lucide="heart" class="mx-auto mb-2 text-gray-400"></i><span class="font-semibold">Romance</span></div>
+      <div class="bg-surface border border-gray-800 p-6 rounded-lg text-center cursor-pointer hover:border-accent transition" data-open-auth="login"><i data-lucide="video" class="mx-auto mb-2 text-gray-400"></i><span class="font-semibold">Documentary</span></div>
+      <div class="bg-surface border border-gray-800 p-6 rounded-lg text-center cursor-pointer hover:border-accent transition" data-open-auth="login"><i data-lucide="flame" class="mx-auto mb-2 text-gray-400"></i><span class="font-semibold">Thriller</span></div>
     </div>
   </section>
 
-  <!-- ================= SEO / ABOUT SECTION ================= -->
-  <section class="section-container my-12">
-    <div class="max-w-4xl mx-auto text-center bg-surface p-10 rounded-2xl border border-gray-800">
-      <h2 class="text-3xl font-display font-bold mb-6">Your Story, Your Platform</h2>
-      <p class="text-gray-400 text-lg mb-6 leading-relaxed">
-        AfroStory is the premier digital streaming platform dedicated entirely to authentic African narratives. Whether you are looking for heart-pounding urban thrillers, traditional folklore, deep documentaries, or modern Afro-futurism, AfroStory connects you directly with the continent's most visionary creators.
-      </p>
-      <p class="text-gray-400 text-lg leading-relaxed mb-8">
-        Watch for free, unlock premium VIP episodes with Story Coins, and support the creators who bring our culture to the screen. 
-      </p>
-      <button class="btn-solid" data-open-auth="register">Create Your Free Account</button>
+  <!-- ================= ABOUT AFROSTORY (SEO) ================= -->
+  <section class="section-container my-8">
+    <div class="max-w-4xl mx-auto bg-surface p-10 rounded-2xl border border-gray-800 relative overflow-hidden">
+      <div class="absolute top-0 right-0 opacity-5 w-64 h-64"><i data-lucide="play-circle" width="100%" height="100%"></i></div>
+      <h2 class="text-3xl font-display font-bold mb-6 text-white relative z-10">Your Story, Your Platform</h2>
+      <div class="text-gray-300 text-lg leading-relaxed space-y-4 relative z-10">
+        <p>
+          AfroStory is the definitive premium digital streaming platform dedicated entirely to authentic African narratives. We believe that the stories of the continent deserve a global stage, untainted by stereotypes and delivered with the highest production quality.
+        </p>
+        <p>
+          Whether you are looking for heart-pounding urban thrillers, rich traditional folklore, insightful documentaries, or visionary modern Afro-futurism, AfroStory connects you directly with the continent's most talented creators. By watching on AfroStory, you aren't just consuming content; you are directly supporting the African film ecosystem. 
+        </p>
+        <p>
+          Our unique model empowers creators to monetize their art while giving viewers flexible access. Watch free ad-supported episodes, or use our proprietary Story Coins to unlock premium VIP content forever. Join us today and discover a world of stories made here, for everyone.
+        </p>
+      </div>
+      <div class="mt-8 relative z-10">
+        <button class="btn-solid" data-open-auth="register">Create Your Free Account</button>
+      </div>
     </div>
   </section>
 
@@ -211,6 +253,117 @@
     <span>Advertisement</span>
   </div>
 
+  <!-- ================= WHY CHOOSE US & CREATOR BANNER ================= -->
+  <section class="section-container">
+    <div class="grid md:grid-cols-3 gap-6 mb-12">
+      <div class="bg-surface p-6 rounded-xl border border-gray-800">
+        <div class="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mb-4"><i data-lucide="smartphone" class="text-accent"></i></div>
+        <h3 class="text-lg font-bold mb-2">Watch Anywhere</h3>
+        <p class="text-sm text-gray-400">Stream seamlessly on your phone, tablet, or laptop. Optimized for fast loading even on lower bandwidths.</p>
+      </div>
+      <div class="bg-surface p-6 rounded-xl border border-gray-800">
+        <div class="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mb-4"><i data-lucide="coins" class="text-accent"></i></div>
+        <h3 class="text-lg font-bold mb-2">Pay Per Episode</h3>
+        <p class="text-sm text-gray-400">No forced subscriptions. Use Story Coins to unlock exactly what you want to watch and keep it forever.</p>
+      </div>
+      <div class="bg-surface p-6 rounded-xl border border-gray-800">
+        <div class="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mb-4"><i data-lucide="shield-check" class="text-accent"></i></div>
+        <h3 class="text-lg font-bold mb-2">Support Creators</h3>
+        <p class="text-sm text-gray-400">Every unlocked episode directly funds the independent African filmmakers and studios who created it.</p>
+      </div>
+    </div>
+
+    <!-- Creator CTA -->
+    <div class="w-full bg-gradient-to-r from-[#E67E22] to-[#D4A017] rounded-2xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between">
+      <div class="mb-6 md:mb-0">
+        <h2 class="text-3xl font-display font-bold text-white mb-2">Are you a Storyteller?</h2>
+        <p class="text-white/90 text-lg">Upload your series, build an audience, and monetize globally.</p>
+      </div>
+      <button class="bg-black text-white px-8 py-4 rounded-lg font-bold whitespace-nowrap hover:bg-gray-900 transition" data-open-auth="register">Join Creator Studio</button>
+    </div>
+  </section>
+
+  <!-- ================= PRICING TEASER ================= -->
+  <section class="section-container text-center max-w-5xl mx-auto my-12">
+    <h2 class="section-title justify-center mb-8">Simple, Flexible Access</h2>
+    <div class="grid md:grid-cols-2 gap-8">
+      <div class="bg-surface p-8 rounded-2xl border border-gray-800 text-left">
+        <h3 class="text-2xl font-bold mb-2">Free Tier</h3>
+        <p class="text-gray-400 mb-6">Perfect for discovering new content.</p>
+        <ul class="space-y-3 mb-8 text-sm">
+          <li class="flex items-center gap-2"><i data-lucide="check" class="text-success" width="16"></i> Ad-supported viewing</li>
+          <li class="flex items-center gap-2"><i data-lucide="check" class="text-success" width="16"></i> Earn coins through missions</li>
+          <li class="flex items-center gap-2"><i data-lucide="check" class="text-success" width="16"></i> Basic video quality</li>
+        </ul>
+        <button class="w-full btn-outline" data-open-auth="register">Start Free</button>
+      </div>
+      <div class="bg-surface p-8 rounded-2xl border border-accent relative text-left">
+        <div class="absolute top-0 right-8 transform -translate-y-1/2 bg-accent text-black text-xs font-bold px-3 py-1 rounded-full">POPULAR</div>
+        <h3 class="text-2xl font-bold text-accent mb-2">VIP Premium</h3>
+        <p class="text-gray-400 mb-6">The ultimate AfroStory experience.</p>
+        <ul class="space-y-3 mb-8 text-sm">
+          <li class="flex items-center gap-2"><i data-lucide="check" class="text-accent" width="16"></i> Zero advertisements</li>
+          <li class="flex items-center gap-2"><i data-lucide="check" class="text-accent" width="16"></i> Unlimited premium episodes</li>
+          <li class="flex items-center gap-2"><i data-lucide="check" class="text-accent" width="16"></i> HD viewing quality</li>
+        </ul>
+        <button class="w-full btn-solid" data-open-auth="register">Get VIP Access</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TESTIMONIALS & FAQ ================= -->
+  <section class="section-container bg-[#0a0a0a] py-16">
+    <div class="max-w-6xl mx-auto">
+      <h2 class="text-center text-2xl font-display font-bold mb-10">What Our Community Says</h2>
+      <div class="grid md:grid-cols-3 gap-6 mb-20">
+        <div class="bg-[#111] p-6 rounded-xl border border-gray-800">
+          <div class="flex text-accent mb-4"><i data-lucide="star" fill="currentColor" width="16"></i><i data-lucide="star" fill="currentColor" width="16"></i><i data-lucide="star" fill="currentColor" width="16"></i><i data-lucide="star" fill="currentColor" width="16"></i><i data-lucide="star" fill="currentColor" width="16"></i></div>
+          <p class="text-gray-300 text-sm mb-4">"Finally a platform that showcases the true quality of African cinema without the stereotypes. The pay-per-episode feature is brilliant."</p>
+          <p class="font-bold text-sm text-gray-500">— Chidi A.</p>
+        </div>
+        <div class="bg-[#111] p-6 rounded-xl border border-gray-800">
+          <div class="flex text-accent mb-4"><i data-lucide="star" fill="currentColor" width="16"></i><i data-lucide="star" fill="currentColor" width="16"></i><i data-lucide="star" fill="currentColor" width="16"></i><i data-lucide="star" fill="currentColor" width="16"></i><i data-lucide="star" fill="currentColor" width="16"></i></div>
+          <p class="text-gray-300 text-sm mb-4">"As an independent filmmaker, AfroStory gave me a direct way to monetize my web series. The creator dashboard is super easy to use."</p>
+          <p class="font-bold text-sm text-gray-500">— Sarah M.</p>
+        </div>
+        <div class="bg-[#111] p-6 rounded-xl border border-gray-800">
+          <div class="flex text-accent mb-4"><i data-lucide="star" fill="currentColor" width="16"></i><i data-lucide="star" fill="currentColor" width="16"></i><i data-lucide="star" fill="currentColor" width="16"></i><i data-lucide="star" fill="currentColor" width="16"></i><i data-lucide="star" fill="currentColor" width="16"></i></div>
+          <p class="text-gray-300 text-sm mb-4">"I love the daily rewards. It makes discovering new traditional folklore stories fun, and the streaming quality is always perfect."</p>
+          <p class="font-bold text-sm text-gray-500">— Kwame O.</p>
+        </div>
+      </div>
+
+      <h2 class="text-center text-2xl font-display font-bold mb-8">Frequently Asked Questions</h2>
+      <div class="max-w-3xl mx-auto space-y-4">
+        <!-- Static FAQ for SEO -->
+        <div class="bg-surface p-5 rounded-lg border border-gray-800">
+          <h3 class="font-bold text-accent mb-2">What is AfroStory?</h3>
+          <p class="text-sm text-gray-400">AfroStory is a premium digital streaming platform focused on delivering authentic African movies, series, documentaries, and short films directly to a global audience.</p>
+        </div>
+        <div class="bg-surface p-5 rounded-lg border border-gray-800">
+          <h3 class="font-bold text-accent mb-2">Is AfroStory free to use?</h3>
+          <p class="text-sm text-gray-400">Yes! You can create a free account and watch a wide selection of ad-supported content. For premium exclusives, you can unlock episodes individually using Story Coins or subscribe to VIP Premium.</p>
+        </div>
+        <div class="bg-surface p-5 rounded-lg border border-gray-800">
+          <h3 class="font-bold text-accent mb-2">How do creators earn money?</h3>
+          <p class="text-sm text-gray-400">Creators upload their original series to the Creator Studio. When viewers use Story Coins to unlock their premium episodes, the creator earns direct revenue added to their secure wallet.</p>
+        </div>
+        <div class="bg-surface p-5 rounded-lg border border-gray-800">
+          <h3 class="font-bold text-accent mb-2">What are Story Coins?</h3>
+          <p class="text-sm text-gray-400">Story Coins are our virtual platform currency. You can buy them directly or earn them for free by completing daily missions and supporting AfroStory on social media.</p>
+        </div>
+        <div class="bg-surface p-5 rounded-lg border border-gray-800">
+          <h3 class="font-bold text-accent mb-2">Can I watch on my mobile phone?</h3>
+          <p class="text-sm text-gray-400">Absolutely. AfroStory is fully optimized for mobile streaming, ensuring fast load times and a beautiful TikTok-style vertical feed experience for series discovery.</p>
+        </div>
+        <div class="bg-surface p-5 rounded-lg border border-gray-800">
+          <h3 class="font-bold text-accent mb-2">How do I become a creator?</h3>
+          <p class="text-sm text-gray-400">Simply create a free user account, navigate to the Studio section, and submit a creator application. Once our admins approve your profile, you can start publishing immediately.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ================= FOOTER ================= -->
   <footer class="public-footer">
     <div class="footer-grid">
@@ -218,14 +371,29 @@
         <a class="brand text-xl font-bold flex items-center mb-4" href="/">
           <span class="brand-mark">A</span><span>AFRO<span class="text-accent">STORY</span></span>
         </a>
-        <p class="text-sm text-gray-500">Premium digital storytelling from Africa to the world.</p>
+        <p class="text-sm text-gray-500 mb-4">Premium digital storytelling from Africa to the world. Discover, watch, and support real creators.</p>
+        <div class="flex gap-4 text-gray-400">
+          <i data-lucide="instagram" width="20" class="hover:text-accent cursor-pointer"></i>
+          <i data-lucide="twitter" width="20" class="hover:text-accent cursor-pointer"></i>
+          <i data-lucide="youtube" width="20" class="hover:text-accent cursor-pointer"></i>
+        </div>
       </div>
       <div class="footer-col">
-        <h4>Platform</h4>
+        <h4>Company</h4>
         <ul>
-          <li><a href="#" data-open-auth="login">Sign In</a></li>
-          <li><a href="#" data-open-auth="register">Join AfroStory</a></li>
-          <li><a href="#" data-open-auth="login">Creator Studio</a></li>
+          <li><a href="/about.html">About Us</a></li>
+          <li><a href="/careers.html">Careers</a></li>
+          <li><a href="/pricing.html">Pricing</a></li>
+          <li><a href="/blog.html">Blog</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Support</h4>
+        <ul>
+          <li><a href="/help.html">Help Center</a></li>
+          <li><a href="/faq.html">FAQ</a></li>
+          <li><a href="/contact.html">Contact Us</a></li>
+          <li><a href="/sitemap.html">Sitemap</a></li>
         </ul>
       </div>
       <div class="footer-col">
@@ -233,115 +401,141 @@
         <ul>
           <li><a href="/terms.html">Terms of Service</a></li>
           <li><a href="/privacy.html">Privacy Policy</a></li>
-          <li><a href="/privacy.html">Cookie Policy</a></li>
-        </ul>
-      </div>
-      <div class="footer-col">
-        <h4>Connect</h4>
-        <ul>
-          <li><a href="#">Help Center</a></li>
-          <li><a href="#">Contact Us</a></li>
-          <li><a href="#">Twitter / X</a></li>
+          <li><a href="/cookie-policy.html">Cookie Policy</a></li>
+          <li><a href="/dmca.html">DMCA</a></li>
+          <li><a href="/disclaimer.html">Disclaimer</a></li>
         </ul>
       </div>
     </div>
-    <div class="border-t border-gray-800 pt-8 text-center text-xs text-gray-600">
-      &copy; 2026 AfroStory. All rights reserved.
+    <div class="border-t border-gray-800 pt-8 mt-4 flex flex-col md:flex-row justify-between items-center text-xs text-gray-600">
+      <p>&copy; 2026 AfroStory Entertainment Ltd. All rights reserved.</p>
+      <p class="mt-2 md:mt-0">Made with ❤️ in Lagos, Nigeria • support@afrostory.com</p>
     </div>
   </footer>
 
-  <!-- ================= AUTHENTICATION MODAL ================= -->
+  <!-- ================= AUTHENTICATION MODAL (TWO-SIDED) ================= -->
   <div class="auth-modal-overlay" id="auth-modal">
     <div class="auth-modal-box">
-      <button class="modal-close" id="close-modal-btn">×</button>
+      <button class="modal-close" id="close-modal-btn"><i data-lucide="x"></i></button>
       
-      <!-- LOGIN FORM -->
-      <form id="login-form" class="auth-form space-y-4" novalidate>
-        <h2 class="text-2xl font-bold">Welcome back</h2>
-        <p class="text-gray-400 text-sm">Sign in to continue your journey.</p>
-        <input class="field" id="login-email" type="email" autocomplete="email" placeholder="Email address" required>
-        <div class="password-field">
-          <input class="field" id="login-password" type="password" autocomplete="current-password" placeholder="Password" required>
-          <button class="password-toggle" type="button" data-password-toggle="login-password" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
+      <!-- LEFT SIDE: BRANDING -->
+      <div class="auth-modal-left hidden md:flex w-2/5 p-8 bg-black relative flex-col justify-end">
+        <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1516055619834-3dfa1b2416f4?auto=format&fit=crop&w=600&q=80')] bg-cover bg-center opacity-40"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent"></div>
+        
+        <div class="relative z-10">
+          <div class="flex items-center mb-6">
+            <span class="text-accent font-black text-3xl mr-1">A</span>
+            <span class="text-white font-bold tracking-widest text-xl">AFRO<span class="text-accent">STORY</span></span>
+          </div>
+          <h2 class="text-2xl font-display font-bold text-white mb-2">The Home of African Stories.</h2>
+          <ul class="space-y-3 mt-6 text-gray-300 text-sm">
+            <li class="flex items-center gap-2"><i data-lucide="check-circle-2" class="text-accent" width="16"></i> Premium HD Streaming</li>
+            <li class="flex items-center gap-2"><i data-lucide="check-circle-2" class="text-accent" width="16"></i> Direct Creator Support</li>
+            <li class="flex items-center gap-2"><i data-lucide="check-circle-2" class="text-accent" width="16"></i> Exclusive Original Series</li>
+          </ul>
         </div>
-        <label class="text-sm text-gray-400 flex gap-2"><input id="remember-me" type="checkbox"> Remember me</label>
-        <button class="link text-sm w-full text-right" type="button" data-mode="forgot">Forgot password?</button>
-        <button class="primary" type="submit">Sign in</button>
-        <div class="border-t border-gray-700 pt-4 text-center text-sm text-gray-400">New to AfroStory? <button class="link" type="button" data-mode="register">Create an account</button></div>
-        <div class="grid grid-cols-3 gap-2">
-          <button class="field hover:border-accent transition-colors" type="button" data-sso="google">Google</button>
-          <button class="field hover:border-accent transition-colors" type="button" data-sso="apple">Apple</button>
-          <button class="field hover:border-accent transition-colors" type="button" data-sso="github">GitHub</button>
-        </div>
-      </form>
+      </div>
 
-      <!-- REGISTER FORM -->
-      <form id="register-form" class="auth-form hidden space-y-4" novalidate>
-        <h2 class="text-2xl font-bold">Create your account</h2>
-        <p class="text-gray-400 text-sm">Join a home for African stories.</p>
-        <input class="field" id="reg-username" type="text" autocomplete="username" placeholder="Username" required>
-        <input class="field" id="reg-email" type="email" autocomplete="email" placeholder="Email address" required>
-        <div class="password-field">
-          <input class="field" id="reg-password" type="password" autocomplete="new-password" placeholder="Password" required>
-          <button class="password-toggle" type="button" data-password-toggle="reg-password" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
-        </div>
-        <div class="flex gap-1"><i id="str-bar-1" class="bar"></i><i id="str-bar-2" class="bar"></i><i id="str-bar-3" class="bar"></i><i id="str-bar-4" class="bar"></i></div>
-        <p id="password-feedback" class="text-xs text-gray-500"></p>
-        <div class="password-field">
-          <input class="field" id="reg-confirm" type="password" autocomplete="new-password" placeholder="Confirm password" required>
-          <button class="password-toggle" type="button" data-password-toggle="reg-confirm" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
-        </div>
-        <label class="text-sm text-gray-400 flex gap-2">
-          <input id="reg-terms" type="checkbox" required> 
-          <span>I agree to the Terms of Service.</span>
-        </label>
-        <button class="primary" type="submit">Create account</button>
-        <p class="text-center text-sm text-gray-400">Already a member? <button class="link" type="button" data-mode="login">Sign in</button></p>
-      </form>
+      <!-- RIGHT SIDE: FORMS -->
+      <div class="auth-modal-right w-full md:w-3/5 p-8 md:p-10 bg-surface flex flex-col justify-center">
+        
+        <!-- LOGIN FORM -->
+        <form id="login-form" class="auth-form space-y-4" novalidate>
+          <h2 class="text-2xl font-bold">Welcome back</h2>
+          <p class="text-gray-400 text-sm">Sign in to continue your journey.</p>
+          <input class="field" id="login-email" type="email" autocomplete="email" placeholder="Email address" required>
+          <div class="password-field">
+            <input class="field" id="login-password" type="password" autocomplete="current-password" placeholder="Password" required>
+            <button class="password-toggle" type="button" data-password-toggle="login-password" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
+          </div>
+          <div class="flex justify-between items-center mt-2">
+            <label class="text-sm text-gray-400 flex items-center gap-2"><input id="remember-me" type="checkbox"> Remember me</label>
+            <button class="link text-sm" type="button" data-mode="forgot">Forgot password?</button>
+          </div>
+          <button class="primary mt-4" type="submit">Sign in</button>
+          <div class="border-t border-gray-700 pt-4 mt-4 text-center text-sm text-gray-400">New to AfroStory? <button class="link" type="button" data-mode="register">Create an account</button></div>
+          <div class="grid grid-cols-3 gap-2 mt-4">
+            <button class="field hover:border-accent transition-colors flex justify-center items-center" type="button" data-sso="google"><img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google"></button>
+            <button class="field hover:border-accent transition-colors flex justify-center items-center" type="button" data-sso="apple"><img src="https://www.svgrepo.com/show/511330/apple-173.svg" class="w-5 h-5 invert" alt="Apple"></button>
+            <button class="field hover:border-accent transition-colors flex justify-center items-center" type="button" data-sso="github"><img src="https://www.svgrepo.com/show/512317/github-142.svg" class="w-5 h-5 invert" alt="GitHub"></button>
+          </div>
+        </form>
 
-      <!-- FORGOT PASSWORD FORM -->
-      <form id="forgot-form" class="auth-form hidden space-y-4" novalidate>
-        <h2 class="text-2xl font-bold">Reset password</h2>
-        <p class="text-gray-400 text-sm">We will send a secure 15-minute code.</p>
-        <input class="field" id="forgot-email" type="email" placeholder="Registered email" required>
-        <button class="primary" type="submit">Send reset code</button>
-        <button class="link text-sm w-full" type="button" data-mode="login">Back to sign in</button>
-      </form>
+        <!-- REGISTER FORM -->
+        <form id="register-form" class="auth-form hidden space-y-4" novalidate>
+          <h2 class="text-2xl font-bold">Create your account</h2>
+          <p class="text-gray-400 text-sm">Join a home for African stories.</p>
+          <input class="field" id="reg-username" type="text" autocomplete="username" placeholder="Username" required>
+          <input class="field" id="reg-email" type="email" autocomplete="email" placeholder="Email address" required>
+          <div class="password-field">
+            <input class="field" id="reg-password" type="password" autocomplete="new-password" placeholder="Password" required>
+            <button class="password-toggle" type="button" data-password-toggle="reg-password" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
+          </div>
+          <div class="flex gap-1"><i id="str-bar-1" class="bar"></i><i id="str-bar-2" class="bar"></i><i id="str-bar-3" class="bar"></i><i id="str-bar-4" class="bar"></i></div>
+          <p id="password-feedback" class="text-xs text-gray-500"></p>
+          <div class="password-field">
+            <input class="field" id="reg-confirm" type="password" autocomplete="new-password" placeholder="Confirm password" required>
+            <button class="password-toggle" type="button" data-password-toggle="reg-confirm" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
+          </div>
+          <label class="text-sm text-gray-400 flex items-center gap-2 mt-2">
+            <input id="reg-terms" type="checkbox" required> 
+            <span>I agree to the <a href="/terms.html" class="text-accent hover:underline" target="_blank">Terms of Service</a>.</span>
+          </label>
+          <button class="primary gold mt-4" type="submit">Create account</button>
+          <p class="text-center text-sm text-gray-400 mt-4">Already a member? <button class="link" type="button" data-mode="login">Sign in</button></p>
+        </form>
 
-      <!-- RESET PASSWORD FORM -->
-      <form id="reset-form" class="auth-form hidden space-y-4" novalidate>
-        <h2 class="text-2xl font-bold">Set new password</h2>
-        <p class="text-gray-400 text-sm">Enter the code sent to your email.</p>
-        <input class="field code" id="reset-code" inputmode="numeric" maxlength="6" placeholder="------" required>
-        <div class="bg-accent/10 border border-accent/20 rounded-lg p-3 text-center">
-          <p class="text-xs text-accent font-semibold">Don't see the email? Please check your Spam/Junk folder.</p>
-        </div>
-        <div class="password-field">
-          <input class="field" id="reset-password" type="password" placeholder="New password" required>
-          <button class="password-toggle" type="button" data-password-toggle="reset-password" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
-        </div>
-        <button class="primary" type="submit">Update password</button>
-        <button class="link text-sm w-full" type="button" data-mode="login">Cancel</button>
-      </form>
+        <!-- FORGOT PASSWORD FORM -->
+        <form id="forgot-form" class="auth-form hidden space-y-4" novalidate>
+          <h2 class="text-2xl font-bold">Reset password</h2>
+          <p class="text-gray-400 text-sm">We will send a secure 15-minute code.</p>
+          <input class="field mt-4" id="forgot-email" type="email" placeholder="Registered email" required>
+          <button class="primary mt-4" type="submit">Send reset code</button>
+          <button class="link text-sm w-full mt-4" type="button" data-mode="login">Back to sign in</button>
+        </form>
 
-      <!-- VERIFY EMAIL FORM -->
-      <form id="verify-form" class="auth-form hidden space-y-4" novalidate>
-        <h2 class="text-2xl font-bold">Verify your email</h2>
-        <p class="text-gray-400 text-sm">Enter the six-digit code sent to your email.</p>
-        <input class="field code" id="verify-code" inputmode="numeric" maxlength="6" placeholder="------" required>
-        <div class="bg-accent/10 border border-accent/20 rounded-lg p-3 text-center">
-          <p class="text-xs text-accent font-semibold">Don't see the email? Please check your Spam/Junk folder.</p>
-        </div>
-        <button class="primary" type="submit">Verify account</button>
-        <button id="resend-otp" class="link text-sm w-full" type="button">Resend code</button>
-      </form>
+        <!-- RESET PASSWORD FORM -->
+        <form id="reset-form" class="auth-form hidden space-y-4" novalidate>
+          <h2 class="text-2xl font-bold">Set new password</h2>
+          <p class="text-gray-400 text-sm">Enter the code sent to your email.</p>
+          <input class="field code mt-4" id="reset-code" inputmode="numeric" maxlength="6" placeholder="------" required>
+          
+          <div class="bg-accent/10 border border-accent/20 rounded-lg p-3 text-center mt-2">
+            <p class="text-xs text-accent font-semibold">Don't see the email? Please check your Spam or Junk folder.</p>
+          </div>
 
+          <div class="password-field mt-4">
+            <input class="field" id="reset-password" type="password" placeholder="New password" required>
+            <button class="password-toggle" type="button" data-password-toggle="reset-password" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
+          </div>
+          <button class="primary gold mt-4" type="submit">Update password</button>
+          <button class="link text-sm w-full mt-4" type="button" data-mode="login">Cancel</button>
+        </form>
+
+        <!-- VERIFY EMAIL FORM -->
+        <form id="verify-form" class="auth-form hidden space-y-4" novalidate>
+          <h2 class="text-2xl font-bold">Verify your email</h2>
+          <p class="text-gray-400 text-sm">Enter the six-digit code sent to your email.</p>
+          <input class="field code mt-4" id="verify-code" inputmode="numeric" maxlength="6" placeholder="------" required>
+          
+          <div class="bg-accent/10 border border-accent/20 rounded-lg p-3 text-center mt-2">
+            <p class="text-xs text-accent font-semibold">Don't see the email? Please check your Spam or Junk folder.</p>
+          </div>
+
+          <button class="primary mt-4" type="submit">Verify account</button>
+          <button id="resend-otp" class="link text-sm w-full mt-4" type="button">Resend code</button>
+        </form>
+
+      </div>
     </div>
   </div>
   
   <script>
+    lucide.createIcons();
+
     // ==========================================
-    // UI BEHAVIORS (Header & Modal)
+    // UI BEHAVIORS (Header & Auth Modal)
     // ==========================================
     window.addEventListener('scroll', () => {
       const header = document.getElementById('main-header');
@@ -354,26 +548,28 @@
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         authModal.classList.add('active');
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
         show(btn.dataset.openAuth); 
       });
     });
 
     document.getElementById('close-modal-btn').addEventListener('click', () => {
       authModal.classList.remove('active');
+      document.body.style.overflow = '';
     });
 
-    // Helper to safely format image URLs
+    // Safe Image Formatter
     const safeImage = value => {
-      if (!value) return 'https://images.unsplash.com/photo-1539650116574-75c0c6d73f6e?auto=format&fit=crop&w=600&q=70';
+      if (!value) return 'https://images.unsplash.com/photo-1539650116574-75c0c6d73f6e?auto=format&fit=crop&w=800&q=70';
       if (value.includes('unsplash.com')) {
-          try { const u = new URL(value); u.searchParams.set('w', '600'); return u.toString(); } catch(e){}
+          try { const u = new URL(value); u.searchParams.set('w', '800'); return u.toString(); } catch(e){}
       }
-      if (value.includes('cloudinary.com')) return value.replace('/upload/', '/upload/q_auto,w_600/');
+      if (value.includes('cloudinary.com')) return value.replace('/upload/', '/upload/q_auto,w_800/');
       return value;
     };
 
     // ==========================================
-    // AUTHENTICATION LOGIC
+    // AUTHENTICATION LOGIC (Preserved exactly as requested)
     // ==========================================
     let currentAuthEmail='';
     const $=id=>document.getElementById(id);
@@ -408,129 +604,116 @@
     $('forgot-form').addEventListener('submit',async event=>{event.preventDefault();const email=$('forgot-email').value.trim().toLowerCase();if(!emailOk(email))return alertMessage('error','Enter a valid email');const{response,data}=await request('forgot-password',{email});if(response.ok){currentAuthEmail=email;show('reset');alertMessage('success','Reset code sent')}else alertMessage('error',data.message||'Could not send reset code')});
     $('reset-form').addEventListener('submit',async event=>{event.preventDefault();const code=$('reset-code').value.trim(),newPassword=$('reset-password').value;if(!codeOk(code)\vert{}\vert{}newPassword.length<6)return alertMessage('error','Enter a valid code and password');const{response,data}=await request('reset-password',{email:currentAuthEmail,code,newPassword});if(response.ok){show('login');alertMessage('success','Password updated')}else alertMessage('error',data.message\vert{}\vert{}'Reset failed')});$('verify-form').addEventListener('submit',async event=>{event.preventDefault();const code=$('verify-code').value.trim();if(!codeOk(code))return alertMessage('error','Enter the six-digit code');const{response,data}=await request('verify-email',{email:currentAuthEmail,code});if(response.ok)redirect();else alertMessage('error',data.message\vert{}\vert{}'Invalid or expired code')});$('resend-otp').addEventListener('click',async()=>{if(!currentAuthEmail)return alertMessage('error','Email session lost');const{response,data}=await request('resend-otp',{email:currentAuthEmail});alertMessage(response.ok?'success':'error',data.message||(response.ok?'New code sent':'Could not resend code'))});
     
-    window.lucide?.createIcons?.();
     const authError = new URLSearchParams(window.location.search).get('authError'); if (authError) { window.history.replaceState({}, '', '/'); alertMessage('error', authError); }
 
     /* ============================================================================ */
-    /* 1. DYNAMIC VIDEO SLIDESHOW FOR HERO AREA */
+    /* HOMEPAGE DYNAMIC DATA FETCHING */
     /* ============================================================================ */
-    let heroVideos = [];
-    let currentVideoIdx = 0;
-    const bgVideoEl = document.getElementById('hero-bg-video');
-    const titleEl = document.getElementById('dynamic-video-title');
+    
+    // 1. Image Hero Slideshow
+    let heroSlides = [];
+    let currentHeroIdx = 0;
+    let heroInterval;
 
-    function playCarouselVideo(index) {
-      if (heroVideos.length === 0) return;
-      currentVideoIdx = index % heroVideos.length;
-      const videoData = heroVideos[currentVideoIdx];
-      const mediaUrl = videoData.mediaUrl || videoData.hlsUrl || videoData.videoUrl;
-
-      bgVideoEl.classList.remove('active');
-      titleEl.classList.remove('active');
-
-      setTimeout(() => {
-        if (mediaUrl.includes('.m3u8') && window.Hls && window.Hls.isSupported()) {
-            const hls = new window.Hls();
-            hls.loadSource(mediaUrl);
-            hls.attachMedia(bgVideoEl);
-        } else {
-            bgVideoEl.src = mediaUrl;
-        }
-
-        bgVideoEl.poster = videoData.thumbnailUrl || videoData.seriesId?.coverImage || '';
-
-        bgVideoEl.play().then(() => {
-            bgVideoEl.classList.add('active');
-            titleEl.textContent = `▶ Now Showing: ${videoData.seriesId?.title || videoData.title}`;
-            titleEl.classList.add('active');
-        }).catch(err => {
-            console.log("Autoplay blocked. Moving to next video.", err);
-            setTimeout(() => playCarouselVideo(currentVideoIdx + 1), 2000);
-        });
-      }, 500); 
-    }
-
-    bgVideoEl.addEventListener('ended', () => { playCarouselVideo(currentVideoIdx + 1); });
-
-    /* ============================================================================ */
-    /* 2. ADMIN IMAGE SLIDESHOW */
-    /* ============================================================================ */
-    let imageSlides = [];
-    let currentImgSlide = 0;
-    let imgSlideInterval;
-
-    async function initImageSlideshow() {
+    async function initHeroSlideshow() {
       try {
         const res = await fetch('/api/admin/slides?type=image');
         if (res.ok) {
            const data = await res.json();
            const payload = data.data || data;
            if (payload && payload.length > 0) {
-             imageSlides = payload;
-             renderImageSlides();
-             startImageSlideshow();
-             document.getElementById('image-slideshow-container').style.display = 'block';
+             heroSlides = payload;
+             renderHeroSlides();
+             startHeroSlideshow();
            }
         }
-      } catch(e) { console.error('Image slideshow failed to load', e); }
+      } catch(e) { console.error('Hero slideshow failed', e); }
     }
 
-    function renderImageSlides() {
-       const track = document.getElementById('image-slides-track');
-       const dots = document.getElementById('slide-dots');
-       track.innerHTML = '';
-       dots.innerHTML = '';
+    function renderHeroSlides() {
+       const track = document.getElementById('hero-slides-track');
+       const dots = document.getElementById('hero-dots');
+       
+       if(heroSlides.length > 0) {
+           track.innerHTML = '';
+           dots.innerHTML = '';
+       }
 
-       imageSlides.forEach((slide, idx) => {
+       heroSlides.forEach((slide, idx) => {
          const slideEl = document.createElement('div');
-         slideEl.className = `img-slide ${idx === 0 ? 'active' : ''}`;
+         slideEl.className = `hero-slide ${idx === 0 ? 'active' : ''}`;
          slideEl.style.backgroundImage = `url('${safeImage(slide.imageUrl)}')`;
-         slideEl.innerHTML = `
-            <div class="img-slide-overlay"></div>
-            <div class="img-slide-content">
-              <h2 class="text-3xl font-bold font-display mb-3">${slide.title || ''}</h2>
-              <p class="text-gray-300 mb-6 text-lg">${slide.description || ''}</p>
-              ${slide.buttonLink ? `<a href="${slide.buttonLink}" class="btn-solid inline-block self-start">${slide.buttonText || 'Learn More'}</a>` : ''}
-            </div>
-         `;
          track.appendChild(slideEl);
 
          const dot = document.createElement('div');
-         dot.className = `dot ${idx === 0 ? 'active' : ''}`;
-         dot.onclick = () => goToImgSlide(idx);
+         dot.className = `hero-dot ${idx === 0 ? 'active' : ''}`;
+         dot.onclick = () => goToHeroSlide(idx);
          dots.appendChild(dot);
        });
+       
+       updateHeroContent(0);
     }
 
-    function goToImgSlide(idx) {
-       const slides = document.querySelectorAll('.img-slide');
-       const dots = document.querySelectorAll('.dot');
-       if(!slides.length || !dots.length) return;
-
-       slides[currentImgSlide].classList.remove('active');
-       dots[currentImgSlide].classList.remove('active');
-
-       currentImgSlide = (idx + imageSlides.length) % imageSlides.length;
-
-       slides[currentImgSlide].classList.add('active');
-       dots[currentImgSlide].classList.add('active');
-
-       resetImgInterval();
+    function updateHeroContent(idx) {
+        if(!heroSlides[idx]) return;
+        const slide = heroSlides[idx];
+        document.getElementById('hero-title').textContent = slide.title || 'Authentic African Stories';
+        document.getElementById('hero-desc').textContent = slide.description || 'Discover premium series, short films, and documentaries.';
     }
 
-    function nextImgSlide() { goToImgSlide(currentImgSlide + 1); }
-    function prevImgSlide() { goToImgSlide(currentImgSlide - 1); }
+    function goToHeroSlide(idx) {
+       if(heroSlides.length === 0) return;
+       const slides = document.querySelectorAll('.hero-slide');
+       const dots = document.querySelectorAll('.hero-dot');
 
-    function startImageSlideshow() { imgSlideInterval = setInterval(nextImgSlide, 5000); }
-    function resetImgInterval() { clearInterval(imgSlideInterval); startImageSlideshow(); }
+       slides[currentHeroIdx].classList.remove('active');
+       dots[currentHeroIdx].classList.remove('active');
 
-    document.getElementById('slide-next')?.addEventListener('click', nextImgSlide);
-    document.getElementById('slide-prev')?.addEventListener('click', prevImgSlide);
+       currentHeroIdx = (idx + heroSlides.length) % heroSlides.length;
 
-    /* ============================================================================ */
-    /* 3. CONTENT GRIDS (Trending & New) */
-    /* ============================================================================ */
-    const renderCard = (ep) => {
+       slides[currentHeroIdx].classList.add('active');
+       dots[currentHeroIdx].classList.add('active');
+       updateHeroContent(currentHeroIdx);
+
+       clearInterval(heroInterval);
+       startHeroSlideshow();
+    }
+
+    function startHeroSlideshow() { heroInterval = setInterval(() => goToHeroSlide(currentHeroIdx + 1), 6000); }
+    document.getElementById('hero-next')?.addEventListener('click', () => goToHeroSlide(currentHeroIdx + 1));
+    document.getElementById('hero-prev')?.addEventListener('click', () => goToHeroSlide(currentHeroIdx - 1));
+
+    // 2. Video Showcase (Featured Premieres)
+    async function initVideoShowcase() {
+      try {
+        const response = await fetch('/api/admin/slides?type=video');
+        if (response.ok) {
+            const data = await response.json();
+            const videos = data.data || data;
+            const container = document.getElementById('video-showcase-feed');
+            
+            if (videos && videos.length > 0) {
+                container.innerHTML = videos.map(vid => `
+                    <div class="video-card" onclick="document.getElementById('auth-modal').classList.add('active'); show('login');">
+                        <video src="${vid.videoUrl}" poster="${safeImage(vid.thumbnailUrl)}" muted loop onmouseover="this.play()" onmouseout="this.pause()"></video>
+                        <div class="video-overlay">
+                            <span class="text-accent font-bold text-xs mb-1 uppercase tracking-widest">${vid.category || 'FEATURED'}</span>
+                            <h3 class="text-white font-display text-xl font-bold">${vid.title}</h3>
+                            <p class="text-gray-300 text-sm line-clamp-2 mt-1">${vid.caption || ''}</p>
+                        </div>
+                        <div class="video-play-btn"><i data-lucide="play" fill="currentColor"></i></div>
+                    </div>
+                `).join('');
+                lucide.createIcons();
+            } else {
+                container.innerHTML = `<div class="p-8 text-gray-500 w-full text-center">More premieres coming soon.</div>`;
+            }
+        }
+      } catch (error) { console.error("Video showcase failed", error); }
+    }
+
+    // 3. Trending & New Content Grids
+    const renderContentCard = (ep) => {
       const seriesTitle = ep.seriesId?.title || 'Story';
       return `
         <div class="content-card" onclick="document.getElementById('auth-modal').classList.add('active'); show('login');">
@@ -541,7 +724,7 @@
             <h3 class="card-title">${ep.title}</h3>
             <div class="card-meta">
               <span>${seriesTitle}</span>
-              <span class="text-accent">▶ Watch</span>
+              <span class="text-accent flex items-center gap-1"><i data-lucide="play-circle" width="14"></i> Watch</span>
             </div>
           </div>
         </div>
@@ -555,20 +738,21 @@
         
         if (data && data.success && data.data && data.data.episodes) {
           const episodes = data.data.episodes;
+          document.getElementById('trending-feed').innerHTML = episodes.map(renderContentCard).join('');
           
-          document.getElementById('trending-feed').innerHTML = episodes.map(renderCard).join('');
-          document.getElementById('new-feed').innerHTML = [...episodes].reverse().map(renderCard).join('');
-
-          heroVideos = episodes.filter(ep => ep.mediaUrl || ep.hlsUrl || ep.videoUrl);
-          if (heroVideos.length > 0) playCarouselVideo(0);
+          // Reversing array for visual variety in the "Just Added" row
+          document.getElementById('new-feed').innerHTML = [...episodes].reverse().map(renderContentCard).join('');
+          lucide.createIcons();
         }
-      } catch (error) { console.error("Failed to load public content:", error); }
-      
-      // Initialize the Admin Image Slideshow alongside the content
-      initImageSlideshow();
+      } catch (error) { console.error("Failed to load trending content", error); }
     }
 
-    document.addEventListener('DOMContentLoaded', loadPublicContent);
+    // Initialize all data
+    document.addEventListener('DOMContentLoaded', () => {
+        initHeroSlideshow();
+        initVideoShowcase();
+        loadPublicContent();
+    });
 
  </script>
 </body>
