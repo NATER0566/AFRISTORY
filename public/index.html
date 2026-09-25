@@ -1,7 +1,8 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta name="6a97888e-site-verification" content="634029b00a1a4737e71798db18d2dc5b">
+
+<script src="https://rocketsloth.ai/rs.js" data-rs-key="pk_2e5db9e642c6b436fc0ec0774ad208f1"></script>
   
   <!-- WebPushr Tracking Code --> 
   <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js";
@@ -16,8 +17,8 @@
   
   <!-- SEO & META TAGS -->
   <title>AfroStory | Premium African Digital Storytelling</title>
-  <meta name="description" content="AfroStory is the premier digital streaming platform dedicated to authentic African narratives. Watch premium original series, short films, and documentaries.">
-  <link rel="canonical" href="https://afristory.onrender.com/">
+  <meta name="description" content="AfroStory is the premier digital streaming platform dedicated to authentic African narratives. Watch premium original series, short films, and documentaries made directly by African creators.">
+  <link rel="canonical" href="https://afristory.naterlearninghub.me/">
   <meta property="og:title" content="AfroStory | Premium African Digital Storytelling">
   <meta property="og:description" content="Watch premium original series, short films, and documentaries made by African creators.">
   <meta property="og:image" content="/images/og-image.jpg">
@@ -42,7 +43,7 @@
   <style>
     body { background-color: #111111; color: #f5f5f5; font-family: 'Inter', sans-serif; overflow-x: hidden; margin: 0; }
     
-    /* ================= HEADER (CLEAN & SIMPLE) ================= */
+    /* ================= HEADER (STRICTLY LOGO + AUTH BUTTONS) ================= */
     .public-header {
       position: fixed; top: 0; left: 0; right: 0; height: 70px; z-index: 1000;
       display: flex; justify-content: space-between; align-items: center; padding: 0 4vw;
@@ -50,6 +51,7 @@
       transition: background 0.3s ease, border-bottom 0.3s ease;
     }
     .public-header.scrolled { background: rgba(17,17,17,0.98); backdrop-filter: blur(10px); border-bottom: 1px solid #333; }
+    .brand { font-family: 'Inter', sans-serif; }
     .brand-mark { color: #D4A017; font-weight: 900; font-size: 24px; margin-right: 4px; }
     
     .header-actions { display: flex; gap: 12px; align-items: center; }
@@ -59,15 +61,103 @@
     .btn-solid:hover { background: #cf6f1b; }
     
     /* ================= 1. MAIN HERO ================= */
-    .hero-wrapper { position: relative; height: 75vh; min-height: 500px; width: 100%; overflow: hidden; background: #1a1a2e url('https://images.unsplash.com/photo-1542869781-a272dcbc029f?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat; }
-    .hero-media-layer { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
-    .hero-media-layer video { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.5s ease; }
-    .hero-media-layer video.active { opacity: 0.6; }
-    .hero-gradient { position: absolute; inset: 0; z-index: 2; background: linear-gradient(to top, #111111 0%, rgba(17,17,17,0.4) 60%, rgba(17,17,17,0.8) 100%); }
-    .hero-content { position: absolute; bottom: 10%; left: 4vw; z-index: 10; max-width: 700px; padding-right: 4vw; }
-    .hero-tag { display: inline-block; background: rgba(212,160,23,0.2); color: #D4A017; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 700; letter-spacing: 1px; margin-bottom: 12px; }
-    .hero-title { font-family: 'Space Grotesk', sans-serif; font-size: clamp(2rem, 5vw, 4rem); font-weight: 900; line-height: 1.1; margin-bottom: 12px; text-transform: uppercase; color: #fff; }
-    .hero-desc { font-size: clamp(1rem, 2vw, 1.1rem); color: #eee; margin-bottom: 24px; line-height: 1.5; max-width: 600px; }
+    .hero-wrapper {
+        position: relative;
+        height: 62vh;
+        min-height: 440px;
+        max-height: 680px;
+        width: 100%;
+        overflow: hidden;
+        background: #1a1a2e;
+    }
+
+    .hero-media-layer {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+    }
+
+    .hero-media-layer video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0;
+        transition: opacity 1.2s ease;
+    }
+
+    .hero-media-layer video.active {
+        opacity: 0.65;
+    }
+
+    .hero-gradient {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        background:
+            linear-gradient(
+                to top,
+                #111111 0%,
+                rgba(17,17,17,0.35) 65%,
+                rgba(17,17,17,0.55) 100%
+            );
+    }
+
+    .hero-content {
+        position: absolute;
+        top: 50%;
+        left: 4vw;
+        z-index: 10;
+        max-width: 700px;
+        padding-right: 4vw;
+        transform: translateY(-35%);
+    }
+
+    .hero-tag {
+        display: inline-block;
+        background: rgba(212,160,23,0.2);
+        color: #D4A017;
+        padding: 5px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
+    }
+
+    .hero-title {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: clamp(2rem, 5vw, 4rem);
+        font-weight: 900;
+        line-height: 1.08;
+        margin-bottom: 12px;
+        color: #fff;
+    }
+
+    .hero-desc {
+        font-size: clamp(1rem, 2vw, 1.1rem);
+        color: #eee;
+        margin-bottom: 24px;
+        line-height: 1.5;
+        max-width: 600px;
+    }
+
+    @media (max-width: 768px) {
+        .hero-wrapper {
+            height: 68vh;
+            min-height: 480px;
+        }
+
+        .hero-content {
+            left: 20px;
+            right: 20px;
+            top: auto;
+            bottom: 12%;
+            transform: none;
+            padding-right: 0;
+        }
+    }
 
     /* ================= UNIVERSAL CAROUSEL STRUCTURE (For Image & Video) ================= */
     .carousel-section { padding: 40px 4vw; background: #111; }
@@ -116,7 +206,7 @@
     .auth-modal-overlay.active { display: flex; opacity: 1; }
     .auth-modal-box { background: #1B1B1B; border: 1px solid #333; border-radius: 16px; width: 100%; max-width: 900px; display: flex; overflow: hidden; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8); max-height: 90vh; }
     
-    .auth-modal-left { width: 40%; background: url('https://images.unsplash.com/photo-1516055619834-3dfa1b2416f4?auto=format&fit=crop&w=600&q=80') center/cover; position: relative; padding: 40px; display: flex; flex-direction: column; justify-content: flex-end; color: #fff; }
+    .auth-modal-left { width: 40%; background: #000; position: relative; padding: 40px; display: flex; flex-direction: column; justify-content: flex-end; color: #fff; }
     .auth-modal-left::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, #111 0%, rgba(17,17,17,0.2) 100%); }
     .auth-modal-left-content { position: relative; z-index: 10; }
     
@@ -143,13 +233,89 @@
     .code{letter-spacing:.7em;text-align:center;font-size:1.5rem}
     .bar{height:5px;flex:1;background:#444;border-radius:9px}
 
-    /* FOOTER */
-    .public-footer { background: #111; border-top: 1px solid #222; padding: 60px 4vw 30px; margin-top: 40px; }
-    .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 40px; margin-bottom: 40px; }
-    .footer-col h4 { color: #fff; margin-bottom: 20px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
-    .footer-col ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
-    .footer-col a { color: #999; text-decoration: none; font-size: 14px; transition: 0.2s; }
-    .footer-col a:hover { color: #D4A017; }
+    /* BIGGER SWEETALERT STYLES */
+    .swal2-popup.big-alert { padding: 2em; font-size: 1.2rem; border-radius: 12px; }
+    .swal2-title.big-title { font-size: 1.5rem !important; }
+
+    /* ================= FOOTER ================= */
+    .public-footer {
+        background: #0d0d0d;
+        border-top: 1px solid #222;
+        padding: 60px 4vw 30px;
+        margin-top: 40px;
+    }
+
+    .footer-grid {
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto 50px;
+        display: grid;
+        grid-template-columns: 1.5fr 1fr 1fr 1fr;
+        gap: 50px;
+    }
+
+    .footer-col {
+        min-width: 0;
+    }
+
+    .footer-col h4 {
+        color: #fff;
+        margin: 0 0 20px;
+        font-size: 14px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .footer-col ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .footer-col a {
+        color: #999;
+        text-decoration: none;
+        font-size: 14px;
+        transition: color 0.2s ease;
+    }
+
+    .footer-col a:hover {
+        color: #D4A017;
+    }
+
+    .footer-bottom {
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        border-top: 1px solid #222;
+        padding-top: 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+    }
+
+    @media (max-width: 800px) {
+        .footer-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 35px;
+        }
+        .footer-bottom {
+            flex-direction: column;
+            text-align: center;
+        }
+    }
+
+    @media (max-width: 500px) {
+        .footer-grid {
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+    }
   </style>
 </head>
 <body>
@@ -188,7 +354,7 @@
       
       <div id="image-slides-track" class="carousel-track">
         <!-- Permanent Fallback Slide -->
-        <div class="carousel-slide active" style="background-color: #1a1a2e; background-image: url('https://images.unsplash.com/photo-1542869781-a272dcbc029f?auto=format&fit=crop&w=1200&q=80');">
+        <div class="carousel-slide active" style="background-color: #1a1a2e;">
           <div class="carousel-overlay"></div>
           <div class="carousel-content">
             <h2 class="text-3xl md:text-4xl font-bold font-display mb-3 text-white">Explore African Stories</h2>
@@ -198,6 +364,7 @@
         </div>
       </div>
       
+      <!-- Controls -->
       <button class="carousel-nav prev" id="img-slide-prev" aria-label="Previous image"><i data-lucide="chevron-left"></i></button>
       <button class="carousel-nav next" id="img-slide-next" aria-label="Next image"><i data-lucide="chevron-right"></i></button>
       <div class="carousel-indicators" id="img-slide-dots">
@@ -247,12 +414,12 @@
   <section class="section-container">
     <h2 class="section-title"><i data-lucide="compass" class="text-accent"></i> Browse Categories</h2>
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-      <div class="bg-surface border border-gray-800 p-6 rounded-lg text-center cursor-pointer hover:border-accent transition" data-open-auth="login"><i data-lucide="theater" class="mx-auto mb-2 text-gray-400"></i><span class="font-semibold text-sm">Drama</span></div>
-      <div class="bg-surface border border-gray-800 p-6 rounded-lg text-center cursor-pointer hover:border-accent transition" data-open-auth="login"><i data-lucide="smile" class="mx-auto mb-2 text-gray-400"></i><span class="font-semibold text-sm">Comedy</span></div>
-      <div class="bg-surface border border-gray-800 p-6 rounded-lg text-center cursor-pointer hover:border-accent transition" data-open-auth="login"><i data-lucide="swords" class="mx-auto mb-2 text-gray-400"></i><span class="font-semibold text-sm">Epic</span></div>
-      <div class="bg-surface border border-gray-800 p-6 rounded-lg text-center cursor-pointer hover:border-accent transition" data-open-auth="login"><i data-lucide="heart" class="mx-auto mb-2 text-gray-400"></i><span class="font-semibold text-sm">Romance</span></div>
-      <div class="bg-surface border border-gray-800 p-6 rounded-lg text-center cursor-pointer hover:border-accent transition" data-open-auth="login"><i data-lucide="video" class="mx-auto mb-2 text-gray-400"></i><span class="font-semibold text-sm">Documentary</span></div>
-      <div class="bg-surface border border-gray-800 p-6 rounded-lg text-center cursor-pointer hover:border-accent transition" data-open-auth="login"><i data-lucide="flame" class="mx-auto mb-2 text-gray-400"></i><span class="font-semibold text-sm">Thriller</span></div>
+      <div class="bg-surface border border-gray-800 p-6 rounded-lg text-center cursor-pointer hover:border-accent transition"><i data-lucide="theater" class="mx-auto mb-2 text-gray-400"></i><span class="font-semibold text-sm">Drama</span></div>
+      <div class="bg-surface border border-gray-800 p-6 rounded-lg text-center cursor-pointer hover:border-accent transition"><i data-lucide="smile" class="mx-auto mb-2 text-gray-400"></i><span class="font-semibold text-sm">Comedy</span></div>
+      <div class="bg-surface border border-gray-800 p-6 rounded-lg text-center cursor-pointer hover:border-accent transition"><i data-lucide="swords" class="mx-auto mb-2 text-gray-400"></i><span class="font-semibold text-sm">Epic</span></div>
+      <div class="bg-surface border border-gray-800 p-6 rounded-lg text-center cursor-pointer hover:border-accent transition"><i data-lucide="heart" class="mx-auto mb-2 text-gray-400"></i><span class="font-semibold text-sm">Romance</span></div>
+      <div class="bg-surface border border-gray-800 p-6 rounded-lg text-center cursor-pointer hover:border-accent transition"><i data-lucide="video" class="mx-auto mb-2 text-gray-400"></i><span class="font-semibold text-sm">Documentary</span></div>
+      <div class="bg-surface border border-gray-800 p-6 rounded-lg text-center cursor-pointer hover:border-accent transition"><i data-lucide="flame" class="mx-auto mb-2 text-gray-400"></i><span class="font-semibold text-sm">Thriller</span></div>
     </div>
   </section>
 
@@ -277,7 +444,7 @@
     <div class="w-full bg-gradient-to-r from-[#E67E22] to-[#D4A017] rounded-2xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between">
       <div class="mb-6 md:mb-0 text-center md:text-left">
         <h2 class="text-3xl font-display font-bold text-white mb-2">Are you a Storyteller?</h2>
-        <p class="text-white/90 text-lg">Upload your series and build your audience through our Creator Studio.</p>
+        <p class="text-white/90 text-lg">Join our Creator Studio and connect your series with audiences.</p>
       </div>
       <button class="bg-black text-white px-8 py-4 rounded-lg font-bold whitespace-nowrap hover:bg-gray-900 transition" data-open-auth="register">Join Creator Studio</button>
     </div>
@@ -312,43 +479,55 @@
   <!-- ================= FOOTER ================= -->
   <footer class="public-footer">
     <div class="footer-grid">
-      <div class="footer-col">
-        <a class="brand text-xl font-bold flex items-center mb-4" href="/">
-          <span class="brand-mark">A</span><span>AFRO<span class="text-accent">STORY</span></span>
-        </a>
-        <p class="text-sm text-gray-500 mb-4">Authentic digital storytelling from Africa to the world.</p>
-      </div>
-      <div class="footer-col">
-        <h4>Platform</h4>
-        <ul>
-          <li><a href="#" data-open-auth="login">Sign In</a></li>
-          <li><a href="#" data-open-auth="register">Join AfroStory</a></li>
-          <li><a href="#" data-open-auth="login">Creator Studio</a></li>
-        </ul>
-      </div>
-      <div class="footer-col">
-        <h4>Legal</h4>
-        <ul>
-          <li><a href="/terms.html">Terms of Service</a></li>
-          <li><a href="/privacy.html">Privacy Policy</a></li>
-          <li><a href="/cookie-policy.html">Cookie Policy</a></li>
-          <li><a href="/dmca.html">DMCA</a></li>
-          <li><a href="/disclaimer.html">Disclaimer</a></li>
-        </ul>
-      </div>
-      <div class="footer-col">
-        <h4>Support</h4>
-        <ul>
-          <li><a href="/help.html">Help Center</a></li>
-          <li><a href="/faq.html">FAQ</a></li>
-          <li><a href="/contact.html">Contact Us</a></li>
-          <li><a href="/sitemap.html">Sitemap</a></li>
-        </ul>
-      </div>
+        <!-- ABOUT -->
+        <div class="footer-col">
+            <a class="brand text-xl font-bold flex items-center mb-4" href="/">
+                <span class="brand-mark">A</span>
+                <span>AFRO<span class="text-accent">STORY</span></span>
+            </a>
+            <p class="text-sm text-gray-500 leading-relaxed">
+                Discover African stories, films, series, documentaries,
+                and original content from creators across the continent.
+            </p>
+        </div>
+
+        <!-- PLATFORM -->
+        <div class="footer-col">
+            <h4>Platform</h4>
+            <ul>
+                <li><a href="#" data-open-auth="login">Sign In</a></li>
+                <li><a href="#" data-open-auth="register">Join AfroStory</a></li>
+                <li><a href="#" data-open-auth="login">Creator Studio</a></li>
+            </ul>
+        </div>
+
+        <!-- LEGAL -->
+        <div class="footer-col">
+            <h4>Legal</h4>
+            <ul>
+                <li><a href="/terms.html">Terms of Service</a></li>
+                <li><a href="/privacy.html">Privacy Policy</a></li>
+                <li><a href="/cookie-policy.html">Cookie Policy</a></li>
+                <li><a href="/dmca.html">DMCA</a></li>
+                <li><a href="/disclaimer.html">Disclaimer</a></li>
+            </ul>
+        </div>
+
+        <!-- SUPPORT -->
+        <div class="footer-col">
+            <h4>Support</h4>
+            <ul>
+                <li><a href="/help.html">Help Center</a></li>
+                <li><a href="/faq.html">FAQ</a></li>
+                <li><a href="/contact.html">Contact Us</a></li>
+                <li><a href="/sitemap.html">Sitemap</a></li>
+            </ul>
+        </div>
     </div>
-    <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-gray-600">
-      <p>&copy; 2026 AfroStory. All rights reserved.</p>
-      <p class="mt-2 md:mt-0">support@afrostory.com</p>
+
+    <div class="footer-bottom text-xs text-gray-600">
+        <p>&copy; 2026 AfroStory. All rights reserved.</p>
+        <p>support@afristory.naterlearninghub.me</p>
     </div>
   </footer>
 
@@ -359,9 +538,6 @@
       
       <!-- LEFT SIDE: BRANDING -->
       <div class="auth-modal-left hidden md:flex w-2/5 p-8 bg-black relative flex-col justify-end">
-        <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1516055619834-3dfa1b2416f4?auto=format&fit=crop&w=600&q=80')] bg-cover bg-center opacity-40"></div>
-        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent"></div>
-        
         <div class="relative z-10">
           <div class="flex items-center mb-6">
             <span class="text-accent font-black text-3xl mr-1">A</span>
@@ -478,6 +654,7 @@
     });
 
     const authModal = document.getElementById('auth-modal');
+    
     document.querySelectorAll('[data-open-auth]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -492,11 +669,20 @@
       document.body.style.overflow = '';
     });
 
+    // Close modal on outside click
     authModal.addEventListener('click', (e) => {
       if(e.target === authModal) {
          authModal.classList.remove('active');
          document.body.style.overflow = '';
       }
+    });
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && authModal.classList.contains('active')) {
+            authModal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
     });
 
     const safeImage = value => {
@@ -555,7 +741,6 @@
         for(let index=0; index<4; index++) {
             $(`str-bar-${index+1}`).style.background = index < result.score+1 ? colors[result.score] : '#444';
         }
-        // FIXED LOGICAL OR
         $('password-feedback').textContent = result.feedback.warning || result.feedback.suggestions[0] || '';
     });
 
@@ -574,7 +759,6 @@
             show('verify');
             alertMessage('info','Verification required');
         } else {
-            // FIXED LOGICAL OR
             alertMessage('error', data.message || 'Invalid credentials');
         }
     });
@@ -585,8 +769,7 @@
         const email=$('reg-email').value.trim().toLowerCase();
         const password=$('reg-password').value;
         
-        // FIXED LOGICAL OR
-        if(!/^[a-zA-Z0-9_.\s]{3,30}$/.test(username) || !emailOk(email) || password!==$('reg-confirm').value \vert{}\vert{} !$('reg-terms').checked || zxcvbn(password).score<2) {
+        if (!/^[a-zA-Z0-9_.\s]{3,30}$/.test(username) || !emailOk(email) || password !== $('reg-confirm').value \vert{}\vert{} !$('reg-terms').checked || zxcvbn(password).score < 2) {
             return alertMessage('error','Check your registration details');
         }
         
@@ -597,7 +780,6 @@
             show('verify');
             alertMessage('success','Account created. Enter your code');
         } else {
-            // FIXED LOGICAL OR
             alertMessage('error', data.message || 'Registration failed');
         }
     });
@@ -613,7 +795,6 @@
             show('reset');
             alertMessage('success','Reset code sent');
         } else {
-            // FIXED LOGICAL OR
             alertMessage('error', data.message || 'Could not send reset code');
         }
     });
@@ -623,7 +804,6 @@
         const code=$('reset-code').value.trim();
         const newPassword=$('reset-password').value;
         
-        // FIXED LOGICAL OR
         if(!codeOk(code) || newPassword.length<6) return alertMessage('error','Enter a valid code and password');
         
         const {response,data} = await request('reset-password',{email:currentAuthEmail,code,newPassword});
@@ -631,7 +811,6 @@
             show('login');
             alertMessage('success','Password updated');
         } else {
-            // FIXED LOGICAL OR
             alertMessage('error', data.message || 'Reset failed');
         }
     });
@@ -643,7 +822,7 @@
         
         const {response,data} = await request('verify-email',{email:currentAuthEmail,code});
         if(response.ok) redirect();
-        else alertMessage('error', data.message || 'Invalid or expired code'); // FIXED LOGICAL OR
+        else alertMessage('error', data.message || 'Invalid or expired code');
     });
 
     $('resend-otp').addEventListener('click',async()=>{
@@ -694,7 +873,7 @@
 
             if(titleEl) titleEl.textContent = videoData.seriesId?.title || videoData.title || 'Authentic African Stories';
             if(descEl) descEl.textContent = videoData.description || 'Discover premium series, short films, and documentaries.';
-            if(genreEl) genreEl.textContent = videoData.genre ? `${videoData.genre.toUpperCase()}` : 'AFROSTORY ORIGINAL';
+            if(genreEl) genreEl.textContent = videoData.genre ? `${videoData.genre.toUpperCase()} ORIGINAL` : 'AFROSTORY ORIGINAL';
             
         }).catch(err => {
             console.log("Hero autoplay blocked. Moving to next.", err);
@@ -833,14 +1012,13 @@
 
                 playBtn.addEventListener('click', () => {
                     if (video.paused) {
-                        // Pause all other videos first
                         this.track.querySelectorAll('video').forEach(v => v.pause());
                         this.track.querySelectorAll('.play-pause-btn').forEach(btn => btn.style.opacity = '1');
                         this.track.querySelectorAll('.video-carousel-overlay').forEach(ov => ov.style.opacity = '1');
                         
                         video.play();
-                        playBtn.style.opacity = '0'; // Hide button while playing
-                        overlay.style.opacity = '0'; // Hide dark overlay so video is bright
+                        playBtn.style.opacity = '0'; 
+                        overlay.style.opacity = '0'; 
                     } else {
                         video.pause();
                         playBtn.style.opacity = '1';
@@ -856,7 +1034,7 @@
                 const dot = document.createElement('div');
                 dot.className = `carousel-dot ${idx === 0 ? 'active' : ''}`;
                 dot.onclick = () => {
-                    video.pause(); // Pause current before moving
+                    video.pause(); 
                     playBtn.style.opacity = '1';
                     overlay.style.opacity = '1';
                     this.goToSlide(idx);
@@ -871,7 +1049,6 @@
             const slideEls = this.track.querySelectorAll('.carousel-slide');
             const dotEls = this.dotsContainer.querySelectorAll('.carousel-dot');
 
-            // Pause whatever is playing before moving
             const currentVideo = slideEls[this.currentIndex]?.querySelector('video');
             if(currentVideo) {
                 currentVideo.pause();
@@ -934,10 +1111,5 @@
     });
 
  </script>
-
-   <script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
- <ins class="eas6a97888e31" data-zoneid="6039500"></ins> 
- <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
-
 </body>
 </html>
