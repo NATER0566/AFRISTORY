@@ -303,7 +303,7 @@ async function loadDiscover() {
 } 
 
 /* ============================================================================ */
-/* RESILIENT TIKTOK STYLE FEED & OBSERVERS */
+/* TIKTOK STYLE FEED & ROCKET SLOTH ADS */
 /* ============================================================================ */
 let currentlyPlaying = null;
 const feedObserver = new IntersectionObserver((entries) => {
@@ -427,13 +427,31 @@ async function openEpisode(id) {
             card.dataset.episodeId = episode._id; 
             
             let lockScreen = ''; 
+            
+            // =========================================================================
+            // ROCKET SLOTH AD IMPLEMENTATION & COIN UNLOCK OVERLAY
+            // =========================================================================
             if (!episode.hasAccess) { 
                 lockScreen = `
-                <div class="feed-lock-overlay hidden" id="lock-${episode._id}"> 
+                <div class="feed-lock-overlay hidden" id="lock-${episode._id}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: 50;"> 
                     <span class="lock-icon" style="font-size:40px;color:#d4a017;">◈</span> 
-                    <h3 style="color:#fff; margin-top:15px;">Premium Story</h3> 
-                    <p style="color:#ccc; margin-bottom: 20px;">You've reached the end of the free preview.</p> 
-                    <button class="button button-accent" data-action="unlock-current">Unlock episode</button> 
+                    <h3 style="color:#fff; margin-top:15px; font-size: 22px;">Premium Story</h3> 
+                    <p style="color:#ccc; margin-bottom: 25px; font-size: 14px; text-align: center; padding: 0 20px;">You've reached the end of the free preview.</p> 
+                    
+                    <div style="display:flex; flex-direction:column; gap:12px; width: 85%; max-width: 300px;">
+                        
+                        <!-- ROCKET SLOTH REWARDED BUTTON -->
+                        <button type="button" id="rs-unlock-btn-${episode._id}" data-rs-rewarded class="button button-accent" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:bold; font-size:15px; padding:12px; border-radius:8px;">
+                            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> 
+                            Watch Ad to Unlock
+                        </button>
+                        
+                        <!-- EXISTING COIN UNLOCK BUTTON -->
+                        <button type="button" class="button" data-action="unlock-current" style="width:100%; background:transparent; border:1px solid #555; color:#fff; font-weight:600; font-size:14px; padding:12px; border-radius:8px;">
+                            Use ${episode.coinCost || 10} Coins
+                        </button>
+
+                    </div>
                 </div>`; 
             } 
 
@@ -546,6 +564,38 @@ async function openEpisode(id) {
             
             feedContainer.appendChild(card); 
             feedObserver.observe(card); 
+            
+            // =========================================================================
+            // ROCKET SLOTH REWARD LISTENER
+            // =========================================================================
+            const rsBtn = card.querySelector(`#rs-unlock-btn-${episode._id}`);
+            if (rsBtn) {
+                rsBtn.addEventListener('rs:rewarded', function (event) {
+                    const status = event.detail && event.detail.status;
+                    
+                    if (status) { // Fired when ad is complete or returns 'preview'
+                        toast('Ad complete! Unlocking episode...', 'success');
+                        
+                        episode.hasAccess = true;
+                        if (state.currentEpisode && state.currentEpisode._id === episode._id) {
+                            state.currentEpisode.hasAccess = true;
+                        }
+                        
+                        const lockUI = card.querySelector(`#lock-${episode._id}`);
+                        if (lockUI) lockUI.classList.add('hidden');
+                        
+                        videoEl.setAttribute('controls', 'true');
+                        videoEl.play().catch(e => console.log("Autoplay blocked:", e));
+                        
+                        // Optionally tell the backend the user unlocked via AD
+                        api('/wallet/unlock-episode', { 
+                            method: 'POST', 
+                            headers: { 'Content-Type': 'application/json' }, 
+                            body: JSON.stringify({ episodeId: episode._id, method: 'AD' }) 
+                        }).catch(() => {});
+                    }
+                });
+            }
         }); 
     } catch (error) {
         logFrontendError('open_episode_failed', error.message, error.stack);
@@ -572,7 +622,7 @@ async function saveProgressFeed(episode, video, completed = false) {
 }
 
 /* ============================================================================ */
-/* PREMIUM EPISODE UNLOCK & ADSCOD SPONSOR INTEGRATION */
+/* PREMIUM EPISODE UNLOCK (COINS ONLY NOW) */
 /* ============================================================================ */
 async function unlockEpisode() {
     if (!state.currentEpisode) return;
@@ -583,41 +633,22 @@ async function unlockEpisode() {
             return;
         }
 
-        let choice = 'CANCEL';
-
         if (window.Swal) { 
-            const showSponsor = state.currentEpisode.adUnlockable && window.AfroStoryAds && window.AfroStoryAds.isEnabled;
-            
             const result = await Swal.fire({ 
-                title: '🎬 Episode Locked', 
-                html: `<p style="font-size:15px; line-height:1.6;"><strong style="color:#d4a017;">💰 Premium Story</strong></p>
-                       <p style="font-size:15px; margin-top:15px;">Use <strong style="color:#d4a017;">${state.currentEpisode.coinCost || 10} coins</strong> to unlock permanently.</p>`, 
+                title: '🎬 Premium Story', 
+                html: `<p style="font-size:15px; margin-top:15px;">Use <strong style="color:#d4a017;">${state.currentEpisode.coinCost || 10} coins</strong> to unlock permanently.</p>`, 
                 showCancelButton: true, 
-                showDenyButton: showSponsor,
                 confirmButtonText: `💰 Unlock (${state.currentEpisode.coinCost || 10} Coins)`, 
-                denyButtonText: 'View Sponsored Message',
                 cancelButtonText: 'Cancel', 
                 confirmButtonColor: '#d4a017', 
-                denyButtonColor: '#242424',
                 background: '#1b1b1b', 
                 color: '#f5f5f5', 
                 allowOutsideClick: false, 
                 allowEscapeKey: false 
             }); 
             
-            if (result.isConfirmed) choice = 'COIN';
-            else if (result.isDenied) choice = 'SPONSOR';
-            else return; 
+            if (!result.isConfirmed) return; 
         } 
-        
-        if (choice === 'SPONSOR') {
-            try {
-                await window.AfroStoryAds.showSponsoredMessage();
-            } catch (e) {
-                toast(e.message, 'error');
-            }
-            return; 
-        }
         
         const unlockRes = await api('/wallet/unlock-episode', { 
             method: 'POST', 
@@ -672,8 +703,6 @@ async function loadWallet() {
         if (transList) {
             transList.innerHTML = (transactions.transactions || []).map(item => `<div class="data-row"><div><strong>${esc(item.description || item.type)}</strong><p>${new Date(item.createdAt).toLocaleDateString()}</p></div><span class="data-value">${esc(item.type === 'SPEND' ? '-' : '+')}${Number(item.amount || 0).toLocaleString()}</span></div>`).join('') || '<p>No transactions yet.</p>'; 
         }
-        
-        if (window.AfroStoryAds && window.AfroStoryAds.refresh) await window.AfroStoryAds.refresh().catch(e => console.warn(e)); 
     } catch (error) { toast(error.message, 'error'); } 
 } 
 
@@ -1310,7 +1339,6 @@ document.addEventListener('click', async event => {
 
         if (event.target.id === 'mobile-more-sheet' || event.target.closest('.sheet-item')) {
             $('#mobile-more-sheet')?.classList.add('hidden');
-            // Do not return here if clicking a sheet item, let the rest of the script process the data-section
         }
 
         const section = event.target.closest('[data-section]');          
@@ -1489,7 +1517,6 @@ document.addEventListener('click', async event => {
         if (event.target.closest('[data-action="open-upload"]')) { 
             const el = $('#upload-modal');
             if (el) el.classList.remove('hidden'); 
-            // Only reload creator stats if they are already verified
             loadCreator(); 
         }
 
@@ -1671,7 +1698,6 @@ if (becomeCreatorForm) {
                 body: JSON.stringify({ brandName, bio }) 
             });                                       
             
-            // Immediately switch to the pending screen
             const dashboard = $('#creator-dashboard');
             const onboarding = $('#creator-onboarding');
             const pending = $('#creator-pending');
@@ -1718,8 +1744,6 @@ async function boot() {
     try {
         state.user = await api('/auth/me').catch(() => null); 
         renderHeaderUser(state.user);
-        
-        // Force evaluation of Admin buttons the moment the user object loads
         applyAdminVisibility();
         
         if (state.user) {
@@ -1753,7 +1777,6 @@ async function boot() {
         ensureClassificationControls(); 
         await loadDiscover().catch(e => console.warn(e)); 
         refreshNotificationBadge().catch(e => console.warn(e)); 
-        if(window.AfroStoryAds && window.AfroStoryAds.refresh) window.AfroStoryAds.refresh().catch(e => console.warn(e)); 
         setupLazyLoading(); 
         return true; 
     } catch (error) {
