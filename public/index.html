@@ -44,98 +44,89 @@
     body { background-color: #111111; color: #f5f5f5; font-family: 'Inter', sans-serif; overflow-x: hidden; margin: 0; -webkit-font-smoothing: antialiased; }
     button { cursor: pointer; font-family: inherit; }
     
-    /* ================= HEADER & EXACT LOGO ALIGNMENT ================= */
+    /* ================= HEADER & LOGO ALIGNMENT ================= */
     .public-header {
-      position: fixed; top: 0; left: 0; right: 0; min-height: 80px; z-index: 1000;
+      position: fixed; top: 0; left: 0; right: 0; min-height: 88px; z-index: 1000;
       display: flex; align-items: center; justify-content: space-between; padding: 12px 5vw;
-      background: rgba(17,17,17,0.98); border-bottom: 1px solid #292929; gap: 28px;
+      background: rgba(17,17,17,0.97); border-bottom: 1px solid #292929; gap: 28px;
     }
     
-    .brand-logo-container { display: flex; align-items: center; gap: 12px; text-decoration: none; min-width: 0; flex-shrink: 1; }
-    
-    .brand-mark-box { 
-        width: 44px; height: 44px; flex-shrink: 0; 
-        background-color: #D4A017; color: #111; 
-        font-family: Georgia, 'Times New Roman', serif; font-weight: bold; font-size: 26px; 
-        display: flex; align-items: center; justify-content: center; 
-        border-radius: 6px; 
-    }
-    
-    .brand-text { 
-        display: flex; flex-direction: column; line-height: 1.05;
-        font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 900; letter-spacing: 0.5px; 
-    }
+    .brand-logo-container { display: flex; align-items: center; gap: 18px; text-decoration: none; min-width: 0; flex-shrink: 1; }
+    .brand-mark-box { width: 46px; height: 46px; font-size: 28px; flex-shrink: 0; background-color: #D4A017; color: #111; font-family: Georgia, 'Times New Roman', serif; font-weight: bold; display: flex; align-items: center; justify-content: center; transform: rotate(-6deg); border-radius: 4px; }
+    .brand-text { font-size: 25px; font-weight: 900; letter-spacing: 1px; }
     .brand-text-afro { color: #ffffff; }
     .brand-text-story { color: #D4A017; }
     
     .header-actions { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
-    .btn-outline, .btn-solid { min-height: 44px; padding: 0 20px; border-radius: 8px; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; transition: 0.2s; }
-    .btn-outline { border: 1px solid #444; color: #ccc; background: transparent; }
-    .btn-outline:hover { border-color: #D4A017; color: #D4A017; }
+    .btn-outline, .btn-solid { min-height: 44px; padding: 0 20px; border-radius: 8px; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; transition: 0.2s; }
+    .btn-outline { border: 1px solid #D4A017; color: #D4A017; background: transparent; }
+    .btn-outline:hover { background: #D4A017; color: #111; }
     .btn-solid { background: #E67E22; color: #fff; border: 1px solid #E67E22; }
     .btn-solid:hover { background: #cf6f1b; border-color: #cf6f1b; }
 
     @media (max-width: 600px) {
-        .public-header { min-height: 75px; padding: 10px 18px; gap: 16px; }
-        .brand-logo-container { gap: 10px; }
-        .brand-mark-box { width: 38px; height: 38px; font-size: 22px; }
-        .brand-text { font-size: 18px; }
+        .public-header { min-height: 82px; padding: 10px 18px; gap: 16px; }
+        .brand-logo-container { gap: 12px; }
+        .brand-mark-box { width: 40px; height: 40px; font-size: 24px; }
+        .brand-text { font-size: 20px; letter-spacing: .5px; }
         .header-actions { gap: 8px; }
-        .btn-outline, .btn-solid { min-height: 38px; padding: 0 14px; font-size: 13px; }
+        .btn-outline, .btn-solid { min-height: 40px; padding: 0 12px; font-size: 12px; }
     }
 
-    @media (max-width: 380px) {
-        .brand-text { font-size: 16px; }
-        .btn-outline, .btn-solid { padding: 0 10px; font-size: 11px; }
+    @media (max-width: 390px) {
+        .brand-text { width: 75px; white-space: normal; line-height: 0.95; }
+        .brand-text-afro, .brand-text-story { display: block; }
+        .header-actions { gap: 6px; }
+        .btn-outline, .btn-solid { padding: 0 9px; font-size: 11px; }
     }
 
-    /* ================= 1. MAIN HERO (STATIC & ACCURATE) ================= */
-    .afrostory-hero { 
-        position: relative; width: 100%; min-height: 560px; padding: 120px 5vw 80px; 
-        background: linear-gradient(135deg, #111111 0%, #151515 55%, #1b1710 100%); 
-        border-bottom: 1px solid #252525; overflow: hidden; margin-top: 80px; 
-    }
+    /* ================= MAIN HERO (STATIC) ================= */
+    .afrostory-hero { position: relative; width: 100%; min-height: 560px; padding: 110px 5vw 70px; background: radial-gradient(circle at 80% 35%, rgba(212,160,23,0.12), transparent 35%), linear-gradient(135deg, #111111 0%, #151515 55%, #1b1710 100%); border-bottom: 1px solid #252525; overflow: hidden; margin-top: 88px; }
+    .afrostory-hero::before { content: ""; position: absolute; width: 520px; height: 520px; right: -180px; top: -150px; border: 1px solid rgba(212,160,23,0.12); border-radius: 50%; }
+    .afrostory-hero::after { content: ""; position: absolute; width: 350px; height: 350px; right: 20px; bottom: -220px; border: 1px solid rgba(212,160,23,0.08); border-radius: 50%; }
 
-    /* Elegant Intersecting Rings */
-    .afrostory-hero::before { 
-        content: ""; position: absolute; width: 60vw; height: 60vw; min-width: 500px; min-height: 500px; 
-        left: -15vw; top: -10vw; border: 1px solid rgba(212,160,23,0.15); border-radius: 50%; pointer-events: none; 
-    }
-    .afrostory-hero::after { 
-        content: ""; position: absolute; width: 80vw; height: 80vw; min-width: 700px; min-height: 700px; 
-        right: -25vw; bottom: -20vw; border: 1px solid rgba(212,160,23,0.1); border-radius: 50%; pointer-events: none; 
-    }
-
-    .hero-inner { position: relative; z-index: 2; width: 100%; max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 80px; }
-    .hero-copy { max-width: 700px; }
-    .hero-eyebrow { display: inline-flex; align-items: center; gap: 10px; color: #D4A017; font-size: 13px; font-weight: 800; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase;}
+    .hero-inner { position: relative; z-index: 2; width: 100%; max-width: 1250px; min-height: 430px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 80px; }
+    .hero-copy { max-width: 720px; }
+    .hero-eyebrow { display: inline-flex; align-items: center; gap: 10px; color: #D4A017; font-size: 13px; font-weight: 800; letter-spacing: 2px; margin-bottom: 20px; }
     .hero-eyebrow::before { content: ""; width: 32px; height: 2px; background: #D4A017; }
-    
-    .hero-copy h1 { margin: 0 0 24px; font-family: 'Space Grotesk', sans-serif; font-size: clamp(3rem, 6vw, 5.5rem); line-height: 1.05; font-weight: 900; color: #fff; }
-    .hero-copy p { max-width: 600px; margin: 0 0 35px; color: #ccc; font-size: clamp(1rem, 2vw, 1.2rem); line-height: 1.7; }
+    .hero-copy h1 { margin: 0 0 24px; font-family: 'Space Grotesk', sans-serif; font-size: clamp(3rem, 6vw, 5.8rem); line-height: 0.98; letter-spacing: -2px; font-weight: 900; color: #fff; }
+    .hero-copy p { max-width: 650px; margin: 0 0 32px; color: #bdbdbd; font-size: clamp(1rem, 2vw, 1.2rem); line-height: 1.7; }
 
-    .hero-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-    .hero-primary { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 16px 28px; border: 0; border-radius: 8px; background: #E67E22; color: #fff; font-size: 16px; font-weight: 700; transition: 0.2s ease; }
+    .hero-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .hero-primary { display: inline-flex; align-items: center; justify-content: center; gap: 9px; padding: 14px 24px; border: 0; border-radius: 7px; background: #E67E22; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.2s ease; }
     .hero-primary:hover { background: #cf6f1b; transform: translateY(-2px); }
-    .hero-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 15px 26px; border: 1px solid #444; border-radius: 8px; color: #ddd; font-size: 16px; font-weight: 600; transition: 0.2s ease; }
+    .hero-primary svg { width: 18px; height: 18px; }
+    .hero-secondary { display: inline-flex; align-items: center; gap: 8px; padding: 13px 22px; border: 1px solid #444; border-radius: 7px; color: #ddd; text-decoration: none; font-size: 15px; font-weight: 600; transition: 0.2s ease; cursor: pointer; }
     .hero-secondary:hover { border-color: #D4A017; color: #D4A017; }
+    .hero-secondary svg { width: 16px; height: 16px; }
+
+    .hero-brand-panel { width: 330px; min-width: 330px; display: flex; align-items: center; gap: 22px; padding: 32px; border: 1px solid #303030; border-radius: 18px; background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015)); box-shadow: 0 25px 60px rgba(0,0,0,0.35); }
+    .hero-brand-mark { width: 78px; height: 78px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #D4A017; color: #111; font-family: Georgia, serif; font-size: 48px; font-weight: bold; transform: rotate(-6deg); border-radius: 4px; }
+    .hero-brand-name { font-family: 'Space Grotesk', sans-serif; font-size: 27px; font-weight: 900; letter-spacing: 0.5px; }
+    .hero-brand-name span { color: #fff; }
+    .hero-brand-name strong { color: #D4A017; }
+    .hero-brand-panel p { margin: 10px 0 0; color: #777; font-size: 13px; line-height: 1.6; }
 
     @media (max-width: 850px) {
-        .afrostory-hero { min-height: auto; padding: 60px 24px 60px; margin-top: 75px; }
-        .hero-inner { flex-direction: column; align-items: stretch; gap: 40px; }
-        .hero-copy h1 { font-size: clamp(2.8rem, 12vw, 4rem); }
-        .hero-copy p { font-size: 1.05rem; }
+        .afrostory-hero { min-height: auto; padding: 105px 24px 55px; margin-top: 80px; }
+        .hero-inner { min-height: auto; flex-direction: column; align-items: stretch; gap: 40px; }
+        .hero-copy h1 { font-size: clamp(2.7rem, 12vw, 4rem); letter-spacing: -1.5px; }
+        .hero-copy p { font-size: 1rem; line-height: 1.65; }
+        .hero-brand-panel { width: 100%; min-width: 0; max-width: 520px; }
     }
     @media (max-width: 500px) {
-        .afrostory-hero { padding: 40px 20px 50px; }
-        .hero-actions { flex-direction: column; align-items: stretch; width: 100%; gap: 12px; }
-        .hero-primary, .hero-secondary { width: 100%; padding: 16px; }
+        .afrostory-hero { padding: 40px 20px 45px; margin-top: 80px; }
+        .hero-actions { width: 100%; flex-direction: column; align-items: stretch; }
+        .hero-primary, .hero-secondary { width: 100%; justify-content: center; }
+        .hero-brand-panel { padding: 24px; flex-direction: column; text-align: center; }
+        .hero-brand-mark { width: 64px; height: 64px; font-size: 38px; }
+        .hero-brand-name { font-size: 22px; }
     }
 
-    /* ================= CAROUSEL STRUCTURE (For Promo Image & Video) ================= */
-    .carousel-section { padding: 40px 4vw; background: #111; border-top: 1px solid #1a1a1a; }
+    /* ================= UNIVERSAL CAROUSEL STRUCTURE ================= */
+    .carousel-section { padding: 40px 4vw; background: #111; }
     .carousel-header { font-family: 'Space Grotesk', sans-serif; font-size: 1.5rem; font-weight: 700; margin-bottom: 20px; color: #fff; display: flex; align-items: center; gap: 8px;}
-    .carousel-wrapper { width: 100%; max-width: 1200px; margin: 0 auto; height: 50vh; min-height: 350px; max-height: 500px; position: relative; border-radius: 16px; overflow: hidden; background: #1B1B1B; border: 1px solid #333; }
+    .carousel-wrapper { width: 100%; max-width: 1200px; margin: 0 auto; height: 50vh; min-height: 350px; max-height: 500px; position: relative; border-radius: 12px; overflow: hidden; background: #1B1B1B; border: 1px solid #333; }
     .carousel-track { width: 100%; height: 100%; position: relative; }
     .carousel-slide { position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s ease-in-out; background-size: cover; background-position: center; z-index: 1; display: flex; align-items: center; justify-content: center; }
     .carousel-slide.active { opacity: 1; z-index: 2; }
@@ -144,9 +135,9 @@
     .video-carousel-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); z-index: 2; pointer-events: none; transition: background 0.3s; }
     
     .carousel-content { position: relative; z-index: 3; height: 100%; width: 100%; display: flex; flex-direction: column; justify-content: center; padding: 40px; max-width: 600px; }
-    .video-carousel-content { position: absolute; bottom: 0; left: 0; right: 0; padding: 30px; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, transparent 100%); z-index: 3; pointer-events: none;}
+    .video-carousel-content { position: absolute; bottom: 0; left: 0; right: 0; padding: 30px; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%); z-index: 3; pointer-events: none;}
     
-    .carousel-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.6); color: white; border: 1px solid #555; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: 0.2s; }
+    .carousel-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.6); color: white; border: 1px solid #555; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 50%; transition: 0.2s; }
     .carousel-nav:hover { background: #D4A017; color: #111; border-color: #D4A017; }
     .carousel-nav.prev { left: 15px; }
     .carousel-nav.next { right: 15px; }
@@ -155,20 +146,11 @@
     .carousel-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.4); cursor: pointer; transition: 0.3s; }
     .carousel-dot.active { background: #D4A017; transform: scale(1.3); }
 
-    .play-pause-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; background: rgba(212,160,23,0.9); color: #111; width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-    .play-pause-btn:hover { transform: translate(-50%, -50%) scale(1.1); }
+    .play-pause-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; background: rgba(212,160,23,0.9); color: #111; width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; transition: 0.2s; pointer-events: auto; }
+    .play-pause-btn:hover { background: #D4A017; transform: translate(-50%, -50%) scale(1.1); }
     .carousel-slide video { width: 100%; height: 100%; object-fit: cover; }
 
-    @media (max-width: 768px) {
-        .carousel-wrapper { height: 45vh; min-height: 300px; }
-        .carousel-content { padding: 20px; }
-    }
-
-    /* ================= ROCKET SLOTH ADS ================= */
-    .ad-container { width: 100%; max-width: 1200px; margin: 30px auto; padding: 0 4vw; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-    .ad-container > div { width: 100%; display: flex; justify-content: center; }
-
-    /* ================= CONTENT GRIDS & CATEGORIES ================= */
+    /* ================= CONTENT GRIDS & TRENDING CARDS OVERLAY STYLES ================= */
     .section-container { padding: 20px 4vw 40px; max-width: 1400px; margin: 0 auto; }
     .section-title { font-family: 'Space Grotesk', sans-serif; font-size: 1.8rem; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; color: #fff; }
     .scroll-hint { font-size: 13px; color: #888; margin-bottom: 24px; display: flex; align-items: center; gap: 6px; }
@@ -176,19 +158,44 @@
     .horizontal-scroll { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 16px; scroll-snap-type: x mandatory; scrollbar-width: none; }
     .horizontal-scroll::-webkit-scrollbar { display: none; }
     
-    .content-card { flex: 0 0 240px; scroll-snap-align: start; transition: transform 0.2s; position: relative; border-radius: 8px; overflow: hidden; background: #1B1B1B; border: 1px solid #333; display: flex; flex-direction: column;}
-    .content-card:hover { transform: translateY(-5px); border-color: #D4A017; }
-    .card-img-wrap { width: 100%; aspect-ratio: 3/4; background: #222; position: relative; }
-    .card-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
-    .card-info { padding: 14px; flex: 1; display: flex; flex-direction: column; justify-content: space-between;}
-    .card-title { font-weight: 700; font-size: 16px; margin: 0 0 8px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .card-meta { font-size: 12px; color: #999; display: flex; justify-content: space-between; align-items: center; }
+    /* OVERLAY CARD DESIGN (No more black boxes below images) */
+    .content-card { 
+        flex: 0 0 280px; 
+        aspect-ratio: 16/9; /* Standard cinematic video ratio */
+        scroll-snap-align: start; 
+        cursor: pointer; 
+        position: relative; 
+        border-radius: 8px; 
+        overflow: hidden; 
+        border: 1px solid #333; 
+        display: block; 
+        background: #111;
+        padding: 0;
+        text-align: left;
+    }
+    .content-card:hover { border-color: #D4A017; }
+    .content-card img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; display: block; }
+    .content-card:hover img { transform: scale(1.05); }
+    
+    .card-overlay { 
+        position: absolute; inset: 0; 
+        background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.3) 60%, transparent 100%); 
+        display: flex; flex-direction: column; justify-content: flex-end; 
+        padding: 16px; pointer-events: none; 
+    }
+    .card-title { font-weight: 700; font-size: 15px; color: #fff; margin: 0 0 6px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+    .card-meta { font-size: 12px; color: #ccc; display: flex; justify-content: space-between; align-items: center; }
 
-    .category-card { background: #1B1B1B; border: 1px solid #333; padding: 24px; border-radius: 12px; text-align: center; transition: 0.2s; display: flex; flex-direction: column; align-items: center;}
+    /* Categories */
+    .category-card { background: #1B1B1B; border: 1px solid #333; padding: 24px; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center;}
     .category-card:hover { border-color: #D4A017; background: #222; transform: translateY(-3px);}
     .category-card svg { margin-bottom: 12px; color: #888; transition: color 0.2s; }
     .category-card:hover svg { color: #D4A017; }
     .category-card span { font-weight: 600; font-size: 14px; }
+
+    /* Ads Container for Rocket Sloth */
+    .ad-container { width: 100%; max-width: 1200px; margin: 30px auto; background: rgba(27, 27, 27, 0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center; min-height: 120px; overflow: hidden; }
+    .ad-container > div { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
 
     /* ================= AUTH MODAL ================= */
     .auth-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 15px; opacity: 0; transition: opacity 0.3s ease; }
@@ -200,7 +207,7 @@
     .auth-modal-left-content { position: relative; z-index: 10; }
     
     .auth-modal-right { width: 60%; padding: 30px 40px; background: #1B1B1B; overflow-y: auto; }
-    .modal-close { position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.5); border: none; color: #fff; font-size: 20px; width: 36px; height: 36px; border-radius: 50%; transition: 0.2s; z-index: 50; display: flex; align-items: center; justify-content: center;}
+    .modal-close { position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.5); border: none; color: #fff; font-size: 20px; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; transition: 0.2s; z-index: 50; display: flex; align-items: center; justify-content: center;}
     .modal-close:hover { background: #D4A017; color: #111; }
 
     @media (max-width: 768px) {
@@ -230,8 +237,8 @@
     .footer-col h4 { color: #fff; margin: 0 0 24px; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
     
     .footer-links-box { display: flex; flex-direction: column; gap: 12px; }
-    .footer-links-box a { display: flex; align-items: center; justify-content: center; background: #141414; border: 1px solid #2a2a2a; padding: 14px 16px; border-radius: 8px; color: #bbb; font-size: 13px; font-weight: 600; text-align: center; transition: all 0.2s ease; }
-    .footer-links-box a:hover { background: rgba(212,160,23,0.1); color: #D4A017; border-color: #D4A017; transform: translateY(-2px); }
+    .footer-links-box a, .footer-links-box button { width: 100%; display: flex; align-items: center; justify-content: center; background: #141414; border: 1px solid #2a2a2a; padding: 14px 16px; border-radius: 8px; color: #bbb; font-size: 13px; font-weight: 600; text-align: center; transition: all 0.2s ease; cursor: pointer; }
+    .footer-links-box a:hover, .footer-links-box button:hover { background: rgba(212,160,23,0.1); color: #D4A017; border-color: #D4A017; transform: translateY(-2px); }
 
     .footer-bottom { width: 100%; max-width: 1200px; margin: 0 auto; border-top: 1px solid #222; padding-top: 30px; display: flex; justify-content: space-between; align-items: center; gap: 20px; color: #666; font-size: 13px; }
 
@@ -247,7 +254,7 @@
 </head>
 <body>
 
-  <!-- ================= HEADER (CLEAN LOGO + AUTH ONLY) ================= -->
+  <!-- ================= HEADER ================= -->
   <header class="public-header" id="main-header">
     <a class="brand-logo-container" href="/">
       <div class="brand-mark-box">A</div>
@@ -285,7 +292,8 @@
                 </button>
             </div>
         </div>
-        <div class="hero-brand-panel hidden md:flex">
+        <!-- Logo Panel (Now visible on BOTH Desktop & Mobile) -->
+        <div class="hero-brand-panel">
             <div class="brand-mark-box" style="width: 78px; height: 78px; font-size: 48px;">A</div>
             <div>
                 <div class="brand-text" style="font-size: 27px; line-height: 1;">
@@ -297,10 +305,11 @@
     </div>
   </section>
 
-  <!-- ================= PROMOTIONAL IMAGE SLIDESHOW (Admin Controlled) ================= -->
+  <!-- ================= PROMOTIONAL IMAGE SLIDESHOW ================= -->
   <section class="carousel-section pt-10 pb-4">
     <h2 class="carousel-header"><i data-lucide="sparkles" class="text-accent"></i> Discover AfroStory</h2>
     <div class="carousel-wrapper" id="promo-image-slideshow">
+      
       <div id="image-slides-track" class="carousel-track">
         <!-- Permanent Fallback Slide -->
         <div class="carousel-slide active" style="background-color: #1a1a2e; background-image: url('https://images.unsplash.com/photo-1542869781-a272dcbc029f?auto=format&fit=crop&w=1200&q=80');">
@@ -312,16 +321,18 @@
           </div>
         </div>
       </div>
+      
       <button class="carousel-nav prev" id="img-slide-prev" aria-label="Previous image"><i data-lucide="chevron-left"></i></button>
       <button class="carousel-nav next" id="img-slide-next" aria-label="Next image"><i data-lucide="chevron-right"></i></button>
       <div class="carousel-indicators" id="img-slide-dots"><div class="carousel-dot active"></div></div>
     </div>
   </section>
 
-  <!-- ================= PROMOTIONAL VIDEO SLIDESHOW (Admin Controlled) ================= -->
-  <section class="carousel-section pt-4 pb-8" style="border-top: 1px solid #1a1a1a;">
+  <!-- ================= PROMOTIONAL VIDEO SLIDESHOW ================= -->
+  <section class="carousel-section pt-4 pb-8">
     <h2 class="carousel-header"><i data-lucide="award" class="text-accent"></i> Featured Announcements</h2>
     <div class="carousel-wrapper" id="promo-video-slideshow">
+      
       <div id="video-slides-track" class="carousel-track">
         <!-- Permanent Fallback Slide -->
         <div class="carousel-slide active" style="background-color: #000;">
@@ -332,6 +343,7 @@
            </div>
         </div>
       </div>
+      
       <button class="carousel-nav prev" id="vid-slide-prev" aria-label="Previous video"><i data-lucide="chevron-left"></i></button>
       <button class="carousel-nav next" id="vid-slide-next" aria-label="Next video"><i data-lucide="chevron-right"></i></button>
       <div class="carousel-indicators" id="vid-slide-dots"><div class="carousel-dot active"></div></div>
@@ -357,12 +369,12 @@
   <section class="section-container">
     <h2 class="section-title"><i data-lucide="compass" class="text-accent"></i> Browse Categories</h2>
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-      <button class="category-card" data-open-auth="login"><i data-lucide="theater" width="32" height="32"></i><span>Drama</span></button>
-      <button class="category-card" data-open-auth="login"><i data-lucide="smile" width="32" height="32"></i><span>Comedy</span></button>
-      <button class="category-card" data-open-auth="login"><i data-lucide="swords" width="32" height="32"></i><span>Epic</span></button>
-      <button class="category-card" data-open-auth="login"><i data-lucide="heart" width="32" height="32"></i><span>Romance</span></button>
-      <button class="category-card" data-open-auth="login"><i data-lucide="video" width="32" height="32"></i><span>Documentary</span></button>
-      <button class="category-card" data-open-auth="login"><i data-lucide="flame" width="32" height="32"></i><span>Thriller</span></button>
+      <div class="category-card" data-open-auth="login"><i data-lucide="theater" width="32" height="32"></i><span>Drama</span></div>
+      <div class="category-card" data-open-auth="login"><i data-lucide="smile" width="32" height="32"></i><span>Comedy</span></div>
+      <div class="category-card" data-open-auth="login"><i data-lucide="swords" width="32" height="32"></i><span>Epic</span></div>
+      <div class="category-card" data-open-auth="login"><i data-lucide="heart" width="32" height="32"></i><span>Romance</span></div>
+      <div class="category-card" data-open-auth="login"><i data-lucide="video" width="32" height="32"></i><span>Documentary</span></div>
+      <div class="category-card" data-open-auth="login"><i data-lucide="flame" width="32" height="32"></i><span>Thriller</span></div>
     </div>
   </section>
 
