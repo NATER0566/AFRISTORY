@@ -38,7 +38,6 @@ function alertMessage(icon, title) {
 
 function redirect() { window.location.assign('/app.html'); }
 
-// Optionally redirect logged-in users automatically
 async function checkSession() {
     try { 
         const { response } = await request('/auth/me', null, 'GET'); 
@@ -60,12 +59,10 @@ const safeImage = value => {
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     
-    // Auto-check session on load
     if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
         checkSession();
     }
 
-    // Initialize Lucide Icons if available
     if (window.lucide && window.lucide.createIcons) {
         window.lucide.createIcons();
     }
@@ -118,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const toggleBtn = event.target.closest('[data-password-toggle]');
         if (toggleBtn) {
-            const input = $(toggleBtn.dataset.passwordToggle);
+            const input = $(toggleBtn.dataset.passwordToggle.replace('#', '')); // Strip # if present
             if (input) {
                 const visible = input.type === 'text';
                 input.type = visible ? 'password' : 'text';
@@ -176,7 +173,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const termsChecked = $('reg-terms')?.checked;
         const score = window.zxcvbn ? zxcvbn(password).score : 3;
 
-        if (!/^[a-zA-Z0-9_.\s]{3,30}$/.test(username) || !emailOk(email) || password !== confirmPw || !termsChecked || score < 2) {
+        // FIXED LOGICAL OR OPERATORS
+        if (
+            !/^[a-zA-Z0-9_.\s]{3,30}$/.test(username) || 
+            !emailOk(email) || 
+            password !== confirmPw || 
+            !termsChecked || 
+            score < 2
+        ) {
             return alertMessage('error', 'Check your registration details');
         }
         
@@ -257,7 +261,6 @@ document.addEventListener('DOMContentLoaded', () => {
         alertMessage(response.ok ? 'success' : 'error', data.message || (response.ok ? 'New code sent' : 'Could not resend code'));
     });
 
-    // Check URL parameters for Auth errors
     const authError = new URLSearchParams(window.location.search).get('authError'); 
     if (authError) { 
         window.history.replaceState({}, '', '/'); 
@@ -268,127 +271,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // HOMEPAGE CAROUSELS & CONTENT
     // ==========================================
 
-    // 1. MAIN HERO CAROUSEL
-    let heroVideos = [];
-    let currentHeroIdx = 0;
-    const bgVideoEl = document.getElementById('hero-bg-video');
-    
-    function playHeroVideo(index) {
-        if (heroVideos.length === 0 || !bgVideoEl) return;
-        currentHeroIdx = index % heroVideos.length;
-        const videoData = heroVideos[currentHeroIdx];
-        const mediaUrl = videoData.mediaUrl || videoData.hlsUrl || videoData.videoUrl;
-
-        bgVideoEl.classList.remove('active');
-
-        setTimeout(() => {
-            if (mediaUrl && mediaUrl.includes('.m3u8') && window.Hls && window.Hls.isSupported()) {
-                const hls = new window.Hls();
-                hls.loadSource(mediaUrl);
-                hls.attachMedia(bgVideoEl);
-            } else if (mediaUrl) {
-                bgVideoEl.src = mediaUrl;
-            }
-
-            bgVideoEl.poster = videoData.thumbnailUrl || videoData.seriesId?.coverImage || '';
-
-            bgVideoEl.play().then(() => {
-                bgVideoEl.classList.add('active');
-                const titleEl = document.getElementById('hero-title');
-                const descEl = document.getElementById('hero-desc');
-                const genreEl = document.getElementById('hero-genre');
-
-                if (titleEl) titleEl.textContent = videoData.seriesId?.title || videoData.title || 'Authentic African Stories';
-                if (descEl) descEl.textContent = videoData.description || 'Discover premium series, short films, and documentaries.';
-                if (genreEl) genreEl.textContent = videoData.genre ? `${videoData.genre.toUpperCase()} ORIGINAL` : 'AFROSTORY ORIGINAL';
-                
-            }).catch(err => {
-                console.log("Hero autoplay blocked. Moving to next.", err);
-                setTimeout(() => playHeroVideo(currentHeroIdx + 1), 2000);
-            });
-        }, 500); 
-    }
-
-    if (bgVideoEl) {
-        bgVideoEl.addEventListener('ended', () => { playHeroVideo(currentHeroIdx + 1); });
-    }
-
-    // 2. ADMIN IMAGE SLIDESHOW
-    class ImageCarousel {
-        constructor() {
-            this.slides = [];
-            this.currentIndex = 0;
-            this.interval = null;
-            this.track = document.getElementById('image-slides-track');
-            this.dotsContainer = document.getElementById('img-slide-dots');
-            
-            document.getElementById('img-slide-next')?.addEventListener('click', () => this.goToSlide(this.currentIndex + 1));
-            document.getElementById('img-slide-prev')?.addEventListener('click', () => this.goToSlide(this.currentIndex - 1));
-        }
-
-        async init() {
-            if(!this.track) return;
-            try {
-                const res = await fetch('/api/admin/slides?type=image');
-                if (!res.ok) return;
-                const data = await res.json();
-                const payload = data.data || data;
-                if (payload && payload.length > 0) {
-                    this.slides = payload;
-                    this.render();
-                    this.start();
-                }
-            } catch(e) { console.error('Image carousel failed', e); }
-        }
-
-        render() {
-            this.track.innerHTML = '';
-            this.dotsContainer.innerHTML = '';
-
-            this.slides.forEach((slide, idx) => {
-                const slideEl = document.createElement('div');
-                slideEl.className = `carousel-slide ${idx === 0 ? 'active' : ''}`;
-                slideEl.style.backgroundImage = `url('${safeImage(slide.imageUrl)}')`;
-                slideEl.innerHTML = `
-                    <div class="carousel-overlay"></div>
-                    <div class="carousel-content text-left">
-                        <h2 class="text-3xl md:text-4xl font-bold font-display mb-3 text-white">${slide.title || ''}</h2>
-                        <p class="text-gray-300 mb-6 text-lg max-w-md">${slide.description || ''}</p>
-                        ${slide.buttonLink ? `<a href="${slide.buttonLink}" class="btn-solid inline-block self-start" ${slide.buttonLink.startsWith('/') ? 'data-open-auth="login"' : ''}>${slide.buttonText || 'Learn More'}</a>` : ''}
-                    </div>
-                `;
-                this.track.appendChild(slideEl);
-
-                const dot = document.createElement('div');
-                dot.className = `carousel-dot ${idx === 0 ? 'active' : ''}`;
-                dot.onclick = () => this.goToSlide(idx);
-                this.dotsContainer.appendChild(dot);
-            });
-        }
-
-        goToSlide(idx) {
-            if (this.slides.length === 0) return;
-            const slideEls = this.track.querySelectorAll('.carousel-slide');
-            const dotEls = this.dotsContainer.querySelectorAll('.carousel-dot');
-
-            slideEls[this.currentIndex]?.classList.remove('active');
-            dotEls[this.currentIndex]?.classList.remove('active');
-
-            this.currentIndex = (idx + this.slides.length) % this.slides.length;
-
-            slideEls[this.currentIndex]?.classList.add('active');
-            dotEls[this.currentIndex]?.classList.add('active');
-
-            clearInterval(this.interval);
-            this.start();
-        }
-
-        start() {
-            this.interval = setInterval(() => this.goToSlide(this.currentIndex + 1), 6000);
-        }
-    }
-
-    // 3. ADMIN VIDEO SHOWCASE
     class VideoCarousel {
         constructor() {
             this.slides = [];
@@ -420,53 +302,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
             this.slides.forEach((slide, idx) => {
                 const slideEl = document.createElement('div');
-                slideEl.className = `carousel-slide ${idx === 0 ? 'active' : ''}`;
-                
+                slideEl.className = `video-showcase-slide ${idx === 0 ? 'active' : ''}`;
                 const mediaUrl = slide.videoUrl || '';
                 
                 slideEl.innerHTML = `
                     <video src="${mediaUrl}" poster="${safeImage(slide.thumbnailUrl)}" playsinline loop></video>
-                    <div class="video-carousel-overlay"></div>
-                    <button class="play-pause-btn" aria-label="Play video"><i data-lucide="play" fill="currentColor"></i></button>
-                    <div class="video-carousel-content">
-                        <span class="text-accent font-bold text-xs mb-1 uppercase tracking-widest">${slide.category || 'FEATURED'}</span>
-                        <h3 class="text-white font-display text-2xl font-bold">${slide.title || 'Promotional Video'}</h3>
-                        <p class="text-gray-300 text-sm mt-1 max-w-lg">${slide.caption || ''}</p>
+                    <div class="video-showcase-content">
+                        <span class="badge">${slide.category || 'FEATURED'}</span>
+                        <h3>${slide.title || 'Promotional Video'}</h3>
+                        <p>${slide.caption || ''}</p>
                     </div>
+                    <button class="video-play-btn" aria-label="Play video"><i data-lucide="play" fill="currentColor"></i></button>
                 `;
                 this.track.appendChild(slideEl);
 
                 const video = slideEl.querySelector('video');
-                const playBtn = slideEl.querySelector('.play-pause-btn');
-                const overlay = slideEl.querySelector('.video-carousel-overlay');
+                const playBtn = slideEl.querySelector('.video-play-btn');
 
                 playBtn.addEventListener('click', () => {
                     if (video.paused) {
                         this.track.querySelectorAll('video').forEach(v => v.pause());
-                        this.track.querySelectorAll('.play-pause-btn').forEach(btn => btn.style.opacity = '1');
-                        this.track.querySelectorAll('.video-carousel-overlay').forEach(ov => ov.style.opacity = '1');
-                        
+                        this.track.querySelectorAll('.video-play-btn').forEach(btn => btn.style.opacity = '1');
                         video.play();
                         playBtn.style.opacity = '0'; 
-                        overlay.style.opacity = '0'; 
                     } else {
                         video.pause();
                         playBtn.style.opacity = '1';
-                        overlay.style.opacity = '1';
                     }
                 });
 
-                video.addEventListener('ended', () => {
-                    playBtn.style.opacity = '1';
-                    overlay.style.opacity = '1';
-                });
+                video.addEventListener('ended', () => { playBtn.style.opacity = '1'; });
 
                 const dot = document.createElement('div');
                 dot.className = `carousel-dot ${idx === 0 ? 'active' : ''}`;
                 dot.onclick = () => {
                     video.pause(); 
                     playBtn.style.opacity = '1';
-                    overlay.style.opacity = '1';
                     this.goToSlide(idx);
                 };
                 this.dotsContainer.appendChild(dot);
@@ -476,14 +347,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         goToSlide(idx) {
             if (this.slides.length === 0) return;
-            const slideEls = this.track.querySelectorAll('.carousel-slide');
+            const slideEls = this.track.querySelectorAll('.video-showcase-slide');
             const dotEls = this.dotsContainer.querySelectorAll('.carousel-dot');
 
             const currentVideo = slideEls[this.currentIndex]?.querySelector('video');
             if (currentVideo) {
                 currentVideo.pause();
-                slideEls[this.currentIndex].querySelector('.play-pause-btn').style.opacity = '1';
-                slideEls[this.currentIndex].querySelector('.video-carousel-overlay').style.opacity = '1';
+                slideEls[this.currentIndex].querySelector('.video-play-btn').style.opacity = '1';
             }
 
             slideEls[this.currentIndex]?.classList.remove('active');
@@ -496,48 +366,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 4. TRENDING CONTENT
     const renderContentCard = (ep) => {
-        const seriesTitle = ep.seriesId?.title || 'Story';
-        return `
-          <div class="content-card" onclick="document.getElementById('auth-modal').classList.add('active'); show('login');">
-            <div class="card-img-wrap">
-              <img src="${safeImage(ep.thumbnailUrl || ep.seriesId?.coverImage)}" alt="${ep.title}">
-            </div>
-            <div class="card-info">
-              <h3 class="card-title">${ep.title}</h3>
-              <div class="card-meta">
-                <span>${seriesTitle}</span>
-                <span class="text-accent flex items-center gap-1"><i data-lucide="play-circle" width="14"></i> Watch</span>
-              </div>
+      const seriesTitle = ep.seriesId?.title || 'Story';
+      return `
+        <div class="content-card" onclick="document.getElementById('auth-modal').classList.add('active'); show('login');">
+          <div class="card-img-wrap">
+            <img src="${safeImage(ep.thumbnailUrl || ep.seriesId?.coverImage)}" alt="${ep.title}">
+          </div>
+          <div class="card-info">
+            <h3 class="card-title">${ep.title}</h3>
+            <div class="card-meta">
+              <span>${seriesTitle}</span>
+              <span class="text-accent flex items-center gap-1"><i data-lucide="play-circle" width="14"></i> Watch</span>
             </div>
           </div>
-        `;
+        </div>
+      `;
     };
 
     async function loadTrendingContent() {
-        const feed = document.getElementById('trending-feed');
-        if(!feed) return;
+      const feed = document.getElementById('trending-feed');
+      if(!feed) return;
+      try {
+        const response = await fetch('/api/episodes/feed?sort=trending&limit=10');
+        if(!response.ok) return;
+        const data = await response.json();
         
-        try {
-            const response = await fetch('/api/episodes/feed?sort=trending&limit=10');
-            if(!response.ok) return;
-            const data = await response.json();
-            
-            if (data && data.success && data.data && data.data.episodes) {
-                const episodes = data.data.episodes;
-                feed.innerHTML = episodes.map(renderContentCard).join('');
-
-                heroVideos = episodes.filter(ep => ep.mediaUrl || ep.hlsUrl || ep.videoUrl);
-                if (heroVideos.length > 0) playHeroVideo(0);
-                
-                if (window.lucide) window.lucide.createIcons();
-            }
-        } catch (error) { console.error("Failed to load trending content", error); }
+        if (data && data.success && data.data && data.data.episodes) {
+          const episodes = data.data.episodes;
+          feed.innerHTML = episodes.map(renderContentCard).join('');
+          if (window.lucide) window.lucide.createIcons();
+        }
+      } catch (error) { console.error("Failed to load trending content", error); }
     }
 
-    // Trigger Initializers
-    if(document.getElementById('image-slides-track')) new ImageCarousel().init();
     if(document.getElementById('video-slides-track')) new VideoCarousel().init();
     if(document.getElementById('trending-feed')) loadTrendingContent();
 });
