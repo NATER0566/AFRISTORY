@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const toggleBtn = event.target.closest('[data-password-toggle]');
         if (toggleBtn) {
-            const input = $(toggleBtn.dataset.passwordToggle.replace('#', '')); // Strip # if present
+            const input = $(toggleBtn.dataset.passwordToggle.replace('#', ''));
             if (input) {
                 const visible = input.type === 'text';
                 input.type = visible ? 'password' : 'text';
@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (ssoBtn) window.location.assign('/api/auth/' + ssoBtn.dataset.sso);
     });
 
-    // --- Form Submissions ---
+    // --- Form Submissions (Syntax Fixed) ---
     $('reg-password')?.addEventListener('input', event => {
         if (!window.zxcvbn) return;
         const result = zxcvbn(event.target.value);
@@ -173,7 +173,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const termsChecked = $('reg-terms')?.checked;
         const score = window.zxcvbn ? zxcvbn(password).score : 3;
 
-        // FIXED LOGICAL OR OPERATORS
         if (
             !/^[a-zA-Z0-9_.\s]{3,30}$/.test(username) || 
             !emailOk(email) || 
@@ -261,7 +260,6 @@ document.addEventListener('DOMContentLoaded', () => {
         alertMessage(response.ok ? 'success' : 'error', data.message || (response.ok ? 'New code sent' : 'Could not resend code'));
     });
 
-    // Check URL parameters for Auth errors
     const authError = new URLSearchParams(window.location.search).get('authError'); 
     if (authError) { 
         window.history.replaceState({}, '', '/'); 
@@ -272,128 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // HOMEPAGE CAROUSELS & CONTENT
     // ==========================================
 
-    // 1. TRENDING VIDEO CAROUSEL
-    class TrendingVideoCarousel {
-        constructor() {
-            this.slides = [];
-            this.currentIndex = 0;
-            this.track = document.getElementById('trending-video-track');
-            this.dotsContainer = document.getElementById('trend-vid-dots');
-            
-            document.getElementById('trend-vid-next')?.addEventListener('click', () => this.goToSlide(this.currentIndex + 1));
-            document.getElementById('trend-vid-prev')?.addEventListener('click', () => this.goToSlide(this.currentIndex - 1));
-        }
-
-        async init() {
-            if(!this.track) return;
-            try {
-                // Fetch trending episodes
-                const res = await fetch('/api/episodes/feed?sort=trending&limit=5');
-                if (!res.ok) return;
-                const data = await res.json();
-                
-                if (data && data.success && data.data && data.data.episodes) {
-                    // Only keep episodes that actually have a video URL
-                    this.slides = data.data.episodes.filter(ep => ep.mediaUrl || ep.hlsUrl || ep.videoUrl);
-                    if (this.slides.length > 0) {
-                        this.render();
-                    }
-                }
-            } catch(e) { console.error('Trending video carousel failed', e); }
-        }
-
-        render() {
-            this.track.innerHTML = '';
-            this.dotsContainer.innerHTML = '';
-
-            this.slides.forEach((slide, idx) => {
-                const slideEl = document.createElement('div');
-                slideEl.className = `video-showcase-slide ${idx === 0 ? 'active' : ''}`;
-                
-                const mediaUrl = slide.mediaUrl || slide.hlsUrl || slide.videoUrl || '';
-                
-                slideEl.innerHTML = `
-                    <video src="${mediaUrl}" poster="${safeImage(slide.thumbnailUrl || slide.seriesId?.coverImage)}" playsinline loop></video>
-                    <div class="video-carousel-overlay"></div>
-                    <button class="play-pause-btn" aria-label="Play video"><i data-lucide="play" fill="currentColor"></i></button>
-                    <div class="video-carousel-content">
-                        <span class="badge">${slide.genre ? slide.genre.toUpperCase() : 'TRENDING NOW'}</span>
-                        <h3 class="text-white font-display text-2xl font-bold">${slide.title}</h3>
-                        <p class="text-gray-300 text-sm mt-1 max-w-lg">${slide.seriesId?.title || ''}</p>
-                    </div>
-                `;
-                this.track.appendChild(slideEl);
-
-                // Video Play/Pause Logic
-                const video = slideEl.querySelector('video');
-                const playBtn = slideEl.querySelector('.play-pause-btn');
-                const overlay = slideEl.querySelector('.video-carousel-overlay');
-
-                // If HLS, attach it
-                if (mediaUrl.includes('.m3u8') && window.Hls && window.Hls.isSupported()) {
-                    const hls = new window.Hls();
-                    hls.loadSource(mediaUrl);
-                    hls.attachMedia(video);
-                }
-
-                playBtn.addEventListener('click', () => {
-                    if (video.paused) {
-                        this.track.querySelectorAll('video').forEach(v => v.pause());
-                        this.track.querySelectorAll('.play-pause-btn').forEach(btn => btn.style.opacity = '1');
-                        this.track.querySelectorAll('.video-carousel-overlay').forEach(ov => ov.style.opacity = '1');
-                        
-                        video.play();
-                        playBtn.style.opacity = '0'; 
-                        overlay.style.opacity = '0'; 
-                    } else {
-                        video.pause();
-                        playBtn.style.opacity = '1';
-                        overlay.style.opacity = '1';
-                    }
-                });
-
-                video.addEventListener('ended', () => {
-                    playBtn.style.opacity = '1';
-                    overlay.style.opacity = '1';
-                });
-
-                const dot = document.createElement('div');
-                dot.className = `carousel-dot ${idx === 0 ? 'active' : ''}`;
-                dot.onclick = () => {
-                    video.pause(); 
-                    playBtn.style.opacity = '1';
-                    overlay.style.opacity = '1';
-                    this.goToSlide(idx);
-                };
-                this.dotsContainer.appendChild(dot);
-            });
-            if (window.lucide) window.lucide.createIcons();
-        }
-
-        goToSlide(idx) {
-            if (this.slides.length === 0) return;
-            const slideEls = this.track.querySelectorAll('.video-showcase-slide');
-            const dotEls = this.dotsContainer.querySelectorAll('.carousel-dot');
-
-            const currentVideo = slideEls[this.currentIndex]?.querySelector('video');
-            if (currentVideo) {
-                currentVideo.pause();
-                slideEls[this.currentIndex].querySelector('.play-pause-btn').style.opacity = '1';
-                slideEls[this.currentIndex].querySelector('.video-carousel-overlay').style.opacity = '1';
-            }
-
-            slideEls[this.currentIndex]?.classList.remove('active');
-            dotEls[this.currentIndex]?.classList.remove('active');
-
-            this.currentIndex = (idx + this.slides.length) % this.slides.length;
-
-            slideEls[this.currentIndex]?.classList.add('active');
-            dotEls[this.currentIndex]?.classList.add('active');
-        }
-    }
-
-
-    // 2. ADMIN IMAGE SLIDESHOW
+    // 1. ADMIN IMAGE SLIDESHOW
     class ImageCarousel {
         constructor() {
             this.slides = [];
@@ -468,7 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 3. ADMIN VIDEO SHOWCASE
+    // 2. ADMIN VIDEO SHOWCASE
     class AdminVideoCarousel {
         constructor() {
             this.slides = [];
@@ -500,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             this.slides.forEach((slide, idx) => {
                 const slideEl = document.createElement('div');
-                slideEl.className = `video-showcase-slide ${idx === 0 ? 'active' : ''}`;
+                slideEl.className = `carousel-slide ${idx === 0 ? 'active' : ''}`;
                 
                 const mediaUrl = slide.videoUrl || '';
                 
@@ -557,7 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         goToSlide(idx) {
             if (this.slides.length === 0) return;
-            const slideEls = this.track.querySelectorAll('.video-showcase-slide');
+            const slideEls = this.track.querySelectorAll('.carousel-slide');
             const dotEls = this.dotsContainer.querySelectorAll('.carousel-dot');
 
             const currentVideo = slideEls[this.currentIndex]?.querySelector('video');
@@ -577,22 +454,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 4. TRENDING CONTENT GRID
+    // 3. TRENDING CONTENT GRID
     const renderContentCard = (ep) => {
         const seriesTitle = ep.seriesId?.title || 'Story';
         return `
-          <div class="content-card" onclick="document.getElementById('auth-modal').classList.add('active'); show('login');">
+          <button class="content-card text-left" data-open-auth="login">
             <div class="card-img-wrap">
               <img src="${safeImage(ep.thumbnailUrl || ep.seriesId?.coverImage)}" alt="${ep.title}">
             </div>
             <div class="card-info">
-              <h3 class="card-title">${ep.title}</h3>
+              <h3 class="card-title text-white">${ep.title}</h3>
               <div class="card-meta">
                 <span>${seriesTitle}</span>
                 <span class="text-accent flex items-center gap-1"><i data-lucide="play-circle" width="14"></i> Watch</span>
               </div>
             </div>
-          </div>
+          </button>
         `;
     };
 
@@ -615,7 +492,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Trigger Initializers
     if(document.getElementById('image-slides-track')) new ImageCarousel().init();
-    if(document.getElementById('trending-video-track')) new TrendingVideoCarousel().init();
     if(document.getElementById('video-slides-track')) new AdminVideoCarousel().init();
     if(document.getElementById('trending-feed')) loadTrendingContent();
 });
