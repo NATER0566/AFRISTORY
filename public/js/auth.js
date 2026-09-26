@@ -270,7 +270,128 @@ document.addEventListener('DOMContentLoaded', () => {
     // HOMEPAGE CAROUSELS & CONTENT
     // ==========================================
 
-    // 1. ADMIN IMAGE SLIDESHOW
+    // 1. TRENDING VIDEO CAROUSEL
+    class TrendingVideoCarousel {
+        constructor() {
+            this.slides = [];
+            this.currentIndex = 0;
+            this.track = document.getElementById('trending-video-track');
+            this.dotsContainer = document.getElementById('trend-vid-dots');
+            
+            document.getElementById('trend-vid-next')?.addEventListener('click', () => this.goToSlide(this.currentIndex + 1));
+            document.getElementById('trend-vid-prev')?.addEventListener('click', () => this.goToSlide(this.currentIndex - 1));
+        }
+
+        async init() {
+            if(!this.track) return;
+            try {
+                // Fetch trending episodes
+                const res = await fetch('/api/episodes/feed?sort=trending&limit=5');
+                if (!res.ok) return;
+                const data = await res.json();
+                
+                if (data && data.success && data.data && data.data.episodes) {
+                    // Only keep episodes that actually have a video URL
+                    this.slides = data.data.episodes.filter(ep => ep.mediaUrl || ep.hlsUrl || ep.videoUrl);
+                    if (this.slides.length > 0) {
+                        this.render();
+                    }
+                }
+            } catch(e) { console.error('Trending video carousel failed', e); }
+        }
+
+        render() {
+            this.track.innerHTML = '';
+            this.dotsContainer.innerHTML = '';
+
+            this.slides.forEach((slide, idx) => {
+                const slideEl = document.createElement('div');
+                slideEl.className = `video-showcase-slide ${idx === 0 ? 'active' : ''}`;
+                
+                const mediaUrl = slide.mediaUrl || slide.hlsUrl || slide.videoUrl || '';
+                
+                slideEl.innerHTML = `
+                    <video src="${mediaUrl}" poster="${safeImage(slide.thumbnailUrl || slide.seriesId?.coverImage)}" playsinline loop></video>
+                    <div class="video-carousel-overlay"></div>
+                    <button class="play-pause-btn" aria-label="Play video"><i data-lucide="play" fill="currentColor"></i></button>
+                    <div class="video-carousel-content">
+                        <span class="badge">${slide.genre ? slide.genre.toUpperCase() : 'TRENDING NOW'}</span>
+                        <h3 class="text-white font-display text-2xl font-bold">${slide.title}</h3>
+                        <p class="text-gray-300 text-sm mt-1 max-w-lg">${slide.seriesId?.title || ''}</p>
+                    </div>
+                `;
+                this.track.appendChild(slideEl);
+
+                // Video Play/Pause Logic
+                const video = slideEl.querySelector('video');
+                const playBtn = slideEl.querySelector('.play-pause-btn');
+                const overlay = slideEl.querySelector('.video-carousel-overlay');
+
+                // If HLS, attach it
+                if (mediaUrl.includes('.m3u8') && window.Hls && window.Hls.isSupported()) {
+                    const hls = new window.Hls();
+                    hls.loadSource(mediaUrl);
+                    hls.attachMedia(video);
+                }
+
+                playBtn.addEventListener('click', () => {
+                    if (video.paused) {
+                        this.track.querySelectorAll('video').forEach(v => v.pause());
+                        this.track.querySelectorAll('.play-pause-btn').forEach(btn => btn.style.opacity = '1');
+                        this.track.querySelectorAll('.video-carousel-overlay').forEach(ov => ov.style.opacity = '1');
+                        
+                        video.play();
+                        playBtn.style.opacity = '0'; 
+                        overlay.style.opacity = '0'; 
+                    } else {
+                        video.pause();
+                        playBtn.style.opacity = '1';
+                        overlay.style.opacity = '1';
+                    }
+                });
+
+                video.addEventListener('ended', () => {
+                    playBtn.style.opacity = '1';
+                    overlay.style.opacity = '1';
+                });
+
+                const dot = document.createElement('div');
+                dot.className = `carousel-dot ${idx === 0 ? 'active' : ''}`;
+                dot.onclick = () => {
+                    video.pause(); 
+                    playBtn.style.opacity = '1';
+                    overlay.style.opacity = '1';
+                    this.goToSlide(idx);
+                };
+                this.dotsContainer.appendChild(dot);
+            });
+            if (window.lucide) window.lucide.createIcons();
+        }
+
+        goToSlide(idx) {
+            if (this.slides.length === 0) return;
+            const slideEls = this.track.querySelectorAll('.video-showcase-slide');
+            const dotEls = this.dotsContainer.querySelectorAll('.carousel-dot');
+
+            const currentVideo = slideEls[this.currentIndex]?.querySelector('video');
+            if (currentVideo) {
+                currentVideo.pause();
+                slideEls[this.currentIndex].querySelector('.play-pause-btn').style.opacity = '1';
+                slideEls[this.currentIndex].querySelector('.video-carousel-overlay').style.opacity = '1';
+            }
+
+            slideEls[this.currentIndex]?.classList.remove('active');
+            dotEls[this.currentIndex]?.classList.remove('active');
+
+            this.currentIndex = (idx + this.slides.length) % this.slides.length;
+
+            slideEls[this.currentIndex]?.classList.add('active');
+            dotEls[this.currentIndex]?.classList.add('active');
+        }
+    }
+
+
+    // 2. ADMIN IMAGE SLIDESHOW
     class ImageCarousel {
         constructor() {
             this.slides = [];
@@ -311,7 +432,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="carousel-content text-left">
                         <h2 class="text-3xl md:text-4xl font-bold font-display mb-3 text-white">${slide.title || ''}</h2>
                         <p class="text-gray-300 mb-6 text-lg max-w-md">${slide.description || ''}</p>
-                        ${slide.buttonLink ? `<button onclick="document.getElementById('auth-modal').classList.add('active'); show('register');" class="btn-solid inline-block self-start">${slide.buttonText || 'Learn More'}</button>` : ''}
+                        ${slide.buttonLink ? `<a href="${slide.buttonLink}" class="btn-solid inline-block self-start" ${slide.buttonLink.startsWith('/') ? 'data-open-auth="login"' : ''}>${slide.buttonText || 'Learn More'}</a>` : ''}
                     </div>
                 `;
                 this.track.appendChild(slideEl);
@@ -345,7 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 2. ADMIN VIDEO SHOWCASE
+    // 3. ADMIN VIDEO SHOWCASE
     class AdminVideoCarousel {
         constructor() {
             this.slides = [];
@@ -454,11 +575,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 3. TRENDING CONTENT GRID (OVERLAY DESIGN)
+    // 4. TRENDING CONTENT GRID (OVERLAY DESIGN FIXED)
     const renderContentCard = (ep) => {
         const seriesTitle = ep.seriesId?.title || 'Story';
         return `
-          <button class="content-card" data-open-auth="login">
+          <button class="content-card text-left" data-open-auth="login" onclick="document.getElementById('auth-modal').classList.add('active'); show('login');">
             <img src="${safeImage(ep.thumbnailUrl || ep.seriesId?.coverImage)}" alt="${ep.title}">
             <div class="card-overlay">
                 <h3 class="card-title">${ep.title}</h3>
@@ -490,6 +611,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Trigger Initializers
     if(document.getElementById('image-slides-track')) new ImageCarousel().init();
+    if(document.getElementById('trending-video-track')) new TrendingVideoCarousel().init();
     if(document.getElementById('video-slides-track')) new AdminVideoCarousel().init();
     if(document.getElementById('trending-feed')) loadTrendingContent();
 });
