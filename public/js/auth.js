@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (ssoBtn) window.location.assign('/api/auth/' + ssoBtn.dataset.sso);
     });
 
-    // --- Form Submissions (Syntax Fixed) ---
+    // --- Form Submissions ---
     $('reg-password')?.addEventListener('input', event => {
         if (!window.zxcvbn) return;
         const result = zxcvbn(event.target.value);
