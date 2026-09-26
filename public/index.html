@@ -44,97 +44,109 @@
     body { background-color: #111111; color: #f5f5f5; font-family: 'Inter', sans-serif; overflow-x: hidden; margin: 0; -webkit-font-smoothing: antialiased; }
     button { cursor: pointer; font-family: inherit; }
     
-    /* ================= HEADER & LOGO ALIGNMENT ================= */
+    /* ================= HEADER & EXACT LOGO ALIGNMENT ================= */
     .public-header {
-      position: fixed; top: 0; left: 0; right: 0; min-height: 88px; z-index: 1000;
+      position: fixed; top: 0; left: 0; right: 0; min-height: 80px; z-index: 1000;
       display: flex; align-items: center; justify-content: space-between; padding: 12px 5vw;
-      background: rgba(17,17,17,0.97); border-bottom: 1px solid #292929; gap: 28px;
+      background: rgba(17,17,17,0.98); border-bottom: 1px solid #292929; gap: 28px;
     }
     
-    .brand-logo-container { display: flex; align-items: center; gap: 18px; text-decoration: none; min-width: 0; flex-shrink: 1; }
-    .brand-mark-box { width: 46px; height: 46px; font-size: 28px; flex-shrink: 0; background-color: #D4A017; color: #111; font-family: Georgia, 'Times New Roman', serif; font-weight: bold; display: flex; align-items: center; justify-content: center; transform: rotate(-6deg); border-radius: 4px; }
-    .brand-text { font-size: 25px; font-weight: 900; letter-spacing: 1px; }
+    .brand-logo-container { display: flex; align-items: center; gap: 12px; text-decoration: none; min-width: 0; flex-shrink: 1; }
+    
+    .brand-mark-box { 
+        width: 44px; height: 44px; flex-shrink: 0; 
+        background-color: #D4A017; color: #111; 
+        font-family: Georgia, 'Times New Roman', serif; font-weight: bold; font-size: 26px; 
+        display: flex; align-items: center; justify-content: center; 
+        border-radius: 6px; 
+    }
+    
+    .brand-text { 
+        display: flex; flex-direction: column; line-height: 1.05;
+        font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 900; letter-spacing: 0.5px; 
+    }
     .brand-text-afro { color: #ffffff; }
     .brand-text-story { color: #D4A017; }
     
     .header-actions { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
-    .btn-outline, .btn-solid { min-height: 44px; padding: 0 20px; border-radius: 8px; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; transition: 0.2s; }
-    .btn-outline { border: 1px solid #D4A017; color: #D4A017; background: transparent; }
-    .btn-outline:hover { background: #D4A017; color: #111; }
+    .btn-outline, .btn-solid { min-height: 44px; padding: 0 20px; border-radius: 8px; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; transition: 0.2s; }
+    .btn-outline { border: 1px solid #444; color: #ccc; background: transparent; }
+    .btn-outline:hover { border-color: #D4A017; color: #D4A017; }
     .btn-solid { background: #E67E22; color: #fff; border: 1px solid #E67E22; }
     .btn-solid:hover { background: #cf6f1b; border-color: #cf6f1b; }
 
     @media (max-width: 600px) {
-        .public-header { min-height: 82px; padding: 10px 18px; gap: 16px; }
-        .brand-logo-container { gap: 12px; }
-        .brand-mark-box { width: 40px; height: 40px; font-size: 24px; }
-        .brand-text { font-size: 20px; letter-spacing: .5px; }
+        .public-header { min-height: 75px; padding: 10px 18px; gap: 16px; }
+        .brand-logo-container { gap: 10px; }
+        .brand-mark-box { width: 38px; height: 38px; font-size: 22px; }
+        .brand-text { font-size: 18px; }
         .header-actions { gap: 8px; }
-        .btn-outline, .btn-solid { min-height: 40px; padding: 0 12px; font-size: 12px; }
+        .btn-outline, .btn-solid { min-height: 38px; padding: 0 14px; font-size: 13px; }
     }
 
-    @media (max-width: 390px) {
-        .brand-text { width: 75px; white-space: normal; line-height: 0.95; }
-        .brand-text-afro, .brand-text-story { display: block; }
-        .header-actions { gap: 6px; }
-        .btn-outline, .btn-solid { padding: 0 9px; font-size: 11px; }
+    @media (max-width: 380px) {
+        .brand-text { font-size: 16px; }
+        .btn-outline, .btn-solid { padding: 0 10px; font-size: 11px; }
     }
 
-    /* ================= MAIN HERO (STATIC) ================= */
-    .afrostory-hero { position: relative; width: 100%; min-height: 560px; padding: 110px 5vw 70px; background: radial-gradient(circle at 80% 35%, rgba(212,160,23,0.12), transparent 35%), linear-gradient(135deg, #111111 0%, #151515 55%, #1b1710 100%); border-bottom: 1px solid #252525; overflow: hidden; margin-top: 88px; }
-    .afrostory-hero::before { content: ""; position: absolute; width: 520px; height: 520px; right: -180px; top: -150px; border: 1px solid rgba(212,160,23,0.12); border-radius: 50%; }
-    .afrostory-hero::after { content: ""; position: absolute; width: 350px; height: 350px; right: 20px; bottom: -220px; border: 1px solid rgba(212,160,23,0.08); border-radius: 50%; }
+    /* ================= 1. MAIN HERO (STATIC & ACCURATE) ================= */
+    .afrostory-hero { 
+        position: relative; width: 100%; min-height: 560px; padding: 120px 5vw 80px; 
+        background: linear-gradient(135deg, #111111 0%, #151515 55%, #1b1710 100%); 
+        border-bottom: 1px solid #252525; overflow: hidden; margin-top: 80px; 
+    }
 
-    .hero-inner { position: relative; z-index: 2; width: 100%; max-width: 1250px; min-height: 430px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 80px; }
-    .hero-copy { max-width: 720px; }
-    .hero-eyebrow { display: inline-flex; align-items: center; gap: 10px; color: #D4A017; font-size: 13px; font-weight: 800; letter-spacing: 2px; margin-bottom: 20px; }
+    /* Elegant Intersecting Rings */
+    .afrostory-hero::before { 
+        content: ""; position: absolute; width: 60vw; height: 60vw; min-width: 500px; min-height: 500px; 
+        left: -15vw; top: -10vw; border: 1px solid rgba(212,160,23,0.15); border-radius: 50%; pointer-events: none; 
+    }
+    .afrostory-hero::after { 
+        content: ""; position: absolute; width: 80vw; height: 80vw; min-width: 700px; min-height: 700px; 
+        right: -25vw; bottom: -20vw; border: 1px solid rgba(212,160,23,0.1); border-radius: 50%; pointer-events: none; 
+    }
+
+    .hero-inner { position: relative; z-index: 2; width: 100%; max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 80px; }
+    .hero-copy { max-width: 700px; }
+    .hero-eyebrow { display: inline-flex; align-items: center; gap: 10px; color: #D4A017; font-size: 13px; font-weight: 800; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase;}
     .hero-eyebrow::before { content: ""; width: 32px; height: 2px; background: #D4A017; }
-    .hero-copy h1 { margin: 0 0 24px; font-family: 'Space Grotesk', sans-serif; font-size: clamp(3rem, 6vw, 5.8rem); line-height: 0.98; letter-spacing: -2px; font-weight: 900; color: #fff; }
-    .hero-copy p { max-width: 650px; margin: 0 0 32px; color: #bdbdbd; font-size: clamp(1rem, 2vw, 1.2rem); line-height: 1.7; }
+    
+    .hero-copy h1 { margin: 0 0 24px; font-family: 'Space Grotesk', sans-serif; font-size: clamp(3rem, 6vw, 5.5rem); line-height: 1.05; font-weight: 900; color: #fff; }
+    .hero-copy p { max-width: 600px; margin: 0 0 35px; color: #ccc; font-size: clamp(1rem, 2vw, 1.2rem); line-height: 1.7; }
 
-    .hero-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-    .hero-primary { display: inline-flex; align-items: center; justify-content: center; gap: 9px; padding: 14px 24px; border: 0; border-radius: 7px; background: #E67E22; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.2s ease; }
+    .hero-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .hero-primary { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 16px 28px; border: 0; border-radius: 8px; background: #E67E22; color: #fff; font-size: 16px; font-weight: 700; transition: 0.2s ease; }
     .hero-primary:hover { background: #cf6f1b; transform: translateY(-2px); }
-    .hero-primary svg { width: 18px; height: 18px; }
-    .hero-secondary { display: inline-flex; align-items: center; gap: 8px; padding: 13px 22px; border: 1px solid #444; border-radius: 7px; color: #ddd; text-decoration: none; font-size: 15px; font-weight: 600; transition: 0.2s ease; cursor: pointer; }
+    .hero-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 15px 26px; border: 1px solid #444; border-radius: 8px; color: #ddd; font-size: 16px; font-weight: 600; transition: 0.2s ease; }
     .hero-secondary:hover { border-color: #D4A017; color: #D4A017; }
-    .hero-secondary svg { width: 16px; height: 16px; }
-
-    .hero-brand-panel { width: 330px; min-width: 330px; display: flex; align-items: center; gap: 22px; padding: 32px; border: 1px solid #303030; border-radius: 18px; background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015)); box-shadow: 0 25px 60px rgba(0,0,0,0.35); }
-    .hero-brand-mark { width: 78px; height: 78px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #D4A017; color: #111; font-family: Georgia, serif; font-size: 48px; font-weight: bold; transform: rotate(-6deg); border-radius: 4px; }
-    .hero-brand-name { font-family: 'Space Grotesk', sans-serif; font-size: 27px; font-weight: 900; letter-spacing: 0.5px; }
-    .hero-brand-name span { color: #fff; }
-    .hero-brand-name strong { color: #D4A017; }
-    .hero-brand-panel p { margin: 10px 0 0; color: #777; font-size: 13px; line-height: 1.6; }
 
     @media (max-width: 850px) {
-        .afrostory-hero { min-height: auto; padding: 105px 24px 55px; margin-top: 80px; }
-        .hero-inner { min-height: auto; flex-direction: column; align-items: stretch; gap: 40px; }
-        .hero-copy h1 { font-size: clamp(2.7rem, 12vw, 4rem); letter-spacing: -1.5px; }
-        .hero-copy p { font-size: 1rem; line-height: 1.65; }
-        .hero-brand-panel { width: 100%; min-width: 0; max-width: 520px; }
+        .afrostory-hero { min-height: auto; padding: 60px 24px 60px; margin-top: 75px; }
+        .hero-inner { flex-direction: column; align-items: stretch; gap: 40px; }
+        .hero-copy h1 { font-size: clamp(2.8rem, 12vw, 4rem); }
+        .hero-copy p { font-size: 1.05rem; }
     }
     @media (max-width: 500px) {
-        .afrostory-hero { padding: 40px 20px 45px; margin-top: 80px; }
-        .hero-actions { width: 100%; flex-direction: column; align-items: stretch; }
-        .hero-primary, .hero-secondary { width: 100%; justify-content: center; }
-        .hero-brand-panel { padding: 24px; flex-direction: column; text-align: center; }
-        .hero-brand-mark { width: 64px; height: 64px; font-size: 38px; }
-        .hero-brand-name { font-size: 22px; }
+        .afrostory-hero { padding: 40px 20px 50px; }
+        .hero-actions { flex-direction: column; align-items: stretch; width: 100%; gap: 12px; }
+        .hero-primary, .hero-secondary { width: 100%; padding: 16px; }
     }
 
-    /* ================= UNIVERSAL CAROUSEL STRUCTURE ================= */
-    .carousel-section { padding: 40px 4vw; background: #111; }
+    /* ================= CAROUSEL STRUCTURE (For Promo Image & Video) ================= */
+    .carousel-section { padding: 40px 4vw; background: #111; border-top: 1px solid #1a1a1a; }
     .carousel-header { font-family: 'Space Grotesk', sans-serif; font-size: 1.5rem; font-weight: 700; margin-bottom: 20px; color: #fff; display: flex; align-items: center; gap: 8px;}
-    .carousel-wrapper { width: 100%; max-width: 1200px; margin: 0 auto; height: 50vh; min-height: 350px; max-height: 500px; position: relative; border-radius: 12px; overflow: hidden; background: #1B1B1B; border: 1px solid #333; }
+    .carousel-wrapper { width: 100%; max-width: 1200px; margin: 0 auto; height: 50vh; min-height: 350px; max-height: 500px; position: relative; border-radius: 16px; overflow: hidden; background: #1B1B1B; border: 1px solid #333; }
     .carousel-track { width: 100%; height: 100%; position: relative; }
     .carousel-slide { position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s ease-in-out; background-size: cover; background-position: center; z-index: 1; display: flex; align-items: center; justify-content: center; }
     .carousel-slide.active { opacity: 1; z-index: 2; }
     
     .carousel-overlay { position: absolute; inset: 0; background: linear-gradient(to right, rgba(17,17,17,0.95) 0%, rgba(17,17,17,0.4) 100%); z-index: 2; }
-    .carousel-content { position: relative; z-index: 3; height: 100%; width: 100%; display: flex; flex-direction: column; justify-content: center; padding: 40px; max-width: 600px; }
+    .video-carousel-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); z-index: 2; pointer-events: none; transition: background 0.3s; }
     
-    .carousel-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.6); color: white; border: 1px solid #555; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 50%; transition: 0.2s; }
+    .carousel-content { position: relative; z-index: 3; height: 100%; width: 100%; display: flex; flex-direction: column; justify-content: center; padding: 40px; max-width: 600px; }
+    .video-carousel-content { position: absolute; bottom: 0; left: 0; right: 0; padding: 30px; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, transparent 100%); z-index: 3; pointer-events: none;}
+    
+    .carousel-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.6); color: white; border: 1px solid #555; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: 0.2s; }
     .carousel-nav:hover { background: #D4A017; color: #111; border-color: #D4A017; }
     .carousel-nav.prev { left: 15px; }
     .carousel-nav.next { right: 15px; }
@@ -143,74 +155,40 @@
     .carousel-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.4); cursor: pointer; transition: 0.3s; }
     .carousel-dot.active { background: #D4A017; transform: scale(1.3); }
 
-    /* ================= FEATURED VIDEO SHOWCASE ================= */
-    .video-showcase-section { padding: 70px 4vw; background: #111; }
-    .video-showcase-heading { width: 100%; max-width: 1200px; margin: 0 auto 25px; }
-    .showcase-eyebrow { display: block; margin-bottom: 8px; color: #D4A017; font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
-    .video-showcase-heading h2 { margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; color: #fff; }
-    .video-showcase-heading p { margin: 10px 0 0; color: #888; font-size: 15px; }
+    .play-pause-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; background: rgba(212,160,23,0.9); color: #111; width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+    .play-pause-btn:hover { transform: translate(-50%, -50%) scale(1.1); }
+    .carousel-slide video { width: 100%; height: 100%; object-fit: cover; }
 
-    .video-showcase { position: relative; width: 100%; max-width: 1200px; height: 560px; margin: 0 auto; overflow: hidden; border-radius: 18px; border: 1px solid #303030; background: #181818; box-shadow: 0 25px 70px rgba(0,0,0,0.35); }
-    .video-showcase-track { position: relative; width: 100%; height: 100%; }
-    .video-showcase-slide { position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s ease; background: #000; }
-    .video-showcase-slide.active { opacity: 1; z-index: 2; }
-    .video-showcase-slide video { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .video-showcase-slide::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.25) 55%, rgba(0,0,0,0.12) 100%); pointer-events: none; }
-    
-    .video-showcase-content { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; padding: 45px; max-width: 650px; pointer-events: none; }
-    .video-showcase-content .badge { display: inline-block; margin-bottom: 12px; padding: 6px 12px; border-radius: 5px; background: rgba(212,160,23,0.2); color: #D4A017; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; }
-    .video-showcase-content h3 { margin: 0 0 10px; font-family: 'Space Grotesk', sans-serif; font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 800; color: #fff; }
-    .video-showcase-content p { margin: 0; color: #ddd; font-size: 15px; line-height: 1.6; }
-    
-    .video-play-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; background: rgba(212,160,23,0.9); color: #111; width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; transition: 0.2s; pointer-events: auto; }
-    .video-play-btn:hover { background: #D4A017; transform: translate(-50%, -50%) scale(1.1); }
-
-    .video-showcase-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 20; width: 46px; height: 46px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.25); background: rgba(0,0,0,0.6); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
-    .video-showcase-nav:hover { background: #D4A017; color: #111; border-color: #D4A017; }
-    .video-showcase-nav.prev { left: 18px; }
-    .video-showcase-nav.next { right: 18px; }
-    
-    .video-showcase-dots { position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 20; display: flex; gap: 8px; }
-
-    .video-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #666; text-align: center; background:#1B1B1B;}
-    .video-placeholder h3 { margin: 18px 0 5px; color: #ddd; font-size: 20px; }
-    .video-placeholder p { color: #777; }
-
-    @media (max-width: 700px) {
-        .video-showcase-section { padding: 50px 20px; }
-        .video-showcase { height: 440px; border-radius: 14px; }
-        .video-showcase-content { padding: 25px; }
-        .video-showcase-nav { width: 40px; height: 40px; }
-        .video-showcase-nav.prev { left: 10px; }
-        .video-showcase-nav.next { right: 10px; }
+    @media (max-width: 768px) {
+        .carousel-wrapper { height: 45vh; min-height: 300px; }
+        .carousel-content { padding: 20px; }
     }
 
-    /* ================= CONTENT GRIDS & ADS ================= */
+    /* ================= ROCKET SLOTH ADS ================= */
+    .ad-container { width: 100%; max-width: 1200px; margin: 30px auto; padding: 0 4vw; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .ad-container > div { width: 100%; display: flex; justify-content: center; }
+
+    /* ================= CONTENT GRIDS & CATEGORIES ================= */
     .section-container { padding: 20px 4vw 40px; max-width: 1400px; margin: 0 auto; }
-    .section-title { font-family: 'Space Grotesk', sans-serif; font-size: 1.8rem; font-weight: 700; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; color: #fff; }
-    .scroll-hint { font-size: 12px; color: #888; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+    .section-title { font-family: 'Space Grotesk', sans-serif; font-size: 1.8rem; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; color: #fff; }
+    .scroll-hint { font-size: 13px; color: #888; margin-bottom: 24px; display: flex; align-items: center; gap: 6px; }
     
     .horizontal-scroll { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 16px; scroll-snap-type: x mandatory; scrollbar-width: none; }
     .horizontal-scroll::-webkit-scrollbar { display: none; }
     
-    .content-card { flex: 0 0 240px; scroll-snap-align: start; cursor: pointer; transition: transform 0.2s; position: relative; border-radius: 8px; overflow: hidden; background: #1B1B1B; border: 1px solid #333; display: flex; flex-direction: column;}
+    .content-card { flex: 0 0 240px; scroll-snap-align: start; transition: transform 0.2s; position: relative; border-radius: 8px; overflow: hidden; background: #1B1B1B; border: 1px solid #333; display: flex; flex-direction: column;}
     .content-card:hover { transform: translateY(-5px); border-color: #D4A017; }
     .card-img-wrap { width: 100%; aspect-ratio: 3/4; background: #222; position: relative; }
     .card-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
-    .card-info { padding: 12px; flex: 1; display: flex; flex-direction: column; justify-content: space-between;}
+    .card-info { padding: 14px; flex: 1; display: flex; flex-direction: column; justify-content: space-between;}
     .card-title { font-weight: 700; font-size: 16px; margin: 0 0 8px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .card-meta { font-size: 12px; color: #999; display: flex; justify-content: space-between; align-items: center; }
 
-    /* Categories */
-    .category-card { background: #1B1B1B; border: 1px solid #333; padding: 24px; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center;}
+    .category-card { background: #1B1B1B; border: 1px solid #333; padding: 24px; border-radius: 12px; text-align: center; transition: 0.2s; display: flex; flex-direction: column; align-items: center;}
     .category-card:hover { border-color: #D4A017; background: #222; transform: translateY(-3px);}
     .category-card svg { margin-bottom: 12px; color: #888; transition: color 0.2s; }
     .category-card:hover svg { color: #D4A017; }
     .category-card span { font-weight: 600; font-size: 14px; }
-
-    /* Ads Container for Rocket Sloth */
-    .ad-container { width: 100%; max-width: 1200px; margin: 30px auto; background: rgba(27, 27, 27, 0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center; min-height: 120px; overflow: hidden; }
-    .ad-container > div { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
 
     /* ================= AUTH MODAL ================= */
     .auth-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 15px; opacity: 0; transition: opacity 0.3s ease; }
@@ -222,13 +200,12 @@
     .auth-modal-left-content { position: relative; z-index: 10; }
     
     .auth-modal-right { width: 60%; padding: 30px 40px; background: #1B1B1B; overflow-y: auto; }
-    .modal-close { position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.5); border: none; color: #fff; font-size: 20px; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; transition: 0.2s; z-index: 50; display: flex; align-items: center; justify-content: center;}
+    .modal-close { position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.5); border: none; color: #fff; font-size: 20px; width: 36px; height: 36px; border-radius: 50%; transition: 0.2s; z-index: 50; display: flex; align-items: center; justify-content: center;}
     .modal-close:hover { background: #D4A017; color: #111; }
 
     @media (max-width: 768px) {
         .auth-modal-left { display: none; }
         .auth-modal-right { width: 100%; padding: 25px; }
-        .carousel-content { padding: 20px; }
     }
 
     /* AUTH FORMS CSS */
@@ -237,40 +214,40 @@
     .field:focus{outline:1px solid #D4A017;border-color:#D4A017}
     .password-field{position:relative}
     .password-field .field{padding-right:3rem}
-    .password-toggle{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);border:0;background:none;color:#999;cursor:pointer;padding:.25rem}
+    .password-toggle{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);border:0;background:none;color:#999;padding:.25rem}
     .password-toggle:hover,.password-toggle:focus{color:#D4A017}
-    .primary{background:#D4A017;color:#111;border:0;border-radius:6px;padding:.9rem;font-weight:700;width:100%;cursor:pointer; display: block; text-align: center;}
-    .link{background:none;border:0;color:#D4A017;cursor:pointer;font-weight:700}
+    .primary{background:#D4A017;color:#111;border:0;border-radius:6px;padding:.9rem;font-weight:700;width:100%; display: block; text-align: center;}
+    .link{background:none;border:0;color:#D4A017;font-weight:700}
     .code{letter-spacing:.7em;text-align:center;font-size:1.5rem}
     .bar{height:5px;flex:1;background:#444;border-radius:9px}
     .swal2-popup.big-alert { padding: 2em; font-size: 1.2rem; border-radius: 12px; }
     .swal2-title.big-title { font-size: 1.5rem !important; }
 
     /* ================= FOOTER ================= */
-    .public-footer { background: #0d0d0d; border-top: 1px solid #222; padding: 60px 4vw 30px; margin-top: 40px; }
+    .public-footer { background: #0a0a0a; border-top: 1px solid #222; padding: 70px 4vw 40px; margin-top: 40px; }
     .footer-grid { width: 100%; max-width: 1200px; margin: 0 auto 50px; display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 50px; }
     .footer-col { min-width: 0; }
-    .footer-col h4 { color: #fff; margin: 0 0 20px; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    .footer-col h4 { color: #fff; margin: 0 0 24px; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
     
-    .footer-links-box { display: flex; flex-direction: column; gap: 10px; }
-    .footer-links-box a { display: flex; align-items: center; justify-content: center; background: #1a1a2e; border: 1px solid #333; padding: 12px 14px; border-radius: 8px; color: #ccc; font-size: 13px; font-weight: 600; text-align: center; transition: all 0.2s ease; }
+    .footer-links-box { display: flex; flex-direction: column; gap: 12px; }
+    .footer-links-box a { display: flex; align-items: center; justify-content: center; background: #141414; border: 1px solid #2a2a2a; padding: 14px 16px; border-radius: 8px; color: #bbb; font-size: 13px; font-weight: 600; text-align: center; transition: all 0.2s ease; }
     .footer-links-box a:hover { background: rgba(212,160,23,0.1); color: #D4A017; border-color: #D4A017; transform: translateY(-2px); }
 
-    .footer-bottom { width: 100%; max-width: 1200px; margin: 0 auto; border-top: 1px solid #222; padding-top: 25px; display: flex; justify-content: space-between; align-items: center; gap: 20px; color: #666; font-size: 13px; }
+    .footer-bottom { width: 100%; max-width: 1200px; margin: 0 auto; border-top: 1px solid #222; padding-top: 30px; display: flex; justify-content: space-between; align-items: center; gap: 20px; color: #666; font-size: 13px; }
 
     @media (max-width: 800px) {
         .footer-grid { grid-template-columns: repeat(2, 1fr); gap: 35px; }
         .footer-bottom { flex-direction: column; text-align: center; }
     }
     @media (max-width: 500px) {
-        .footer-grid { grid-template-columns: 1fr; gap: 30px; }
+        .footer-grid { grid-template-columns: 1fr; gap: 40px; }
         .footer-links-box { flex-direction: column; }
     }
   </style>
 </head>
 <body>
 
-  <!-- ================= HEADER ================= -->
+  <!-- ================= HEADER (CLEAN LOGO + AUTH ONLY) ================= -->
   <header class="public-header" id="main-header">
     <a class="brand-logo-container" href="/">
       <div class="brand-mark-box">A</div>
@@ -284,7 +261,7 @@
     </div>
   </header>
 
-  <!-- ================= MAIN HERO (STATIC CSS) ================= -->
+  <!-- ================= MAIN HERO (STATIC) ================= -->
   <section class="afrostory-hero">
     <div class="hero-inner">
         <div class="hero-copy">
@@ -309,53 +286,21 @@
             </div>
         </div>
         <div class="hero-brand-panel hidden md:flex">
-            <div class="hero-brand-mark">A</div>
+            <div class="brand-mark-box" style="width: 78px; height: 78px; font-size: 48px;">A</div>
             <div>
-                <div class="hero-brand-name">
-                    <span>AFRO</span><strong>STORY</strong>
+                <div class="brand-text" style="font-size: 27px; line-height: 1;">
+                    <span class="brand-text-afro">AFRO</span><span class="brand-text-story">STORY</span>
                 </div>
-                <p>
-                    African stories.<br>
-                    A global stage.
-                </p>
+                <p class="mt-2 text-gray-500 text-sm">African stories.<br>A global stage.</p>
             </div>
         </div>
     </div>
   </section>
 
-  <!-- ================= 1. TOP TRENDING VIDEOS (From Episode Feed) ================= -->
-  <section class="video-showcase-section" id="top-trending-videos">
-    <div class="video-showcase-heading">
-        <div>
-            <span class="showcase-eyebrow">TOP TRENDING</span>
-            <h2>Watch Now</h2>
-            <p>The most popular episodes streaming on AfroStory right now.</p>
-        </div>
-    </div>
-
-    <div class="video-showcase" id="trending-video-slideshow">
-        <div id="trending-video-track" class="video-showcase-track">
-            <!-- Permanent Fallback -->
-            <div class="video-showcase-slide active">
-                <div class="video-placeholder">
-                    <i data-lucide="film" width="52" height="52"></i>
-                    <h3>Trending Episodes</h3>
-                    <p>Loading the hottest content...</p>
-                </div>
-            </div>
-        </div>
-
-        <button class="video-showcase-nav prev" id="trend-vid-prev" aria-label="Previous video"><i data-lucide="chevron-left"></i></button>
-        <button class="video-showcase-nav next" id="trend-vid-next" aria-label="Next video"><i data-lucide="chevron-right"></i></button>
-        <div class="video-showcase-dots" id="trend-vid-dots"><div class="carousel-dot active"></div></div>
-    </div>
-  </section>
-
-  <!-- ================= 2. PROMOTIONAL IMAGE SLIDESHOW (Admin Controlled) ================= -->
+  <!-- ================= PROMOTIONAL IMAGE SLIDESHOW (Admin Controlled) ================= -->
   <section class="carousel-section pt-10 pb-4">
     <h2 class="carousel-header"><i data-lucide="sparkles" class="text-accent"></i> Discover AfroStory</h2>
     <div class="carousel-wrapper" id="promo-image-slideshow">
-      
       <div id="image-slides-track" class="carousel-track">
         <!-- Permanent Fallback Slide -->
         <div class="carousel-slide active" style="background-color: #1a1a2e; background-image: url('https://images.unsplash.com/photo-1542869781-a272dcbc029f?auto=format&fit=crop&w=1200&q=80');">
@@ -367,38 +312,29 @@
           </div>
         </div>
       </div>
-      
       <button class="carousel-nav prev" id="img-slide-prev" aria-label="Previous image"><i data-lucide="chevron-left"></i></button>
       <button class="carousel-nav next" id="img-slide-next" aria-label="Next image"><i data-lucide="chevron-right"></i></button>
       <div class="carousel-indicators" id="img-slide-dots"><div class="carousel-dot active"></div></div>
     </div>
   </section>
 
-  <!-- ================= 3. PROMOTIONAL VIDEO SLIDESHOW (Admin Controlled) ================= -->
-  <section class="video-showcase-section" style="padding-top: 20px; border-top: 1px solid #222;" id="featured-announcements">
-    <div class="video-showcase-heading">
-        <div>
-            <span class="showcase-eyebrow">PLATFORM UPDATES</span>
-            <h2>Featured Announcements</h2>
-            <p>Trailers, creator highlights, and official AfroStory updates.</p>
+  <!-- ================= PROMOTIONAL VIDEO SLIDESHOW (Admin Controlled) ================= -->
+  <section class="carousel-section pt-4 pb-8" style="border-top: 1px solid #1a1a1a;">
+    <h2 class="carousel-header"><i data-lucide="award" class="text-accent"></i> Featured Announcements</h2>
+    <div class="carousel-wrapper" id="promo-video-slideshow">
+      <div id="video-slides-track" class="carousel-track">
+        <!-- Permanent Fallback Slide -->
+        <div class="carousel-slide active" style="background-color: #000;">
+           <div class="video-placeholder text-center p-8">
+             <i data-lucide="video" class="text-gray-600 mb-4 mx-auto" width="48" height="48"></i>
+             <h3 class="text-white font-display text-xl font-bold mb-2">Promotional Videos</h3>
+             <p class="text-gray-400 text-sm">Trailers and platform announcements will appear here.</p>
+           </div>
         </div>
-    </div>
-
-    <div class="video-showcase" id="promo-video-slideshow">
-        <div id="video-slides-track" class="video-showcase-track">
-            <!-- Permanent Fallback -->
-            <div class="video-showcase-slide active">
-                <div class="video-placeholder">
-                    <i data-lucide="video" width="52" height="52"></i>
-                    <h3>Promotional Videos</h3>
-                    <p>Trailers and platform announcements will appear here.</p>
-                </div>
-            </div>
-        </div>
-
-        <button class="video-showcase-nav prev" id="vid-slide-prev" aria-label="Previous video"><i data-lucide="chevron-left"></i></button>
-        <button class="video-showcase-nav next" id="vid-slide-next" aria-label="Next video"><i data-lucide="chevron-right"></i></button>
-        <div class="video-showcase-dots" id="vid-slide-dots"><div class="carousel-dot active"></div></div>
+      </div>
+      <button class="carousel-nav prev" id="vid-slide-prev" aria-label="Previous video"><i data-lucide="chevron-left"></i></button>
+      <button class="carousel-nav next" id="vid-slide-next" aria-label="Next video"><i data-lucide="chevron-right"></i></button>
+      <div class="carousel-indicators" id="vid-slide-dots"><div class="carousel-dot active"></div></div>
     </div>
   </section>
 
@@ -410,7 +346,8 @@
   <!-- ================= TRENDING CONTENT GRID ================= -->
   <section class="section-container" id="trending-now">
     <h2 class="section-title"><i data-lucide="trending-up" class="text-accent"></i> Trending Episodes</h2>
-    <p class="scroll-hint"><i data-lucide="arrow-right-circle" width="14"></i> Swipe or scroll to view more</p>
+    <p class="scroll-hint"><i data-lucide="arrow-right-circle" width="16"></i> Swipe or scroll to view more</p>
+    
     <div class="horizontal-scroll" id="trending-feed">
       <div class="p-8 text-gray-500">Loading stories...</div>
     </div>
@@ -420,16 +357,16 @@
   <section class="section-container">
     <h2 class="section-title"><i data-lucide="compass" class="text-accent"></i> Browse Categories</h2>
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-      <div class="category-card" data-open-auth="login"><i data-lucide="theater" width="32" height="32"></i><span>Drama</span></div>
-      <div class="category-card" data-open-auth="login"><i data-lucide="smile" width="32" height="32"></i><span>Comedy</span></div>
-      <div class="category-card" data-open-auth="login"><i data-lucide="swords" width="32" height="32"></i><span>Epic</span></div>
-      <div class="category-card" data-open-auth="login"><i data-lucide="heart" width="32" height="32"></i><span>Romance</span></div>
-      <div class="category-card" data-open-auth="login"><i data-lucide="video" width="32" height="32"></i><span>Documentary</span></div>
-      <div class="category-card" data-open-auth="login"><i data-lucide="flame" width="32" height="32"></i><span>Thriller</span></div>
+      <button class="category-card" data-open-auth="login"><i data-lucide="theater" width="32" height="32"></i><span>Drama</span></button>
+      <button class="category-card" data-open-auth="login"><i data-lucide="smile" width="32" height="32"></i><span>Comedy</span></button>
+      <button class="category-card" data-open-auth="login"><i data-lucide="swords" width="32" height="32"></i><span>Epic</span></button>
+      <button class="category-card" data-open-auth="login"><i data-lucide="heart" width="32" height="32"></i><span>Romance</span></button>
+      <button class="category-card" data-open-auth="login"><i data-lucide="video" width="32" height="32"></i><span>Documentary</span></button>
+      <button class="category-card" data-open-auth="login"><i data-lucide="flame" width="32" height="32"></i><span>Thriller</span></button>
     </div>
   </section>
 
-  <!-- ================= ABOUT AFROSTORY (SEO) ================= -->
+  <!-- ================= ABOUT AFROSTORY ================= -->
   <section class="section-container my-8">
     <div class="max-w-4xl mx-auto bg-surface p-8 md:p-10 rounded-2xl border border-gray-800 relative overflow-hidden">
       <div class="absolute top-0 right-0 opacity-5 w-64 h-64 pointer-events-none"><i data-lucide="play-circle" width="100%" height="100%"></i></div>
@@ -487,7 +424,7 @@
     <div class="footer-grid">
         <!-- ABOUT -->
         <div class="footer-col">
-            <a class="brand-logo-container mb-4" href="/">
+            <a class="brand-logo-container mb-6" href="/">
                 <div class="brand-mark-box" style="transform: rotate(-6deg) scale(0.9); margin-right: 2px;">A</div>
                 <div class="brand-text" style="font-size: 20px;">
                     <span class="brand-text-afro">AFRO</span><span class="brand-text-story">STORY</span>
@@ -503,9 +440,9 @@
         <div class="footer-col">
             <h4>Platform</h4>
             <div class="footer-links-box">
-                <a href="#" data-open-auth="login">Sign In</a>
-                <a href="#" data-open-auth="register">Join AfroStory</a>
-                <a href="#" data-open-auth="login">Creator Studio</a>
+                <button data-open-auth="login">Sign In</button>
+                <button data-open-auth="register">Join AfroStory</button>
+                <button data-open-auth="login">Creator Studio</button>
             </div>
         </div>
 
