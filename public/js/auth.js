@@ -311,7 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="carousel-content text-left">
                         <h2 class="text-3xl md:text-4xl font-bold font-display mb-3 text-white">${slide.title || ''}</h2>
                         <p class="text-gray-300 mb-6 text-lg max-w-md">${slide.description || ''}</p>
-                        ${slide.buttonLink ? `<a href="${slide.buttonLink}" class="btn-solid inline-block self-start" ${slide.buttonLink.startsWith('/') ? 'data-open-auth="login"' : ''}>${slide.buttonText || 'Learn More'}</a>` : ''}
+                        ${slide.buttonLink ? `<button onclick="document.getElementById('auth-modal').classList.add('active'); show('register');" class="btn-solid inline-block self-start">${slide.buttonText || 'Learn More'}</button>` : ''}
                     </div>
                 `;
                 this.track.appendChild(slideEl);
@@ -454,20 +454,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 3. TRENDING CONTENT GRID
+    // 3. TRENDING CONTENT GRID (OVERLAY DESIGN)
     const renderContentCard = (ep) => {
         const seriesTitle = ep.seriesId?.title || 'Story';
         return `
-          <button class="content-card text-left" data-open-auth="login">
-            <div class="card-img-wrap">
-              <img src="${safeImage(ep.thumbnailUrl || ep.seriesId?.coverImage)}" alt="${ep.title}">
-            </div>
-            <div class="card-info">
-              <h3 class="card-title text-white">${ep.title}</h3>
-              <div class="card-meta">
-                <span>${seriesTitle}</span>
-                <span class="text-accent flex items-center gap-1"><i data-lucide="play-circle" width="14"></i> Watch</span>
-              </div>
+          <button class="content-card" data-open-auth="login">
+            <img src="${safeImage(ep.thumbnailUrl || ep.seriesId?.coverImage)}" alt="${ep.title}">
+            <div class="card-overlay">
+                <h3 class="card-title">${ep.title}</h3>
+                <div class="card-meta">
+                    <span class="truncate pr-2">${seriesTitle}</span>
+                    <span class="text-accent flex items-center gap-1 shrink-0"><i data-lucide="play-circle" width="14"></i> Watch</span>
+                </div>
             </div>
           </button>
         `;
