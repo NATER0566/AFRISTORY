@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (ssoBtn) window.location.assign('/api/auth/' + ssoBtn.dataset.sso);
     });
 
-    // --- Form Submissions ---
+    // --- Form Submissions (Syntax Fixed) ---
     $('reg-password')?.addEventListener('input', event => {
         if (!window.zxcvbn) return;
         const result = zxcvbn(event.target.value);
@@ -581,11 +581,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return `
           <button class="content-card text-left" data-open-auth="login" onclick="document.getElementById('auth-modal').classList.add('active'); show('login');">
             <img src="${safeImage(ep.thumbnailUrl || ep.seriesId?.coverImage)}" alt="${ep.title}">
+            <div class="card-play-btn"><i data-lucide="play" fill="currentColor"></i></div>
             <div class="card-overlay">
+                <span style="color: #D4A017; font-size: 11px; font-weight: 800; letter-spacing: 1px; margin-bottom: 8px; display: block; text-transform: uppercase;">${ep.genre || 'TRENDING'}</span>
                 <h3 class="card-title">${ep.title}</h3>
                 <div class="card-meta">
-                    <span class="truncate pr-2">${seriesTitle}</span>
-                    <span class="text-accent flex items-center gap-1 shrink-0"><i data-lucide="play-circle" width="14"></i> Watch</span>
+                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%;">${seriesTitle}</span>
                 </div>
             </div>
           </button>
