@@ -69,7 +69,7 @@
         .brand-logo-container { gap: 12px; }
         
         /* RESTORED LOGO BOX ON MOBILE */
-        .brand-mark-box { width: 40px; height: 40px; font-size: 24px; }
+        .brand-mark-box { width: 40px; height: 40px; font-size: 24px; display: flex; }
         
         .brand-text { font-size: 20px; letter-spacing: .5px; }
         .header-actions { gap: 8px; }
@@ -205,13 +205,13 @@
     
     /* OVERLAY CARD DESIGN (Cinematic 4:5 aspect ratio, text over image) */
     .content-card { 
-        flex: 0 0 350px; 
-        aspect-ratio: 16/9; 
+        flex: 0 0 280px; 
+        aspect-ratio: 4/5; 
         scroll-snap-align: start; 
         cursor: pointer; 
         transition: transform 0.2s; 
         position: relative; 
-        border-radius: 10px; 
+        border-radius: 12px; 
         overflow: hidden; 
         border: 1px solid #333; 
         display: block; 
@@ -225,7 +225,7 @@
     
     .card-overlay { 
         position: absolute; inset: 0; 
-        background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.3) 60%, transparent 100%); 
+        background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.2) 60%, transparent 100%); 
         display: flex; flex-direction: column; justify-content: flex-end; 
         padding: 20px; pointer-events: none; 
     }
@@ -236,7 +236,7 @@
     .content-card:hover .card-play-btn { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
 
     @media (max-width: 600px) {
-        .content-card { flex: 0 0 290px; }
+        .content-card { flex: 0 0 240px; }
         .card-title { font-size: 18px; }
         .card-overlay { padding: 15px; }
         .card-play-btn { opacity: 1; width: 44px; height: 44px; } /* Play button always visible on mobile */
@@ -250,8 +250,8 @@
     .category-card span { font-weight: 600; font-size: 14px; }
 
     /* Ads Container for Rocket Sloth */
-    .ad-container { width: 100%; max-width: 1200px; margin: 30px auto; background: transparent; border: none; display: flex; align-items: center; justify-content: center; height: auto; min-height: auto; overflow: visible; padding: 0 4vw; }
-    .ad-container > div { width: 100%; height: auto; display: flex; justify-content: center; align-items: center; }
+    .ad-container { width: 100%; max-width: 1200px; margin: 30px auto; background: rgba(27, 27, 27, 0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center; min-height: 120px; overflow: hidden; }
+    .ad-container > div { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
 
     /* ================= AUTH MODAL ================= */
     .auth-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 15px; opacity: 0; transition: opacity 0.3s ease; }
