@@ -1,9 +1,6 @@
 <!doctype html>
 <html lang="en">
 <head>
-
-<script src="https://rocketsloth.ai/rs.js" data-rs-key="pk_2e5db9e642c6b436fc0ec0774ad208f1"></script>
-  
   <!-- WebPushr Tracking Code --> 
   <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js";
   fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));
@@ -41,156 +38,257 @@
   </script>
 
   <style>
-    body { background-color: #111111; color: #f5f5f5; font-family: 'Inter', sans-serif; overflow-x: hidden; margin: 0; }
+    body { background-color: #111111; color: #f5f5f5; font-family: 'Inter', sans-serif; overflow-x: hidden; margin: 0; -webkit-font-smoothing: antialiased; }
+    button { cursor: pointer; font-family: inherit; }
     
-    /* ================= HEADER & LOGO ALIGNMENT ================= */
+    /* ================= HEADER ================= */
     .public-header {
-      position: fixed; top: 0; left: 0; right: 0; height: 75px; z-index: 1000;
-      display: flex; justify-content: space-between; align-items: center; padding: 0 4vw;
-      background: linear-gradient(to bottom, rgba(17,17,17,0.95) 0%, rgba(17,17,17,0) 100%);
-      transition: background 0.3s ease, border-bottom 0.3s ease;
-      gap: 16px; /* Forces space between logo and buttons */
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        min-height: 88px;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 5vw;
+        background: rgba(17,17,17,0.97);
+        border-bottom: 1px solid #292929;
+        gap: 28px;
+        transition: background 0.3s ease;
     }
-    .public-header.scrolled { background: rgba(17,17,17,0.98); backdrop-filter: blur(10px); border-bottom: 1px solid #333; }
     
-    /* EXACT LOGO RECREATION */
     .brand-logo-container {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 18px;
         text-decoration: none;
-        min-width: 0; /* Allows shrinking without breaking flexbox */
+        min-width: 0;
+        flex-shrink: 1;
     }
+
     .brand-mark-box {
+        width: 46px;
+        height: 46px;
+        font-size: 28px;
+        flex-shrink: 0;
         background-color: #D4A017;
         color: #111;
         font-family: Georgia, 'Times New Roman', serif;
         font-weight: bold;
-        font-size: 22px;
-        width: 34px;
-        height: 34px;
         display: flex;
         align-items: center;
         justify-content: center;
-        transform: rotate(-6deg); /* The exact tilt from the image */
-        border-radius: 2px;
-        flex-shrink: 0;
+        transform: rotate(-6deg);
+        border-radius: 4px;
     }
+
     .brand-text {
         font-family: 'Inter', sans-serif;
+        font-size: 25px;
         font-weight: 900;
-        font-size: 22px;
-        letter-spacing: 0.5px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        letter-spacing: 1px;
     }
     .brand-text-afro { color: #ffffff; }
     .brand-text-story { color: #D4A017; }
     
-    /* HEADER BUTTONS (Protected from overlapping) */
-    .header-actions { 
-        display: flex; 
-        gap: 12px; 
-        align-items: center; 
-        flex-shrink: 0; /* Prevents buttons from being crushed by the logo */
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-shrink: 0;
     }
-    .btn-outline { border: 1px solid #D4A017; color: #D4A017; padding: 8px 18px; border-radius: 6px; font-weight: 600; font-size: 14px; transition: 0.2s; white-space: nowrap; }
+
+    .btn-outline, .btn-solid {
+        min-height: 44px;
+        padding: 0 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        transition: 0.2s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .btn-outline { border: 1px solid #D4A017; color: #D4A017; background: transparent; }
     .btn-outline:hover { background: #D4A017; color: #111; }
-    .btn-solid { background: #E67E22; color: #fff; padding: 8px 18px; border-radius: 6px; font-weight: 600; font-size: 14px; transition: 0.2s; white-space: nowrap; }
-    .btn-solid:hover { background: #cf6f1b; }
+    .btn-solid { background: #E67E22; color: #fff; border: 1px solid #E67E22; }
+    .btn-solid:hover { background: #cf6f1b; border-color: #cf6f1b; }
 
-    /* Ultra-small mobile screens protection */
-    @media (max-width: 400px) {
-        .public-header { padding: 0 15px; gap: 8px; }
-        .brand-mark-box { width: 28px; height: 28px; font-size: 18px; }
-        .brand-text { font-size: 18px; }
-        .brand-logo-container { gap: 8px; }
-        .btn-outline, .btn-solid { padding: 6px 12px; font-size: 13px; }
+    @media (max-width: 600px) {
+        .public-header { min-height: 82px; padding: 10px 18px; gap: 16px; }
+        .brand-logo-container { gap: 12px; }
+        .brand-mark-box { width: 40px; height: 40px; font-size: 24px; }
+        .brand-text { font-size: 20px; letter-spacing: .5px; }
         .header-actions { gap: 8px; }
+        .btn-outline, .btn-solid { min-height: 40px; padding: 0 12px; font-size: 12px; }
     }
-    
-    /* ================= 1. MAIN HERO ================= */
-    .hero-wrapper {
+
+    @media (max-width: 390px) {
+        .brand-text { width: 75px; white-space: normal; line-height: 0.95; }
+        .brand-text-afro, .brand-text-story { display: block; }
+        .header-actions { gap: 6px; }
+        .btn-outline, .btn-solid { padding: 0 9px; font-size: 11px; }
+    }
+
+    /* ================= MAIN HERO (STATIC) ================= */
+    .afrostory-hero {
         position: relative;
-        height: 62vh;
-        min-height: 440px;
-        max-height: 680px;
         width: 100%;
+        min-height: 560px;
+        padding: 110px 5vw 70px;
+        background: radial-gradient(circle at 80% 35%, rgba(212,160,23,0.12), transparent 35%), linear-gradient(135deg, #111111 0%, #151515 55%, #1b1710 100%);
+        border-bottom: 1px solid #252525;
         overflow: hidden;
-        background: #1a1a2e;
+        margin-top: 88px; 
     }
 
-    .hero-media-layer { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
-    .hero-media-layer video { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.2s ease; }
-    .hero-media-layer video.active { opacity: 0.65; }
-
-    .hero-gradient {
-        position: absolute;
-        inset: 0;
-        z-index: 2;
-        background: linear-gradient(to top, #111111 0%, rgba(17,17,17,0.35) 65%, rgba(17,17,17,0.55) 100%);
+    .afrostory-hero::before {
+        content: ""; position: absolute; width: 520px; height: 520px; right: -180px; top: -150px;
+        border: 1px solid rgba(212,160,23,0.12); border-radius: 50%;
     }
 
-    .hero-content {
-        position: absolute;
-        top: 50%;
-        left: 4vw;
-        z-index: 10;
-        max-width: 700px;
-        padding-right: 4vw;
-        transform: translateY(-35%);
+    .afrostory-hero::after {
+        content: ""; position: absolute; width: 350px; height: 350px; right: 20px; bottom: -220px;
+        border: 1px solid rgba(212,160,23,0.08); border-radius: 50%;
     }
 
-    .hero-tag { display: inline-block; background: rgba(212,160,23,0.2); color: #D4A017; padding: 5px 12px; border-radius: 4px; font-size: 12px; font-weight: 700; letter-spacing: 1px; margin-bottom: 12px; }
-    .hero-title { font-family: 'Space Grotesk', sans-serif; font-size: clamp(2rem, 5vw, 4rem); font-weight: 900; line-height: 1.08; margin-bottom: 12px; color: #fff; }
-    .hero-desc { font-size: clamp(1rem, 2vw, 1.1rem); color: #eee; margin-bottom: 24px; line-height: 1.5; max-width: 600px; }
-
-    @media (max-width: 768px) {
-        .hero-wrapper { height: 68vh; min-height: 480px; }
-        .hero-content { left: 20px; right: 20px; top: auto; bottom: 12%; transform: none; padding-right: 0; }
+    .hero-inner {
+        position: relative; z-index: 2; width: 100%; max-width: 1250px; min-height: 430px; margin: 0 auto;
+        display: flex; align-items: center; justify-content: space-between; gap: 80px;
     }
 
-    /* ================= UNIVERSAL CAROUSEL STRUCTURE ================= */
-    .carousel-section { padding: 40px 4vw; background: #111; }
-    .carousel-header { font-family: 'Space Grotesk', sans-serif; font-size: 1.5rem; font-weight: 700; margin-bottom: 20px; color: #fff; }
-    .carousel-wrapper { width: 100%; max-width: 1200px; margin: 0 auto; height: 50vh; min-height: 350px; max-height: 500px; position: relative; border-radius: 12px; overflow: hidden; background: #1B1B1B; border: 1px solid #333; }
-    .carousel-track { width: 100%; height: 100%; position: relative; }
-    .carousel-slide { position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s ease-in-out; background-size: cover; background-position: center; z-index: 1; display: flex; align-items: center; justify-content: center; }
-    .carousel-slide.active { opacity: 1; z-index: 2; }
+    .hero-copy { max-width: 720px; }
+
+    .hero-eyebrow {
+        display: inline-flex; align-items: center; gap: 10px; color: #D4A017; font-size: 13px; font-weight: 800; letter-spacing: 2px; margin-bottom: 20px;
+    }
+    .hero-eyebrow::before { content: ""; width: 32px; height: 2px; background: #D4A017; }
+
+    .hero-copy h1 {
+        margin: 0 0 24px; font-family: 'Space Grotesk', sans-serif; font-size: clamp(3rem, 6vw, 5.8rem); line-height: 0.98; letter-spacing: -2px; font-weight: 900; color: #fff;
+    }
+
+    .hero-copy p { max-width: 650px; margin: 0 0 32px; color: #bdbdbd; font-size: clamp(1rem, 2vw, 1.2rem); line-height: 1.7; }
+
+    .hero-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+    .hero-primary {
+        display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+        padding: 14px 24px; border: 0; border-radius: 7px; background: #E67E22; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.2s ease;
+    }
+    .hero-primary:hover { background: #cf6f1b; transform: translateY(-2px); }
+    .hero-primary svg { width: 18px; height: 18px; }
+
+    .hero-secondary {
+        display: inline-flex; align-items: center; gap: 8px; padding: 13px 22px; border: 1px solid #444; border-radius: 7px;
+        color: #ddd; text-decoration: none; font-size: 15px; font-weight: 600; transition: 0.2s ease; cursor: pointer;
+    }
+    .hero-secondary:hover { border-color: #D4A017; color: #D4A017; }
+    .hero-secondary svg { width: 16px; height: 16px; }
+
+    .hero-brand-panel {
+        width: 330px; min-width: 330px; display: flex; align-items: center; gap: 22px; padding: 32px;
+        border: 1px solid #303030; border-radius: 18px;
+        background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015)); box-shadow: 0 25px 60px rgba(0,0,0,0.35);
+    }
+
+    .hero-brand-mark {
+        width: 78px; height: 78px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+        background: #D4A017; color: #111; font-family: Georgia, serif; font-size: 48px; font-weight: bold;
+        transform: rotate(-6deg); border-radius: 4px;
+    }
+
+    .hero-brand-name { font-family: 'Space Grotesk', sans-serif; font-size: 27px; font-weight: 900; letter-spacing: 0.5px; }
+    .hero-brand-name span { color: #fff; }
+    .hero-brand-name strong { color: #D4A017; }
+    .hero-brand-panel p { margin: 10px 0 0; color: #777; font-size: 13px; line-height: 1.6; }
+
+    @media (max-width: 850px) {
+        .afrostory-hero { min-height: auto; padding: 60px 24px 55px; margin-top: 80px; }
+        .hero-inner { min-height: auto; flex-direction: column; align-items: stretch; gap: 40px; }
+        .hero-copy h1 { font-size: clamp(2.7rem, 12vw, 4rem); letter-spacing: -1.5px; }
+        .hero-copy p { font-size: 1rem; line-height: 1.65; }
+        .hero-brand-panel { width: 100%; min-width: 0; max-width: 520px; }
+    }
+    @media (max-width: 500px) {
+        .afrostory-hero { padding: 40px 20px 45px; margin-top: 80px; }
+        .hero-actions { width: 100%; flex-direction: column; align-items: stretch; }
+        .hero-primary, .hero-secondary { width: 100%; justify-content: center; }
+        .hero-brand-panel { padding: 24px; flex-direction: column; text-align: center; }
+        .hero-brand-mark { width: 64px; height: 64px; font-size: 38px; }
+        .hero-brand-name { font-size: 22px; }
+    }
+
+    /* ================= FEATURED VIDEO SHOWCASE ================= */
+    .video-showcase-section { padding: 70px 4vw; background: #111; }
+    .video-showcase-heading { width: 100%; max-width: 1200px; margin: 0 auto 25px; }
+    .showcase-eyebrow { display: block; margin-bottom: 8px; color: #D4A017; font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
+    .video-showcase-heading h2 { margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; color: #fff; }
+    .video-showcase-heading p { margin: 10px 0 0; color: #888; font-size: 15px; }
+
+    .video-showcase { position: relative; width: 100%; max-width: 1200px; height: 560px; margin: 0 auto; overflow: hidden; border-radius: 18px; border: 1px solid #303030; background: #181818; box-shadow: 0 25px 70px rgba(0,0,0,0.35); }
+    .video-showcase-track { position: relative; width: 100%; height: 100%; }
     
-    .carousel-overlay { position: absolute; inset: 0; background: linear-gradient(to right, rgba(17,17,17,0.95) 0%, rgba(17,17,17,0.4) 100%); z-index: 2; }
-    .video-carousel-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); z-index: 2; pointer-events: none; transition: background 0.3s; }
+    .video-showcase-slide { position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s ease; background: #000; }
+    .video-showcase-slide.active { opacity: 1; z-index: 2; }
+    .video-showcase-slide video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .video-showcase-slide::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.25) 55%, rgba(0,0,0,0.12) 100%); pointer-events: none; }
     
-    .carousel-content { position: relative; z-index: 3; height: 100%; width: 100%; display: flex; flex-direction: column; justify-content: center; padding: 40px; max-width: 600px; }
-    .video-carousel-content { position: absolute; bottom: 0; left: 0; right: 0; padding: 30px; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%); z-index: 3; pointer-events: none;}
+    .video-showcase-content { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; padding: 45px; max-width: 650px; pointer-events: none; }
+    .video-showcase-content .badge { display: inline-block; margin-bottom: 12px; padding: 6px 12px; border-radius: 5px; background: rgba(212,160,23,0.2); color: #D4A017; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; }
+    .video-showcase-content h3 { margin: 0 0 10px; font-family: 'Space Grotesk', sans-serif; font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 800; color: #fff; }
+    .video-showcase-content p { margin: 0; color: #ddd; font-size: 15px; line-height: 1.6; }
     
-    .carousel-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.6); color: white; border: 1px solid #555; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 50%; transition: 0.2s; }
-    .carousel-nav:hover { background: #D4A017; color: #111; border-color: #D4A017; }
-    .carousel-nav.prev { left: 15px; }
-    .carousel-nav.next { right: 15px; }
+    .video-play-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; background: rgba(212,160,23,0.9); color: #111; width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; transition: 0.2s; pointer-events: auto; }
+    .video-play-btn:hover { background: #D4A017; transform: translate(-50%, -50%) scale(1.1); }
+
+    .video-showcase-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 20; width: 46px; height: 46px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.25); background: rgba(0,0,0,0.6); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
+    .video-showcase-nav:hover { background: #D4A017; color: #111; border-color: #D4A017; }
+    .video-showcase-nav.prev { left: 18px; }
+    .video-showcase-nav.next { right: 18px; }
     
-    .carousel-indicators { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; gap: 8px; }
+    .video-showcase-dots { position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 20; display: flex; gap: 8px; }
     .carousel-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.4); cursor: pointer; transition: 0.3s; }
     .carousel-dot.active { background: #D4A017; transform: scale(1.3); }
 
-    .play-pause-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; background: rgba(212,160,23,0.9); color: #111; width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; transition: 0.2s; }
-    .play-pause-btn:hover { transform: translate(-50%, -50%) scale(1.1); }
-    .carousel-slide video { width: 100%; height: 100%; object-fit: cover; }
+    .video-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #666; text-align: center; }
+    .video-placeholder h3 { margin: 18px 0 5px; color: #ddd; font-size: 20px; }
+    .video-placeholder p { color: #777; }
+
+    @media (max-width: 700px) {
+        .video-showcase-section { padding: 50px 20px; }
+        .video-showcase { height: 440px; border-radius: 14px; }
+        .video-showcase-content { padding: 25px; }
+        .video-showcase-nav { width: 40px; height: 40px; }
+        .video-showcase-nav.prev { left: 10px; }
+        .video-showcase-nav.next { right: 10px; }
+    }
 
     /* ================= CONTENT GRIDS & ADS ================= */
-    .section-container { padding: 20px 4vw 40px; }
+    .section-container { padding: 20px 4vw 40px; max-width: 1400px; margin: 0 auto; }
+    .section-title { font-family: 'Space Grotesk', sans-serif; font-size: 1.8rem; font-weight: 700; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; color: #fff; }
+    
     .horizontal-scroll { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 16px; scroll-snap-type: x mandatory; scrollbar-width: none; }
     .horizontal-scroll::-webkit-scrollbar { display: none; }
     
-    .content-card { flex: 0 0 240px; scroll-snap-align: start; cursor: pointer; transition: transform 0.2s; position: relative; border-radius: 8px; overflow: hidden; background: #1B1B1B; border: 1px solid #333; }
+    .content-card { flex: 0 0 240px; scroll-snap-align: start; cursor: pointer; transition: transform 0.2s; position: relative; border-radius: 8px; overflow: hidden; background: #1B1B1B; border: 1px solid #333; display: flex; flex-direction: column;}
     .content-card:hover { transform: translateY(-5px); border-color: #D4A017; }
     .card-img-wrap { width: 100%; aspect-ratio: 3/4; background: #222; position: relative; }
     .card-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
-    .card-info { padding: 12px; }
-    .card-title { font-weight: 700; font-size: 16px; margin: 0 0 5px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .card-meta { font-size: 12px; color: #999; display: flex; justify-content: space-between; }
-    
+    .card-info { padding: 12px; flex: 1; display: flex; flex-direction: column; justify-content: space-between;}
+    .card-title { font-weight: 700; font-size: 16px; margin: 0 0 8px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .card-meta { font-size: 12px; color: #999; display: flex; justify-content: space-between; align-items: center; }
+
+    /* Categories */
+    .category-card { background: #1B1B1B; border: 1px solid #333; padding: 24px; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center;}
+    .category-card:hover { border-color: #D4A017; background: #222; transform: translateY(-3px);}
+    .category-card svg { margin-bottom: 12px; color: #888; transition: color 0.2s; }
+    .category-card:hover svg { color: #D4A017; }
+    .category-card span { font-weight: 600; font-size: 14px; }
+
+    /* Ads */
     .ad-container { width: 100%; max-width: 1200px; margin: 30px auto; background: rgba(27, 27, 27, 0.5); border: 1px dashed #444; border-radius: 8px; display: flex; align-items: center; justify-content: center; min-height: 100px; color: #666; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
 
     /* ================= AUTH MODAL ================= */
@@ -209,18 +307,17 @@
     @media (max-width: 768px) {
         .auth-modal-left { display: none; }
         .auth-modal-right { width: 100%; padding: 25px; }
-        .carousel-content { padding: 20px; }
     }
 
     /* AUTH FORMS CSS */
     .auth-form{animation:rise .35s ease}@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
-    .field{background:#111;border:1px solid #444;border-radius:6px;padding:.85rem 1rem;width:100%;color:#f5f5f5}
+    .field{background:#111;border:1px solid #444;border-radius:6px;padding:.85rem 1rem;width:100%;color:#f5f5f5; display: block; box-sizing: border-box;}
     .field:focus{outline:1px solid #D4A017;border-color:#D4A017}
     .password-field{position:relative}
     .password-field .field{padding-right:3rem}
     .password-toggle{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);border:0;background:none;color:#999;cursor:pointer;padding:.25rem}
     .password-toggle:hover,.password-toggle:focus{color:#D4A017}
-    .primary{background:#D4A017;color:#111;border:0;border-radius:6px;padding:.9rem;font-weight:700;width:100%;cursor:pointer}
+    .primary{background:#D4A017;color:#111;border:0;border-radius:6px;padding:.9rem;font-weight:700;width:100%;cursor:pointer; display: block; text-align: center;}
     .link{background:none;border:0;color:#D4A017;cursor:pointer;font-weight:700}
     .code{letter-spacing:.7em;text-align:center;font-size:1.5rem}
     .bar{height:5px;flex:1;background:#444;border-radius:9px}
@@ -233,7 +330,6 @@
     .footer-col { min-width: 0; }
     .footer-col h4 { color: #fff; margin: 0 0 20px; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
     
-    /* Footer Links as Beautiful Flex Boxes */
     .footer-links-box { display: flex; flex-direction: column; gap: 10px; }
     .footer-links-box a { display: flex; align-items: center; justify-content: center; background: #1a1a2e; border: 1px solid #333; padding: 12px 14px; border-radius: 8px; color: #ccc; font-size: 13px; font-weight: 600; text-align: center; transition: all 0.2s ease; }
     .footer-links-box a:hover { background: rgba(212,160,23,0.1); color: #D4A017; border-color: #D4A017; transform: translateY(-2px); }
@@ -246,12 +342,13 @@
     }
     @media (max-width: 500px) {
         .footer-grid { grid-template-columns: 1fr; gap: 30px; }
+        .footer-links-box { flex-direction: column; }
     }
   </style>
 </head>
 <body>
 
-  <!-- ================= HEADER ================= -->
+  <!-- ================= HEADER (CLEAN LOGO + AUTH ONLY) ================= -->
   <header class="public-header" id="main-header">
     <a class="brand-logo-container" href="/">
       <div class="brand-mark-box">A</div>
@@ -265,78 +362,86 @@
     </div>
   </header>
 
-  <!-- ================= MAIN HERO (ACTUAL CONTENT) ================= -->
-  <section class="hero-wrapper">
-    <div class="hero-media-layer">
-      <video id="hero-bg-video" muted playsinline></video>
-    </div>
-    <div class="hero-gradient"></div>
-    <div class="hero-content">
-      <span class="hero-tag" id="hero-genre">AFROSTORY ORIGINAL</span>
-      <h1 class="hero-title" id="hero-title">Authentic<br>African Stories</h1>
-      <p class="hero-desc" id="hero-desc">Discover premium series, short films, and documentaries made by the continent's most visionary creators.</p>
-      <div class="flex gap-4">
-        <button class="btn-solid flex items-center gap-2" data-open-auth="register"><i data-lucide="play" fill="currentColor" width="18"></i> Start Watching</button>
-      </div>
+  <!-- ================= MAIN HERO (STATIC) ================= -->
+  <section class="afrostory-hero">
+    <div class="hero-inner">
+        <div class="hero-copy">
+            <span class="hero-eyebrow">AFROSTORY</span>
+            <h1>
+                Your Story.<br>
+                Your Platform.
+            </h1>
+            <p>
+                Discover African stories, films, series and documentaries
+                created by storytellers from across the continent.
+            </p>
+            <div class="hero-actions">
+                <button class="hero-primary" data-open-auth="register">
+                    <i data-lucide="play" fill="currentColor"></i>
+                    Start Watching
+                </button>
+                <button class="hero-secondary" onclick="document.getElementById('featured-stories').scrollIntoView({behavior: 'smooth'})">
+                    Explore Stories
+                    <i data-lucide="arrow-down"></i>
+                </button>
+            </div>
+        </div>
+        <div class="hero-brand-panel hidden md:flex">
+            <div class="hero-brand-mark">A</div>
+            <div>
+                <div class="hero-brand-name">
+                    <span>AFRO</span><strong>STORY</strong>
+                </div>
+                <p>
+                    African stories.<br>
+                    A global stage.
+                </p>
+            </div>
+        </div>
     </div>
   </section>
 
-  <!-- ================= PROMOTIONAL IMAGE SLIDESHOW ================= -->
-  <section class="carousel-section pt-10 pb-4">
-    <h2 class="carousel-header">Discover AfroStory</h2>
-    <div class="carousel-wrapper" id="promo-image-slideshow">
-      
-      <div id="image-slides-track" class="carousel-track">
-        <!-- Permanent Fallback Slide -->
-        <div class="carousel-slide active" style="background-color: #1a1a2e; background-image: url('https://images.unsplash.com/photo-1542869781-a272dcbc029f?auto=format&fit=crop&w=1200&q=80');">
-          <div class="carousel-overlay"></div>
-          <div class="carousel-content">
-            <h2 class="text-3xl md:text-4xl font-bold font-display mb-3 text-white">Explore African Stories</h2>
-            <p class="text-gray-300 mb-6 text-lg md:text-xl max-w-md">Join our community to explore original content, creators, and experiences from across Africa.</p>
-            <button class="btn-solid inline-block self-start" data-open-auth="register">Join the Community</button>
-          </div>
+  <!-- ================= FEATURED VIDEO STORIES (PROMOTIONAL) ================= -->
+  <section class="video-showcase-section" id="featured-stories">
+    <div class="video-showcase-heading">
+        <div>
+            <span class="showcase-eyebrow">WATCH NOW</span>
+            <h2>Featured Stories</h2>
+            <p>Explore stories, trailers and featured videos from AfroStory.</p>
         </div>
-      </div>
-      
-      <!-- Controls -->
-      <button class="carousel-nav prev" id="img-slide-prev" aria-label="Previous image"><i data-lucide="chevron-left"></i></button>
-      <button class="carousel-nav next" id="img-slide-next" aria-label="Next image"><i data-lucide="chevron-right"></i></button>
-      <div class="carousel-indicators" id="img-slide-dots">
-          <div class="carousel-dot active"></div>
-      </div>
     </div>
-  </section>
 
-  <!-- ================= PROMOTIONAL VIDEO SLIDESHOW ================= -->
-  <section class="carousel-section pt-4 pb-8">
-    <h2 class="carousel-header">Featured Announcements</h2>
-    <div class="carousel-wrapper" id="promo-video-slideshow">
-      
-      <div id="video-slides-track" class="carousel-track">
-        <!-- Permanent Fallback Slide -->
-        <div class="carousel-slide active" style="background-color: #000;">
-           <div class="flex flex-col items-center justify-center text-center p-6 z-10 relative">
-             <i data-lucide="film" class="text-gray-600 mb-4" width="48" height="48"></i>
-             <h3 class="text-white font-display text-xl font-bold mb-2">Promotional Videos</h3>
-             <p class="text-gray-400 text-sm">Trailers and platform announcements will appear here.</p>
-           </div>
+    <div class="video-showcase" id="promo-video-slideshow">
+        <div id="video-slides-track" class="video-showcase-track">
+            <!-- Permanent Fallback -->
+            <div class="video-showcase-slide active">
+                <div class="video-placeholder">
+                    <i data-lucide="film" width="52" height="52"></i>
+                    <h3>Featured Stories</h3>
+                    <p>Stories and videos from AfroStory will appear here.</p>
+                </div>
+            </div>
         </div>
-      </div>
-      
-      <button class="carousel-nav prev" id="vid-slide-prev" aria-label="Previous video"><i data-lucide="chevron-left"></i></button>
-      <button class="carousel-nav next" id="vid-slide-next" aria-label="Next video"><i data-lucide="chevron-right"></i></button>
-      <div class="carousel-indicators" id="vid-slide-dots">
-          <div class="carousel-dot active"></div>
-      </div>
+
+        <button class="video-showcase-nav prev" id="vid-slide-prev" aria-label="Previous video">
+            <i data-lucide="chevron-left"></i>
+        </button>
+        <button class="video-showcase-nav next" id="vid-slide-next" aria-label="Next video">
+            <i data-lucide="chevron-right"></i>
+        </button>
+
+        <div class="video-showcase-dots" id="vid-slide-dots">
+            <div class="carousel-dot active"></div>
+        </div>
     </div>
   </section>
 
   <!-- ================= ADSENSE 1 ================= -->
   <div class="ad-container">
-    <span>Advertisement Placeholder</span>
+    <span>Advertisement</span>
   </div>
 
-  <!-- ================= TRENDING CONTENT ================= -->
+  <!-- ================= TRENDING CONTENT (ACTUAL DATA) ================= -->
   <section class="section-container">
     <h2 class="section-title"><i data-lucide="trending-up" class="text-accent"></i> Trending Now</h2>
     <div class="horizontal-scroll" id="trending-feed">
@@ -348,16 +453,16 @@
   <section class="section-container">
     <h2 class="section-title"><i data-lucide="compass" class="text-accent"></i> Browse Categories</h2>
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-      <div class="bg-surface border border-gray-800 p-6 rounded-lg text-center cursor-pointer hover:border-accent transition"><i data-lucide="theater" class="mx-auto mb-2 text-gray-400"></i><span class="font-semibold text-sm">Drama</span></div>
-      <div class="bg-surface border border-gray-800 p-6 rounded-lg text-center cursor-pointer hover:border-accent transition"><i data-lucide="smile" class="mx-auto mb-2 text-gray-400"></i><span class="font-semibold text-sm">Comedy</span></div>
-      <div class="bg-surface border border-gray-800 p-6 rounded-lg text-center cursor-pointer hover:border-accent transition"><i data-lucide="swords" class="mx-auto mb-2 text-gray-400"></i><span class="font-semibold text-sm">Epic</span></div>
-      <div class="bg-surface border border-gray-800 p-6 rounded-lg text-center cursor-pointer hover:border-accent transition"><i data-lucide="heart" class="mx-auto mb-2 text-gray-400"></i><span class="font-semibold text-sm">Romance</span></div>
-      <div class="bg-surface border border-gray-800 p-6 rounded-lg text-center cursor-pointer hover:border-accent transition"><i data-lucide="video" class="mx-auto mb-2 text-gray-400"></i><span class="font-semibold text-sm">Documentary</span></div>
-      <div class="bg-surface border border-gray-800 p-6 rounded-lg text-center cursor-pointer hover:border-accent transition"><i data-lucide="flame" class="mx-auto mb-2 text-gray-400"></i><span class="font-semibold text-sm">Thriller</span></div>
+      <div class="category-card" data-open-auth="login"><i data-lucide="theater" width="32" height="32"></i><span>Drama</span></div>
+      <div class="category-card" data-open-auth="login"><i data-lucide="smile" width="32" height="32"></i><span>Comedy</span></div>
+      <div class="category-card" data-open-auth="login"><i data-lucide="swords" width="32" height="32"></i><span>Epic</span></div>
+      <div class="category-card" data-open-auth="login"><i data-lucide="heart" width="32" height="32"></i><span>Romance</span></div>
+      <div class="category-card" data-open-auth="login"><i data-lucide="video" width="32" height="32"></i><span>Documentary</span></div>
+      <div class="category-card" data-open-auth="login"><i data-lucide="flame" width="32" height="32"></i><span>Thriller</span></div>
     </div>
   </section>
 
-  <!-- ================= ABOUT AFROSTORY (SEO) ================= -->
+  <!-- ================= ABOUT AFROSTORY ================= -->
   <section class="section-container my-8">
     <div class="max-w-4xl mx-auto bg-surface p-8 md:p-10 rounded-2xl border border-gray-800 relative overflow-hidden">
       <div class="absolute top-0 right-0 opacity-5 w-64 h-64 pointer-events-none"><i data-lucide="play-circle" width="100%" height="100%"></i></div>
@@ -387,7 +492,7 @@
   <!-- ================= FAQ ================= -->
   <section class="section-container py-12">
     <div class="max-w-4xl mx-auto">
-      <h2 class="text-center text-2xl font-display font-bold mb-8">Frequently Asked Questions</h2>
+      <h2 class="text-center text-2xl font-display font-bold mb-8 text-white">Frequently Asked Questions</h2>
       <div class="space-y-4">
         <div class="bg-surface p-5 rounded-lg border border-gray-800">
           <h3 class="font-bold text-accent mb-2">What is AfroStory?</h3>
@@ -407,7 +512,7 @@
 
   <!-- ================= ADSENSE 2 ================= -->
   <div class="ad-container mb-10">
-    <span>Advertisement Placeholder</span>
+    <span>Advertisement</span>
   </div>
 
   <!-- ================= FOOTER ================= -->
@@ -473,10 +578,7 @@
       <button class="modal-close" id="close-modal-btn" aria-label="Close modal"><i data-lucide="x"></i></button>
       
       <!-- LEFT SIDE: BRANDING -->
-      <div class="auth-modal-left hidden md:flex w-2/5 p-8 bg-black relative flex-col justify-end">
-        <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1516055619834-3dfa1b2416f4?auto=format&fit=crop&w=600&q=80')] bg-cover bg-center opacity-40"></div>
-        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent"></div>
-        
+      <div class="auth-modal-left hidden md:flex">
         <div class="relative z-10">
           <div class="brand-logo-container mb-6">
             <div class="brand-mark-box" style="transform: rotate(-6deg) scale(1.1); margin-right: 4px;">A</div>
@@ -498,42 +600,42 @@
         
         <!-- LOGIN FORM -->
         <form id="login-form" class="auth-form space-y-4" novalidate>
-          <h2 class="text-2xl font-bold">Welcome back</h2>
+          <h2 class="text-2xl font-bold text-white">Welcome back</h2>
           <p class="text-gray-400 text-sm">Sign in to continue your journey.</p>
-          <input class="field" id="login-email" type="email" autocomplete="email" placeholder="Email address" required>
-          <div class="password-field">
+          <input class="field mt-4" id="login-email" type="email" autocomplete="email" placeholder="Email address" required>
+          <div class="password-field mt-4">
             <input class="field" id="login-password" type="password" autocomplete="current-password" placeholder="Password" required>
-            <button class="password-toggle" type="button" data-password-toggle="login-password" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
+            <button class="password-toggle" type="button" data-password-toggle="#login-password" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
           </div>
           <div class="flex justify-between items-center mt-2">
-            <label class="text-sm text-gray-400 flex items-center gap-2"><input id="remember-me" type="checkbox"> Remember me</label>
+            <label class="text-sm text-gray-400 flex items-center gap-2 cursor-pointer"><input id="remember-me" type="checkbox"> Remember me</label>
             <button class="link text-sm" type="button" data-mode="forgot">Forgot password?</button>
           </div>
           <button class="primary mt-4" type="submit">Sign in</button>
           <div class="border-t border-gray-700 pt-4 mt-4 text-center text-sm text-gray-400">New to AfroStory? <button class="link" type="button" data-mode="register">Create an account</button></div>
           <div class="grid grid-cols-2 gap-2 mt-4">
-            <button class="field hover:border-accent transition-colors flex justify-center items-center" type="button" data-sso="google"><img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5 mr-2" alt="Google"> Google</button>
-            <button class="field hover:border-accent transition-colors flex justify-center items-center" type="button" data-sso="github"><img src="https://www.svgrepo.com/show/512317/github-142.svg" class="w-5 h-5 invert mr-2" alt="GitHub"> GitHub</button>
+            <button class="field hover:border-accent transition-colors flex justify-center items-center cursor-pointer" type="button" data-sso="google"><img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5 mr-2" alt="Google"> Google</button>
+            <button class="field hover:border-accent transition-colors flex justify-center items-center cursor-pointer" type="button" data-sso="github"><img src="https://www.svgrepo.com/show/512317/github-142.svg" class="w-5 h-5 invert mr-2" alt="GitHub"> GitHub</button>
           </div>
         </form>
 
         <!-- REGISTER FORM -->
         <form id="register-form" class="auth-form hidden space-y-4" novalidate>
-          <h2 class="text-2xl font-bold">Create your account</h2>
+          <h2 class="text-2xl font-bold text-white">Create your account</h2>
           <p class="text-gray-400 text-sm">Join a home for African stories.</p>
-          <input class="field" id="reg-username" type="text" autocomplete="username" placeholder="Username" required>
-          <input class="field" id="reg-email" type="email" autocomplete="email" placeholder="Email address" required>
-          <div class="password-field">
+          <input class="field mt-4" id="reg-username" type="text" autocomplete="username" placeholder="Username" required>
+          <input class="field mt-4" id="reg-email" type="email" autocomplete="email" placeholder="Email address" required>
+          <div class="password-field mt-4">
             <input class="field" id="reg-password" type="password" autocomplete="new-password" placeholder="Password" required>
-            <button class="password-toggle" type="button" data-password-toggle="reg-password" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
+            <button class="password-toggle" type="button" data-password-toggle="#reg-password" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
           </div>
-          <div class="flex gap-1"><i id="str-bar-1" class="bar"></i><i id="str-bar-2" class="bar"></i><i id="str-bar-3" class="bar"></i><i id="str-bar-4" class="bar"></i></div>
-          <p id="password-feedback" class="text-xs text-gray-500"></p>
-          <div class="password-field">
+          <div class="flex gap-1 mt-2"><i id="str-bar-1" class="bar"></i><i id="str-bar-2" class="bar"></i><i id="str-bar-3" class="bar"></i><i id="str-bar-4" class="bar"></i></div>
+          <p id="password-feedback" class="text-xs text-gray-500 mt-1"></p>
+          <div class="password-field mt-4">
             <input class="field" id="reg-confirm" type="password" autocomplete="new-password" placeholder="Confirm password" required>
-            <button class="password-toggle" type="button" data-password-toggle="reg-confirm" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
+            <button class="password-toggle" type="button" data-password-toggle="#reg-confirm" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
           </div>
-          <div class="bg-surface border border-gray-800 p-3 rounded-lg mt-2">
+          <div class="bg-surface border border-gray-800 p-3 rounded-lg mt-4">
             <label class="text-sm text-gray-400 flex items-center gap-2 cursor-pointer">
               <input id="reg-terms" type="checkbox" required> 
               <span>I agree to the <a href="/terms.html" class="text-accent hover:underline" target="_blank">Terms of Service</a>.</span>
@@ -545,7 +647,7 @@
 
         <!-- FORGOT PASSWORD FORM -->
         <form id="forgot-form" class="auth-form hidden space-y-4" novalidate>
-          <h2 class="text-2xl font-bold">Reset password</h2>
+          <h2 class="text-2xl font-bold text-white">Reset password</h2>
           <p class="text-gray-400 text-sm">We will send a secure 15-minute code.</p>
           <input class="field mt-4" id="forgot-email" type="email" placeholder="Registered email" required>
           <button class="primary mt-4" type="submit">Send reset code</button>
@@ -554,7 +656,7 @@
 
         <!-- RESET PASSWORD FORM -->
         <form id="reset-form" class="auth-form hidden space-y-4" novalidate>
-          <h2 class="text-2xl font-bold">Set new password</h2>
+          <h2 class="text-2xl font-bold text-white">Set new password</h2>
           <p class="text-gray-400 text-sm">Enter the code sent to your email.</p>
           <input class="field code mt-4" id="reset-code" inputmode="numeric" maxlength="6" placeholder="------" required>
           <div class="bg-accent/10 border border-accent/20 rounded-lg p-3 text-center mt-2">
@@ -562,7 +664,7 @@
           </div>
           <div class="password-field mt-4">
             <input class="field" id="reset-password" type="password" placeholder="New password" required>
-            <button class="password-toggle" type="button" data-password-toggle="reset-password" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
+            <button class="password-toggle" type="button" data-password-toggle="#reset-password" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
           </div>
           <button class="primary mt-4" type="submit">Update password</button>
           <button class="link text-sm w-full mt-4" type="button" data-mode="login">Cancel</button>
@@ -570,7 +672,7 @@
 
         <!-- VERIFY EMAIL FORM -->
         <form id="verify-form" class="auth-form hidden space-y-4" novalidate>
-          <h2 class="text-2xl font-bold">Verify your email</h2>
+          <h2 class="text-2xl font-bold text-white">Verify your email</h2>
           <p class="text-gray-400 text-sm">Enter the six-digit code sent to your email.</p>
           <input class="field code mt-4" id="verify-code" inputmode="numeric" maxlength="6" placeholder="------" required>
           <div class="bg-accent/10 border border-accent/20 rounded-lg p-3 text-center mt-2">
@@ -586,8 +688,6 @@
   
   <!-- LOAD SEPARATE JS LOGIC -->
   <script src="/js/auth.js"></script>
-
-  <div data-rs-ad></div>
 
 </body>
 </html>
