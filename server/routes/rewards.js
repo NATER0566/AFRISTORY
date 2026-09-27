@@ -185,10 +185,10 @@ export default async function rewardRoutes(fastify) {
 
       // SECURE CHECK: If this reward requires an Ad, verify the receipt
       if (method === 'AD') {
-        const rawStatus = receipt.status || receipt.rewarded || String(receipt);
+        const rawStatus = receipt.status || String(receipt);
         const status = typeof rawStatus === 'string' ? rawStatus.toLowerCase() : rawStatus;
         
-        const isSuccess = status === 'rewarded' || status === 'completed' || status === 'success' || status === 'true' || status === true;
+        const isSuccess = status === 'granted' && receipt.reward === true;
         
         if (!isSuccess) {
           fastify.log.warn(`[REWARD_REJECTED] User ${request.user._id} attempted to claim reward ${request.params.rewardId} without completing the ad.`);
