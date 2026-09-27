@@ -428,9 +428,6 @@ async function openEpisode(id) {
             
             let lockScreen = ''; 
             
-            // =========================================================================
-            // ROCKET SLOTH AD IMPLEMENTATION & COIN UNLOCK OVERLAY
-            // =========================================================================
             if (!episode.hasAccess) { 
                 lockScreen = `
                 <div class="feed-lock-overlay hidden" id="lock-${episode._id}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: 50;"> 
@@ -564,38 +561,6 @@ async function openEpisode(id) {
             
             feedContainer.appendChild(card); 
             feedObserver.observe(card); 
-            
-            // =========================================================================
-            // ROCKET SLOTH REWARD LISTENER
-            // =========================================================================
-            const rsBtn = card.querySelector(`#rs-unlock-btn-${episode._id}`);
-            if (rsBtn) {
-                rsBtn.addEventListener('rs:rewarded', function (event) {
-                    const status = event.detail && event.detail.status;
-                    
-                    if (status) { // Fired when ad is complete or returns 'preview'
-                        toast('Ad complete! Unlocking episode...', 'success');
-                        
-                        episode.hasAccess = true;
-                        if (state.currentEpisode && state.currentEpisode._id === episode._id) {
-                            state.currentEpisode.hasAccess = true;
-                        }
-                        
-                        const lockUI = card.querySelector(`#lock-${episode._id}`);
-                        if (lockUI) lockUI.classList.add('hidden');
-                        
-                        videoEl.setAttribute('controls', 'true');
-                        videoEl.play().catch(e => console.log("Autoplay blocked:", e));
-                        
-                        // Optionally tell the backend the user unlocked via AD
-                        api('/wallet/unlock-episode', { 
-                            method: 'POST', 
-                            headers: { 'Content-Type': 'application/json' }, 
-                            body: JSON.stringify({ episodeId: episode._id, method: 'AD' }) 
-                        }).catch(() => {});
-                    }
-                });
-            }
         }); 
     } catch (error) {
         logFrontendError('open_episode_failed', error.message, error.stack);
@@ -706,6 +671,7 @@ async function loadWallet() {
     } catch (error) { toast(error.message, 'error'); } 
 } 
 
+/* FIX: Added data-rs-rewarded attribute to all reward claim buttons */
 function renderRewardCard(reward) {
     const eligibility = reward.eligibility || { state: reward.claimed ? 'CLAIMED' : 'LOCKED', reason: 'Complete the required activity first.' };
     const stateVal = eligibility.state;
@@ -717,7 +683,7 @@ function renderRewardCard(reward) {
     else if (stateVal === 'PENDING_VERIFICATION') { action = '<p>Processing...</p>'; } 
     else if (stateVal === 'LOCKED') { action = `<span class="reward-locked">🔒 ${esc(eligibility.reason)}</span>`; } 
     else if (stateVal === 'EXPIRED') { action = '<p>Expired</p>'; } 
-    else { action = `${socialUrl ? `<a href="${esc(socialUrl)}" target="_blank" class="button button-quiet">Visit ${esc(reward.metadata?.platform || 'official account')}</a>` : ''}<button class="button button-accent reward-action" data-reward-id="${esc(reward._id)}">Claim reward</button>`; }
+    else { action = `${socialUrl ? `<a href="${esc(socialUrl)}" target="_blank" class="button button-quiet">Visit ${esc(reward.metadata?.platform || 'official account')}</a>` : ''}<button class="button button-accent reward-action" data-reward-id="${esc(reward._id)}" data-rs-rewarded>Claim reward</button>`; }
     
     return `<article class="reward-card reward-state-${stateVal.toLowerCase()}"><p class="eyebrow">${esc(reward.category || 'MISSION')}</p><h3>${esc(reward.name)}</h3><p class="muted">${esc(reward.description || '')}</p><div class="reward-meta">+${Number(reward.rewardAmount).toLocaleString()} Coins</div><div class="reward-state-label">${isSocial ? (stateVal === 'CLAIMED' ? 'COMPLETED' : 'AVAILABLE') : esc(stateVal.replaceAll('_', ' '))}</div>${action}</article>`;
 }
@@ -741,7 +707,7 @@ async function loadRewards() {
         
         const dailyCard = $('#daily-reward-card');
         if (dailyCard) {
-            dailyCard.innerHTML = daily ? `<p class="eyebrow">DAILY CHECK-IN</p><h2>${daily.claimed ? 'Check-in complete' : 'Your daily reward is ready'}</h2><p class="muted">${esc(daily.description || 'Return each day to keep your streak alive.')}</p><div class="reward-meta">+${Number(daily.rewardAmount).toLocaleString()} coins</div>${daily.claimed ? '<div class="reward-state">Come back after the next calendar day.</div>' : `<button class="button button-accent reward-action" data-reward-id="${esc(daily._id)}">Claim today</button>`}` : '<p>Daily check-in is not available right now.</p>';
+            dailyCard.innerHTML = daily ? `<p class="eyebrow">DAILY CHECK-IN</p><h2>${daily.claimed ? 'Check-in complete' : 'Your daily reward is ready'}</h2><p class="muted">${esc(daily.description || 'Return each day to keep your streak alive.')}</p><div class="reward-meta">+${Number(daily.rewardAmount).toLocaleString()} coins</div>${daily.claimed ? '<div class="reward-state">Come back after the next calendar day.</div>' : `<button class="button button-accent reward-action" data-reward-id="${esc(daily._id)}" data-rs-rewarded>Claim today</button>`}` : '<p>Daily check-in is not available right now.</p>';
         }
 
         const social = rewards.filter(reward => reward.type === 'SOCIAL' || reward.category === 'social');
@@ -1329,7 +1295,6 @@ document.addEventListener('change', event => {
 
 document.addEventListener('click', async event => {     
     try {         
-        // MOBILE MORE MENU TOGGLE
         if (event.target.closest('#mobile-more-btn')) {
             event.preventDefault();
             applyAdminVisibility();
@@ -1592,24 +1557,82 @@ document.addEventListener('click', async event => {
                 if (location.hash === '#watch' && state.currentEpisode) openEpisode(state.currentEpisode._id);
             } catch (error) { toast(error.message, 'error'); }
         }
-
-        const rewardBtn = event.target.closest('[data-reward-id]');
-        if (rewardBtn && !rewardBtn.disabled) {
-            rewardBtn.disabled = true; 
-            rewardBtn.textContent = 'Claiming...';
-            try {
-                await api(`/rewards/${encodeURIComponent(rewardBtn.dataset.rewardId)}/claim`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-                toast('Reward added to your wallet', 'success'); 
-                await loadRewards(); 
-                refreshNotificationBadge();
-            } catch (error) { 
-                rewardBtn.disabled = false; 
-                rewardBtn.textContent = 'Claim reward'; 
-                toast(error.message, 'error'); 
-            }
-        }
     } catch (globalError) {
         logFrontendError('click_handler_failure', globalError.message, globalError.stack);
+    }
+});
+
+/* ============================================================================ */
+/* FIX: STRICT GLOBAL AD INTERCEPTOR (ROCKET SLOTH) */
+/* ============================================================================ */
+document.addEventListener('rs:rewarded', async (event) => {
+    const btn = event.target;
+    const detail = event.detail || {};
+    
+    // Normalize Rocket Sloth's payload string/object
+    const status = typeof detail === 'string' ? detail.toLowerCase() : (detail.status || detail.rewarded || String(detail)).toLowerCase();
+    
+    console.log("[Rocket Sloth Strict Check] Ad finished with status:", status);
+
+    // STRICT WHITELIST: Only unlock if Rocket Sloth explicitly confirms a full view
+    const isSuccess = status === 'rewarded' || status === 'completed' || status === 'success' || status === 'true' || status === true;
+
+    if (!isSuccess) {
+        toast('You must watch the full ad to unlock this.', 'error');
+        if (btn.dataset.rewardId) {
+            btn.disabled = false;
+            btn.textContent = 'Claim reward';
+        }
+        return;
+    }
+
+    // 1. Episode Unlock Logic
+    if (btn.id && btn.id.startsWith('rs-unlock-btn-')) {
+        const episodeId = btn.id.replace('rs-unlock-btn-', '');
+        toast('Ad complete! Unlocking episode...', 'success');
+        
+        const epData = state.feedEpisodes.find(e => e._id === episodeId);
+        if (epData) epData.hasAccess = true;
+        if (state.currentEpisode && state.currentEpisode._id === episodeId) {
+            state.currentEpisode.hasAccess = true;
+        }
+        
+        const card = btn.closest('.feed-video-card');
+        if (card) {
+            const lockUI = card.querySelector(`#lock-${episodeId}`);
+            if (lockUI) lockUI.classList.add('hidden');
+            const videoEl = card.querySelector('video');
+            if (videoEl) {
+                videoEl.setAttribute('controls', 'true');
+                videoEl.play().catch(e => console.log("Autoplay blocked:", e));
+            }
+        }
+
+        api('/wallet/unlock-episode', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ episodeId: episodeId, method: 'AD' }) 
+        }).catch(() => {});
+    }
+
+    // 2. Reward Claim Logic
+    if (btn.dataset.rewardId) {
+        btn.disabled = true;
+        btn.textContent = 'Claiming...';
+        try {
+            await api(`/rewards/${encodeURIComponent(btn.dataset.rewardId)}/claim`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: '{}' 
+            });
+            toast('Reward added to your wallet', 'success'); 
+            await loadRewards(); 
+            refreshNotificationBadge();
+        } catch (error) { 
+            btn.disabled = false; 
+            btn.textContent = 'Claim reward'; 
+            toast(error.message, 'error'); 
+        }
     }
 });
 
