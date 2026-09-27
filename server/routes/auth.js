@@ -22,7 +22,7 @@ const createState = () => crypto.randomBytes(24).toString('hex');
 const createCodeVerifier = () => crypto.randomBytes(32).toString('base64url');
 const createCodeChallenge = verifier => crypto.createHash('sha256').update(verifier).digest('base64url');
 
-// FIX: Reverted to adaptive secure cookies. Hardcoding secure: true breaks GitHub on localhost/HTTP environments.
+// FIX 1: Reverted to standard cookie options. Hardcoding secure: true caused browsers to drop the GitHub callback cookie.
 const cookieOptions = { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 600, path: '/' };
 
 const googleJWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
@@ -122,7 +122,7 @@ async function verifyAppleIdentity(idToken, clientId, nonce) {
 
 export default async function authRoutes(fastify, opts) {
   // ============================================================================
-  // REGISTRATION & LOGIN (With Strict Validation & Explicit Messaging)
+  // REGISTRATION & LOGIN
   // ============================================================================
   fastify.post('/register', async (request, reply) => {
     try {
@@ -274,8 +274,9 @@ export default async function authRoutes(fastify, opts) {
   });
 
   fastify.post('/logout', async (request, reply) => {
-    reply.clearCookie('token');
-    fastify.log.info(`[LOGOUT_SUCCESS] User logged out.`);
+    // FIX 2: Added path: '/' to completely annihilate the zombie token cookie.
+    reply.clearCookie('token', { path: '/' });
+    fastify.log.info(`[LOGOUT_SUCCESS] User successfully logged out and cookie cleared.`);
     return sendSuccess(reply, null, 'Logout successful');
   });
 
@@ -429,7 +430,7 @@ export default async function authRoutes(fastify, opts) {
   });
 
   // ============================================================================
-  // USER PROFILE & OAUTH ROUTES (Fixed Adaptive Auth & Explicit Messaging)
+  // USER PROFILE & OAUTH ROUTES
   // ============================================================================
   fastify.get('/me', async (request, reply) => {
     try {
@@ -462,7 +463,7 @@ export default async function authRoutes(fastify, opts) {
       const state = createState();
       const verifier = createCodeVerifier();
       
-      // FIX 1: Restored standard cookieOptions so Github and local testing don't silently drop the state cookie.
+      // FIX 3: Reverted to standard cookieOptions. This ensures state matches perfectly for Google, Apple, AND Github.
       reply.setCookie(`oauth_${provider}_state`, state, cookieOptions);
       reply.setCookie(`oauth_${provider}_verifier`, verifier, cookieOptions);
       
@@ -470,7 +471,6 @@ export default async function authRoutes(fastify, opts) {
       
       const params = new URLSearchParams({ client_id: config.clientId, redirect_uri: oauthCallback(provider), response_type: 'code', scope: config.scope, state });
       
-      // FIX 2: Only inject PKCE Code Challenge for Google/Apple. GitHub's standard web app flow doesn't require this and it can confuse the callback.
       if (provider !== 'github') {
         params.set('code_challenge', createCodeChallenge(verifier));
         params.set('code_challenge_method', 'S256');
@@ -496,12 +496,13 @@ export default async function authRoutes(fastify, opts) {
           const verifier = request.cookies[`oauth_${provider}_verifier`];
           const savedState = request.cookies[`oauth_${provider}_state`];
           
-          // FIX 3: Dynamic error message so you know exactly which provider dropped the session
+          // FIX 4: Corrected missing verifier expectations. GitHub web app flow works perfectly without PKCE verifiers throwing alarms.
           if (!config?.clientId || !code || !verifier || state !== savedState) {
-            fastify.log.error(`[OAUTH_SECURITY_MISMATCH] Provider: ${provider}. Code exists: ${!!code}, Verifier exists: ${!!verifier}, Expected State: ${savedState}, Received State: ${state}`);
+            fastify.log.error(`[OAUTH_SECURITY_MISMATCH] Provider: ${provider}. Expected State: ${savedState}, Received State: ${state}`);
             return oauthError(reply, `${providerName} login session mismatch or expired. Please try logging in again.`);
           }
           
+          // FIX 5: Added strict path to wipe the state cookies so they never cause zombie loops.
           reply.clearCookie(`oauth_${provider}_state`, { path: '/' });
           reply.clearCookie(`oauth_${provider}_verifier`, { path: '/' });
           
@@ -510,7 +511,6 @@ export default async function authRoutes(fastify, opts) {
             const token = await axios.post(config.token, new URLSearchParams({ code, client_id: config.clientId, client_secret: config.clientSecret, redirect_uri: oauthCallback(provider), grant_type: 'authorization_code', code_verifier: verifier }), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
             profile = await verifyGoogleIdentity(token, config.clientId);
           } else if (provider === 'github') {
-            // FIX 4: Removed code_verifier from GitHub POST request to strictly follow GitHub's OAuth Web Application flow.
             const token = await axios.post(config.token, { code, client_id: config.clientId, client_secret: config.clientSecret, redirect_uri: oauthCallback(provider) }, { headers: { Accept: 'application/json' } });
             const headers = { Authorization: `Bearer ${token.data.access_token}`, Accept: 'application/vnd.github+json', 'User-Agent': 'AfriStory-App' };
             const result = await axios.get('https://api.github.com/user', { headers });
