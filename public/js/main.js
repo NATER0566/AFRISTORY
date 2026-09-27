@@ -1568,6 +1568,15 @@ document.addEventListener('rs:rewarded', async (event) => {
     const btn = event.target;
     const receipt = event.detail || {};
     
+    // --- ADDED DEBUG TRAP FOR MOBILE ---
+    alert("ROCKET SLOTH SECRET PAYLOAD:\n\n" + JSON.stringify(receipt));
+    
+    const debugBox = document.createElement('div');
+    debugBox.style.cssText = "position:fixed; top:20%; left:10%; width:80%; background:#e74c3c; color:#fff; padding:20px; z-index:999999; font-weight:bold; word-wrap:break-word; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,0.8);";
+    debugBox.innerHTML = `ROCKET SLOTH SECRET PAYLOAD:<br><br>${JSON.stringify(receipt)}<br><br><button onclick="this.parentElement.remove()" style="margin-top:15px; padding:10px; width:100%; color:black;">Close</button>`;
+    document.body.appendChild(debugBox);
+    // -----------------------------------
+
     console.log("[Rocket Sloth Ad Receipt sent to backend]:", receipt);
 
     // 1. Episode Unlock Logic
