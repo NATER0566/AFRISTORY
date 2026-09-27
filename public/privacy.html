@@ -1,78 +1,163 @@
 <!doctype html>
 <html lang="en">
 <head>
-
-
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4661775522120249"
-     crossorigin="anonymous"></script>
-
-  
-  
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Privacy Policy | AfroStory</title>
+  <meta name="description" content="AfroStory Privacy Policy - How we collect, use, and protect your data.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif']},colors:{background:'#111111',surface:'#1B1B1B',accent:'#D4A017',action:'#E67E22',success:'#2ECC71',danger:'#E74C3C'}}}};</script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter','sans-serif'] },
+          colors: {
+            background: '#111111',
+            surface: '#1B1B1B',
+            surface2: '#222222',
+            accent: '#D4A017',
+            action: '#E67E22',
+            success: '#2ECC71'
+          }
+        }
+      }
+    };
+  </script>
 </head>
-<body class="bg-background text-gray-300 font-sans min-h-screen p-6 lg:p-12">
-  
-  <header class="max-w-3xl mx-auto mb-10 flex items-center justify-between">
-    <a href="/" class="flex items-center gap-2 text-white hover:text-accent transition-colors font-black tracking-widest">
-      <span class="text-accent text-xl">A</span> AFROSTORY
+<body class="bg-background text-gray-300 font-sans min-h-screen">
+
+  <!-- Header -->
+  <header class="max-w-4xl mx-auto px-6 py-6 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2 text-white hover:text-accent transition-colors font-black tracking-widest text-lg">
+      <span class="bg-accent text-black w-8 h-8 rounded-lg flex items-center justify-center font-black">A</span> AFROSTORY
     </a>
-    <a href="/" class="text-sm font-semibold text-accent hover:underline flex items-center gap-1">
-      <i data-lucide="arrow-left" width="16" height="16"></i> Back
+    <a href="/" class="text-sm font-semibold text-gray-400 hover:text-accent transition flex items-center gap-1">
+      <i data-lucide="arrow-left" class="w-4 h-4"></i> Back Home
     </a>
   </header>
 
-  <main class="max-w-3xl mx-auto bg-surface p-8 md:p-12 rounded-2xl border border-gray-800 shadow-xl space-y-8">
-    <div class="border-b border-gray-800 pb-6">
-        <h1 class="text-3xl font-bold text-white mb-2">Privacy Policy</h1>
-        <p class="text-sm text-gray-500 tracking-wide uppercase">Last Updated: September 2026</p>
+  <!-- Hero -->
+  <div class="max-w-4xl mx-auto px-6 pb-8">
+    <div class="bg-gradient-to-br from-surface to-surface2 border border-gray-800 rounded-2xl p-8 md:p-10">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="bg-accent/10 p-3 rounded-xl"><i data-lucide="shield-check" class="w-6 h-6 text-accent"></i></div>
+        <span class="text-xs font-bold uppercase tracking-widest text-accent bg-accent/10 px-3 py-1 rounded-full">Legal</span>
+      </div>
+      <h1 class="text-3xl md:text-4xl font-black text-white mb-3">Privacy Policy</h1>
+      <p class="text-gray-400">Last Updated: September 27, 2026 • Effective Immediately</p>
+      <p class="text-gray-500 text-sm mt-4 leading-relaxed">This policy describes how AfroStory ("we", "us", "our") collects, uses, shares, and protects your information across our website, mobile experiences, and related services.</p>
     </div>
 
-    <section class="space-y-4">
-        <h2 class="text-xl font-semibold text-white">1. Introduction</h2>
-        <p class="leading-relaxed text-gray-400">Welcome to AFROSTORY. We respect your privacy and are committed to protecting your personal data. This Privacy Policy explains how we collect, use, and safeguard your information when you use our platform.</p>
-    </section>
+    <!-- Quick Nav -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
+      <a href="#collect" class="bg-surface border border-gray-800 rounded-xl p-4 hover:border-accent transition text-sm"><i data-lucide="database" class="w-5 h-5 text-accent mb-2"></i><div class="text-white font-semibold">What We Collect</div></a>
+      <a href="#ads" class="bg-surface border border-gray-800 rounded-xl p-4 hover:border-accent transition text-sm"><i data-lucide="megaphone" class="w-5 h-5 text-accent mb-2"></i><div class="text-white font-semibold">Ads & Cookies</div></a>
+      <a href="#rights" class="bg-surface border border-gray-800 rounded-xl p-4 hover:border-accent transition text-sm"><i data-lucide="key-round" class="w-5 h-5 text-accent mb-2"></i><div class="text-white font-semibold">Your Rights</div></a>
+      <a href="#contact" class="bg-surface border border-gray-800 rounded-xl p-4 hover:border-accent transition text-sm"><i data-lucide="mail" class="w-5 h-5 text-accent mb-2"></i><div class="text-white font-semibold">Contact Us</div></a>
+    </div>
+  </div>
 
-    <section class="space-y-4">
-        <h2 class="text-xl font-semibold text-white">2. Information We Collect</h2>
-        <p class="leading-relaxed text-gray-400">When you register for AFROSTORY, we may collect the following information:</p>
-        <ul class="list-disc pl-5 space-y-2 text-gray-400">
-            <li><strong class="text-gray-200">Account Information:</strong> Your chosen username, email address, and securely hashed passwords or PINs.</li>
-            <li><strong class="text-gray-200">Google OAuth Data:</strong> If you choose to log in using Google, we collect your Google email address, your name, and your profile picture to create and authenticate your account.</li>
+  <!-- Content -->
+  <main class="max-w-4xl mx-auto px-6 pb-12">
+    <div class="bg-surface border border-gray-800 rounded-2xl p-8 md:p-12 space-y-10 shadow-2xl">
+
+      <section id="intro">
+        <h2 class="text-xl font-bold text-white flex items-center gap-2 mb-4"><span class="text-accent">01.</span> Introduction</h2>
+        <p class="text-gray-400 leading-relaxed">Welcome to AfroStory. We respect your privacy and are committed to protecting your personal data in compliance with the Nigeria Data Protection Regulation (NDPR), EU GDPR, and other applicable laws. By using AfroStory, you agree to this policy.</p>
+      </section>
+
+      <section id="collect">
+        <h2 class="text-xl font-bold text-white flex items-center gap-2 mb-4"><span class="text-accent">02.</span> Information We Collect</h2>
+        <div class="space-y-4">
+          <div class="bg-background rounded-xl p-5 border border-gray-800">
+            <h3 class="text-white font-semibold mb-2 flex items-center gap-2"><i data-lucide="user" class="w-4 h-4 text-accent"></i> Account Information</h3>
+            <p class="text-gray-400 text-sm leading-relaxed">Username, email address, securely hashed password/PIN (bcrypt), profile preferences, avatar.</p>
+          </div>
+          <div class="bg-background rounded-xl p-5 border border-gray-800">
+            <h3 class="text-white font-semibold mb-2 flex items-center gap-2"><i data-lucide="chrome" class="w-4 h-4 text-accent"></i> Google OAuth Data</h3>
+            <p class="text-gray-400 text-sm leading-relaxed">If you sign in with Google, we receive your name, email address, and profile picture as provided by Google.</p>
+          </div>
+          <div class="bg-background rounded-xl p-5 border border-gray-800">
+            <h3 class="text-white font-semibold mb-2 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-accent"></i> Automatically Collected Data</h3>
+            <p class="text-gray-400 text-sm leading-relaxed">Device type, browser, IP address, pages visited, time spent, interactions, crash logs. We use this for analytics, security, and improving performance.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-bold text-white flex items-center gap-2 mb-4"><span class="text-accent">03.</span> How We Use Your Information</h2>
+        <ul class="grid md:grid-cols-2 gap-3 text-sm">
+          <li class="flex gap-2 text-gray-400"><i data-lucide="check-circle-2" class="w-5 h-5 text-success shrink-0"></i> Operate, maintain, and personalize your account</li>
+          <li class="flex gap-2 text-gray-400"><i data-lucide="check-circle-2" class="w-5 h-5 text-success shrink-0"></i> Send transactional emails (verification, password reset)</li>
+          <li class="flex gap-2 text-gray-400"><i data-lucide="check-circle-2" class="w-5 h-5 text-success shrink-0"></i> Prevent fraud, abuse, and ensure platform security</li>
+          <li class="flex gap-2 text-gray-400"><i data-lucide="check-circle-2" class="w-5 h-5 text-success shrink-0"></i> Analyze usage to improve content and features</li>
         </ul>
-    </section>
+      </section>
 
-    <section class="space-y-4">
-        <h2 class="text-xl font-semibold text-white">3. How We Use Your Information</h2>
-        <p class="leading-relaxed text-gray-400">We use your information exclusively to:</p>
-        <ul class="list-disc pl-5 space-y-2 text-gray-400">
-            <li>Provide, operate, and maintain your account.</li>
-            <li>Send transactional emails (such as verification codes and password resets).</li>
-            <li>Personalize your community experience.</li>
-        </ul>
-    </section>
+      <section id="ads" class="bg-accent/5 border border-accent/20 rounded-xl p-6">
+        <h2 class="text-xl font-bold text-white flex items-center gap-2 mb-4"><i data-lucide="megaphone" class="w-5 h-5 text-accent"></i> 04. Advertising, Cookies & Third Parties</h2>
+        <div class="space-y-4 text-sm text-gray-400 leading-relaxed">
+          <p>We use third-party advertising services including <strong class="text-white">Google Ad Manager, Google AdSense, and Google Analytics</strong> to serve ads and measure performance.</p>
+          <ul class="list-disc pl-5 space-y-2">
+            <li>Google uses cookies, including the DoubleClick cookie, to serve ads based on your prior visits to our website and other sites on the Internet.</li>
+            <li>Third-party vendors, including Google, may place and read cookies on your browser, or use web beacons to collect information as a result of ad serving on this website.</li>
+            <li>You may opt out of personalized advertising by visiting <a href="https://www.google.com/settings/ads" class="text-accent underline" target="_blank">Google Ads Settings</a>.</li>
+            <li>You can opt out of third-party cookies for personalized advertising at <a href="http://www.aboutads.info/choices/" class="text-accent underline" target="_blank">aboutads.info/choices</a>.</li>
+            <li>Manage cookies anytime in your browser settings. Disabling cookies may affect site functionality.</li>
+          </ul>
+          <p>Learn more: <a href="https://policies.google.com/technologies/ads" class="text-accent underline" target="_blank">Google's Privacy & Terms – Advertising</a></p>
+        </div>
+      </section>
 
-    <section class="space-y-4">
-        <h2 class="text-xl font-semibold text-white">4. Data Security</h2>
-        <p class="leading-relaxed text-gray-400">We implement industry-standard security measures, including bcrypt hashing for passwords and secure JSON Web Tokens (JWT) for session management, to protect your data. We do not sell, trade, or rent your personal identification information to others.</p>
-    </section>
+      <section>
+        <h2 class="text-xl font-bold text-white mb-4"><span class="text-accent">05.</span> Data Sharing</h2>
+        <p class="text-gray-400 text-sm leading-relaxed">We do not sell your personal data. We share data only with: (a) Service providers (hosting, email, analytics) under strict contracts, (b) Legal authorities when required by law, (c) Google and advertising partners as described above.</p>
+      </section>
 
-    <section class="space-y-4">
-        <h2 class="text-xl font-semibold text-white">5. Contact Us</h2>
-        <p class="leading-relaxed text-gray-400">If you have any questions about this Privacy Policy, please contact our support team via our official channels.</p>
-    </section>
+      <section>
+        <h2 class="text-xl font-bold text-white mb-4"><span class="text-accent">06.</span> Data Security & Retention</h2>
+        <p class="text-gray-400 text-sm leading-relaxed">We use bcrypt hashing, HTTPS/TLS encryption, JWT session management, and access controls. We retain account data while your account is active and for up to 24 months after closure for legal and security purposes, then securely delete or anonymize it.</p>
+      </section>
+
+      <section id="rights">
+        <h2 class="text-xl font-bold text-white mb-4"><span class="text-accent">07.</span> Your Rights</h2>
+        <div class="grid md:grid-cols-2 gap-3 text-sm">
+          <div class="bg-background p-4 rounded-lg border border-gray-800 text-gray-400"><strong class="text-white block mb-1">Access & Portability</strong> Request a copy of your data.</div>
+          <div class="bg-background p-4 rounded-lg border border-gray-800 text-gray-400"><strong class="text-white block mb-1">Correction</strong> Update inaccurate information.</div>
+          <div class="bg-background p-4 rounded-lg border border-gray-800 text-gray-400"><strong class="text-white block mb-1">Deletion</strong> Request deletion of your account and data.</div>
+          <div class="bg-background p-4 rounded-lg border border-gray-800 text-gray-400"><strong class="text-white block mb-1">Withdraw Consent</strong> Opt-out of marketing and personalized ads anytime.</div>
+        </div>
+        <p class="text-gray-500 text-sm mt-4">To exercise these rights, email us below. We respond within 30 days.</p>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-bold text-white mb-4"><span class="text-accent">08.</span> Children's Privacy</h2>
+        <p class="text-gray-400 text-sm leading-relaxed">AfroStory is not intended for children under 13. We do not knowingly collect data from children under 13. If we learn we have, we will delete it promptly.</p>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-bold text-white mb-4"><span class="text-accent">09.</span> Changes to This Policy</h2>
+        <p class="text-gray-400 text-sm leading-relaxed">We may update this policy. We will notify you via the site or email of material changes. Continued use after changes means acceptance.</p>
+      </section>
+
+      <section id="contact" class="bg-background border border-gray-800 rounded-xl p-6">
+        <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="mail" class="w-5 h-5 text-accent"></i> 10. Contact Us</h2>
+        <p class="text-gray-400 text-sm mb-4">Questions about this policy or your data?</p>
+        <div class="flex flex-col sm:flex-row gap-3">
+          <a href="mailto:privacy@afrostory.com" class="flex items-center justify-center gap-2 bg-accent text-black font-bold px-6 py-3 rounded-xl hover:opacity-90 transition"><i data-lucide="send" class="w-4 h-4"></i> privacy@afrostory.com</a>
+          <a href="/" class="flex items-center justify-center gap-2 bg-surface2 text-white font-semibold px-6 py-3 rounded-xl border border-gray-700 hover:border-accent transition">Visit Help Center</a>
+        </div>
+        <p class="text-xs text-gray-600 mt-4">Data Controller: AfroStory • Nigeria</p>
+      </section>
+
+    </div>
+
+    <p class="text-center text-xs text-gray-600 mt-8">© 2026 AfroStory. All rights reserved. • <a href="/terms" class="hover:text-accent underline">Terms of Service</a> • <a href="/privacy" class="hover:text-accent underline">Privacy Policy</a></p>
   </main>
-  
-  <footer class="max-w-3xl mx-auto mt-8 text-center text-xs text-gray-600">
-      &copy; 2026 AFROSTORY. All rights reserved.
-  </footer>
 
   <script>window.lucide?.createIcons?.();</script>
 </body>
