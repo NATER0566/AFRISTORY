@@ -91,7 +91,6 @@
     .hero-inner { position: relative; z-index: 2; width: 100%; max-width: 1250px; min-height: 430px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 80px; }
     .hero-copy { max-width: 720px; }
     .hero-eyebrow { display: inline-flex; align-items: center; gap: 10px; color: #D4A017; font-size: 13px; font-weight: 800; letter-spacing: 2px; margin-bottom: 20px; }
-    /* REMOVED .hero-eyebrow::before AS REQUESTED */
     
     .hero-copy h1 { margin: 0 0 24px; font-family: 'Space Grotesk', sans-serif; font-size: clamp(3rem, 6vw, 5.8rem); line-height: 0.98; letter-spacing: -2px; font-weight: 900; color: #fff; }
     .hero-copy p { max-width: 650px; margin: 0 0 32px; color: #bdbdbd; font-size: clamp(1rem, 2vw, 1.2rem); line-height: 1.7; }
@@ -284,6 +283,9 @@
     .link{background:none;border:0;color:#D4A017;font-weight:700}
     .code{letter-spacing:.7em;text-align:center;font-size:1.5rem}
     .bar{height:5px;flex:1;background:#444;border-radius:9px}
+    
+    /* FIX: Force SweetAlert2 on top of the modal overlay (z-index 2000) */
+    .swal2-container { z-index: 9999 !important; }
     .swal2-popup.big-alert { padding: 2em; font-size: 1.2rem; border-radius: 12px; }
     .swal2-title.big-title { font-size: 1.5rem !important; }
 
