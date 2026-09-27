@@ -671,7 +671,6 @@ async function loadWallet() {
     } catch (error) { toast(error.message, 'error'); } 
 } 
 
-/* FIX: Added data-rs-rewarded attribute to all reward claim buttons */
 function renderRewardCard(reward) {
     const eligibility = reward.eligibility || { state: reward.claimed ? 'CLAIMED' : 'LOCKED', reason: 'Complete the required activity first.' };
     const stateVal = eligibility.state;
@@ -1567,71 +1566,77 @@ document.addEventListener('click', async event => {
 /* ============================================================================ */
 document.addEventListener('rs:rewarded', async (event) => {
     const btn = event.target;
-    const detail = event.detail || {};
+    const receipt = event.detail || {};
     
-    // Normalize Rocket Sloth's payload string/object
-    const status = typeof detail === 'string' ? detail.toLowerCase() : (detail.status || detail.rewarded || String(detail)).toLowerCase();
-    
-    console.log("[Rocket Sloth Strict Check] Ad finished with status:", status);
-
-    // STRICT WHITELIST: Only unlock if Rocket Sloth explicitly confirms a full view
-    const isSuccess = status === 'rewarded' || status === 'completed' || status === 'success' || status === 'true' || status === true;
-
-    if (!isSuccess) {
-        toast('You must watch the full ad to unlock this.', 'error');
-        if (btn.dataset.rewardId) {
-            btn.disabled = false;
-            btn.textContent = 'Claim reward';
-        }
-        return;
-    }
+    console.log("[Rocket Sloth Ad Receipt sent to backend]:", receipt);
 
     // 1. Episode Unlock Logic
     if (btn.id && btn.id.startsWith('rs-unlock-btn-')) {
         const episodeId = btn.id.replace('rs-unlock-btn-', '');
-        toast('Ad complete! Unlocking episode...', 'success');
         
-        const epData = state.feedEpisodes.find(e => e._id === episodeId);
-        if (epData) epData.hasAccess = true;
-        if (state.currentEpisode && state.currentEpisode._id === episodeId) {
-            state.currentEpisode.hasAccess = true;
-        }
-        
-        const card = btn.closest('.feed-video-card');
-        if (card) {
-            const lockUI = card.querySelector(`#lock-${episodeId}`);
-            if (lockUI) lockUI.classList.add('hidden');
-            const videoEl = card.querySelector('video');
-            if (videoEl) {
-                videoEl.setAttribute('controls', 'true');
-                videoEl.play().catch(e => console.log("Autoplay blocked:", e));
-            }
-        }
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = 'Verifying ad...';
 
-        api('/wallet/unlock-episode', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ episodeId: episodeId, method: 'AD' }) 
-        }).catch(() => {});
+        try {
+            // SECURE BACKEND VERIFICATION: Never trust the frontend.
+            // We pass the ad provider's receipt directly to the backend.
+            // The backend will decode it and decide if the user actually finished the ad.
+            const response = await api('/wallet/unlock-episode', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ episodeId: episodeId, method: 'AD', receipt: receipt }) 
+            });
+
+            // If backend throws an error or rejects, the catch block handles it.
+            toast('Ad verified! Unlocking episode...', 'success');
+            
+            const epData = state.feedEpisodes.find(e => e._id === episodeId);
+            if (epData) epData.hasAccess = true;
+            if (state.currentEpisode && state.currentEpisode._id === episodeId) {
+                state.currentEpisode.hasAccess = true;
+            }
+            
+            const card = btn.closest('.feed-video-card');
+            if (card) {
+                const lockUI = card.querySelector(`#lock-${episodeId}`);
+                if (lockUI) lockUI.classList.add('hidden');
+                const videoEl = card.querySelector('video');
+                if (videoEl) {
+                    videoEl.setAttribute('controls', 'true');
+                    videoEl.play().catch(e => console.log("Autoplay blocked:", e));
+                }
+            }
+        } catch (error) {
+            // The backend rejected the receipt (user cancelled or skipped)
+            toast('Ad verification failed. You must watch the full ad to unlock.', 'error');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
     }
 
     // 2. Reward Claim Logic
     if (btn.dataset.rewardId) {
+        const originalText = btn.textContent;
         btn.disabled = true;
-        btn.textContent = 'Claiming...';
+        btn.textContent = 'Verifying ad...';
+        
         try {
+            // SECURE BACKEND VERIFICATION FOR REWARDS
             await api(`/rewards/${encodeURIComponent(btn.dataset.rewardId)}/claim`, { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
-                body: '{}' 
+                body: JSON.stringify({ method: 'AD', receipt: receipt }) 
             });
-            toast('Reward added to your wallet', 'success'); 
+            
+            toast('Reward verified and added to your wallet', 'success'); 
             await loadRewards(); 
             refreshNotificationBadge();
         } catch (error) { 
+            // The backend rejected the receipt
+            toast('Ad verification failed. You must watch the full ad to claim.', 'error');
             btn.disabled = false; 
-            btn.textContent = 'Claim reward'; 
-            toast(error.message, 'error'); 
+            btn.textContent = originalText; 
         }
     }
 });
