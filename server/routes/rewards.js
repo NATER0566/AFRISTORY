@@ -11,7 +11,7 @@ import Favorite from '../models/Favorite.js';
 import { verifyAuth, verifyAdmin } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { generateReference, formatDecimal } from '../utils/helpers.js';
-import { createNotification } from '../utils/notificationService.js'; // NEW: Central push orchestrator
+import { createNotification } from '../utils/notificationService.js'; 
 
 const timezone = process.env.REWARD_TIMEZONE || 'Africa/Lagos';
 const periodKey = (date = new Date(), type = 'once') => {
@@ -37,7 +37,6 @@ const activeQuery = () => ({
   ],
 });
 
-// FIXED: Restored the missing dateDistance function to prevent backend crashes on Daily check-ins
 const dateDistance = (left, right) => Math.round((new Date(`${left}T12:00:00Z`) - new Date(`${right}T12:00:00Z`)) / 86400000);
 
 async function ensureDefaultRewards() {
@@ -138,7 +137,6 @@ async function issueReward({ reward, user, request, session, period, metadata = 
   await Transaction.create([{ walletId: wallet._id, userId: user._id, type: 'BONUS', amount: mongoose.Types.Decimal128.fromString(amount.toFixed(2)), reference: referenceId, description: reward.name, status: 'SUCCESS', balanceBefore: mongoose.Types.Decimal128.fromString(before.toFixed(2)), balanceAfter: mongoose.Types.Decimal128.fromString(after.toFixed(2)), metadata: { source: reward.type, rewardId: reward._id } }], { session });
   await RewardAudit.create([{ userId: user._id, rewardId: reward._id, claimId: claim[0]._id, amount, source: reward.type, action: 'ISSUED', status: 'SUCCESS', referenceId, ip: request.ip, userAgent: request.headers['user-agent'] }], { session });
   
-  // NOTE: Notification.create is deliberately removed from here so we can dispatch the Push + DB save AFTER the transaction commits
   return { claim: claim[0], balance: after, amount, rewardName: reward.name, rewardId: reward._id };
 }
 
@@ -158,10 +156,8 @@ export default async function rewardRoutes(fastify) {
       const history = await Transaction.find({ userId: request.user._id }).sort({ createdAt: -1 }).limit(20);
       const rewardStates = await Promise.all(rewards.map(async reward => ({ ...reward.toObject(), eligibility: await getEligibility(request.user, reward, claims), claimed: Boolean(claimMap.get(`${reward._id}:${periodKey(new Date(), reward.recurrenceType)}`)) })));
       
-      // FIXED UI: Filter out exhausted one-time rewards completely so they stop cluttering the UI
       const visibleRewards = rewardStates.filter(r => {
         const isOneTimeCategory = ['ONE_TIME', 'PROFILE', 'DISCOVERY'].includes(r.type);
-        // If it's a non-repeatable reward and already claimed, hide it completely!
         if (isOneTimeCategory && r.eligibility.state === 'CLAIMED') return false;
         return true;
       });
@@ -184,13 +180,30 @@ export default async function rewardRoutes(fastify) {
     session.startTransaction();
     try {
       if (!(await verifyAuth(request, reply))) { await session.abortTransaction(); return; }
+      
+      const { method = 'MANUAL', receipt = {} } = request.body || {};
+
+      // SECURE CHECK: If this reward requires an Ad, verify the receipt
+      if (method === 'AD') {
+        const rawStatus = receipt.status || receipt.rewarded || String(receipt);
+        const status = typeof rawStatus === 'string' ? rawStatus.toLowerCase() : rawStatus;
+        
+        const isSuccess = status === 'rewarded' || status === 'completed' || status === 'success' || status === 'true' || status === true;
+        
+        if (!isSuccess) {
+          fastify.log.warn(`[REWARD_REJECTED] User ${request.user._id} attempted to claim reward ${request.params.rewardId} without completing the ad.`);
+          await session.abortTransaction();
+          return sendError(reply, 'You must watch the full ad to claim this reward.', 403);
+        }
+      }
+
       const reward = await Reward.findOne({ _id: request.params.rewardId, ...activeQuery() }).session(session);
       if (!reward) { await session.abortTransaction(); return sendError(reply, 'Reward is unavailable', 404); }
+      
       const result = await issueReward({ reward, user: request.user, request, session, period: periodKey(new Date(), reward.recurrenceType) });
       if (result.duplicate) { await session.abortTransaction(); return sendError(reply, 'Reward already claimed for this period', 409); }
       await session.commitTransaction();
 
-      // NEW: Trigger beautiful branded Push Notification asynchronously OUTSIDE the transaction
       if (!result.pending && result.claim) {
         createNotification({
           userId: request.user._id,
@@ -198,7 +211,7 @@ export default async function rewardRoutes(fastify) {
           title: `You earned ${result.amount} coins 🎉`,
           message: result.rewardName,
           targetUrl: '#rewards',
-          icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192', // ADDED GOLD BRANDING
+          icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192',
           data: { rewardId: result.rewardId, claimId: result.claim._id },
           dedupeKey: `reward_${result.claim._id}`
         }).catch(err => fastify.log.error('Push error:', err));
@@ -244,7 +257,7 @@ export default async function rewardRoutes(fastify) {
           title: `You earned ${result.amount} coins 🎉`,
           message: result.rewardName,
           targetUrl: '#rewards',
-          icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192', // ADDED GOLD BRANDING
+          icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192',
           data: { rewardId: result.rewardId, claimId: result.claim._id },
           dedupeKey: `reward_${result.claim._id}`
         }).catch(err => fastify.log.error('Push error:', err));
@@ -283,7 +296,7 @@ export default async function rewardRoutes(fastify) {
         title: `You received ${amount} coins 🪙`,
         message: reason,
         targetUrl: '#wallet',
-        icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192', // ADDED GOLD BRANDING
+        icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192',
         dedupeKey: `admin_grant_${referenceId}`
       }).catch(err => fastify.log.error('Push error:', err));
 
