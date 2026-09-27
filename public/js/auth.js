@@ -586,8 +586,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span style="color: #D4A017; font-size: 11px; font-weight: 800; letter-spacing: 1px; margin-bottom: 8px; display: block; text-transform: uppercase;">${ep.genre || 'TRENDING'}</span>
                 <h3 class="card-title">${ep.title}</h3>
                 <div class="card-meta">
-                    <span class="truncate pr-2">${seriesTitle}</span>
-                    <span class="text-accent flex items-center gap-1 shrink-0"><i data-lucide="play-circle" width="14"></i> Watch</span>
+                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%;">${seriesTitle}</span>
                 </div>
             </div>
           </button>
