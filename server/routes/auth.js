@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import axios from 'axios';
+import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import Wallet from '../models/Wallet.js';
 import { verifyAuth, generateToken, authCookieOptions } from '../middleware/auth.js';
@@ -11,18 +12,18 @@ import { sendVerificationCodeEmail, sendPasswordResetEmail, isResendReady } from
 const generateCode = () => String(Math.floor(100000 + Math.random() * 900000));
 const codeExpiry = (minutes) => new Date(Date.now() + minutes * 60 * 1000);
 
-const serverUrl = process.env.NODE_ENV === 'production' 
-  ? 'https://afristory.onrender.com' 
-  : 'http://localhost:3000';
-
-const oauthCallback = provider => `${serverUrl}/api/auth/${provider}/callback`;
+// FIX: Removed the hardcoded serverUrl. We now dynamically detect the exact domain the user is using.
+function getDynamicCallbackUrl(request, provider) {
+  const protocol = request.headers['x-forwarded-proto'] || (process.env.NODE_ENV === 'production' ? 'https' : 'http');
+  const host = request.headers.host || request.hostname;
+  return `${protocol}://${host}/api/auth/${provider}/callback`;
+}
 
 const oauthError = (reply, message) => reply.redirect(`/?authError=${encodeURIComponent(message)}`);
 const createState = () => crypto.randomBytes(24).toString('hex');
 const createCodeVerifier = () => crypto.randomBytes(32).toString('base64url');
 const createCodeChallenge = verifier => crypto.createHash('sha256').update(verifier).digest('base64url');
 
-// FIX 1: Reverted to standard cookie options. Hardcoding secure: true caused browsers to drop the GitHub callback cookie.
 const cookieOptions = { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 600, path: '/' };
 
 const googleJWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
@@ -121,9 +122,6 @@ async function verifyAppleIdentity(idToken, clientId, nonce) {
 }
 
 export default async function authRoutes(fastify, opts) {
-  // ============================================================================
-  // REGISTRATION & LOGIN
-  // ============================================================================
   fastify.post('/register', async (request, reply) => {
     try {
       const { username, email, password, confirmPassword } = request.body || {};
@@ -274,16 +272,11 @@ export default async function authRoutes(fastify, opts) {
   });
 
   fastify.post('/logout', async (request, reply) => {
-    // FIX 2: Added path: '/' to completely annihilate the zombie token cookie.
     reply.clearCookie('token', { path: '/' });
     fastify.log.info(`[LOGOUT_SUCCESS] User successfully logged out and cookie cleared.`);
     return sendSuccess(reply, null, 'Logout successful');
   });
 
-  // ============================================================================
-  // OTP VERIFICATION & PASSWORD RESET 
-  // ============================================================================
-  
   fastify.post('/verify-email', async (request, reply) => {
     try {
       const { email, code } = request.body || {};
@@ -429,9 +422,6 @@ export default async function authRoutes(fastify, opts) {
     }
   });
 
-  // ============================================================================
-  // USER PROFILE & OAUTH ROUTES
-  // ============================================================================
   fastify.get('/me', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
@@ -454,6 +444,16 @@ export default async function authRoutes(fastify, opts) {
 
   for (const provider of ['google', 'apple', 'github']) {
     fastify.get(`/${provider}`, async (request, reply) => {
+      
+      try {
+        const existingToken = request.cookies?.token;
+        if (existingToken && process.env.JWT_SECRET) {
+          jwt.verify(existingToken, process.env.JWT_SECRET);
+          fastify.log.info(`[OAUTH_INTERCEPTED] User clicked ${provider} but already holds a valid token. Bypassing redirect.`);
+          return reply.redirect('/app.html');
+        }
+      } catch (err) {}
+
       const config = providerConfig(provider);
       if (!config?.clientId || !config.clientSecret) {
         fastify.log.error(`[OAUTH_SETUP_ERROR] Provider ${provider} is missing client ID or secret.`);
@@ -463,13 +463,18 @@ export default async function authRoutes(fastify, opts) {
       const state = createState();
       const verifier = createCodeVerifier();
       
-      // FIX 3: Reverted to standard cookieOptions. This ensures state matches perfectly for Google, Apple, AND Github.
       reply.setCookie(`oauth_${provider}_state`, state, cookieOptions);
       reply.setCookie(`oauth_${provider}_verifier`, verifier, cookieOptions);
       
+      reply.header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      reply.header('Pragma', 'no-cache');
+      reply.header('Expires', '0');
+      
       fastify.log.info(`[OAUTH_INITIATED] Starting ${provider} OAuth flow. State generated.`);
       
-      const params = new URLSearchParams({ client_id: config.clientId, redirect_uri: oauthCallback(provider), response_type: 'code', scope: config.scope, state });
+      // FIX: Dynamically generate the redirect URL based on the current domain
+      const dynamicCallbackUrl = getDynamicCallbackUrl(request, provider);
+      const params = new URLSearchParams({ client_id: config.clientId, redirect_uri: dynamicCallbackUrl, response_type: 'code', scope: config.scope, state });
       
       if (provider !== 'github') {
         params.set('code_challenge', createCodeChallenge(verifier));
@@ -496,22 +501,23 @@ export default async function authRoutes(fastify, opts) {
           const verifier = request.cookies[`oauth_${provider}_verifier`];
           const savedState = request.cookies[`oauth_${provider}_state`];
           
-          // FIX 4: Corrected missing verifier expectations. GitHub web app flow works perfectly without PKCE verifiers throwing alarms.
           if (!config?.clientId || !code || !verifier || state !== savedState) {
             fastify.log.error(`[OAUTH_SECURITY_MISMATCH] Provider: ${provider}. Expected State: ${savedState}, Received State: ${state}`);
             return oauthError(reply, `${providerName} login session mismatch or expired. Please try logging in again.`);
           }
           
-          // FIX 5: Added strict path to wipe the state cookies so they never cause zombie loops.
           reply.clearCookie(`oauth_${provider}_state`, { path: '/' });
           reply.clearCookie(`oauth_${provider}_verifier`, { path: '/' });
           
+          // FIX: Use the dynamic URL when exchanging the code for the token
+          const dynamicCallbackUrl = getDynamicCallbackUrl(request, provider);
           let profile;
+          
           if (provider === 'google') {
-            const token = await axios.post(config.token, new URLSearchParams({ code, client_id: config.clientId, client_secret: config.clientSecret, redirect_uri: oauthCallback(provider), grant_type: 'authorization_code', code_verifier: verifier }), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+            const token = await axios.post(config.token, new URLSearchParams({ code, client_id: config.clientId, client_secret: config.clientSecret, redirect_uri: dynamicCallbackUrl, grant_type: 'authorization_code', code_verifier: verifier }), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
             profile = await verifyGoogleIdentity(token, config.clientId);
           } else if (provider === 'github') {
-            const token = await axios.post(config.token, { code, client_id: config.clientId, client_secret: config.clientSecret, redirect_uri: oauthCallback(provider) }, { headers: { Accept: 'application/json' } });
+            const token = await axios.post(config.token, { code, client_id: config.clientId, client_secret: config.clientSecret, redirect_uri: dynamicCallbackUrl }, { headers: { Accept: 'application/json' } });
             const headers = { Authorization: `Bearer ${token.data.access_token}`, Accept: 'application/vnd.github+json', 'User-Agent': 'AfriStory-App' };
             const result = await axios.get('https://api.github.com/user', { headers });
             const emails = await axios.get('https://api.github.com/user/emails', { headers });
