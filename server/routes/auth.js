@@ -119,14 +119,13 @@ async function verifyAppleIdentity(idToken, clientId, nonce) {
 
 export default async function authRoutes(fastify, opts) {
   // ============================================================================
-  // REGISTRATION & LOGIN (With Exact Detail Validation)
+  // REGISTRATION & LOGIN (With Strict Token Leak Prevention & Logging)
   // ============================================================================
   fastify.post('/register', async (request, reply) => {
     try {
       const { username, email, password, confirmPassword } = request.body || {};
       const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
 
-      // Exact criteria validation errors
       if (!username) return sendError(reply, 'Username is required.', 400);
       if (username.length < 3) return sendError(reply, 'Username must be at least 3 characters long.', 400);
       if (username.length > 30) return sendError(reply, 'Username cannot exceed 30 characters.', 400);
@@ -140,10 +139,14 @@ export default async function authRoutes(fastify, opts) {
       
       if (confirmPassword !== undefined && password !== confirmPassword) return sendError(reply, 'Passwords do not match. Please type them exactly the same.', 400);
       
-      if (!isResendReady()) return sendError(reply, 'System Configuration Error: Email delivery is not configured on the server.', 503);
+      if (!isResendReady()) {
+        fastify.log.error(`[REGISTER_CONFIG_ERROR] User ${normalizedEmail} attempted to register but Resend is not configured.`);
+        return sendError(reply, 'System Configuration Error: Email delivery is not configured on the server.', 503);
+      }
 
       const existingUser = await User.findOne({ $or: [{ email: normalizedEmail }, { username }] });
       if (existingUser) {
+        fastify.log.warn(`[REGISTER_CONFLICT] Conflict for username: ${username} or email: ${normalizedEmail}`);
         if (existingUser.email === normalizedEmail) return sendError(reply, 'An account with this email address already exists.', 409);
         return sendError(reply, 'This username is already taken. Please choose another.', 409);
       }
@@ -162,17 +165,20 @@ export default async function authRoutes(fastify, opts) {
       
       try {
         await sendVerificationCodeEmail({ email: newUser.email, code: newUser.verificationCode });
+        fastify.log.info(`[REGISTER_EMAIL_SENT] Verification code sent to ${newUser.email}`);
       } catch (emailError) {
-        fastify.log.error(emailError);
+        fastify.log.error(`[REGISTER_EMAIL_ERROR] Failed to send verification email to ${newUser.email}. Details: ${emailError.message}\nStack: ${emailError.stack}`);
         return sendError(reply, 'Account created, but the verification email failed to send. Please try logging in to request a new code.', 503);
       }
 
       await Wallet.create({ userId: newUser._id });
-      const token = generateToken(newUser._id);
-      reply.setCookie('token', token, authCookieOptions);
+
+      // STRICT FIX: Removed generateToken() and setCookie() here. 
+      // An unverified user MUST NOT get a token session yet.
 
       return sendSuccess(reply, { userId: newUser._id, username: newUser.username, email: newUser.email, role: newUser.role }, 'Registration successful', 201);
     } catch (error) {
+      fastify.log.error(`[REGISTER_CRITICAL_ERROR] Details: ${error.message}\nStack: ${error.stack}`);
       return sendError(reply, 'Registration failed', 500, error.message);
     }
   });
@@ -186,22 +192,37 @@ export default async function authRoutes(fastify, opts) {
       if (!password) return sendError(reply, 'Please provide your password to log in.', 400);
       
       const user = await User.findOne({ email: normalizedEmail });
-      if (!user) return sendError(reply, 'Invalid email or password.', 401); // Generic for security
+      if (!user) {
+        fastify.log.warn(`[LOGIN_FAILED] Invalid email attempt: ${normalizedEmail}`);
+        return sendError(reply, 'Invalid email or password.', 401);
+      }
       
       const passwordMatch = await user.comparePassword(password);
-      if (!passwordMatch) return sendError(reply, 'Invalid email or password.', 401);
+      if (!passwordMatch) {
+        fastify.log.warn(`[LOGIN_FAILED] Invalid password attempt for: ${normalizedEmail}`);
+        return sendError(reply, 'Invalid email or password.', 401);
+      }
       
-      if (!user.isActive) return sendError(reply, 'Your account has been deactivated. Please contact support.', 403);
+      if (!user.isActive) {
+        fastify.log.warn(`[LOGIN_FAILED] Deactivated account attempted login: ${normalizedEmail}`);
+        return sendError(reply, 'Your account has been deactivated. Please contact support.', 403);
+      }
 
       if (!user.isVerified) {
-        if (!isResendReady()) return sendError(reply, 'Email delivery is not configured on the server.', 503);
+        fastify.log.warn(`[LOGIN_UNVERIFIED] Unverified user attempted login: ${normalizedEmail}. Routing to OTP.`);
+        if (!isResendReady()) {
+          fastify.log.error(`[LOGIN_CONFIG_ERROR] Cannot send OTP to ${normalizedEmail} because Resend is not configured.`);
+          return sendError(reply, 'Email delivery is not configured on the server.', 503);
+        }
         
         user.verificationCode = generateCode();
         user.verificationCodeExpires = codeExpiry(15);
         await user.save();
         try {
           await sendVerificationCodeEmail({ email: user.email, code: user.verificationCode });
+          fastify.log.info(`[LOGIN_OTP_SENT] Verification code sent to ${user.email}`);
         } catch (emailError) {
+          fastify.log.error(`[LOGIN_OTP_ERROR] Failed to send verification email to ${user.email}. Details: ${emailError.message}\nStack: ${emailError.stack}`);
           return sendError(reply, 'Verification email failed to send.', 503);
         }
         return reply.status(403).send({ success: false, code: 'UNVERIFIED', message: 'Please verify your email before logging in. A new code has been sent.' });
@@ -212,9 +233,11 @@ export default async function authRoutes(fastify, opts) {
 
       const token = generateToken(user._id);
       reply.setCookie('token', token, authCookieOptions);
-
+      
+      fastify.log.info(`[LOGIN_SUCCESS] User ${user.email} logged in successfully.`);
       return sendSuccess(reply, { userId: user._id, username: user.username, email: user.email, role: user.role }, 'Login successful');
     } catch (error) {
+      fastify.log.error(`[LOGIN_CRITICAL_ERROR] Details: ${error.message}\nStack: ${error.stack}`);
       return sendError(reply, 'Login failed', 500, error.message);
     }
   });
@@ -225,7 +248,7 @@ export default async function authRoutes(fastify, opts) {
   });
 
   // ============================================================================
-  // RESTORED ROUTES: OTP VERIFICATION & PASSWORD RESET
+  // OTP VERIFICATION & PASSWORD RESET (With Strict Logging)
   // ============================================================================
   
   fastify.post('/verify-email', async (request, reply) => {
@@ -238,7 +261,18 @@ export default async function authRoutes(fastify, opts) {
 
       const user = await User.findOne({ email: normalizedEmail });
 
-      if (!user || user.isVerified || user.verificationCode !== String(code) || !user.verificationCodeExpires || user.verificationCodeExpires <= new Date()) {
+      if (!user) {
+        fastify.log.warn(`[VERIFY_ERROR] Attempted to verify non-existent email: ${normalizedEmail}`);
+        return sendError(reply, 'Invalid or expired verification code. Please request a new one.', 400);
+      }
+
+      if (user.isVerified) {
+        fastify.log.info(`[VERIFY_INFO] Already verified email attempted verification: ${normalizedEmail}`);
+        return sendError(reply, 'Your account is already verified. You can log in.', 400);
+      }
+
+      if (user.verificationCode !== String(code) || !user.verificationCodeExpires || user.verificationCodeExpires <= new Date()) {
+        fastify.log.warn(`[VERIFY_ERROR] Invalid/Expired code for ${normalizedEmail}. Provided: ${code}, Expected: ${user.verificationCode}`);
         return sendError(reply, 'Invalid or expired verification code. Please request a new one.', 400);
       }
 
@@ -249,9 +283,11 @@ export default async function authRoutes(fastify, opts) {
 
       const token = generateToken(user._id);
       reply.setCookie('token', token, authCookieOptions);
+      
+      fastify.log.info(`[VERIFY_SUCCESS] User ${normalizedEmail} successfully verified their email.`);
       return sendSuccess(reply, null, 'Email verified successfully! Welcome to AfriStory.');
     } catch (error) {
-      fastify.log.error(error);
+      fastify.log.error(`[VERIFY_CRITICAL_ERROR] Details: ${error.message}\nStack: ${error.stack}`);
       return sendError(reply, 'Failed to verify email', 500, error.message);
     }
   });
@@ -266,7 +302,11 @@ export default async function authRoutes(fastify, opts) {
       const user = await User.findOne({ email: normalizedEmail });
       if (!user) return sendError(reply, 'Account not found.', 404);
       if (user.isVerified) return sendError(reply, 'Your account is already verified. You can log in.', 400);
-      if (!isResendReady()) return sendError(reply, 'Email delivery is not configured on the server.', 503);
+      
+      if (!isResendReady()) {
+        fastify.log.error(`[RESEND_CONFIG_ERROR] Cannot resend OTP to ${normalizedEmail}. Resend not configured.`);
+        return sendError(reply, 'Email delivery is not configured on the server.', 503);
+      }
 
       user.verificationCode = generateCode();
       user.verificationCodeExpires = codeExpiry(15);
@@ -274,13 +314,14 @@ export default async function authRoutes(fastify, opts) {
       
       try {
         await sendVerificationCodeEmail({ email: user.email, code: user.verificationCode });
+        fastify.log.info(`[RESEND_SUCCESS] New OTP sent to ${user.email}`);
       } catch (emailError) {
-        fastify.log.error(emailError);
+        fastify.log.error(`[RESEND_EMAIL_ERROR] Failed to resend OTP to ${user.email}. Details: ${emailError.message}\nStack: ${emailError.stack}`);
         return sendError(reply, 'Failed to send verification email.', 503);
       }
       return sendSuccess(reply, null, 'A new verification code has been sent to your email.');
     } catch (error) {
-      fastify.log.error(error);
+      fastify.log.error(`[RESEND_CRITICAL_ERROR] Details: ${error.message}\nStack: ${error.stack}`);
       return sendError(reply, 'Failed to resend verification code', 500, error.message);
     }
   });
@@ -291,8 +332,15 @@ export default async function authRoutes(fastify, opts) {
       if (!email) return sendError(reply, 'Email address is required.', 400);
 
       const user = await User.findOne({ email: email.trim().toLowerCase() });
-      if (!user) return sendSuccess(reply, null, 'If that email exists in our system, a reset link has been sent.', 200);
-      if (!isResendReady()) return sendError(reply, 'Email delivery is not configured on the server.', 503);
+      if (!user) {
+        fastify.log.info(`[FORGOT_PW_INFO] Non-existent email requested reset: ${email}`);
+        return sendSuccess(reply, null, 'If that email exists in our system, a reset link has been sent.', 200);
+      }
+
+      if (!isResendReady()) {
+        fastify.log.error(`[FORGOT_PW_CONFIG_ERROR] Cannot send reset code to ${user.email}. Resend not configured.`);
+        return sendError(reply, 'Email delivery is not configured on the server.', 503);
+      }
 
       user.resetPasswordCode = generateCode();
       user.resetPasswordExpires = codeExpiry(15);
@@ -300,13 +348,14 @@ export default async function authRoutes(fastify, opts) {
       
       try {
         await sendPasswordResetEmail({ email: user.email, code: user.resetPasswordCode });
+        fastify.log.info(`[FORGOT_PW_SUCCESS] Password reset code sent to ${user.email}`);
       } catch (emailError) {
-        fastify.log.error(emailError);
+        fastify.log.error(`[FORGOT_PW_EMAIL_ERROR] Failed to send reset email to ${user.email}. Details: ${emailError.message}\nStack: ${emailError.stack}`);
         return sendError(reply, 'Failed to send password reset email.', 503);
       }
       return sendSuccess(reply, null, 'If that email exists in our system, a reset link has been sent.', 200);
     } catch (error) {
-      fastify.log.error(error);
+      fastify.log.error(`[FORGOT_PW_CRITICAL_ERROR] Details: ${error.message}\nStack: ${error.stack}`);
       return sendError(reply, 'Failed to process request', 500, error.message);
     }
   });
@@ -324,6 +373,7 @@ export default async function authRoutes(fastify, opts) {
       const user = await User.findOne({ email: normalizedEmail });
 
       if (!user || user.resetPasswordCode !== String(code) || !user.resetPasswordExpires || user.resetPasswordExpires <= new Date()) {
+        fastify.log.warn(`[RESET_PW_ERROR] Invalid/Expired reset code for ${normalizedEmail}. Provided: ${code}`);
         return sendError(reply, 'Invalid or expired reset code. Please request a new password reset.', 400);
       }
 
@@ -332,9 +382,10 @@ export default async function authRoutes(fastify, opts) {
       user.resetPasswordExpires = null;
       await user.save();
       
+      fastify.log.info(`[RESET_PW_SUCCESS] User ${normalizedEmail} successfully reset their password.`);
       return sendSuccess(reply, null, 'Password reset successfully. You can now log in.');
     } catch (error) {
-      fastify.log.error(error);
+      fastify.log.error(`[RESET_PW_CRITICAL_ERROR] Details: ${error.message}\nStack: ${error.stack}`);
       return sendError(reply, 'Failed to reset password', 500, error.message);
     }
   });
@@ -358,6 +409,7 @@ export default async function authRoutes(fastify, opts) {
         displayName: request.user.profile?.displayName || request.user.username,
       });
     } catch (error) {
+      // Don't clutter logs for standard 401 token expirations on the /me route
       return sendError(reply, 'Failed to fetch user', 500, error.message);
     }
   });
@@ -404,10 +456,12 @@ export default async function authRoutes(fastify, opts) {
             profile = { providerId: String(result.data.id), email: result.data.email || verifiedEmail?.email, emailVerified: true, name: result.data.name || result.data.login, picture: result.data.avatar_url };
           }
           const user = await findOrCreateSocialUser(provider, profile);
+          
+          fastify.log.info(`[OAUTH_SUCCESS] User logged in via ${provider}: ${user.email}`);
           reply.setCookie('token', generateToken(user._id), authCookieOptions);
           return reply.redirect('/app.html');
         } catch (error) {
-          fastify.log.error(error);
+          fastify.log.error(`[OAUTH_ERROR] Provider: ${provider}. Details: ${error.message}\nStack: ${error.stack}`);
           return oauthError(reply, 'Social login failed');
         }
       },
