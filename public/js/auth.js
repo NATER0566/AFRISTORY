@@ -6,6 +6,9 @@ const $ = id => document.getElementById(id); const $$ = selector => [...document
 const emailOk = value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 const codeOk = value => /^\d{6}$/.test(value);
 
+// FIX 1: Declared currentAuthEmail globally to prevent silent JS crashes when the form triggers
+let currentAuthEmail = '';
+
 // ==========================================
 // UTILITY FUNCTIONS
 // ==========================================
@@ -129,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (ssoBtn) window.location.assign('/api/auth/' + ssoBtn.dataset.sso);
     });
 
-    // --- Form Submissions (Syntax Fixed) ---
+    // --- Form Submissions (FIXED: Added try..catch..finally blocks to prevent silent button failures) ---
     $('reg-password')?.addEventListener('input', event => {
         if (!window.zxcvbn) return;
         const result = zxcvbn(event.target.value);
@@ -150,17 +153,24 @@ document.addEventListener('DOMContentLoaded', () => {
         
         currentAuthEmail = email;
         const btn = event.target.querySelector('button[type="submit"]');
-        if(btn) btn.disabled = true;
+        const originalText = btn ? btn.innerHTML : 'Sign in';
+        if(btn) { btn.disabled = true; btn.innerHTML = 'Signing in...'; }
         
-        const { response, data } = await request('/auth/login', { email, password, rememberMe: $('remember-me')?.checked }, 'POST');
-        if(btn) btn.disabled = false;
-        
-        if (response.ok) redirect();
-        else if (response.status === 403 && data.code === 'UNVERIFIED') {
-            show('verify');
-            alertMessage('info', 'Verification required');
-        } else {
-            alertMessage('error', data.message || 'Invalid credentials');
+        try {
+            const { response, data } = await request('/auth/login', { email, password, rememberMe: $('remember-me')?.checked }, 'POST');
+            
+            if (response.ok) {
+                redirect();
+            } else if (response.status === 403 && data.code === 'UNVERIFIED') {
+                show('verify');
+                alertMessage('info', 'Verification required');
+            } else {
+                alertMessage('error', data.message || 'Invalid credentials');
+            }
+        } catch (err) {
+            alertMessage('error', 'Network error. Please check your connection.');
+        } finally {
+            if(btn) { btn.disabled = false; btn.innerHTML = originalText; }
         }
     });
 
@@ -185,16 +195,22 @@ document.addEventListener('DOMContentLoaded', () => {
         
         currentAuthEmail = email;
         const btn = event.target.querySelector('button[type="submit"]');
-        if(btn) btn.disabled = true;
+        const originalText = btn ? btn.innerHTML : 'Create account';
+        if(btn) { btn.disabled = true; btn.innerHTML = 'Creating account...'; }
 
-        const { response, data } = await request('/auth/register', { username, email, password }, 'POST');
-        if(btn) btn.disabled = false;
-
-        if (response.ok) {
-            show('verify');
-            alertMessage('success', 'Account created. Enter your code');
-        } else {
-            alertMessage('error', data.message || 'Registration failed');
+        try {
+            const { response, data } = await request('/auth/register', { username, email, password }, 'POST');
+            
+            if (response.ok) {
+                show('verify');
+                alertMessage('success', data.message || 'Account created. Enter your code');
+            } else {
+                alertMessage('error', data.message || 'Registration failed');
+            }
+        } catch (err) {
+            alertMessage('error', 'Network error. Please try again.');
+        } finally {
+            if(btn) { btn.disabled = false; btn.innerHTML = originalText; }
         }
     });
 
@@ -204,17 +220,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!emailOk(email)) return alertMessage('error', 'Enter a valid email');
         
         const btn = event.target.querySelector('button[type="submit"]');
-        if(btn) btn.disabled = true;
+        const originalText = btn ? btn.innerHTML : 'Send reset code';
+        if(btn) { btn.disabled = true; btn.innerHTML = 'Sending...'; }
 
-        const { response, data } = await request('/auth/forgot-password', { email }, 'POST');
-        if(btn) btn.disabled = false;
-
-        if (response.ok) {
-            currentAuthEmail = email;
-            show('reset');
-            alertMessage('success', 'Reset code sent');
-        } else {
-            alertMessage('error', data.message || 'Could not send reset code');
+        try {
+            const { response, data } = await request('/auth/forgot-password', { email }, 'POST');
+            
+            if (response.ok) {
+                currentAuthEmail = email;
+                show('reset');
+                alertMessage('success', data.message || 'Reset code sent');
+            } else {
+                alertMessage('error', data.message || 'Could not send reset code');
+            }
+        } catch (err) {
+            alertMessage('error', 'Network error. Please try again.');
+        } finally {
+            if(btn) { btn.disabled = false; btn.innerHTML = originalText; }
         }
     });
 
@@ -226,16 +248,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!codeOk(code) || newPassword.length < 6) return alertMessage('error', 'Enter a valid code and password');
         
         const btn = event.target.querySelector('button[type="submit"]');
-        if(btn) btn.disabled = true;
+        const originalText = btn ? btn.innerHTML : 'Update password';
+        if(btn) { btn.disabled = true; btn.innerHTML = 'Updating...'; }
 
-        const { response, data } = await request('/auth/reset-password', { email: currentAuthEmail, code, newPassword }, 'POST');
-        if(btn) btn.disabled = false;
-
-        if (response.ok) {
-            show('login');
-            alertMessage('success', 'Password updated');
-        } else {
-            alertMessage('error', data.message || 'Reset failed');
+        try {
+            const { response, data } = await request('/auth/reset-password', { email: currentAuthEmail, code, newPassword }, 'POST');
+            
+            if (response.ok) {
+                show('login');
+                alertMessage('success', data.message || 'Password updated');
+            } else {
+                alertMessage('error', data.message || 'Reset failed');
+            }
+        } catch (err) {
+            alertMessage('error', 'Network error. Please try again.');
+        } finally {
+            if(btn) { btn.disabled = false; btn.innerHTML = originalText; }
         }
     });
 
@@ -245,19 +273,41 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!codeOk(code)) return alertMessage('error', 'Enter the six-digit code');
         
         const btn = event.target.querySelector('button[type="submit"]');
-        if(btn) btn.disabled = true;
+        const originalText = btn ? btn.innerHTML : 'Verify account';
+        if(btn) { btn.disabled = true; btn.innerHTML = 'Verifying...'; }
 
-        const { response, data } = await request('/auth/verify-email', { email: currentAuthEmail, code }, 'POST');
-        if(btn) btn.disabled = false;
-
-        if (response.ok) redirect();
-        else alertMessage('error', data.message || 'Invalid or expired code');
+        try {
+            const { response, data } = await request('/auth/verify-email', { email: currentAuthEmail, code }, 'POST');
+            
+            if (response.ok) {
+                redirect();
+            } else {
+                alertMessage('error', data.message || 'Invalid or expired code');
+            }
+        } catch (err) {
+            alertMessage('error', 'Network error. Please try again.');
+        } finally {
+            if(btn) { btn.disabled = false; btn.innerHTML = originalText; }
+        }
     });
 
-    $('resend-otp')?.addEventListener('click', async () => {
+    $('resend-otp')?.addEventListener('click', async (event) => {
         if (!currentAuthEmail) return alertMessage('error', 'Email session lost');
-        const { response, data } = await request('/auth/resend-otp', { email: currentAuthEmail }, 'POST');
-        alertMessage(response.ok ? 'success' : 'error', data.message || (response.ok ? 'New code sent' : 'Could not resend code'));
+        
+        const btn = event.target;
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = 'Sending...';
+
+        try {
+            const { response, data } = await request('/auth/resend-otp', { email: currentAuthEmail }, 'POST');
+            alertMessage(response.ok ? 'success' : 'error', data.message || (response.ok ? 'New code sent' : 'Could not resend code'));
+        } catch (err) {
+            alertMessage('error', 'Network error. Please try again.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
     });
 
     const authError = new URLSearchParams(window.location.search).get('authError'); 
