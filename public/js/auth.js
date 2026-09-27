@@ -6,7 +6,6 @@ const $ = id => document.getElementById(id); const $$ = selector => [...document
 const emailOk = value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 const codeOk = value => /^\d{6}$/.test(value);
 
-// FIX 1: Declared currentAuthEmail globally to prevent silent JS crashes when the form triggers
 let currentAuthEmail = '';
 
 // ==========================================
@@ -132,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (ssoBtn) window.location.assign('/api/auth/' + ssoBtn.dataset.sso);
     });
 
-    // --- Form Submissions (FIXED: Added try..catch..finally blocks to prevent silent button failures) ---
+    // --- Form Submissions ---
     $('reg-password')?.addEventListener('input', event => {
         if (!window.zxcvbn) return;
         const result = zxcvbn(event.target.value);
@@ -149,7 +148,16 @@ document.addEventListener('DOMContentLoaded', () => {
         event.preventDefault();
         const email = $('login-email').value.trim().toLowerCase();
         const password = $('login-password').value;
-        if (!emailOk(email)) return alertMessage('error', 'Enter a valid email');
+        
+        // FIX 6: Explicitly guard the front-end before locking the button so errors aren't silently swallowed.
+        if (!emailOk(email)) {
+            alertMessage('error', 'Please enter a valid email address.');
+            return;
+        }
+        if (!password) {
+            alertMessage('error', 'Please enter your password.');
+            return;
+        }
         
         currentAuthEmail = email;
         const btn = event.target.querySelector('button[type="submit"]');
@@ -190,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
             !termsChecked || 
             score < 2
         ) {
-            return alertMessage('error', 'Check your registration details');
+            return alertMessage('error', 'Please check your registration details and try again.');
         }
         
         currentAuthEmail = email;
