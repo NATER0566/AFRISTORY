@@ -22,9 +22,8 @@ const createState = () => crypto.randomBytes(24).toString('hex');
 const createCodeVerifier = () => crypto.randomBytes(32).toString('base64url');
 const createCodeChallenge = verifier => crypto.createHash('sha256').update(verifier).digest('base64url');
 
-// FIX: Standardize cookie options, but force OAuth cookies to be strictly secure so mobile browsers don't drop them
+// FIX: Reverted to adaptive secure cookies. Hardcoding secure: true breaks GitHub on localhost/HTTP environments.
 const cookieOptions = { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 600, path: '/' };
-const oauthCookieOptions = { httpOnly: true, sameSite: 'lax', secure: true, maxAge: 600, path: '/' };
 
 const googleJWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
 const appleJWKS = createRemoteJWKSet(new URL('https://appleid.apple.com/auth/keys'));
@@ -130,7 +129,6 @@ export default async function authRoutes(fastify, opts) {
       const { username, email, password, confirmPassword } = request.body || {};
       const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
 
-      // Strict validation with targeted error logging
       if (!username) {
         fastify.log.warn(`[REGISTER_VALIDATION_ERROR] Missing username`);
         return sendError(reply, 'Username is required. Please type a username.', 400);
@@ -208,7 +206,6 @@ export default async function authRoutes(fastify, opts) {
 
       await Wallet.create({ userId: newUser._id });
 
-      // No token generated here to prevent bypass.
       fastify.log.info(`[REGISTER_SUCCESS] User created successfully, awaiting verification: ${newUser.email}`);
       return sendSuccess(reply, { userId: newUser._id, username: newUser.username, email: newUser.email, role: newUser.role }, 'Registration successful! A verification code has been sent to your email.', 201);
     } catch (error) {
@@ -228,14 +225,12 @@ export default async function authRoutes(fastify, opts) {
       const user = await User.findOne({ email: normalizedEmail });
       if (!user) {
         fastify.log.warn(`[LOGIN_EMAIL_NOT_FOUND] Attempted login with non-existent email: ${normalizedEmail}`);
-        // FIX: Explicit message for missing email
         return sendError(reply, 'No account found with this email address. Please register first.', 404);
       }
       
       const passwordMatch = await user.comparePassword(password);
       if (!passwordMatch) {
         fastify.log.warn(`[LOGIN_INVALID_PASSWORD] Wrong password entered for email: ${normalizedEmail}`);
-        // FIX: Explicit message for wrong password
         return sendError(reply, 'Incorrect password. Please try again.', 401);
       }
       
@@ -377,7 +372,6 @@ export default async function authRoutes(fastify, opts) {
       const user = await User.findOne({ email: email.trim().toLowerCase() });
       if (!user) {
         fastify.log.warn(`[FORGOT_PW_NOT_FOUND] Reset requested for non-existent email: ${email}`);
-        // FIX: Explicit message for missing email during password reset
         return sendError(reply, 'This email is not registered in our system.', 404);
       }
 
@@ -435,7 +429,7 @@ export default async function authRoutes(fastify, opts) {
   });
 
   // ============================================================================
-  // USER PROFILE & OAUTH ROUTES
+  // USER PROFILE & OAUTH ROUTES (Fixed Adaptive Auth & Explicit Messaging)
   // ============================================================================
   fastify.get('/me', async (request, reply) => {
     try {
@@ -462,21 +456,26 @@ export default async function authRoutes(fastify, opts) {
       const config = providerConfig(provider);
       if (!config?.clientId || !config.clientSecret) {
         fastify.log.error(`[OAUTH_SETUP_ERROR] Provider ${provider} is missing client ID or secret.`);
-        return oauthError(reply, `${provider} login is not configured properly.`);
+        return oauthError(reply, `${provider.charAt(0).toUpperCase() + provider.slice(1)} login is not configured properly.`);
       }
       
       const state = createState();
       const verifier = createCodeVerifier();
       
-      // FIX: Apply oauthCookieOptions to enforce secure: true, preventing browser drops
-      reply.setCookie(`oauth_${provider}_state`, state, oauthCookieOptions);
-      reply.setCookie(`oauth_${provider}_verifier`, verifier, oauthCookieOptions);
+      // FIX 1: Restored standard cookieOptions so Github and local testing don't silently drop the state cookie.
+      reply.setCookie(`oauth_${provider}_state`, state, cookieOptions);
+      reply.setCookie(`oauth_${provider}_verifier`, verifier, cookieOptions);
       
       fastify.log.info(`[OAUTH_INITIATED] Starting ${provider} OAuth flow. State generated.`);
       
       const params = new URLSearchParams({ client_id: config.clientId, redirect_uri: oauthCallback(provider), response_type: 'code', scope: config.scope, state });
-      params.set('code_challenge', createCodeChallenge(verifier));
-      params.set('code_challenge_method', 'S256');
+      
+      // FIX 2: Only inject PKCE Code Challenge for Google/Apple. GitHub's standard web app flow doesn't require this and it can confuse the callback.
+      if (provider !== 'github') {
+        params.set('code_challenge', createCodeChallenge(verifier));
+        params.set('code_challenge_method', 'S256');
+      }
+      
       return reply.redirect(`${config.authorization}?${params}`);
     });
 
@@ -487,6 +486,7 @@ export default async function authRoutes(fastify, opts) {
         try {
           const config = providerConfig(provider);
           const { code, state, error } = request.query || {};
+          const providerName = provider.charAt(0).toUpperCase() + provider.slice(1);
           
           if (error) {
              fastify.log.warn(`[OAUTH_CANCELLED] Provider: ${provider} returned error query param: ${error}`);
@@ -496,11 +496,10 @@ export default async function authRoutes(fastify, opts) {
           const verifier = request.cookies[`oauth_${provider}_verifier`];
           const savedState = request.cookies[`oauth_${provider}_state`];
           
-          // FIX: Updated OAuth error messaging to distinguish between session drops and other failures
+          // FIX 3: Dynamic error message so you know exactly which provider dropped the session
           if (!config?.clientId || !code || !verifier || state !== savedState) {
             fastify.log.error(`[OAUTH_SECURITY_MISMATCH] Provider: ${provider}. Code exists: ${!!code}, Verifier exists: ${!!verifier}, Expected State: ${savedState}, Received State: ${state}`);
-            // Explicit error telling the user it was a session drop rather than "Verification failed"
-            return oauthError(reply, 'Google login session mismatch or expired. Please try logging in again.');
+            return oauthError(reply, `${providerName} login session mismatch or expired. Please try logging in again.`);
           }
           
           reply.clearCookie(`oauth_${provider}_state`, { path: '/' });
@@ -511,7 +510,8 @@ export default async function authRoutes(fastify, opts) {
             const token = await axios.post(config.token, new URLSearchParams({ code, client_id: config.clientId, client_secret: config.clientSecret, redirect_uri: oauthCallback(provider), grant_type: 'authorization_code', code_verifier: verifier }), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
             profile = await verifyGoogleIdentity(token, config.clientId);
           } else if (provider === 'github') {
-            const token = await axios.post(config.token, { code, client_id: config.clientId, client_secret: config.clientSecret, redirect_uri: oauthCallback(provider), code_verifier: verifier }, { headers: { Accept: 'application/json' } });
+            // FIX 4: Removed code_verifier from GitHub POST request to strictly follow GitHub's OAuth Web Application flow.
+            const token = await axios.post(config.token, { code, client_id: config.clientId, client_secret: config.clientSecret, redirect_uri: oauthCallback(provider) }, { headers: { Accept: 'application/json' } });
             const headers = { Authorization: `Bearer ${token.data.access_token}`, Accept: 'application/vnd.github+json', 'User-Agent': 'AfriStory-App' };
             const result = await axios.get('https://api.github.com/user', { headers });
             const emails = await axios.get('https://api.github.com/user/emails', { headers });
