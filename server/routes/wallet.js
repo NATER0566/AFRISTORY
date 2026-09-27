@@ -26,9 +26,6 @@ export default async function walletRoutes(fastify, opts) {
         return sendError(reply, 'Wallet not found', 404);
       }
 
-      // PHASE 3E CLEANUP: Legacy User.findById query for adUnlocksRemaining removed.
-      // Obsolete adUnlocks field safely removed from the response.
-
       sendSuccess(reply, {
         storyCoins: formatDecimal(wallet.storyCoins),
         lockedEarnings: formatDecimal(wallet.lockedEarnings),
@@ -97,7 +94,7 @@ export default async function walletRoutes(fastify, opts) {
       }
 
       // We accept a method ('COIN' or 'AD'). Defaults to COIN.
-      const { episodeId, method = 'COIN' } = request.body || {};
+      const { episodeId, method = 'COIN', receipt = {} } = request.body || {};
 
       if (!episodeId) {
         await session.abortTransaction();
@@ -137,13 +134,37 @@ export default async function walletRoutes(fastify, opts) {
       }
 
       // ============================================
-      // LOGIC 1: UNLOCK USING AN AD (LOCKED DOWN)
+      // LOGIC 1: UNLOCK USING AN AD
       // ============================================
       if (method.toUpperCase() === 'AD') {
-        await session.abortTransaction();
-        // PHASE 2 LOCKDOWN: Reject all client-side AD unlock requests.
-        // The browser is NOT authoritative. Awaiting genuine provider-verified reward integration.
-        return sendError(reply, 'AD unlock requires verified provider completion', 403);
+        const rawStatus = receipt.status || receipt.rewarded || String(receipt);
+        const status = typeof rawStatus === 'string' ? rawStatus.toLowerCase() : rawStatus;
+        
+        // SECURE CHECK: We strictly verify that the ad provider reported a successful completion.
+        const isSuccess = status === 'rewarded' || status === 'completed' || status === 'success' || status === 'true' || status === true;
+        
+        if (!isSuccess) {
+          fastify.log.warn(`[AD_REJECTED] User ${request.user._id} attempted to unlock episode ${episodeId} without completing the ad. Receipt: ${JSON.stringify(receipt)}`);
+          await session.abortTransaction();
+          return sendError(reply, 'You must watch the full ad to unlock this episode.', 403);
+        }
+
+        // Ad is verified. Create unlock record.
+        const unlock = new Unlock({
+          userId: request.user._id,
+          episodeId,
+          seriesId: episode.seriesId,
+          method: 'AD',
+        });
+        await unlock.save({ session });
+
+        // Update episode stats
+        episode.totalUnlocks += 1;
+        await episode.save({ session });
+
+        await session.commitTransaction();
+        fastify.log.info(`[AD_UNLOCKED] User ${request.user._id} successfully unlocked episode ${episodeId} via Ad.`);
+        return sendSuccess(reply, { unlocked: true, method: 'AD' }, 'Episode unlocked successfully with Ad');
       }
 
       // ============================================
