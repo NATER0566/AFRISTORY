@@ -134,14 +134,14 @@ export default async function walletRoutes(fastify, opts) {
       }
 
       // ============================================
-      // LOGIC 1: UNLOCK USING AN AD
+      // LOGIC 1: UNLOCK USING AN AD (FIXED FOR ROCKET SLOTH)
       // ============================================
       if (method.toUpperCase() === 'AD') {
-        const rawStatus = receipt.status || receipt.rewarded || String(receipt);
+        const rawStatus = receipt.status || String(receipt);
         const status = typeof rawStatus === 'string' ? rawStatus.toLowerCase() : rawStatus;
         
-        // SECURE CHECK: We strictly verify that the ad provider reported a successful completion.
-        const isSuccess = status === 'rewarded' || status === 'completed' || status === 'success' || status === 'true' || status === true;
+        // SECURE CHECK: We explicitly verify the exact payload Rocket Sloth sends on completion
+        const isSuccess = status === 'granted' && receipt.reward === true;
         
         if (!isSuccess) {
           fastify.log.warn(`[AD_REJECTED] User ${request.user._id} attempted to unlock episode ${episodeId} without completing the ad. Receipt: ${JSON.stringify(receipt)}`);
