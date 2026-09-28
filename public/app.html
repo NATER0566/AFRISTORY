@@ -1,288 +1,295 @@
 <!doctype html>
 <html lang="en">
 <head>
-
-
-     
-<script src="https://rocketsloth.ai/rs.js" data-rs-key="pk_2e5db9e642c6b436fc0ec0774ad208f1"></script>
-<!-- start webpushr tracking code --> 
-<script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js";
-fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));
-webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4GZnLNpMUBg35mzdNgBSOcMQ4YlZaZ0SY' });</script>
-<!-- end webpushr tracking code -->
-
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4661775522120249"
-     crossorigin="anonymous"></script>
-
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#111111">
   <title>AfroStory | Watch something real</title>
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
+  
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <style>
-      .discover-filters { display: flex; gap: 12px; margin: 0 0 24px; }
-      .discover-filters label { color: #999; display: flex; flex-direction: column; font-size: 11px; gap: 6px; }
-      .discover-filters select { background: #242424; border: 1px solid #343434; border-radius: 6px; color: #f5f5f5; padding: 9px 28px 9px 10px; }
-      .profile-form { max-width: 520px; }
-      .save-current { bottom: 28px; position: fixed; right: 28px; z-index: 10; }
-      .history-row { border: 0; color: inherit; cursor: pointer; text-align: left; width: 100%; }
-      .notification-unread { border-left: 3px solid #d4a017; }
-      .comment-replies { border-left: 1px solid #343434; margin: 12px 0 0 18px; padding-left: 14px; }
-      
-      .toast-region { position: fixed !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important; z-index: 9999999 !important; display: flex !important; flex-direction: column !important; align-items: center !important; gap: 16px !important; pointer-events: none !important; width: 100% !important; padding: 20px !important; box-sizing: border-box !important; }
-      .toast { pointer-events: auto !important; align-items: center; background: linear-gradient(135deg, #242424, #2d2d2d); border: 3px solid #343434; border-radius: 16px; color: #f5f5f5; display: flex; font-size: 19px !important; font-weight: 700; gap: 18px !important; width: 100%; max-width: 480px !important; padding: 28px 36px !important; position: relative; word-wrap: break-word; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.95) !important; animation: popInToast 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important; justify-content: center !important; text-align: center !important; }
-      .toast.success { border-color: #76a86b; background: linear-gradient(135deg, #2b3d2b, #1a2a1a); box-shadow: 0 0 40px rgba(118, 168, 107, 0.5), inset 0 0 20px rgba(118, 168, 107, 0.1) !important; animation: popInToast 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), pulseGlow 2s ease-in-out infinite !important; }
-      .toast.error { border-color: #e67e22; background: linear-gradient(135deg, #3d2b1b, #2a1b0a); box-shadow: 0 0 40px rgba(230, 126, 34, 0.5), inset 0 0 20px rgba(230, 126, 34, 0.1) !important; }
-      .toast-icon { font-size: 26px !important; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; min-width: 24px; }
-      .toast.success .toast-icon::before { content: '✓'; color: #76a86b; font-size: 28px !important; }
-      .toast.error .toast-icon::before { content: '✕'; color: #e67e22; font-size: 28px !important; }
-      .toast-message { flex: 1; letter-spacing: 0.3px; line-height: 1.4; }
-      
-      @keyframes popInToast { from { opacity: 0; transform: scale(0.8) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-      @keyframes fadeOutToast { to { opacity: 0; transform: scale(0.9) translateY(-20px); } }
-      @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 10px rgba(118, 168, 107, 0.3); } 50% { box-shadow: 0 0 35px rgba(118, 168, 107, 0.7); } }
-      
-      .modal-root { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; background: rgba(0,0,0,0.85) !important; z-index: 999999 !important; display: flex !important; align-items: flex-start !important; justify-content: center !important; padding: 90px 20px 130px 20px !important; overflow-y: auto !important; backdrop-filter: blur(5px); }
-      .modal-root.hidden { display: none !important; }
-      .modal { background: #111 !important; border: 1px solid #333 !important; border-radius: 16px !important; width: 100% !important; max-width: 500px !important; margin: auto !important; flex-shrink: 0 !important; box-shadow: 0 20px 50px rgba(0,0,0,0.5) !important; padding: 24px !important; margin-top: 40px !important; margin-bottom: 80px !important; position: relative !important; z-index: 9999999 !important; }
-      .modal-header h2 { font-size: 22px !important; margin: 0 0 16px !important; }
-      
-      /* ==============================================================
-         LOCKED TIKTOK WATCH SECTION - FLUID EXACT FIT
-      ============================================================== */
+  <script src="https://rocketsloth.ai/rs.js" data-rs-key="pk_2e5db9e642c6b436fc0ec0774ad208f1"></script>
+  
+  <!-- Webpushr tracking code --> 
+  <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js"; fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk')); webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4GZnLNpMUBg35mzdNgBSOcMQ4YlZaZ0SY' });</script>
+
+  <!-- Google AdSense -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4661775522120249" crossorigin="anonymous"></script>
+
+  <style>
+    /* ==============================================================
+       STANDARDIZED Z-INDEX HIERARCHY
+       Watch Feed: 100 | Sidebar: 400 | Header/Nav: 500 | Bottom Sheet: 600 | Modals: 700 | Toasts: 800
+    ============================================================== */
+
+    .discover-filters { display: flex; gap: 12px; margin: 0 0 24px; }
+    .discover-filters label { color: #999; display: flex; flex-direction: column; font-size: 11px; gap: 6px; }
+    .discover-filters select { background: #242424; border: 1px solid #343434; border-radius: 6px; color: #f5f5f5; padding: 9px 28px 9px 10px; }
+    .profile-form { max-width: 520px; }
+    .save-current { bottom: 28px; position: fixed; right: 28px; z-index: 400; }
+    .history-row { border: 0; color: inherit; cursor: pointer; text-align: left; width: 100%; }
+    .notification-unread { border-left: 3px solid #d4a017; }
+    .comment-replies { border-left: 1px solid #343434; margin: 12px 0 0 18px; padding-left: 14px; }
+    
+    /* Empty States */
+    .empty-state { text-align: center; padding: 40px 20px; color: #888; font-size: 14px; border: 1px dashed #333; border-radius: 12px; margin-top: 20px; }
+    
+    .toast-region { position: fixed !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important; z-index: 800 !important; display: flex !important; flex-direction: column !important; align-items: center !important; gap: 16px !important; pointer-events: none !important; width: 100% !important; padding: 20px !important; box-sizing: border-box !important; }
+    .toast { pointer-events: auto !important; align-items: center; background: linear-gradient(135deg, #242424, #2d2d2d); border: 3px solid #343434; border-radius: 16px; color: #f5f5f5; display: flex; font-size: 19px !important; font-weight: 700; gap: 18px !important; width: 100%; max-width: 480px !important; padding: 28px 36px !important; position: relative; word-wrap: break-word; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.95) !important; animation: popInToast 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important; justify-content: center !important; text-align: center !important; }
+    .toast.success { border-color: #76a86b; background: linear-gradient(135deg, #2b3d2b, #1a2a1a); box-shadow: 0 0 40px rgba(118, 168, 107, 0.5), inset 0 0 20px rgba(118, 168, 107, 0.1) !important; animation: popInToast 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), pulseGlow 2s ease-in-out infinite !important; }
+    .toast.error { border-color: #e67e22; background: linear-gradient(135deg, #3d2b1b, #2a1b0a); box-shadow: 0 0 40px rgba(230, 126, 34, 0.5), inset 0 0 20px rgba(230, 126, 34, 0.1) !important; }
+    .toast-icon { font-size: 26px !important; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; min-width: 24px; }
+    .toast.success .toast-icon::before { content: '✓'; color: #76a86b; font-size: 28px !important; }
+    .toast.error .toast-icon::before { content: '✕'; color: #e67e22; font-size: 28px !important; }
+    .toast-message { flex: 1; letter-spacing: 0.3px; line-height: 1.4; }
+    
+    @keyframes popInToast { from { opacity: 0; transform: scale(0.8) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    @keyframes fadeOutToast { to { opacity: 0; transform: scale(0.9) translateY(-20px); } }
+    @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 10px rgba(118, 168, 107, 0.3); } 50% { box-shadow: 0 0 35px rgba(118, 168, 107, 0.7); } }
+    
+    .modal-root { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; background: rgba(0,0,0,0.85) !important; z-index: 700 !important; display: flex !important; align-items: flex-start !important; justify-content: center !important; padding: 90px 20px 130px 20px !important; overflow-y: auto !important; backdrop-filter: blur(5px); }
+    .modal-root.hidden { display: none !important; }
+    .modal { background: #111 !important; border: 1px solid #333 !important; border-radius: 16px !important; width: 100% !important; max-width: 500px !important; margin: auto !important; flex-shrink: 0 !important; box-shadow: 0 20px 50px rgba(0,0,0,0.5) !important; padding: 24px !important; margin-top: 40px !important; margin-bottom: 80px !important; position: relative !important; z-index: 701 !important; }
+    .modal-header h2 { font-size: 22px !important; margin: 0 0 16px !important; }
+    
+    /* ==============================================================
+       LOCKED TIKTOK WATCH SECTION - FLUID EXACT FIT
+    ============================================================== */
+    #section-watch {
+      position: fixed !important; 
+      top: 80px !important; /* Exactly below the topbar */
+      left: 240px !important; /* Avoids overlapping the desktop sidebar */
+      right: 0 !important;
+      height: calc(100vh - 80px) !important;
+      height: calc(100dvh - 80px) !important;
+      width: calc(100vw - 240px) !important; /* Perfect desktop width */
+      margin: 0 !important;
+      padding: 0 !important;
+      background-color: #000;
+      z-index: 100; /* Stays beneath the header and sidebar */
+    }
+
+    @media(max-width: 800px) {
       #section-watch {
-        position: fixed !important; 
-        top: 80px !important;       
         left: 0 !important;
-        right: 0 !important;
-        height: calc(100vh - 80px) !important;
-        height: calc(100dvh - 80px) !important;
         width: 100vw !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        background-color: #000;
-        z-index: 40;                
+        /* Sandwiched exactly between mobile header and mobile footer */
+        height: calc(100vh - 160px) !important; 
+        height: calc(100dvh - 160px) !important;
       }
+    }
 
-      @media(max-width: 800px) {
-        #section-watch {
-          height: calc(100vh - 160px) !important;
-          height: calc(100dvh - 160px) !important;
-        }
-      }
+    .tiktok-feed {
+      height: 100%;
+      width: 100%;
+      overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+      scroll-behavior: smooth;
+      background-color: #000;
+    }
 
-      .tiktok-feed {
-        height: 100%;
-        width: 100%;
-        overflow-y: scroll;
-        scroll-snap-type: y mandatory;
-        scroll-behavior: smooth;
-        background-color: #000;
-      }
+    .feed-video-card {
+      height: 100%;
+      width: 100%;
+      scroll-snap-align: start; 
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #000;
+      overflow: hidden;
+    }
 
-      .feed-video-card {
-        height: 100%;
-        width: 100%;
-        scroll-snap-align: start; 
-        position: relative;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background: #000;
-        overflow: hidden;
-      }
+    .feed-video-card video {
+      width: 100%;
+      height: 100%;
+      /* CRITICAL: contain ensures absolutely 0% of the video is cropped */
+      object-fit: contain !important; 
+      background-color: #000;
+      outline: none;
+      display: block;
+    }
 
-      .feed-video-card video {
-        width: 100%;
-        height: 100%;
-        object-fit: cover !important; 
-        background-color: #000;
-        outline: none;
-        display: block;
-      }
+    .feed-video-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 40%;
+      background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);
+      pointer-events: none;
+      z-index: 105;
+    }
 
-      .feed-video-card::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 40%;
-        background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);
-        pointer-events: none;
-        z-index: 5;
-      }
+    .feed-overlay {
+      position: absolute;
+      bottom: 15px; 
+      left: 15px;
+      right: 65px; 
+      color: #fff;
+      z-index: 110;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.9);
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .feed-overlay * { pointer-events: auto; }
+    .feed-overlay h3 { margin: 0; font-size: 17px; font-weight: 700; line-height: 1.2; }
+    .feed-overlay p { margin: 0; font-size: 14px; opacity: 0.9; line-height: 1.3; }
 
-      .feed-overlay {
-        position: absolute;
-        bottom: 15px; 
-        left: 15px;
-        right: 65px; 
-        color: #fff;
-        z-index: 10;
-        text-shadow: 1px 1px 3px rgba(0,0,0,0.9);
-        pointer-events: none;
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-      .feed-overlay * { pointer-events: auto; }
-      .feed-overlay h3 { margin: 0; font-size: 17px; font-weight: 700; line-height: 1.2; }
-      .feed-overlay p { margin: 0; font-size: 14px; opacity: 0.9; line-height: 1.3; }
+    .feed-sidebar {
+      position: absolute;
+      bottom: 25px; 
+      right: 10px;
+      z-index: 110;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
 
-      .feed-sidebar {
-        position: absolute;
-        bottom: 25px; 
-        right: 10px;
-        z-index: 10;
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-      }
+    .feed-action-btn {
+      background: transparent;
+      border: none;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      cursor: pointer;
+      padding: 0;
+      filter: drop-shadow(0 2px 5px rgba(0,0,0,0.8));
+      transition: transform 0.2s;
+    }
+    .feed-action-btn:active { transform: scale(0.85); }
+    .feed-action-btn span { font-size: 13px; font-weight: 600; }
 
-      .feed-action-btn {
-        background: transparent;
-        border: none;
-        color: #fff;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 5px;
-        cursor: pointer;
-        padding: 0;
-        filter: drop-shadow(0 2px 5px rgba(0,0,0,0.8));
-        transition: transform 0.2s;
-      }
-      .feed-action-btn:active { transform: scale(0.85); }
-      .feed-action-btn span { font-size: 13px; font-weight: 600; }
+    .feed-lock-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 120;
+      text-align: center;
+      padding: 20px;
+      backdrop-filter: blur(8px);
+    }
 
-      .feed-lock-overlay {
-        position: absolute;
-        inset: 0;
-        background: rgba(0,0,0,0.85);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        z-index: 20;
-        text-align: center;
-        padding: 20px;
-        backdrop-filter: blur(8px);
-      }
+    /* Clean Loading Component replacing brittle selectors */
+    .feed-loading {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      height: 100% !important;
+      width: 100% !important;
+      margin: 0 !important;
+      color: transparent !important; 
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: #000 !important;
+      z-index: 115;
+    }
+    .feed-loading::before {
+      content: '';
+      display: block;
+      width: 45px;
+      height: 45px;
+      border: 3px solid rgba(212, 160, 23, 0.15);
+      border-top-color: #d4a017;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    .feed-loading::after {
+      content: 'Loading stories...';
+      color: #999 !important;
+      font-size: 14px;
+      font-family: 'Space Grotesk', sans-serif;
+      letter-spacing: 0.5px;
+      margin-top: 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-      /* ==============================================================
-         BEAUTIFUL LOADING SPINNER (Eliminates shaky text completely)
-      ============================================================== */
-      #tiktok-feed > div[style*="text-align:center"],
-      #tiktok-feed > div[style*="margin-top"] {
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center !important;
-        height: 100% !important;
-        margin: 0 !important;
-        color: transparent !important; 
-        position: absolute;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: #000 !important;
-      }
-      #tiktok-feed > div[style*="text-align:center"]::before,
-      #tiktok-feed > div[style*="margin-top"]::before {
-        content: '';
-        display: block;
-        width: 45px;
-        height: 45px;
-        border: 3px solid rgba(212, 160, 23, 0.15);
-        border-top-color: #d4a017;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-      }
-      #tiktok-feed > div[style*="text-align:center"]::after,
-      #tiktok-feed > div[style*="margin-top"]::after {
-        content: 'Loading stories...';
-        color: #999 !important;
-        font-size: 14px;
-        font-family: 'Space Grotesk', sans-serif;
-        letter-spacing: 0.5px;
-        margin-top: 16px;
-      }
-      @keyframes spin { to { transform: rotate(360deg); } }
-
-      @media(max-width: 800px) {
-        .desktop-only { display: none !important; }
-        .mobile-only { display: flex !important; }
-        .topbar-actions { gap: 14px; }
-        .app-layout { flex-direction: column; }
-        
-        .sidebar { position: fixed; bottom: 0; left: 0; right: 0; transform: none; width: 100%; max-width: 100%; height: 80px; background: #111; border-top: 1px solid #222; border-radius: 30px 30px 0 0; z-index: 900 !important; display: flex; padding: 10px 10px 20px; align-items: center; box-shadow: 0 -4px 30px rgba(0,0,0,0.9); }
-        .side-nav { display: flex; flex-direction: row; justify-content: space-between; width: 100%; padding: 0; margin: 0; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1 1 0; gap: 4px; font-size: 10px; font-weight: 500; color: #999; padding: 8px 0; border: none; background: transparent; }
-        .nav-icon { font-size: 22px; font-style: normal; margin-bottom: 2px; transition: transform 0.2s; }
-        .nav-item span { display: block; margin: 0; white-space: nowrap; }
-        .nav-item.active { color: #d4a017; }
-        .nav-item.active .nav-icon { transform: translateY(-2px); text-shadow: 0 0 15px rgba(212,160,23,0.8); }
-        .sidebar-bottom { display: none; }
-        
-        .main-content { padding-bottom: 130px !important; } 
-        .app-section:not(#section-watch) { padding-bottom: 130px !important; }
-        .profile-panel { padding-bottom: 130px !important; }
-        .bottom-sheet { padding-bottom: 100px !important; }
-        
-        .rewards-hero { align-items: flex-start; display: block; padding: 22px; }
-        .rewards-balance { border-left: 0; border-top: 1px solid #6b5122; margin-top: 22px; padding: 16px 0 0; }
-        .rewards-grid { grid-template-columns: 1fr; }
-      }
-
-      @media(max-width:700px) {
-        .discover-filters { flex-wrap: wrap; }
-        .discover-filters label { flex: 1; min-width: 130px; }
-        .toast { font-size: 16px !important; padding: 22px 24px !important; max-width: calc(100vw - 30px) !important; }
-      }
+    @media(max-width: 800px) {
+      .desktop-only { display: none !important; }
+      .mobile-only { display: flex !important; }
+      .topbar-actions { gap: 14px; }
+      .app-layout { flex-direction: column; }
       
-      .profile-cover{background:linear-gradient(120deg,#2b2114,#171717 52%,#222);border:1px solid #343434;min-height:230px;padding:28px 32px;position:relative;overflow:hidden}.profile-cover[style]{background-position:center;background-size:cover}.profile-header{align-items:flex-end;display:flex;gap:22px;min-height:174px}.profile-avatar{align-items:center;background:#d4a017;color:#111;display:flex;flex:0 0 104px;font-family:Georgia,serif;font-size:48px;height:104px;justify-content:center;overflow:hidden;border-radius:50%;}.profile-avatar img{height:100%;object-fit:cover;width:100%}.profile-identity{max-width:650px}.profile-identity h1{font-size:clamp(30px,4vw,52px)}.profile-handle{margin:4px 0 10px}.profile-bio{color:#ddd;margin:0}.profile-location{color:#d4a017;font-size:13px;margin-top:10px}.profile-actions{display:flex;gap:10px;margin-left:auto}.profile-tabs{border-bottom:1px solid #343434;display:flex;gap:24px;overflow:auto;padding:0 4px}.profile-tab{background:none;border:0;border-bottom:2px solid transparent;color:#999;padding:16px 4px;white-space:nowrap}.profile-tab.active,.profile-tab:hover{border-color:#d4a017;color:#f5f5f5}.profile-panel{padding-top:30px}.profile-summary-grid{display:grid;gap:30px;grid-template-columns:1fr 1fr}.profile-section-heading{align-items:end;display:flex;justify-content:space-between;margin:28px 0 18px}.profile-section-heading h2{font-size:24px}.profile-list{display:grid;gap:10px}.profile-list-row{align-items:center;background:#1b1b1b;border:1px solid #343434;display:flex;gap:14px;padding:12px}.profile-list-row strong{display:block}.profile-list-row p{color:#999;font-size:13px;margin:2px 0 0}.profile-list-row .progress{background:#343434;height:4px;margin-top:8px;width:180px}.profile-list-row .progress i{background:#d4a017;display:block;height:100%}.profile-story-grid{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-story-grid .series-card{min-width:0}.interest-list{display:flex;flex-wrap:wrap;gap:8px}.interest-chip{background:#242424;border:1px solid #4a4a4a;color:#f5f5f5;padding:7px 11px}.profile-about{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr));max-width:680px}.profile-about div{background:#1b1b1b;border-bottom:1px solid #343434;padding:14px}.profile-about span{color:#999;display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase}.profile-edit-panel{border-top:1px solid #343434;margin-top:30px;padding-top:24px}.profile-edit-grid{display:grid;gap:14px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-form label{color:#bbb;display:grid;font-size:12px;gap:6px}.profile-form input,.profile-form textarea,.profile-form select{background:#111;border:1px solid #444;color:#f5f5f5;padding:11px}.profile-form select[multiple]{min-height:130px}.profile-privacy{display:flex;flex-wrap:wrap;gap:18px;margin:16px 0}.profile-privacy label{display:flex;display:flex;gap:8px}.profile-empty{border:1px dashed #444;color:#999;padding:24px}.profile-empty button{margin-top:12px}@media(max-width:700px){.profile-cover{padding:22px 18px}.profile-header{align-items:flex-start;flex-wrap:wrap}.profile-avatar{flex-basis:78px;font-size:36px;height:78px}.profile-actions{margin-left:0;width:100%}.profile-actions .button{flex:1}.profile-summary-grid,.profile-about,.profile-edit-grid{grid-template-columns:1fr}.profile-tabs{gap:16px}.profile-story-grid{grid-template-columns:1fr 1fr}}
+      .sidebar { position: fixed; bottom: 0; left: 0; right: 0; transform: none; width: 100%; max-width: 100%; height: 80px; background: #111; border-top: 1px solid #222; border-radius: 30px 30px 0 0; z-index: 500 !important; display: flex; padding: 10px 10px 20px; align-items: center; box-shadow: 0 -4px 30px rgba(0,0,0,0.9); }
+      .side-nav { display: flex; flex-direction: row; justify-content: space-between; width: 100%; padding: 0; margin: 0; }
+      .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1 1 0; gap: 4px; font-size: 10px; font-weight: 500; color: #999; padding: 8px 0; border: none; background: transparent; }
+      .nav-icon { font-size: 22px; font-style: normal; margin-bottom: 2px; transition: transform 0.2s; }
+      .nav-item span { display: block; margin: 0; white-space: nowrap; }
+      .nav-item.active { color: #d4a017; }
+      .nav-item.active .nav-icon { transform: translateY(-2px); text-shadow: 0 0 15px rgba(212,160,23,0.8); }
+      .sidebar-bottom { display: none; }
       
-      .topbar { display: flex; justify-content: space-between; align-items: center; padding: 0 4vw; height: 80px; background: #111; border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 50 !important; }
-      .topbar-actions { display: flex; align-items: center; gap: 18px; }
-      .notification-button { align-items: center; background: #242424; border: 1px solid #3b3b3b; border-radius: 50%; display: inline-flex; height: 44px; justify-content: center; transition: border-color .2s, transform .2s; width: 44px; position: relative; }
-      .notification-button:hover { border-color: #d4a017; transform: translateY(-1px); }
-      .header-icon { font-size: 19px; line-height: 1; }
-      .notification-button .notification-badge { position: absolute; right: -4px; top: -3px; background: #d4a017; color: #111; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: bold; }
-      .header-profile-btn { display: flex !important; align-items: center !important; justify-content: center !important; background: transparent !important; border: none !important; padding: 0 !important; margin: 0 !important; cursor: pointer !important; width: 54px !important; height: 54px !important; transition: transform .2s ease !important; }
-      .header-profile-btn:hover { transform: translateY(-2px) scale(1.02); }
+      .main-content { padding-bottom: 130px !important; } 
+      .app-section:not(#section-watch) { padding-bottom: 130px !important; }
+      .profile-panel { padding-bottom: 130px !important; }
+      .bottom-sheet { padding-bottom: 100px !important; }
       
-      .header-avatar-container { position: relative; width: 54px; height: 54px; display: flex; align-items: center; justify-content: center; border-radius: 50%; padding: 3px; z-index: 1; }
-      .header-avatar-container::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, #d4a017, #76a86b, #d4a017, transparent 60%); animation: spinAvatarBorder 3s linear infinite; z-index: -2; }
-      .header-avatar-container::after { content: ''; position: absolute; inset: 3px; background: #111; border-radius: 50%; z-index: -1; }
-      @keyframes spinAvatarBorder { 100% { transform: rotate(360deg); } }
-      .header-avatar-img { width: 100% !important; height: 100% !important; border-radius: 50% !important; background: #d4a017 !important; color: #111 !important; font-family: Georgia, serif !important; font-weight: 700 !important; font-size: 22px !important; display: flex !important; align-items: center !important; justify-content: center !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; border: none !important; z-index: 2; }
-      .header-avatar-img img { width: 100% !important; height: 100% !important; object-fit: cover !important; border-radius: 50% !important; }
-      .header-online-dot { position: absolute; bottom: 2px; right: 2px; width: 14px; height: 14px; background-color: #2ecc71; border: 2.5px solid #111; border-radius: 50%; z-index: 10; }
-      .profile-initial { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+      .rewards-hero { align-items: flex-start; display: block; padding: 22px; }
+      .rewards-balance { border-left: 0; border-top: 1px solid #6b5122; margin-top: 22px; padding: 16px 0 0; }
+      .rewards-grid { grid-template-columns: 1fr; }
+    }
 
-      .bottom-sheet-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: flex-end; opacity: 1; transition: opacity 0.3s; }
-      .bottom-sheet-overlay.hidden { opacity: 0; pointer-events: none; }
-      .bottom-sheet { background: #111; border-top: 1px solid #333; border-radius: 24px 24px 0 0; width: 100%; padding: 16px 24px 40px; transform: translateY(0); transition: transform 0.3s; box-shadow: 0 -10px 40px rgba(0,0,0,0.9); }
-      .bottom-sheet-overlay.hidden .bottom-sheet { transform: translateY(100%); }
-      .sheet-handle { width: 40px; height: 4px; background: #444; border-radius: 4px; margin: 0 auto 24px; }
-      .bottom-sheet h3 { text-align: center; color: #fff; margin: 0 0 24px; font-size: 18px; font-weight: 600; }
-      .sheet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-      .sheet-item { background: #1a1a1a; border: 1px solid #333; border-radius: 14px; padding: 18px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; color: #f5f5f5; cursor: pointer; transition: border-color .2s; border: none; }
-      .sheet-item:active { background: #222; }
-      .sheet-item i { font-size: 24px; font-style: normal; color: #d4a017; }
-      .sheet-item span { font-size: 13px; font-weight: 500; }
-      .sheet-logout { grid-column: 1 / -1; margin-top: 12px; background: rgba(220, 53, 69, 0.1); color: #ff4d4f; border: 1px solid rgba(220, 53, 69, 0.3); flex-direction: row; justify-content: center; gap: 12px; padding: 16px; }
-      .sheet-logout i { color: #ff4d4f; font-size: 18px; }
-    </style>
+    @media(max-width:700px) {
+      .discover-filters { flex-wrap: wrap; }
+      .discover-filters label { flex: 1; min-width: 130px; }
+      .toast { font-size: 16px !important; padding: 22px 24px !important; max-width: calc(100vw - 30px) !important; }
+    }
+    
+    .profile-cover{background:linear-gradient(120deg,#2b2114,#171717 52%,#222);border:1px solid #343434;min-height:230px;padding:28px 32px;position:relative;overflow:hidden}.profile-cover[style]{background-position:center;background-size:cover}.profile-header{align-items:flex-end;display:flex;gap:22px;min-height:174px}.profile-avatar{align-items:center;background:#d4a017;color:#111;display:flex;flex:0 0 104px;font-family:Georgia,serif;font-size:48px;height:104px;justify-content:center;overflow:hidden;border-radius:50%;}.profile-avatar img{height:100%;object-fit:cover;width:100%}.profile-identity{max-width:650px}.profile-identity h1{font-size:clamp(30px,4vw,52px)}.profile-handle{margin:4px 0 10px}.profile-bio{color:#ddd;margin:0}.profile-location{color:#d4a017;font-size:13px;margin-top:10px}.profile-actions{display:flex;gap:10px;margin-left:auto}.profile-tabs{border-bottom:1px solid #343434;display:flex;gap:24px;overflow:auto;padding:0 4px}.profile-tab{background:none;border:0;border-bottom:2px solid transparent;color:#999;padding:16px 4px;white-space:nowrap}.profile-tab.active,.profile-tab:hover{border-color:#d4a017;color:#f5f5f5}.profile-panel{padding-top:30px}.profile-summary-grid{display:grid;gap:30px;grid-template-columns:1fr 1fr}.profile-section-heading{align-items:end;display:flex;justify-content:space-between;margin:28px 0 18px}.profile-section-heading h2{font-size:24px}.profile-list{display:grid;gap:10px}.profile-list-row{align-items:center;background:#1b1b1b;border:1px solid #343434;display:flex;gap:14px;padding:12px}.profile-list-row strong{display:block}.profile-list-row p{color:#999;font-size:13px;margin:2px 0 0}.profile-list-row .progress{background:#343434;height:4px;margin-top:8px;width:180px}.profile-list-row .progress i{background:#d4a017;display:block;height:100%}.profile-story-grid{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-story-grid .series-card{min-width:0}.interest-list{display:flex;flex-wrap:wrap;gap:8px}.interest-chip{background:#242424;border:1px solid #4a4a4a;color:#f5f5f5;padding:7px 11px}.profile-about{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr));max-width:680px}.profile-about div{background:#1b1b1b;border-bottom:1px solid #343434;padding:14px}.profile-about span{color:#999;display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase}.profile-edit-panel{border-top:1px solid #343434;margin-top:30px;padding-top:24px}.profile-edit-grid{display:grid;gap:14px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-form label{color:#bbb;display:grid;font-size:12px;gap:6px}.profile-form input,.profile-form textarea,.profile-form select{background:#111;border:1px solid #444;color:#f5f5f5;padding:11px}.profile-form select[multiple]{min-height:130px}.profile-privacy{display:flex;flex-wrap:wrap;gap:18px;margin:16px 0}.profile-privacy label{display:flex;display:flex;gap:8px}.profile-empty{border:1px dashed #444;color:#999;padding:24px}.profile-empty button{margin-top:12px}@media(max-width:700px){.profile-cover{padding:22px 18px}.profile-header{align-items:flex-start;flex-wrap:wrap}.profile-avatar{flex-basis:78px;font-size:36px;height:78px}.profile-actions{margin-left:0;width:100%}.profile-actions .button{flex:1}.profile-summary-grid,.profile-about,.profile-edit-grid{grid-template-columns:1fr}.profile-tabs{gap:16px}.profile-story-grid{grid-template-columns:1fr 1fr}}
+    
+    .topbar { display: flex; justify-content: space-between; align-items: center; padding: 0 4vw; height: 80px; background: #111; border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 500 !important; }
+    .topbar-actions { display: flex; align-items: center; gap: 18px; }
+    .notification-button { align-items: center; background: #242424; border: 1px solid #3b3b3b; border-radius: 50%; display: inline-flex; height: 44px; justify-content: center; transition: border-color .2s, transform .2s; width: 44px; position: relative; }
+    .notification-button:hover { border-color: #d4a017; transform: translateY(-1px); }
+    .header-icon { font-size: 19px; line-height: 1; }
+    .notification-button .notification-badge { position: absolute; right: -4px; top: -3px; background: #d4a017; color: #111; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: bold; }
+    .header-profile-btn { display: flex !important; align-items: center !important; justify-content: center !important; background: transparent !important; border: none !important; padding: 0 !important; margin: 0 !important; cursor: pointer !important; width: 54px !important; height: 54px !important; transition: transform .2s ease !important; }
+    .header-profile-btn:hover { transform: translateY(-2px) scale(1.02); }
+    
+    .header-avatar-container { position: relative; width: 54px; height: 54px; display: flex; align-items: center; justify-content: center; border-radius: 50%; padding: 3px; z-index: 1; }
+    .header-avatar-container::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, #d4a017, #76a86b, #d4a017, transparent 60%); animation: spinAvatarBorder 3s linear infinite; z-index: -2; }
+    .header-avatar-container::after { content: ''; position: absolute; inset: 3px; background: #111; border-radius: 50%; z-index: -1; }
+    @keyframes spinAvatarBorder { 100% { transform: rotate(360deg); } }
+    .header-avatar-img { width: 100% !important; height: 100% !important; border-radius: 50% !important; background: #d4a017 !important; color: #111 !important; font-family: Georgia, serif !important; font-weight: 700 !important; font-size: 22px !important; display: flex !important; align-items: center !important; justify-content: center !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; border: none !important; z-index: 2; }
+    .header-avatar-img img { width: 100% !important; height: 100% !important; object-fit: cover !important; border-radius: 50% !important; }
+    .header-online-dot { position: absolute; bottom: 2px; right: 2px; width: 14px; height: 14px; background-color: #2ecc71; border: 2.5px solid #111; border-radius: 50%; z-index: 10; }
+    .profile-initial { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+
+    .bottom-sheet-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 600; display: flex; align-items: flex-end; opacity: 1; transition: opacity 0.3s; }
+    .bottom-sheet-overlay.hidden { opacity: 0; pointer-events: none; }
+    .bottom-sheet { background: #111; border-top: 1px solid #333; border-radius: 24px 24px 0 0; width: 100%; padding: 16px 24px 40px; transform: translateY(0); transition: transform 0.3s; box-shadow: 0 -10px 40px rgba(0,0,0,0.9); }
+    .bottom-sheet-overlay.hidden .bottom-sheet { transform: translateY(100%); }
+    .sheet-handle { width: 40px; height: 4px; background: #444; border-radius: 4px; margin: 0 auto 24px; }
+    .bottom-sheet h3 { text-align: center; color: #fff; margin: 0 0 24px; font-size: 18px; font-weight: 600; }
+    .sheet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .sheet-item { background: #1a1a1a; border: 1px solid #333; border-radius: 14px; padding: 18px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; color: #f5f5f5; cursor: pointer; transition: border-color .2s; border: none; }
+    .sheet-item:active { background: #222; }
+    .sheet-item i { font-size: 24px; font-style: normal; color: #d4a017; }
+    .sheet-item span { font-size: 13px; font-weight: 500; }
+    .sheet-logout { grid-column: 1 / -1; margin-top: 12px; background: rgba(220, 53, 69, 0.1); color: #ff4d4f; border: 1px solid rgba(220, 53, 69, 0.3); flex-direction: row; justify-content: center; gap: 12px; padding: 16px; }
+    .sheet-logout i { color: #ff4d4f; font-size: 18px; }
+  </style>
 </head>
 <body class="app-page">
+
   <header class="topbar">
-    <a class="brand" href="#discover"><span class="brand-mark">A</span><span>AFRO<span>STORY</span></span></a>
+    <a class="brand" href="#discover" aria-label="AfroStory Home"><span class="brand-mark">A</span><span>AFRO<span>STORY</span></span></a>
     <div class="topbar-actions">
       <button class="icon-button notification-button" data-action="notifications" aria-label="Open notifications" title="Notifications">
         <span class="header-icon">&#128276;</span><i id="notification-badge" class="notification-badge hidden">0</i>
@@ -296,43 +303,60 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
       </button>
     </div>
   </header>
+
   <div class="app-layout">
-    <aside class="sidebar">
+    <aside class="sidebar" style="z-index: 400;">
       <nav class="side-nav" aria-label="Main navigation">
-        <button class="nav-item active" data-section="discover"><i class="nav-icon">⌂</i><span>Discover</span></button>
-        <button class="nav-item" data-section="search"><i class="nav-icon">⌕</i><span>Search</span></button>
-        <button class="nav-item" data-section="watch"><i class="nav-icon">▶</i><span>Watch</span></button>
-        <button class="nav-item" data-section="wallet"><i class="nav-icon">◈</i><span>Wallet</span></button>
-        <button class="nav-item" data-section="creator"><i class="nav-icon">✦</i><span>Studio</span></button>
-        <button class="nav-item mobile-only" id="mobile-more-btn" type="button"><i class="nav-icon">⋯</i><span>More</span></button>
+        <button class="nav-item active" data-section="discover" aria-label="Discover"><i class="nav-icon" aria-hidden="true">⌂</i><span>Discover</span></button>
+        <button class="nav-item" data-section="search" aria-label="Search"><i class="nav-icon" aria-hidden="true">⌕</i><span>Search</span></button>
+        <button class="nav-item" data-section="watch" aria-label="Watch Feed"><i class="nav-icon" aria-hidden="true">▶</i><span>Watch</span></button>
+        <button class="nav-item" data-section="wallet" aria-label="Wallet"><i class="nav-icon" aria-hidden="true">◈</i><span>Wallet</span></button>
+        <button class="nav-item" data-section="creator" aria-label="Creator Studio"><i class="nav-icon" aria-hidden="true">✦</i><span>Studio</span></button>
+        <button class="nav-item mobile-only" id="mobile-more-btn" type="button" aria-label="More Menu"><i class="nav-icon" aria-hidden="true">⋯</i><span>More</span></button>
         
-        <button class="nav-item desktop-only" data-section="trending"><i class="nav-icon">↗</i><span>Trending</span></button>
-        <button class="nav-item desktop-only" data-section="continue"><i class="nav-icon">◷</i><span>Continue</span></button>
-        <button class="nav-item desktop-only" data-section="favorites"><i class="nav-icon">♡</i><span>Favorites</span></button>
-        <button class="nav-item desktop-only" data-section="history"><i class="nav-icon">◴</i><span>History</span></button>
-        <button class="nav-item desktop-only" data-section="rewards"><i class="nav-icon">✧</i><span>Rewards</span></button>
+        <button class="nav-item desktop-only" data-section="trending" aria-label="Trending"><i class="nav-icon" aria-hidden="true">↗</i><span>Trending</span></button>
+        <button class="nav-item desktop-only" data-section="continue" aria-label="Continue Watching"><i class="nav-icon" aria-hidden="true">◷</i><span>Continue</span></button>
+        <button class="nav-item desktop-only" data-section="favorites" aria-label="Favorites"><i class="nav-icon" aria-hidden="true">♡</i><span>Favorites</span></button>
+        <button class="nav-item desktop-only" data-section="history" aria-label="Watch History"><i class="nav-icon" aria-hidden="true">◴</i><span>History</span></button>
+        <button class="nav-item desktop-only" data-section="rewards" aria-label="Rewards"><i class="nav-icon" aria-hidden="true">✧</i><span>Rewards</span></button>
         
-        <!-- DESKTOP ADMIN BUTTON -->
-        <button id="desktop-admin-btn" class="nav-item desktop-only" style="display: none;" onclick="window.location.href='/admin.html'"><i class="nav-icon">▦</i><span>Admin</span></button>
+        <button id="desktop-admin-btn" class="nav-item desktop-only" style="display: none;" onclick="window.location.href='/admin.html'" aria-label="Admin Panel"><i class="nav-icon" aria-hidden="true">▦</i><span>Admin</span></button>
       </nav>
       <div class="sidebar-bottom">
-        <button class="nav-item" data-section="settings"><i class="nav-icon">⚙</i><span>Settings</span></button>
-        <button class="nav-item" data-action="logout"><i class="nav-icon">↪</i><span>Sign out</span></button>
+        <button class="nav-item" data-section="settings" aria-label="Settings"><i class="nav-icon" aria-hidden="true">⚙</i><span>Settings</span></button>
+        <button class="nav-item" data-action="logout" aria-label="Sign out"><i class="nav-icon" aria-hidden="true">↪</i><span>Sign out</span></button>
       </div>
     </aside>
+
     <main class="main-content">
-      <div class="discover-filters"><label>Genre<select id="genre-filter"><option value="">All genres</option><option>Action</option><option>Drama</option><option>Comedy</option><option>Romance</option><option>Thriller</option><option>Sci-Fi</option><option>Horror</option><option>Documentary</option><option>Afro-Futurism</option><option>Folklore</option><option>Urban Drama</option><option>Animation</option><option>Historical</option><option>Adventure</option><option>Mystery</option><option>Crime</option><option>Family</option><option>Faith &amp; Inspirational</option><option>Musical</option><option>Biography</option><option>Short Film</option></select></label><label>Sort<select id="sort-filter"><option value="trending">Trending</option><option value="newest">Newest</option><option value="rating">Top rated</option></select></label></div>
-      <section id="section-discover" class="app-section"><div class="section-heading hero-heading"><div><p class="eyebrow">THE HOME OF AFRICAN STORIES</p><h1>Find your next<br><em>favorite world.</em></h1></div><form id="search-form" class="search-box"><span>⌕</span><input id="search-input" type="search" placeholder="Search series, creators..." aria-label="Search"><button type="submit">Search</button></form></div><div id="featured-series" class="featured-strip"></div><div class="section-heading"><div><p class="eyebrow">CURATED FOR YOU</p><h2>Trending now</h2></div><button class="text-button" data-action="refresh-discover">View all ↗</button></div><div id="series-grid" class="content-grid"></div><div class="section-heading compact-heading"><div><p class="eyebrow">VOICES TO KNOW</p><h2>Top creators</h2></div></div><div id="creator-grid" class="creator-grid"></div></section>
+      <div class="discover-filters">
+        <label>Genre<select id="genre-filter"><option value="">All genres</option><option>Action</option><option>Drama</option><option>Comedy</option><option>Romance</option><option>Thriller</option><option>Sci-Fi</option><option>Horror</option><option>Documentary</option><option>Afro-Futurism</option><option>Folklore</option><option>Urban Drama</option><option>Animation</option><option>Historical</option><option>Adventure</option><option>Mystery</option><option>Crime</option><option>Family</option><option>Faith &amp; Inspirational</option><option>Musical</option><option>Biography</option><option>Short Film</option></select></label>
+        <label>Sort<select id="sort-filter"><option value="trending">Trending</option><option value="newest">Newest</option><option value="rating">Top rated</option></select></label>
+      </div>
+
+      <section id="section-discover" class="app-section">
+        <div class="section-heading hero-heading">
+          <div><p class="eyebrow">THE HOME OF AFRICAN STORIES</p><h1>Find your next<br><em>favorite world.</em></h1></div>
+          <form id="search-form" class="search-box"><span>⌕</span><input id="search-input" type="search" placeholder="Search series, creators..." aria-label="Search"><button type="submit">Search</button></form>
+        </div>
+        <div id="featured-series" class="featured-strip"></div>
+        <div class="section-heading"><div><p class="eyebrow">CURATED FOR YOU</p><h2>Trending now</h2></div><button class="text-button" data-action="refresh-discover">View all ↗</button></div>
+        <div id="series-grid" class="content-grid"></div>
+        <div class="section-heading compact-heading"><div><p class="eyebrow">VOICES TO KNOW</p><h2>Top creators</h2></div></div>
+        <div id="creator-grid" class="creator-grid"></div>
+      </section>
       
       <!-- LOCKED WATCH SECTION -->
       <section id="section-watch" class="app-section hidden">
         <div id="tiktok-feed" class="tiktok-feed">
+           <!-- The feed loading state is now handled cleanly via JS removing/adding the .feed-loading class -->
+           <div id="watch-loading" class="feed-loading hidden"></div>
         </div>
 
-        <div id="comments-sheet" class="bottom-sheet-overlay hidden" style="z-index: 99999;">
+        <div id="comments-sheet" class="bottom-sheet-overlay hidden" style="z-index: 750;">
           <div class="bottom-sheet" style="height: 65vh; overflow-y: auto; position: relative; padding-bottom: 80px;">
             <div class="sheet-handle"></div>
-            <button class="modal-close" style="position:absolute; right:20px; top:15px; background:none; border:none; color:#fff; font-size:24px; cursor:pointer;" onclick="document.getElementById('comments-sheet').classList.add('hidden')">×</button>
+            <button class="modal-close" aria-label="Close comments" style="position:absolute; right:20px; top:15px; background:none; border:none; color:#fff; font-size:24px; cursor:pointer;" onclick="document.getElementById('comments-sheet').classList.add('hidden')">×</button>
             <div class="section-heading compact-heading">
               <h2>Comments</h2>
             </div>
@@ -348,140 +372,156 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
       <!-- WALLET SECTION -->
       <section id="section-wallet" class="app-section hidden">
         <div class="section-heading">
-          <div>
-            <p class="eyebrow">YOUR STORY ECONOMY</p>
-            <h1>Wallet</h1>
-          </div>
-          <div>
-            <button class="button button-primary" data-action="buy-coins">Get coins <span>↗</span></button>
-            <button class="button button-accent" data-action="buy-pass">Get a pass</button>
-          </div>
+          <div><p class="eyebrow">YOUR STORY ECONOMY</p><h1>Wallet</h1></div>
+          <div><button class="button button-primary" data-action="buy-coins">Get coins <span>↗</span></button><button class="button button-accent" data-action="buy-pass">Get a pass</button></div>
         </div>
         <div class="wallet-overview">
-          <div class="balance-card">
-            <span class="eyebrow">AVAILABLE COINS</span>
-            <strong style="display: inline-flex; align-items: center; gap: 6px;">
-              <span style="color: #d4a017; font-size: 0.9em;">◈</span>
-              <span id="wallet-balance">0</span>
-            </strong>
-            <span class="balance-caption">Use coins to unlock premium episodes.</span>
-          </div>
-          <div class="wallet-stat">
-            <span class="eyebrow">TOTAL EARNED</span>
-            <strong style="display: inline-flex; align-items: center; gap: 4px;">
-              <span style="color: #2ecc71; font-size: 0.9em;">₦</span>
-              <span id="wallet-earned">0</span>
-            </strong>
-            <span>Creator earnings</span>
-          </div>
+          <div class="balance-card"><span class="eyebrow">AVAILABLE COINS</span><strong style="display: inline-flex; align-items: center; gap: 6px;"><span style="color: #d4a017; font-size: 0.9em;">◈</span><span id="wallet-balance">0</span></strong><span class="balance-caption">Use coins to unlock premium episodes.</span></div>
+          <div class="wallet-stat"><span class="eyebrow">TOTAL EARNED</span><strong style="display: inline-flex; align-items: center; gap: 4px;"><span style="color: #2ecc71; font-size: 0.9em;">₦</span><span id="wallet-earned">0</span></strong><span>Creator earnings</span></div>
         </div>
-        <div class="section-heading compact-heading">
-          <h2>Recent transactions</h2>
+        <div class="section-heading compact-heading"><h2>Recent transactions</h2></div>
+        <div id="transactions-list" class="data-list">
+           <div class="empty-state hidden" id="empty-transactions"><p>No transactions yet.</p></div>
         </div>
-        <div id="transactions-list" class="data-list"></div>
       </section>
 
       <!-- REWARDS SECTION -->
       <section id="section-rewards" class="app-section hidden">
         <div class="rewards-hero">
-          <div>
-            <p class="eyebrow">AFROSTORY REWARDS</p>
-            <h1>Return. Discover. Earn.</h1>
-            <p class="muted">Complete activities on AfroStory and earn coins.</p>
-          </div>
-          <div class="rewards-balance">
-            <span class="eyebrow">CURRENT BALANCE</span>
-            <strong style="display: inline-flex; align-items: center; gap: 6px;">
-              <span style="color: #d4a017; font-size: 0.9em;">◈</span>
-              <span id="rewards-balance">0</span>
-            </strong>
-            <span>story coins</span>
-            <div class="reward-streak">
-              <b id="reward-current-streak">0</b> day streak <small>Best <span id="reward-best-streak">0</span></small>
-            </div>
-          </div>
+          <div><p class="eyebrow">AFROSTORY REWARDS</p><h1>Return. Discover. Earn.</h1><p class="muted">Complete activities on AfroStory and earn coins.</p></div>
+          <div class="rewards-balance"><span class="eyebrow">CURRENT BALANCE</span><strong style="display: inline-flex; align-items: center; gap: 6px;"><span style="color: #d4a017; font-size: 0.9em;">◈</span><span id="rewards-balance">0</span></strong><span>story coins</span><div class="reward-streak"><b id="reward-current-streak">0</b> day streak <small>Best <span id="reward-best-streak">0</span></small></div></div>
         </div>
         <div id="daily-reward-card" class="daily-reward-card"></div>
-        <div class="section-heading compact-heading">
-          <div>
-            <p class="eyebrow">SOCIAL MEDIA REWARDS</p>
-            <h2>Support AfroStory</h2>
-            <p class="muted">Support AfroStory on social media and earn bonus coins.</p>
-          </div>
-        </div>
+        <div class="section-heading compact-heading"><div><p class="eyebrow">SOCIAL MEDIA REWARDS</p><h2>Support AfroStory</h2><p class="muted">Support AfroStory on social media and earn bonus coins.</p></div></div>
         <div id="social-rewards-grid" class="rewards-grid"></div>
-        <div class="section-heading compact-heading">
-          <div>
-            <p class="eyebrow">EARN COINS</p>
-            <h2>Available missions</h2>
-          </div>
-        </div>
+        <div class="section-heading compact-heading"><div><p class="eyebrow">EARN COINS</p><h2>Available missions</h2></div></div>
         <div id="rewards-grid" class="rewards-grid"></div>
-        <div class="section-heading compact-heading">
-          <div>
-            <p class="eyebrow">REWARD HISTORY</p>
-            <h2>Recent activity</h2>
-          </div>
-        </div>
+        <div class="section-heading compact-heading"><div><p class="eyebrow">REWARD HISTORY</p><h2>Recent activity</h2></div></div>
         <div id="rewards-history" class="data-list"></div>
       </section>
       
       <!-- CREATOR DASHBOARD SECTION -->
       <section id="section-creator" class="app-section hidden">
-        <!-- SPLASH SCREEN: Shown when user is not a creator -->
         <div id="creator-onboarding" class="hidden" style="text-align:center; max-width:400px; margin:100px auto;">
-          <p class="eyebrow">SHARE YOUR VOICE</p>
-          <h2>Become a creator</h2>
-          <p style="color: #999; margin-bottom: 24px;">Create a home for your stories and upload episodes.</p>
-          
+          <p class="eyebrow">SHARE YOUR VOICE</p><h2>Become a creator</h2><p style="color: #999; margin-bottom: 24px;">Create a home for your stories and upload episodes.</p>
           <form id="become-creator-form" class="stack-form" style="text-align: left;">
-            <label>Creator Name
-              <input name="brandName" required maxlength="100" placeholder="e.g. Nater Studios">
-            </label>
-            <label>Bio (Optional)
-              <textarea name="bio" maxlength="500" placeholder="Tell viewers what to expect..."></textarea>
-            </label>
+            <label>Creator Name<input name="brandName" required maxlength="100" placeholder="e.g. Nater Studios"></label>
+            <label>Bio (Optional)<textarea name="bio" maxlength="500" placeholder="Tell viewers what to expect..."></textarea></label>
             <button class="button button-primary" type="submit" style="width: 100%; margin-top: 10px;">Start creating</button>
           </form>
         </div>
-
-        <!-- PENDING SCREEN (Shown while waiting for admin approval) -->
         <div id="creator-pending" class="hidden" style="text-align:center; max-width:400px; margin:100px auto;">
-          <p class="eyebrow" style="color: #d4a017;">APPLICATION RECEIVED</p>
-          <h2>Under Review</h2>
-          <p style="color: #999; margin-bottom: 24px;">Your creator profile is currently being reviewed by our administrators. We will get back to you shortly. Once approved, you will be able to upload your content here.</p>
+          <p class="eyebrow" style="color: #d4a017;">APPLICATION RECEIVED</p><h2>Under Review</h2><p style="color: #999; margin-bottom: 24px;">Your creator profile is currently being reviewed by our administrators. We will get back to you shortly. Once approved, you will be able to upload your content here.</p>
           <button class="button button-quiet" type="button" onclick="document.querySelector('[data-section=\'discover\']').click()">Explore stories meanwhile</button>
         </div>
-
-        <!-- ACTUAL DASHBOARD: Shown when user is a verified creator -->
         <div id="creator-dashboard" class="hidden">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">MAKE YOUR MARK</p>
-              <h1>Creator studio</h1>
-            </div>
-            <button class="button button-primary" data-action="new-series">New series <span>+</span></button>
-          </div>
+          <div class="section-heading"><div><p class="eyebrow">MAKE YOUR MARK</p><h1>Creator studio</h1></div><button class="button button-primary" data-action="new-series">New series <span>+</span></button></div>
           <div id="creator-stats" class="stats-row"></div>
-          <div class="section-heading compact-heading">
-            <h2>Your series</h2>
-            <button class="button button-accent" data-action="open-upload">Upload episode</button>
-          </div>
+          <div class="section-heading compact-heading"><h2>Your series</h2><button class="button button-accent" data-action="open-upload">Upload episode</button></div>
           <div id="my-series-grid" class="content-grid"></div>
         </div>
       </section>
 
-      <section id="section-history" class="app-section hidden"><div class="section-heading"><div><p class="eyebrow">YOUR JOURNEY</p><h1>Watch history</h1></div><button class="button button-quiet" data-section="discover">Discover stories</button></div><div id="history-list" class="data-list"></div></section>
-      <section id="section-profile" class="app-section hidden"><div id="profile-cover" class="profile-cover"><div class="profile-header"><div id="profile-avatar" class="profile-avatar">A</div><div class="profile-identity"><p class="eyebrow">YOUR STORY SPACE</p><h1 id="profile-display-name">Profile</h1><p id="profile-handle" class="muted">@username</p><p id="profile-bio" class="profile-bio">Complete your profile to help your story journey feel like home.</p><div id="profile-location" class="profile-location"></div></div><div class="profile-actions"><button class="button button-primary" data-action="edit-profile">Edit profile</button><button class="button button-quiet" data-section="settings">Settings</button></div></div></div><nav class="profile-tabs" aria-label="Profile sections"><button class="profile-tab active" data-profile-tab="overview">Overview</button><button class="profile-tab" data-profile-tab="watchlist">Watchlist</button><button class="profile-tab" data-profile-tab="history">History</button><button class="profile-tab" data-profile-tab="library">My library</button><button class="profile-tab" data-profile-tab="about">About</button><button class="profile-tab creator-profile-tab hidden" data-section="creator">My content</button></nav><div id="profile-panel-overview" class="profile-panel"><div class="profile-summary-grid"><div><p class="eyebrow">RECENTLY WATCHED</p><div id="profile-recent" class="profile-list"></div></div><div><p class="eyebrow">SAVED STORIES</p><div id="profile-saved" class="profile-story-grid"></div></div></div><div class="profile-section-heading"><div><p class="eyebrow">YOUR INTERESTS</p><h2 id="profile-interest-title">Shape your next discovery</h2></div><button class="text-button" data-action="edit-profile">Edit interests</button></div><div id="profile-interests" class="interest-list"></div></div><div id="profile-panel-watchlist" class="profile-panel hidden"><div class="profile-section-heading"><div><p class="eyebrow">YOUR COLLECTION</p><h2>Watchlist</h2></div></div><div id="profile-watchlist" class="profile-story-grid"></div></div><div id="profile-panel-history" class="profile-panel hidden"><div class="profile-section-heading"><div><p class="eyebrow">YOUR JOURNEY</p><h2>Watch history</h2></div></div><div id="profile-history" class="profile-list"></div></div><div id="profile-panel-library" class="profile-panel hidden"><div class="profile-section-heading"><div><p class="eyebrow">UNLOCKED STORIES</p><h2>My library</h2></div></div><div id="profile-library" class="profile-list"></div></div><div id="profile-panel-about" class="profile-panel hidden"><div class="profile-section-heading"><div><p class="eyebrow">ACCOUNT DETAILS</p><h2>About your AfroStory account</h2></div></div><div id="profile-about" class="profile-about"></div></div><div id="profile-edit-panel" class="profile-edit-panel hidden"><div class="profile-section-heading"><div><p class="eyebrow">MAKE IT YOURS</p><h2>Edit profile</h2></div><button class="text-button" data-action="close-profile-edit">Close</button></div><form id="profile-form" class="profile-form"><div class="profile-edit-grid"><label>Display name<input id="profile-display-name-input" name="displayName" maxlength="80"></label><label>Username<input id="profile-username" name="username" required maxlength="30"></label><label>Email<input id="profile-email" name="email" type="email" readonly></label><label>Country<input id="profile-country" name="country" maxlength="80" placeholder="Nigeria"></label><label>Region<input id="profile-region" name="region" maxlength="80" placeholder="North Central"></label><label>Preferred language<select id="profile-language" name="preferredLanguage"><option>English</option><option>Nigerian Pidgin</option><option>Tiv</option><option>Igbo</option><option>Yoruba</option><option>Hausa</option><option>French</option><option>Arabic</option><option>Swahili</option><option>Other</option></select></label></div><label>Bio<textarea id="profile-bio-input" name="bio" maxlength="280" rows="3" placeholder="What kinds of stories stay with you?"></textarea></label><label>Profile photo<input id="profile-image" name="profileImage" type="file" accept="image/jpeg,image/png,image/webp"></label><label>Cover image<input id="profile-cover-image" name="coverImage" type="file" accept="image/jpeg,image/png,image/webp"></label><label>Favorite genres<select id="profile-genres" name="favoriteGenres" multiple><option>Action</option><option>Drama</option><option>Comedy</option><option>Romance</option><option>Thriller</option><option>Sci-Fi</option><option>Horror</option><option>Documentary</option><option>Afro-Futurism</option><option>Folklore</option><option>Urban Drama</option><option>Animation</option><option>Historical</option><option>Adventure</option><option>Mystery</option><option>Crime</option><option>Family</option><option>Faith &amp; Inspirational</option><option>Musical</option><option>Biography</option><option>Short Film</option></select></label><label>Favorite cultures / communities<input id="profile-cultures" name="favoriteCultures" maxlength="500" placeholder="Tiv, Igbo, Yoruba"></label><div class="profile-privacy"><label class="checkbox-label"><input id="profile-public" name="profileVisibility" type="checkbox"> Make my profile public</label><label class="checkbox-label"><input id="profile-show-favorites" name="showFavorites" type="checkbox"> Show favorites publicly</label></div><button class="button button-primary" type="submit">Save profile</button></form></div></section>
-      <section id="section-search" class="app-section hidden"><div class="section-heading"><div><p class="eyebrow">EXPLORE THE LIBRARY</p><h1>Search</h1></div></div><form id="library-search-form" class="search-box library-search"><span>⌕</span><input id="library-search-input" type="search" placeholder="Search series and creators" aria-label="Search the library"><button type="submit">Search</button></form><div id="search-results" class="content-grid"></div></section>
-      <section id="section-trending" class="app-section hidden"><div class="section-heading"><div><p class="eyebrow">WHAT PEOPLE ARE WATCHING</p><h1>Trending</h1></div></div><div id="trending-list" class="content-grid"></div></section>
-      <section id="section-continue" class="app-section hidden"><div class="section-heading"><div><p class="eyebrow">PICK UP WHERE YOU LEFT OFF</p><h1>Continue watching</h1></div></div><div id="continue-list" class="data-list"></div></section>
-      <section id="section-favorites" class="app-section hidden"><div class="section-heading"><div><p class="eyebrow">YOUR LIBRARY</p><h1>Favorites</h1></div></div><div id="favorites-list" class="content-grid"></div></section>
-      <section id="section-settings" class="app-section hidden"><div class="section-heading"><div><p class="eyebrow">PREFERENCES</p><h1>Settings</h1></div></div><form id="settings-form" class="stack-form profile-form"><label>Language<select id="settings-language" name="language"><option value="en">English</option><option value="fr">French</option><option value="sw">Swahili</option></select></label><label class="checkbox-label"><input id="settings-notifications" name="notifications" type="checkbox" checked> Receive notifications</label><button class="button button-primary" type="submit">Save settings</button></form></section>
+      <section id="section-history" class="app-section hidden">
+        <div class="section-heading"><div><p class="eyebrow">YOUR JOURNEY</p><h1>Watch history</h1></div><button class="button button-quiet" data-section="discover">Discover stories</button></div>
+        <div id="history-list" class="data-list"><div class="empty-state hidden" id="empty-history"><p>No watch history yet.</p></div></div>
+      </section>
+
+      <section id="section-profile" class="app-section hidden">
+        <div id="profile-cover" class="profile-cover">
+          <div class="profile-header">
+            <div id="profile-avatar" class="profile-avatar">A</div>
+            <div class="profile-identity"><p class="eyebrow">YOUR STORY SPACE</p><h1 id="profile-display-name">Profile</h1><p id="profile-handle" class="muted">@username</p><p id="profile-bio" class="profile-bio">Complete your profile to help your story journey feel like home.</p><div id="profile-location" class="profile-location"></div></div>
+            <div class="profile-actions"><button class="button button-primary" data-action="edit-profile">Edit profile</button><button class="button button-quiet" data-section="settings">Settings</button></div>
+          </div>
+        </div>
+        <nav class="profile-tabs" aria-label="Profile sections">
+          <button class="profile-tab active" data-profile-tab="overview">Overview</button>
+          <button class="profile-tab" data-profile-tab="watchlist">Watchlist</button>
+          <button class="profile-tab" data-profile-tab="history">History</button>
+          <button class="profile-tab" data-profile-tab="library">My library</button>
+          <button class="profile-tab" data-profile-tab="about">About</button>
+          <button class="profile-tab creator-profile-tab hidden" data-section="creator">My content</button>
+        </nav>
+        <div id="profile-panel-overview" class="profile-panel">
+          <div class="profile-summary-grid">
+            <div><p class="eyebrow">RECENTLY WATCHED</p><div id="profile-recent" class="profile-list"></div></div>
+            <div><p class="eyebrow">SAVED STORIES</p><div id="profile-saved" class="profile-story-grid"></div></div>
+          </div>
+          <div class="profile-section-heading"><div><p class="eyebrow">YOUR INTERESTS</p><h2 id="profile-interest-title">Shape your next discovery</h2></div><button class="text-button" data-action="edit-profile">Edit interests</button></div>
+          <div id="profile-interests" class="interest-list"></div>
+        </div>
+        <div id="profile-panel-watchlist" class="profile-panel hidden">
+          <div class="profile-section-heading"><div><p class="eyebrow">YOUR COLLECTION</p><h2>Watchlist</h2></div></div>
+          <div id="profile-watchlist" class="profile-story-grid"></div>
+        </div>
+        <div id="profile-panel-history" class="profile-panel hidden">
+          <div class="profile-section-heading"><div><p class="eyebrow">YOUR JOURNEY</p><h2>Watch history</h2></div></div>
+          <div id="profile-history" class="profile-list"></div>
+        </div>
+        <div id="profile-panel-library" class="profile-panel hidden">
+          <div class="profile-section-heading"><div><p class="eyebrow">UNLOCKED STORIES</p><h2>My library</h2></div></div>
+          <div id="profile-library" class="profile-list"></div>
+        </div>
+        <div id="profile-panel-about" class="profile-panel hidden">
+          <div class="profile-section-heading"><div><p class="eyebrow">ACCOUNT DETAILS</p><h2>About your AfroStory account</h2></div></div>
+          <div id="profile-about" class="profile-about"></div>
+        </div>
+        <div id="profile-edit-panel" class="profile-edit-panel hidden">
+          <div class="profile-section-heading"><div><p class="eyebrow">MAKE IT YOURS</p><h2>Edit profile</h2></div><button class="text-button" data-action="close-profile-edit">Close</button></div>
+          <form id="profile-form" class="profile-form">
+            <div class="profile-edit-grid">
+              <label>Display name<input id="profile-display-name-input" name="displayName" maxlength="80"></label>
+              <label>Username<input id="profile-username" name="username" required maxlength="30"></label>
+              <label>Email<input id="profile-email" name="email" type="email" readonly></label>
+              <label>Country<input id="profile-country" name="country" maxlength="80" placeholder="Nigeria"></label>
+              <label>Region<input id="profile-region" name="region" maxlength="80" placeholder="North Central"></label>
+              <label>Preferred language<select id="profile-language" name="preferredLanguage"><option>English</option><option>Nigerian Pidgin</option><option>Tiv</option><option>Igbo</option><option>Yoruba</option><option>Hausa</option><option>French</option><option>Arabic</option><option>Swahili</option><option>Other</option></select></label>
+            </div>
+            <label>Bio<textarea id="profile-bio-input" name="bio" maxlength="280" rows="3" placeholder="What kinds of stories stay with you?"></textarea></label>
+            <label>Profile photo<input id="profile-image" name="profileImage" type="file" accept="image/jpeg,image/png,image/webp"></label>
+            <label>Cover image<input id="profile-cover-image" name="coverImage" type="file" accept="image/jpeg,image/png,image/webp"></label>
+            <label>Favorite genres<select id="profile-genres" name="favoriteGenres" multiple><option>Action</option><option>Drama</option><option>Comedy</option><option>Romance</option><option>Thriller</option><option>Sci-Fi</option><option>Horror</option><option>Documentary</option><option>Afro-Futurism</option><option>Folklore</option><option>Urban Drama</option><option>Animation</option><option>Historical</option><option>Adventure</option><option>Mystery</option><option>Crime</option><option>Family</option><option>Faith &amp; Inspirational</option><option>Musical</option><option>Biography</option><option>Short Film</option></select></label>
+            <label>Favorite cultures / communities<input id="profile-cultures" name="favoriteCultures" maxlength="500" placeholder="Tiv, Igbo, Yoruba"></label>
+            <div class="profile-privacy"><label class="checkbox-label"><input id="profile-public" name="profileVisibility" type="checkbox"> Make my profile public</label><label class="checkbox-label"><input id="profile-show-favorites" name="showFavorites" type="checkbox"> Show favorites publicly</label></div>
+            <button class="button button-primary" type="submit">Save profile</button>
+          </form>
+        </div>
+      </section>
+
+      <section id="section-search" class="app-section hidden">
+        <div class="section-heading"><div><p class="eyebrow">EXPLORE THE LIBRARY</p><h1>Search</h1></div></div>
+        <form id="library-search-form" class="search-box library-search"><span>⌕</span><input id="library-search-input" type="search" placeholder="Search series and creators" aria-label="Search the library"><button type="submit">Search</button></form>
+        <div id="search-results" class="content-grid"></div>
+      </section>
+
+      <section id="section-trending" class="app-section hidden">
+        <div class="section-heading"><div><p class="eyebrow">WHAT PEOPLE ARE WATCHING</p><h1>Trending</h1></div></div>
+        <div id="trending-list" class="content-grid"><div class="empty-state hidden" id="empty-trending"><p>No trending stories right now.</p></div></div>
+      </section>
+
+      <section id="section-continue" class="app-section hidden">
+        <div class="section-heading"><div><p class="eyebrow">PICK UP WHERE YOU LEFT OFF</p><h1>Continue watching</h1></div></div>
+        <div id="continue-list" class="data-list"><div class="empty-state hidden" id="empty-continue"><p>No stories to continue.</p></div></div>
+      </section>
+
+      <section id="section-favorites" class="app-section hidden">
+        <div class="section-heading"><div><p class="eyebrow">YOUR LIBRARY</p><h1>Favorites</h1></div></div>
+        <div id="favorites-list" class="content-grid"><div class="empty-state hidden" id="empty-favorites"><p>No saved favorites yet.</p></div></div>
+      </section>
+
+      <section id="section-settings" class="app-section hidden">
+        <div class="section-heading"><div><p class="eyebrow">PREFERENCES</p><h1>Settings</h1></div></div>
+        <form id="settings-form" class="stack-form profile-form">
+          <label>Language<select id="settings-language" name="language"><option value="en">English</option><option value="fr">French</option><option value="sw">Swahili</option></select></label>
+          <label class="checkbox-label"><input id="settings-notifications" name="notifications" type="checkbox" checked> Receive notifications</label>
+          <button class="button button-primary" type="submit">Save settings</button>
+        </form>
+      </section>
     </main>
   </div>
   
-  <button id="save-current" class="button button-accent save-current" data-action="save-current" type="button">Save to favorites</button>
+  <button id="save-current" class="button button-accent save-current hidden" data-action="save-current" type="button">Save to favorites</button>
   
   <!-- THE NEW MOBILE "MORE" BOTTOM SHEET -->
   <div id="mobile-more-sheet" class="bottom-sheet-overlay hidden">
@@ -489,37 +529,71 @@ webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4
       <div class="sheet-handle"></div>
       <h3>More</h3>
       <div class="sheet-grid">
-        <button class="sheet-item" data-section="trending"><i>↗</i><span>Trending</span></button>
-        <button class="sheet-item" data-section="rewards"><i>✧</i><span>Rewards</span></button>
-        <button class="sheet-item" data-section="continue"><i>◷</i><span>Continue</span></button>
-        <button class="sheet-item" data-section="favorites"><i>♡</i><span>Favorite</span></button>
-        <button class="sheet-item" data-section="history"><i>◴</i><span>History</span></button>
-        <button class="sheet-item" data-section="settings"><i>⚙</i><span>Settings</span></button>
+        <button class="sheet-item" data-section="trending" aria-label="Trending"><i>↗</i><span>Trending</span></button>
+        <button class="sheet-item" data-section="rewards" aria-label="Rewards"><i>✧</i><span>Rewards</span></button>
+        <button class="sheet-item" data-section="continue" aria-label="Continue"><i>◷</i><span>Continue</span></button>
+        <button class="sheet-item" data-section="favorites" aria-label="Favorites"><i>♡</i><span>Favorite</span></button>
+        <button class="sheet-item" data-section="history" aria-label="History"><i>◴</i><span>History</span></button>
+        <button class="sheet-item" data-section="settings" aria-label="Settings"><i>⚙</i><span>Settings</span></button>
         
-        <!-- ADMIN BUTTON -->
-        <button id="mobile-admin-btn" class="sheet-item" style="display: none; grid-column: 1 / -1; border: 1px solid #d4a017; background: rgba(212, 160, 23, 0.05); margin-top: 5px;" onclick="window.location.href='/admin.html'">
-          <i style="color: #d4a017;">▦</i>
-          <span style="font-weight: 700; color: #d4a017;">Admin Panel</span>
+        <button id="mobile-admin-btn" class="sheet-item" style="display: none; grid-column: 1 / -1; border: 1px solid #d4a017; background: rgba(212, 160, 23, 0.05); margin-top: 5px;" onclick="window.location.href='/admin.html'" aria-label="Admin Panel">
+          <i style="color: #d4a017;">▦</i><span style="font-weight: 700; color: #d4a017;">Admin Panel</span>
         </button>
 
-
-           
-
-        <button class="sheet-item sheet-logout" data-action="logout"><i>↪</i><span>Sign out</span></button>
+        <button class="sheet-item sheet-logout" data-action="logout" aria-label="Sign out"><i>↪</i><span>Sign out</span></button>
       </div>
     </div>
   </div>
 
   <!-- ALL MODALS -->
-  <div id="upload-modal" class="modal-root hidden"><div class="modal"><div class="modal-header"><h2>Upload episode</h2><button class="modal-close" data-action="close-upload">×</button></div><form id="upload-form" class="stack-form"><label>Series<select id="upload-series" name="seriesId" required></select></label><label>Episode title<input name="title" required maxlength="200"></label><label>Description<textarea name="description" maxlength="2000"></textarea></label><label>Access<select name="access" required><option value="Ad">Ad-supported</option><option value="Premium">Premium</option></select></label><label>Coin cost<input name="coinCost" type="number" min="1" value="10" required></label><label>Video<input name="video" type="file" accept="video/*" required></label><label>Thumbnail<input name="thumbnail" type="file" accept="image/*"></label><label class="checkbox-label"><input name="publish" type="checkbox" checked> Publish episode now</label><button class="button button-primary" type="submit">Upload episode</button></form></div></div>
-  <div id="series-modal" class="modal-root hidden"><div class="modal"><div class="modal-header"><div><p class="eyebrow">CREATOR STUDIO</p><h2>Create a series</h2></div><button class="modal-close" data-action="close-series">×</button></div><form id="series-form" class="stack-form"><label>Series title<input name="title" required maxlength="200"></label><label>Description<textarea name="description" maxlength="2000"></textarea></label><label>Genre<input name="genre" maxlength="80" placeholder="Drama, history, comedy..."></label><label>Language<input name="language" value="English" maxlength="40"></label><label>Tags<input name="tags" placeholder="culture, family, Lagos"></label><label>Cover image<input name="cover" type="file" accept="image/*" required></label><label class="checkbox-label"><input name="publish" type="checkbox" checked> Publish series now</label><label class="checkbox-label"><input name="premium" type="checkbox"> VIP subscribers only</label><button class="button button-primary" type="submit">Create series</button></form></div></div>
-  <div id="notification-modal" class="modal-root hidden"><div class="modal notification-panel" role="dialog" aria-modal="true" aria-labelledby="notification-title"><div class="modal-header"><div><p class="eyebrow">YOUR INBOX</p><h2 id="notification-title">Notifications</h2></div><button class="modal-close" data-action="close-notifications" aria-label="Close notifications">×</button></div><div class="modal-actions"><button class="text-button" data-action="read-all">Mark all as read</button></div><div id="notification-list" class="data-list"></div></div></div>
-  <div id="modal-root" class="modal-root hidden"></div><div id="toast-region" class="toast-region" aria-live="polite"></div>
+  <div id="upload-modal" class="modal-root hidden">
+    <div class="modal">
+      <div class="modal-header"><h2>Upload episode</h2><button class="modal-close" data-action="close-upload" aria-label="Close">×</button></div>
+      <form id="upload-form" class="stack-form">
+        <label>Series<select id="upload-series" name="seriesId" required></select></label>
+        <label>Episode title<input name="title" required maxlength="200"></label>
+        <label>Description<textarea name="description" maxlength="2000"></textarea></label>
+        <label>Access<select name="access" required><option value="Ad">Ad-supported</option><option value="Premium">Premium</option></select></label>
+        <label>Coin cost<input name="coinCost" type="number" min="1" value="10" required></label>
+        <label>Video<input name="video" type="file" accept="video/*" required></label>
+        <label>Thumbnail<input name="thumbnail" type="file" accept="image/*"></label>
+        <label class="checkbox-label"><input name="publish" type="checkbox" checked> Publish episode now</label>
+        <button class="button button-primary" type="submit">Upload episode</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="series-modal" class="modal-root hidden">
+    <div class="modal">
+      <div class="modal-header"><div><p class="eyebrow">CREATOR STUDIO</p><h2>Create a series</h2></div><button class="modal-close" data-action="close-series" aria-label="Close">×</button></div>
+      <form id="series-form" class="stack-form">
+        <label>Series title<input name="title" required maxlength="200"></label>
+        <label>Description<textarea name="description" maxlength="2000"></textarea></label>
+        <label>Genre<input name="genre" maxlength="80" placeholder="Drama, history, comedy..."></label>
+        <label>Language<input name="language" value="English" maxlength="40"></label>
+        <label>Tags<input name="tags" placeholder="culture, family, Lagos"></label>
+        <label>Cover image<input name="cover" type="file" accept="image/*" required></label>
+        <label class="checkbox-label"><input name="publish" type="checkbox" checked> Publish series now</label>
+        <label class="checkbox-label"><input name="premium" type="checkbox"> VIP subscribers only</label>
+        <button class="button button-primary" type="submit">Create series</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="notification-modal" class="modal-root hidden">
+    <div class="modal notification-panel" role="dialog" aria-modal="true" aria-labelledby="notification-title">
+      <div class="modal-header"><div><p class="eyebrow">YOUR INBOX</p><h2 id="notification-title">Notifications</h2></div><button class="modal-close" data-action="close-notifications" aria-label="Close notifications">×</button></div>
+      <div class="modal-actions"><button class="text-button" data-action="read-all">Mark all as read</button></div>
+      <div id="notification-list" class="data-list"><div class="empty-state hidden" id="empty-notifications"><p>No new notifications.</p></div></div>
+    </div>
+  </div>
+
+  <div id="modal-root" class="modal-root hidden"></div>
+  <div id="toast-region" class="toast-region" aria-live="polite"></div>
   
-  <script type="module" src="/js/ads.js"></script>
-  <script type="module" src="/js/main.js"></script>
-<div data-rs-ad></div>
+  <!-- Add version parameters to break browser cache -->
+  <script type="module" src="/js/ads.js?v=2"></script>
+  <script type="module" src="/js/main.js?v=2"></script>
      
 </body>
 </html>
-
