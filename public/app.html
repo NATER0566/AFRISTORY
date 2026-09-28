@@ -58,31 +58,109 @@
     .modal-header h2 { font-size: 22px !important; margin: 0 0 16px !important; }
     
     /* ==============================================================
-       LOCKED TIKTOK WATCH SECTION - FLUID EXACT FIT
+       FACEBOOK REELS / TIKTOK EXACT EXACT WATCH SECTION 
     ============================================================== */
     #section-watch {
       position: fixed !important; 
-      top: 80px !important; /* Matches desktop topbar */
-      left: 240px !important; /* Avoids overlapping desktop sidebar */
-      right: 0 !important;
-      height: calc(100vh - 80px) !important;
-      height: calc(100dvh - 80px) !important;
-      width: calc(100vw - 240px) !important; /* Perfect desktop width */
-      margin: 0 !important;
-      padding: 0 !important;
       background-color: #000;
       z-index: 100;
+      padding: 0 !important;
+      margin: 0 !important;
     }
 
-    .tiktok-feed {
-      height: 100%;
-      width: 100%;
-      overflow-y: scroll;
-      scroll-snap-type: y mandatory;
-      scroll-behavior: smooth;
-      background-color: #000;
+    /* Floating Watch Logo (Replaces Heavy Header on Mobile) */
+    .watch-mobile-logo {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      z-index: 150;
+      color: #fff;
+      font-weight: 700;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+      pointer-events: none;
+    }
+    .watch-mobile-logo .brand-mark {
+      background: #d4a017;
+      color: #111;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 14px;
+      text-shadow: none;
     }
 
+    /* DESKTOP TIKTOK/FACEBOOK WEB VIEW */
+    @media(min-width: 801px) {
+      #section-watch {
+        top: 80px !important; /* Start below top header */
+        left: 240px !important; /* Clear sidebar */
+        right: 0 !important;
+        width: calc(100vw - 240px) !important; 
+        height: calc(100vh - 80px) !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        background-color: #0a0a0a !important; /* Dark clean backdrop */
+      }
+      .tiktok-feed {
+        width: 100% !important;
+        max-width: 400px !important; /* Exact phone shape for desktop */
+        height: calc(100vh - 120px) !important;
+        max-height: 800px !important;
+        border-radius: 16px;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.9);
+        border: 1px solid #222;
+        background: #000;
+        position: relative;
+        overflow-y: scroll;
+        scroll-snap-type: y mandatory;
+        scroll-behavior: smooth;
+      }
+      .feed-video-card video {
+        border-radius: 16px; /* Smooth corners for desktop */
+      }
+      .feed-overlay {
+        left: 15px !important;
+        right: 65px !important;
+        width: auto !important;
+      }
+      .feed-sidebar {
+        left: auto !important;
+        right: 10px !important;
+      }
+    }
+
+    /* MOBILE TRUE FULL-SCREEN OVERRIDE */
+    @media(max-width: 800px) {
+      #section-watch {
+        top: 0 !important; /* Starts absolute top edge, covering main header */
+        left: 0 !important;
+        width: 100vw !important;
+        height: calc(100dvh - 80px) !important; /* Uses all screen except bottom nav */
+        z-index: 550 !important; /* Overpowers the normal 500 header */
+      }
+      .tiktok-feed {
+        height: 100%;
+        width: 100%;
+        overflow-y: scroll;
+        scroll-snap-type: y mandatory;
+        scroll-behavior: smooth;
+        background-color: #000;
+      }
+      .feed-overlay {
+        bottom: 20px !important; /* Shifted properly for bottom nav */
+      }
+      .feed-sidebar {
+        bottom: 30px !important;
+      }
+    }
+
+    /* VIDEO ENGINE - GUARANTEES NO CUTOFF */
     .feed-video-card {
       height: 100%;
       width: 100%;
@@ -95,17 +173,14 @@
       overflow: hidden;
     }
 
-    /* DESKTOP TIKTOK-STYLE VIDEO LAYOUT */
     .feed-video-card video {
       width: 100%;
       height: 100%;
-      max-width: 450px; /* Constrains desktop video to a natural phone shape */
-      object-fit: cover !important; 
+      /* FB/TikTok exact logic: contain prevents cropping top/sides. Fills phone edge-to-edge seamlessly */
+      object-fit: contain !important; 
       background-color: #000;
       outline: none;
       display: block;
-      border-radius: 16px; /* Smooth edges on desktop */
-      margin: 0 auto;
     }
 
     .feed-video-card::after {
@@ -122,9 +197,9 @@
 
     .feed-overlay {
       position: absolute;
-      bottom: 25px; 
-      left: calc(50% - 215px); /* Align perfectly with 450px desktop video */
-      width: 380px;
+      bottom: 15px; 
+      left: 15px;
+      right: 65px; 
       color: #fff;
       z-index: 110;
       text-shadow: 1px 1px 3px rgba(0,0,0,0.9);
@@ -140,7 +215,7 @@
     .feed-sidebar {
       position: absolute;
       bottom: 25px; 
-      left: calc(50% + 245px); /* Align actions to the right of the 450px desktop video */
+      right: 10px;
       z-index: 110;
       display: flex;
       flex-direction: column;
@@ -178,7 +253,6 @@
       backdrop-filter: blur(8px);
     }
 
-    /* Clean Loading Component replacing brittle selectors */
     .feed-loading {
       display: flex !important;
       flex-direction: column !important;
@@ -213,19 +287,12 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* MOBILE SPECIFIC OVERRIDES */
     @media(max-width: 800px) {
       .desktop-only { display: none !important; }
       .mobile-only { display: flex !important; }
+      .topbar-actions { gap: 14px; }
       .app-layout { flex-direction: column; }
       
-      /* Header Shrink specifically to give Video more vertical space */
-      .topbar { height: 60px !important; padding: 0 15px !important; }
-      .topbar-actions { gap: 14px; }
-      .header-profile-btn { width: 44px !important; height: 44px !important; }
-      .header-avatar-container { width: 44px !important; height: 44px !important; }
-      .notification-button { width: 40px !important; height: 40px !important; }
-
       .sidebar { position: fixed; bottom: 0; left: 0; right: 0; transform: none; width: 100%; max-width: 100%; height: 80px; background: #111; border-top: 1px solid #222; border-radius: 30px 30px 0 0; z-index: 500 !important; display: flex; padding: 10px 10px 20px; align-items: center; box-shadow: 0 -4px 30px rgba(0,0,0,0.9); }
       .side-nav { display: flex; flex-direction: row; justify-content: space-between; width: 100%; padding: 0; margin: 0; }
       .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1 1 0; gap: 4px; font-size: 10px; font-weight: 500; color: #999; padding: 8px 0; border: none; background: transparent; }
@@ -240,35 +307,6 @@
       .profile-panel { padding-bottom: 130px !important; }
       .bottom-sheet { padding-bottom: 100px !important; }
       
-      /* Mobile Video Player Fixes */
-      #section-watch {
-        left: 0 !important;
-        width: 100vw !important;
-        top: 60px !important; /* Matches shrunken mobile topbar */
-        height: calc(100vh - 140px) !important; /* 60px header + 80px footer */
-        height: calc(100dvh - 140px) !important;
-      }
-
-      .feed-video-card video {
-        max-width: 100%; /* Break desktop constraint */
-        border-radius: 0; /* Remove desktop smooth edges */
-        object-fit: cover !important; /* GUARANTEES NO BLACK BARS */
-        object-position: center 15%; /* Shifts camera slightly up so heads don't hide */
-      }
-
-      /* Relocate overlay and sidebars to screen edges on mobile */
-      .feed-overlay {
-        left: 15px !important;
-        right: 65px !important;
-        width: auto !important;
-        bottom: 15px !important;
-      }
-      .feed-sidebar {
-        left: auto !important;
-        right: 10px !important;
-        bottom: 25px !important;
-      }
-
       .rewards-hero { align-items: flex-start; display: block; padding: 22px; }
       .rewards-balance { border-left: 0; border-top: 1px solid #6b5122; margin-top: 22px; padding: 16px 0 0; }
       .rewards-grid { grid-template-columns: 1fr; }
@@ -345,8 +383,14 @@
       
       <!-- LOCKED WATCH SECTION -->
       <section id="section-watch" class="app-section hidden">
+        
+        <!-- NEW: Minimal Floating Logo that replaces the top header -->
+        <div class="watch-mobile-logo mobile-only">
+           <span class="brand-mark">A</span><span>AFRO<span>STORY</span></span>
+        </div>
+
         <div id="tiktok-feed" class="tiktok-feed">
-           <!-- The feed loading state is now handled cleanly via JS removing/adding the .feed-loading class -->
+           <!-- The feed loading state is handled by JS injecting the .feed-loading class -->
            <div id="watch-loading" class="feed-loading hidden"></div>
         </div>
 
