@@ -58,7 +58,38 @@
     .modal-header h2 { font-size: 22px !important; margin: 0 0 16px !important; }
     
     /* ==============================================================
-       FACEBOOK REELS / TIKTOK EXACT EXACT WATCH SECTION 
+       HEADER PROFILE PICTURE BUG FIX (IRONCLAD CONSTRAINTS)
+    ============================================================== */
+    .topbar { display: flex; justify-content: space-between; align-items: center; padding: 0 4vw; height: 80px; background: #111; border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 500 !important; }
+    .topbar-actions { display: flex; align-items: center; gap: 14px; }
+    .notification-button { align-items: center; background: #242424; border: 1px solid #3b3b3b; border-radius: 50%; display: inline-flex; height: 40px !important; width: 40px !important; min-width: 40px !important; justify-content: center; transition: border-color .2s, transform .2s; position: relative; flex-shrink: 0; }
+    .notification-button:hover { border-color: #d4a017; transform: translateY(-1px); }
+    .header-icon { font-size: 19px; line-height: 1; }
+    .notification-button .notification-badge { position: absolute; right: -4px; top: -3px; background: #d4a017; color: #111; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: bold; }
+    
+    /* Strict boundaries for the profile button to prevent giant image bug */
+    .header-profile-btn { 
+      display: flex !important; align-items: center !important; justify-content: center !important; background: transparent !important; 
+      border: none !important; padding: 0 !important; margin: 0 !important; cursor: pointer !important; 
+      width: 44px !important; height: 44px !important; min-width: 44px !important; min-height: 44px !important; max-width: 44px !important; max-height: 44px !important; 
+      flex-shrink: 0 !important; border-radius: 50% !important; overflow: hidden !important; 
+      transition: transform .2s ease !important; position: relative;
+    }
+    .header-profile-btn:hover { transform: translateY(-2px) scale(1.02); }
+    
+    .header-avatar-container { position: relative; width: 100% !important; height: 100% !important; display: flex; align-items: center; justify-content: center; border-radius: 50%; padding: 2px; z-index: 1; }
+    .header-avatar-container::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, #d4a017, #76a86b, #d4a017, transparent 60%); animation: spinAvatarBorder 3s linear infinite; z-index: -2; }
+    .header-avatar-container::after { content: ''; position: absolute; inset: 2px; background: #111; border-radius: 50%; z-index: -1; }
+    @keyframes spinAvatarBorder { 100% { transform: rotate(360deg); } }
+    
+    /* Forces the image itself to respect the 44px circle */
+    .header-avatar-img, #user-avatar { width: 100% !important; height: 100% !important; border-radius: 50% !important; background: #d4a017 !important; color: #111 !important; font-family: Georgia, serif !important; font-weight: 700 !important; font-size: 18px !important; display: flex !important; align-items: center !important; justify-content: center !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; border: none !important; z-index: 2; }
+    .header-avatar-img img, #user-avatar img { width: 100% !important; height: 100% !important; max-width: 100% !important; max-height: 100% !important; object-fit: cover !important; border-radius: 50% !important; display: block !important; }
+    .header-online-dot { position: absolute; bottom: 0px; right: 0px; width: 12px; height: 12px; background-color: #2ecc71; border: 2px solid #111; border-radius: 50%; z-index: 10; }
+    .profile-initial { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+
+    /* ==============================================================
+       FACEBOOK / TIKTOK EXACT WATCH SECTION FIX
     ============================================================== */
     #section-watch {
       position: fixed !important; 
@@ -71,18 +102,18 @@
     /* Floating Watch Logo (Replaces Heavy Header on Mobile) */
     .watch-mobile-logo {
       position: absolute;
-      top: 15px;
+      top: 20px;
       left: 15px;
       z-index: 150;
       color: #fff;
       font-weight: 700;
       font-family: 'Space Grotesk', sans-serif;
-      font-size: 16px;
+      font-size: 18px;
       display: flex;
       align-items: center;
       gap: 6px;
       letter-spacing: 0.5px;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+      text-shadow: 0 2px 8px rgba(0,0,0,0.9);
       pointer-events: none;
     }
     .watch-mobile-logo .brand-mark {
@@ -94,7 +125,7 @@
       text-shadow: none;
     }
 
-    /* DESKTOP TIKTOK/FACEBOOK WEB VIEW */
+    /* DESKTOP FULL SCREEN FIX */
     @media(min-width: 801px) {
       #section-watch {
         top: 80px !important; /* Start below top header */
@@ -102,47 +133,43 @@
         right: 0 !important;
         width: calc(100vw - 240px) !important; 
         height: calc(100vh - 80px) !important;
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-        background-color: #0a0a0a !important; /* Dark clean backdrop */
+        display: block !important; /* Takes full available space */
+        background-color: #000 !important;
       }
       .tiktok-feed {
         width: 100% !important;
-        max-width: 400px !important; /* Exact phone shape for desktop */
-        height: calc(100vh - 120px) !important;
-        max-height: 800px !important;
-        border-radius: 16px;
-        box-shadow: 0 15px 40px rgba(0,0,0,0.9);
-        border: 1px solid #222;
-        background: #000;
-        position: relative;
+        height: 100% !important;
         overflow-y: scroll;
         scroll-snap-type: y mandatory;
         scroll-behavior: smooth;
       }
       .feed-video-card video {
-        border-radius: 16px; /* Smooth corners for desktop */
+        /* Desktop: Contain to prevent massive zooming on large monitors */
+        object-fit: contain !important; 
+        width: 100%;
+        height: 100%;
       }
       .feed-overlay {
-        left: 15px !important;
-        right: 65px !important;
+        left: 40px !important;
+        bottom: 40px !important;
         width: auto !important;
+        max-width: 60% !important;
       }
       .feed-sidebar {
-        left: auto !important;
-        right: 10px !important;
+        right: 30px !important;
+        bottom: 40px !important;
       }
     }
 
-    /* MOBILE TRUE FULL-SCREEN OVERRIDE */
+    /* MOBILE TRUE FULL-SCREEN TIKTOK FIX */
     @media(max-width: 800px) {
       #section-watch {
-        top: 0 !important; /* Starts absolute top edge, covering main header */
+        top: 0 !important; /* Cover the topbar entirely */
         left: 0 !important;
         width: 100vw !important;
-        height: calc(100dvh - 80px) !important; /* Uses all screen except bottom nav */
-        z-index: 550 !important; /* Overpowers the normal 500 header */
+        height: calc(100vh - 80px) !important; /* Stop exactly at bottom nav */
+        height: calc(100dvh - 80px) !important;
+        z-index: 600 !important; /* High enough to hide header, low enough to show modals */
       }
       .tiktok-feed {
         height: 100%;
@@ -152,15 +179,27 @@
         scroll-behavior: smooth;
         background-color: #000;
       }
+      .feed-video-card video {
+        /* Mobile: Cover completely eliminates all black borders */
+        object-fit: cover !important; 
+        width: 100%;
+        height: 100%;
+        object-position: center center;
+      }
       .feed-overlay {
-        bottom: 20px !important; /* Shifted properly for bottom nav */
+        left: 15px !important;
+        right: 65px !important;
+        width: auto !important;
+        bottom: 20px !important;
       }
       .feed-sidebar {
+        left: auto !important;
+        right: 10px !important;
         bottom: 30px !important;
       }
     }
 
-    /* VIDEO ENGINE - GUARANTEES NO CUTOFF */
+    /* VIDEO ENGINE */
     .feed-video-card {
       height: 100%;
       width: 100%;
@@ -174,10 +213,6 @@
     }
 
     .feed-video-card video {
-      width: 100%;
-      height: 100%;
-      /* FB/TikTok exact logic: contain prevents cropping top/sides. Fills phone edge-to-edge seamlessly */
-      object-fit: contain !important; 
       background-color: #000;
       outline: none;
       display: block;
@@ -197,9 +232,6 @@
 
     .feed-overlay {
       position: absolute;
-      bottom: 15px; 
-      left: 15px;
-      right: 65px; 
       color: #fff;
       z-index: 110;
       text-shadow: 1px 1px 3px rgba(0,0,0,0.9);
@@ -214,8 +246,6 @@
 
     .feed-sidebar {
       position: absolute;
-      bottom: 25px; 
-      right: 10px;
       z-index: 110;
       display: flex;
       flex-direction: column;
@@ -287,12 +317,24 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    .bottom-sheet-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 600; display: flex; align-items: flex-end; opacity: 1; transition: opacity 0.3s; }
+    .bottom-sheet-overlay.hidden { opacity: 0; pointer-events: none; }
+    .bottom-sheet { background: #111; border-top: 1px solid #333; border-radius: 24px 24px 0 0; width: 100%; padding: 16px 24px 40px; transform: translateY(0); transition: transform 0.3s; box-shadow: 0 -10px 40px rgba(0,0,0,0.9); }
+    .bottom-sheet-overlay.hidden .bottom-sheet { transform: translateY(100%); }
+    .sheet-handle { width: 40px; height: 4px; background: #444; border-radius: 4px; margin: 0 auto 24px; }
+    .bottom-sheet h3 { text-align: center; color: #fff; margin: 0 0 24px; font-size: 18px; font-weight: 600; }
+    .sheet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .sheet-item { background: #1a1a1a; border: 1px solid #333; border-radius: 14px; padding: 18px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; color: #f5f5f5; cursor: pointer; transition: border-color .2s; border: none; }
+    .sheet-item:active { background: #222; }
+    .sheet-item i { font-size: 24px; font-style: normal; color: #d4a017; }
+    .sheet-item span { font-size: 13px; font-weight: 500; }
+    .sheet-logout { grid-column: 1 / -1; margin-top: 12px; background: rgba(220, 53, 69, 0.1); color: #ff4d4f; border: 1px solid rgba(220, 53, 69, 0.3); flex-direction: row; justify-content: center; gap: 12px; padding: 16px; }
+    .sheet-logout i { color: #ff4d4f; font-size: 18px; }
+
     @media(max-width: 800px) {
       .desktop-only { display: none !important; }
       .mobile-only { display: flex !important; }
-      .topbar-actions { gap: 14px; }
       .app-layout { flex-direction: column; }
-      
       .sidebar { position: fixed; bottom: 0; left: 0; right: 0; transform: none; width: 100%; max-width: 100%; height: 80px; background: #111; border-top: 1px solid #222; border-radius: 30px 30px 0 0; z-index: 500 !important; display: flex; padding: 10px 10px 20px; align-items: center; box-shadow: 0 -4px 30px rgba(0,0,0,0.9); }
       .side-nav { display: flex; flex-direction: row; justify-content: space-between; width: 100%; padding: 0; margin: 0; }
       .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1 1 0; gap: 4px; font-size: 10px; font-weight: 500; color: #999; padding: 8px 0; border: none; background: transparent; }
@@ -340,7 +382,7 @@
   </header>
 
   <div class="app-layout">
-    <aside class="sidebar">
+    <aside class="sidebar" style="z-index: 400;">
       <nav class="side-nav" aria-label="Main navigation">
         <button class="nav-item active" data-section="discover" aria-label="Discover"><i class="nav-icon" aria-hidden="true">⌂</i><span>Discover</span></button>
         <button class="nav-item" data-section="search" aria-label="Search"><i class="nav-icon" aria-hidden="true">⌕</i><span>Search</span></button>
@@ -384,7 +426,7 @@
       <!-- LOCKED WATCH SECTION -->
       <section id="section-watch" class="app-section hidden">
         
-        <!-- NEW: Minimal Floating Logo that replaces the top header -->
+        <!-- NEW: Minimal Floating Logo that replaces the top header on Mobile -->
         <div class="watch-mobile-logo mobile-only">
            <span class="brand-mark">A</span><span>AFRO<span>STORY</span></span>
         </div>
