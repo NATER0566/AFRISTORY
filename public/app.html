@@ -62,8 +62,8 @@
     ============================================================== */
     #section-watch {
       position: fixed !important; 
-      top: 80px !important; /* Exactly below the topbar */
-      left: 240px !important; /* Avoids overlapping the desktop sidebar */
+      top: 80px !important; /* Matches desktop topbar */
+      left: 240px !important; /* Avoids overlapping desktop sidebar */
       right: 0 !important;
       height: calc(100vh - 80px) !important;
       height: calc(100dvh - 80px) !important;
@@ -71,17 +71,7 @@
       margin: 0 !important;
       padding: 0 !important;
       background-color: #000;
-      z-index: 100; /* Stays beneath the header and sidebar */
-    }
-
-    @media(max-width: 800px) {
-      #section-watch {
-        left: 0 !important;
-        width: 100vw !important;
-        /* Sandwiched exactly between mobile header and mobile footer */
-        height: calc(100vh - 160px) !important; 
-        height: calc(100dvh - 160px) !important;
-      }
+      z-index: 100;
     }
 
     .tiktok-feed {
@@ -105,14 +95,17 @@
       overflow: hidden;
     }
 
+    /* DESKTOP TIKTOK-STYLE VIDEO LAYOUT */
     .feed-video-card video {
       width: 100%;
       height: 100%;
-      /* CRITICAL: contain ensures absolutely 0% of the video is cropped */
-      object-fit: contain !important; 
+      max-width: 450px; /* Constrains desktop video to a natural phone shape */
+      object-fit: cover !important; 
       background-color: #000;
       outline: none;
       display: block;
+      border-radius: 16px; /* Smooth edges on desktop */
+      margin: 0 auto;
     }
 
     .feed-video-card::after {
@@ -129,9 +122,9 @@
 
     .feed-overlay {
       position: absolute;
-      bottom: 15px; 
-      left: 15px;
-      right: 65px; 
+      bottom: 25px; 
+      left: calc(50% - 215px); /* Align perfectly with 450px desktop video */
+      width: 380px;
       color: #fff;
       z-index: 110;
       text-shadow: 1px 1px 3px rgba(0,0,0,0.9);
@@ -147,7 +140,7 @@
     .feed-sidebar {
       position: absolute;
       bottom: 25px; 
-      right: 10px;
+      left: calc(50% + 245px); /* Align actions to the right of the 450px desktop video */
       z-index: 110;
       display: flex;
       flex-direction: column;
@@ -220,12 +213,19 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* MOBILE SPECIFIC OVERRIDES */
     @media(max-width: 800px) {
       .desktop-only { display: none !important; }
       .mobile-only { display: flex !important; }
-      .topbar-actions { gap: 14px; }
       .app-layout { flex-direction: column; }
       
+      /* Header Shrink specifically to give Video more vertical space */
+      .topbar { height: 60px !important; padding: 0 15px !important; }
+      .topbar-actions { gap: 14px; }
+      .header-profile-btn { width: 44px !important; height: 44px !important; }
+      .header-avatar-container { width: 44px !important; height: 44px !important; }
+      .notification-button { width: 40px !important; height: 40px !important; }
+
       .sidebar { position: fixed; bottom: 0; left: 0; right: 0; transform: none; width: 100%; max-width: 100%; height: 80px; background: #111; border-top: 1px solid #222; border-radius: 30px 30px 0 0; z-index: 500 !important; display: flex; padding: 10px 10px 20px; align-items: center; box-shadow: 0 -4px 30px rgba(0,0,0,0.9); }
       .side-nav { display: flex; flex-direction: row; justify-content: space-between; width: 100%; padding: 0; margin: 0; }
       .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1 1 0; gap: 4px; font-size: 10px; font-weight: 500; color: #999; padding: 8px 0; border: none; background: transparent; }
@@ -240,6 +240,35 @@
       .profile-panel { padding-bottom: 130px !important; }
       .bottom-sheet { padding-bottom: 100px !important; }
       
+      /* Mobile Video Player Fixes */
+      #section-watch {
+        left: 0 !important;
+        width: 100vw !important;
+        top: 60px !important; /* Matches shrunken mobile topbar */
+        height: calc(100vh - 140px) !important; /* 60px header + 80px footer */
+        height: calc(100dvh - 140px) !important;
+      }
+
+      .feed-video-card video {
+        max-width: 100%; /* Break desktop constraint */
+        border-radius: 0; /* Remove desktop smooth edges */
+        object-fit: cover !important; /* GUARANTEES NO BLACK BARS */
+        object-position: center 15%; /* Shifts camera slightly up so heads don't hide */
+      }
+
+      /* Relocate overlay and sidebars to screen edges on mobile */
+      .feed-overlay {
+        left: 15px !important;
+        right: 65px !important;
+        width: auto !important;
+        bottom: 15px !important;
+      }
+      .feed-sidebar {
+        left: auto !important;
+        right: 10px !important;
+        bottom: 25px !important;
+      }
+
       .rewards-hero { align-items: flex-start; display: block; padding: 22px; }
       .rewards-balance { border-left: 0; border-top: 1px solid #6b5122; margin-top: 22px; padding: 16px 0 0; }
       .rewards-grid { grid-template-columns: 1fr; }
@@ -252,38 +281,6 @@
     }
     
     .profile-cover{background:linear-gradient(120deg,#2b2114,#171717 52%,#222);border:1px solid #343434;min-height:230px;padding:28px 32px;position:relative;overflow:hidden}.profile-cover[style]{background-position:center;background-size:cover}.profile-header{align-items:flex-end;display:flex;gap:22px;min-height:174px}.profile-avatar{align-items:center;background:#d4a017;color:#111;display:flex;flex:0 0 104px;font-family:Georgia,serif;font-size:48px;height:104px;justify-content:center;overflow:hidden;border-radius:50%;}.profile-avatar img{height:100%;object-fit:cover;width:100%}.profile-identity{max-width:650px}.profile-identity h1{font-size:clamp(30px,4vw,52px)}.profile-handle{margin:4px 0 10px}.profile-bio{color:#ddd;margin:0}.profile-location{color:#d4a017;font-size:13px;margin-top:10px}.profile-actions{display:flex;gap:10px;margin-left:auto}.profile-tabs{border-bottom:1px solid #343434;display:flex;gap:24px;overflow:auto;padding:0 4px}.profile-tab{background:none;border:0;border-bottom:2px solid transparent;color:#999;padding:16px 4px;white-space:nowrap}.profile-tab.active,.profile-tab:hover{border-color:#d4a017;color:#f5f5f5}.profile-panel{padding-top:30px}.profile-summary-grid{display:grid;gap:30px;grid-template-columns:1fr 1fr}.profile-section-heading{align-items:end;display:flex;justify-content:space-between;margin:28px 0 18px}.profile-section-heading h2{font-size:24px}.profile-list{display:grid;gap:10px}.profile-list-row{align-items:center;background:#1b1b1b;border:1px solid #343434;display:flex;gap:14px;padding:12px}.profile-list-row strong{display:block}.profile-list-row p{color:#999;font-size:13px;margin:2px 0 0}.profile-list-row .progress{background:#343434;height:4px;margin-top:8px;width:180px}.profile-list-row .progress i{background:#d4a017;display:block;height:100%}.profile-story-grid{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-story-grid .series-card{min-width:0}.interest-list{display:flex;flex-wrap:wrap;gap:8px}.interest-chip{background:#242424;border:1px solid #4a4a4a;color:#f5f5f5;padding:7px 11px}.profile-about{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr));max-width:680px}.profile-about div{background:#1b1b1b;border-bottom:1px solid #343434;padding:14px}.profile-about span{color:#999;display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase}.profile-edit-panel{border-top:1px solid #343434;margin-top:30px;padding-top:24px}.profile-edit-grid{display:grid;gap:14px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-form label{color:#bbb;display:grid;font-size:12px;gap:6px}.profile-form input,.profile-form textarea,.profile-form select{background:#111;border:1px solid #444;color:#f5f5f5;padding:11px}.profile-form select[multiple]{min-height:130px}.profile-privacy{display:flex;flex-wrap:wrap;gap:18px;margin:16px 0}.profile-privacy label{display:flex;display:flex;gap:8px}.profile-empty{border:1px dashed #444;color:#999;padding:24px}.profile-empty button{margin-top:12px}@media(max-width:700px){.profile-cover{padding:22px 18px}.profile-header{align-items:flex-start;flex-wrap:wrap}.profile-avatar{flex-basis:78px;font-size:36px;height:78px}.profile-actions{margin-left:0;width:100%}.profile-actions .button{flex:1}.profile-summary-grid,.profile-about,.profile-edit-grid{grid-template-columns:1fr}.profile-tabs{gap:16px}.profile-story-grid{grid-template-columns:1fr 1fr}}
-    
-    .topbar { display: flex; justify-content: space-between; align-items: center; padding: 0 4vw; height: 80px; background: #111; border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 500 !important; }
-    .topbar-actions { display: flex; align-items: center; gap: 18px; }
-    .notification-button { align-items: center; background: #242424; border: 1px solid #3b3b3b; border-radius: 50%; display: inline-flex; height: 44px; justify-content: center; transition: border-color .2s, transform .2s; width: 44px; position: relative; }
-    .notification-button:hover { border-color: #d4a017; transform: translateY(-1px); }
-    .header-icon { font-size: 19px; line-height: 1; }
-    .notification-button .notification-badge { position: absolute; right: -4px; top: -3px; background: #d4a017; color: #111; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: bold; }
-    .header-profile-btn { display: flex !important; align-items: center !important; justify-content: center !important; background: transparent !important; border: none !important; padding: 0 !important; margin: 0 !important; cursor: pointer !important; width: 54px !important; height: 54px !important; transition: transform .2s ease !important; }
-    .header-profile-btn:hover { transform: translateY(-2px) scale(1.02); }
-    
-    .header-avatar-container { position: relative; width: 54px; height: 54px; display: flex; align-items: center; justify-content: center; border-radius: 50%; padding: 3px; z-index: 1; }
-    .header-avatar-container::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, #d4a017, #76a86b, #d4a017, transparent 60%); animation: spinAvatarBorder 3s linear infinite; z-index: -2; }
-    .header-avatar-container::after { content: ''; position: absolute; inset: 3px; background: #111; border-radius: 50%; z-index: -1; }
-    @keyframes spinAvatarBorder { 100% { transform: rotate(360deg); } }
-    .header-avatar-img { width: 100% !important; height: 100% !important; border-radius: 50% !important; background: #d4a017 !important; color: #111 !important; font-family: Georgia, serif !important; font-weight: 700 !important; font-size: 22px !important; display: flex !important; align-items: center !important; justify-content: center !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; border: none !important; z-index: 2; }
-    .header-avatar-img img { width: 100% !important; height: 100% !important; object-fit: cover !important; border-radius: 50% !important; }
-    .header-online-dot { position: absolute; bottom: 2px; right: 2px; width: 14px; height: 14px; background-color: #2ecc71; border: 2.5px solid #111; border-radius: 50%; z-index: 10; }
-    .profile-initial { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
-
-    .bottom-sheet-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 600; display: flex; align-items: flex-end; opacity: 1; transition: opacity 0.3s; }
-    .bottom-sheet-overlay.hidden { opacity: 0; pointer-events: none; }
-    .bottom-sheet { background: #111; border-top: 1px solid #333; border-radius: 24px 24px 0 0; width: 100%; padding: 16px 24px 40px; transform: translateY(0); transition: transform 0.3s; box-shadow: 0 -10px 40px rgba(0,0,0,0.9); }
-    .bottom-sheet-overlay.hidden .bottom-sheet { transform: translateY(100%); }
-    .sheet-handle { width: 40px; height: 4px; background: #444; border-radius: 4px; margin: 0 auto 24px; }
-    .bottom-sheet h3 { text-align: center; color: #fff; margin: 0 0 24px; font-size: 18px; font-weight: 600; }
-    .sheet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .sheet-item { background: #1a1a1a; border: 1px solid #333; border-radius: 14px; padding: 18px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; color: #f5f5f5; cursor: pointer; transition: border-color .2s; border: none; }
-    .sheet-item:active { background: #222; }
-    .sheet-item i { font-size: 24px; font-style: normal; color: #d4a017; }
-    .sheet-item span { font-size: 13px; font-weight: 500; }
-    .sheet-logout { grid-column: 1 / -1; margin-top: 12px; background: rgba(220, 53, 69, 0.1); color: #ff4d4f; border: 1px solid rgba(220, 53, 69, 0.3); flex-direction: row; justify-content: center; gap: 12px; padding: 16px; }
-    .sheet-logout i { color: #ff4d4f; font-size: 18px; }
   </style>
 </head>
 <body class="app-page">
@@ -305,7 +302,7 @@
   </header>
 
   <div class="app-layout">
-    <aside class="sidebar" style="z-index: 400;">
+    <aside class="sidebar">
       <nav class="side-nav" aria-label="Main navigation">
         <button class="nav-item active" data-section="discover" aria-label="Discover"><i class="nav-icon" aria-hidden="true">⌂</i><span>Discover</span></button>
         <button class="nav-item" data-section="search" aria-label="Search"><i class="nav-icon" aria-hidden="true">⌕</i><span>Search</span></button>
