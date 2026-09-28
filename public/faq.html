@@ -1,0 +1,1903 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>FAQ | AfriStory</title>
+
+    <meta
+        name="description"
+        content="Frequently asked questions about AfriStory, including accounts, watching content, creators, rewards, advertising, and support."
+    >
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+
+            background: #111111;
+
+            color: #f5f5f5;
+
+            line-height: 1.7;
+        }
+
+        a {
+            color: #D4A017;
+
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: none;
+        }
+
+
+        /* =========================
+           HEADER
+        ========================= */
+
+        header {
+            position: sticky;
+
+            top: 0;
+
+            z-index: 1000;
+
+            background: rgba(17, 17, 17, 0.96);
+
+            backdrop-filter: blur(16px);
+
+            -webkit-backdrop-filter: blur(16px);
+
+            border-bottom:
+                1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .header-inner {
+            width: min(1100px, 92%);
+
+            min-height: 70px;
+
+            margin: auto;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            gap: 20px;
+        }
+
+        .logo {
+            font-family: 'Space Grotesk', sans-serif;
+
+            color: #D4A017;
+
+            font-size: 23px;
+
+            font-weight: 700;
+
+            letter-spacing: -0.5px;
+        }
+
+        .logo:hover {
+            text-decoration: none;
+        }
+
+        .back-btn {
+            display: inline-flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            padding: 9px 16px;
+
+            color: #ffffff;
+
+            border:
+                1px solid rgba(212, 160, 23, 0.4);
+
+            border-radius: 8px;
+
+            font-size: 14px;
+
+            font-weight: 500;
+
+            transition: 0.25s ease;
+        }
+
+        .back-btn:hover {
+            background:
+                rgba(212, 160, 23, 0.1);
+
+            border-color:
+                rgba(212, 160, 23, 0.7);
+
+            transform: translateY(-1px);
+        }
+
+
+        /* =========================
+           HERO
+        ========================= */
+
+        .hero {
+            width: min(1100px, 92%);
+
+            margin: 58px auto 40px;
+        }
+
+        .hero-label {
+            display: inline-block;
+
+            margin-bottom: 12px;
+
+            color: #D4A017;
+
+            font-size: 13px;
+
+            font-weight: 700;
+
+            letter-spacing: 1.7px;
+
+            text-transform: uppercase;
+        }
+
+        .hero h1 {
+            font-family: 'Space Grotesk', sans-serif;
+
+            font-size: clamp(35px, 6vw, 54px);
+
+            line-height: 1.08;
+
+            letter-spacing: -1.5px;
+
+            margin-bottom: 17px;
+        }
+
+        .hero p {
+            max-width: 760px;
+
+            color: #a9a9a9;
+
+            font-size: 16px;
+        }
+
+
+        /* =========================
+           MAIN
+        ========================= */
+
+        main {
+            width: min(900px, 92%);
+
+            margin: 0 auto 70px;
+        }
+
+
+        /* =========================
+           SEARCH
+        ========================= */
+
+        .search-box {
+            margin-bottom: 35px;
+        }
+
+        .search-box input {
+            width: 100%;
+
+            padding: 17px 19px;
+
+            background: #1B1B1B;
+
+            border:
+                1px solid rgba(255, 255, 255, 0.08);
+
+            border-radius: 12px;
+
+            outline: none;
+
+            color: #ffffff;
+
+            font-family: 'Inter', sans-serif;
+
+            font-size: 15px;
+
+            transition: 0.25s ease;
+        }
+
+        .search-box input::placeholder {
+            color: #777777;
+        }
+
+        .search-box input:focus {
+            border-color:
+                rgba(212, 160, 23, 0.6);
+
+            box-shadow:
+                0 0 0 3px rgba(212, 160, 23, 0.08);
+        }
+
+
+        /* =========================
+           CATEGORY NAVIGATION
+        ========================= */
+
+        .category-nav {
+            display: flex;
+
+            flex-wrap: wrap;
+
+            gap: 10px;
+
+            margin-bottom: 35px;
+        }
+
+        .category-btn {
+            padding: 9px 14px;
+
+            background: #1B1B1B;
+
+            border:
+                1px solid rgba(255, 255, 255, 0.08);
+
+            border-radius: 8px;
+
+            color: #999999;
+
+            font-family: 'Inter', sans-serif;
+
+            font-size: 13px;
+
+            cursor: pointer;
+
+            transition: 0.2s ease;
+        }
+
+        .category-btn:hover,
+        .category-btn.active {
+            color: #111111;
+
+            background: #D4A017;
+
+            border-color: #D4A017;
+        }
+
+
+        /* =========================
+           FAQ SECTION
+        ========================= */
+
+        .faq-section {
+            margin-bottom: 38px;
+        }
+
+        .section-title {
+            margin-bottom: 16px;
+
+            color: #ffffff;
+
+            font-family: 'Space Grotesk', sans-serif;
+
+            font-size: 25px;
+        }
+
+        .faq-container {
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 10px;
+        }
+
+        .faq-item {
+            background: #1B1B1B;
+
+            border:
+                1px solid rgba(255, 255, 255, 0.07);
+
+            border-radius: 12px;
+
+            overflow: hidden;
+
+            transition:
+                border-color 0.2s ease;
+        }
+
+        .faq-item:hover {
+            border-color:
+                rgba(212, 160, 23, 0.25);
+        }
+
+        .faq-question {
+            width: 100%;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            gap: 15px;
+
+            padding: 18px 20px;
+
+            background: transparent;
+
+            border: none;
+
+            color: #ffffff;
+
+            font-family: 'Inter', sans-serif;
+
+            font-size: 15px;
+
+            font-weight: 600;
+
+            line-height: 1.5;
+
+            text-align: left;
+
+            cursor: pointer;
+        }
+
+        .faq-question:hover {
+            color: #D4A017;
+        }
+
+        .faq-arrow {
+            flex-shrink: 0;
+
+            color: #D4A017;
+
+            font-size: 16px;
+
+            transition:
+                transform 0.25s ease;
+        }
+
+        .faq-answer {
+            display: none;
+
+            padding: 0 20px 20px;
+
+            color: #999999;
+
+            font-size: 14px;
+
+            line-height: 1.8;
+        }
+
+        .faq-answer p {
+            margin-bottom: 10px;
+        }
+
+        .faq-answer p:last-child {
+            margin-bottom: 0;
+        }
+
+        .faq-item.active
+        .faq-answer {
+            display: block;
+        }
+
+        .faq-item.active
+        .faq-arrow {
+            transform: rotate(180deg);
+        }
+
+
+        /* =========================
+           NO RESULTS
+        ========================= */
+
+        .no-results {
+            display: none;
+
+            padding: 30px;
+
+            background: #1B1B1B;
+
+            border:
+                1px solid rgba(255, 255, 255, 0.07);
+
+            border-radius: 12px;
+
+            text-align: center;
+
+            color: #888888;
+
+            font-size: 14px;
+        }
+
+
+        /* =========================
+           CONTACT BOX
+        ========================= */
+
+        .contact-box {
+            margin-top: 40px;
+
+            padding: 30px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    rgba(212, 160, 23, 0.09),
+                    rgba(27, 27, 27, 1)
+                );
+
+            border:
+                1px solid rgba(212, 160, 23, 0.25);
+
+            border-radius: 15px;
+        }
+
+        .contact-box h2 {
+            margin-bottom: 10px;
+
+            color: #ffffff;
+
+            font-family: 'Space Grotesk', sans-serif;
+
+            font-size: 23px;
+        }
+
+        .contact-box p {
+            max-width: 700px;
+
+            margin-bottom: 18px;
+
+            color: #a5a5a5;
+
+            font-size: 14px;
+        }
+
+        .contact-button {
+            display: inline-flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            padding: 11px 18px;
+
+            background: #D4A017;
+
+            color: #111111;
+
+            border-radius: 8px;
+
+            font-size: 14px;
+
+            font-weight: 700;
+
+            transition: 0.2s ease;
+        }
+
+        .contact-button:hover {
+            background: #e3b52b;
+
+            transform: translateY(-1px);
+        }
+
+
+        /* =========================
+           FOOTER LINKS
+        ========================= */
+
+        .footer-links {
+            display: flex;
+
+            flex-wrap: wrap;
+
+            gap: 18px;
+
+            margin-top: 30px;
+
+            padding-top: 22px;
+
+            border-top:
+                1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .footer-links a {
+            color: #777777;
+
+            font-size: 13px;
+        }
+
+        .footer-links a:hover {
+            color: #D4A017;
+        }
+
+
+        /* =========================
+           FOOTER
+        ========================= */
+
+        footer {
+            padding: 30px 20px;
+
+            border-top:
+                1px solid rgba(255, 255, 255, 0.07);
+
+            color: #666666;
+
+            text-align: center;
+
+            font-size: 13px;
+        }
+
+        footer p {
+            margin-bottom: 9px;
+        }
+
+        footer a {
+            margin: 0 7px;
+
+            color: #777777;
+        }
+
+        footer a:hover {
+            color: #D4A017;
+        }
+
+
+        /* =========================
+           MOBILE
+        ========================= */
+
+        @media (max-width: 700px) {
+
+            .header-inner {
+                min-height: 62px;
+            }
+
+            .logo {
+                font-size: 20px;
+            }
+
+            .back-btn {
+                padding: 8px 12px;
+
+                font-size: 13px;
+            }
+
+            .hero {
+                margin-top: 42px;
+            }
+
+            .hero h1 {
+                font-size: 35px;
+
+                letter-spacing: -1px;
+            }
+
+            .hero p {
+                font-size: 15px;
+            }
+
+            .category-nav {
+                gap: 8px;
+            }
+
+            .category-btn {
+                font-size: 12px;
+
+                padding: 8px 11px;
+            }
+
+            .contact-box {
+                padding: 23px;
+            }
+
+        }
+
+
+        @media (max-width: 450px) {
+
+            .hero h1 {
+                font-size: 32px;
+            }
+
+            .faq-question {
+                padding: 16px;
+            }
+
+            .faq-answer {
+                padding: 0 16px 17px;
+            }
+
+            .footer-links {
+                gap: 13px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- =========================
+         HEADER
+    ========================= -->
+
+    <header>
+
+        <div class="header-inner">
+
+            <a href="/" class="logo">
+                AfriStory
+            </a>
+
+            <a href="/" class="back-btn">
+                ← Back to AfriStory
+            </a>
+
+        </div>
+
+    </header>
+
+
+    <!-- =========================
+         HERO
+    ========================= -->
+
+    <section class="hero">
+
+        <span class="hero-label">
+            AfriStory Help
+        </span>
+
+        <h1>
+            Frequently Asked Questions
+        </h1>
+
+        <p>
+            Find answers to common questions about AfriStory,
+            including accounts, watching content, creators,
+            rewarded advertising, and platform features.
+        </p>
+
+    </section>
+
+
+    <!-- =========================
+         MAIN
+    ========================= -->
+
+    <main>
+
+
+        <!-- =========================
+             SEARCH
+        ========================= -->
+
+        <div class="search-box">
+
+            <input
+                type="search"
+                id="faqSearch"
+                placeholder="Search frequently asked questions..."
+                autocomplete="off"
+            >
+
+        </div>
+
+
+        <!-- =========================
+             CATEGORY BUTTONS
+        ========================= -->
+
+        <div class="category-nav">
+
+            <button
+                class="category-btn active"
+                data-category="all"
+            >
+                All
+            </button>
+
+            <button
+                class="category-btn"
+                data-category="account"
+            >
+                Account
+            </button>
+
+            <button
+                class="category-btn"
+                data-category="watching"
+            >
+                Watching
+            </button>
+
+            <button
+                class="category-btn"
+                data-category="creator"
+            >
+                Creators
+            </button>
+
+            <button
+                class="category-btn"
+                data-category="rewards"
+            >
+                Rewards
+            </button>
+
+            <button
+                class="category-btn"
+                data-category="advertising"
+            >
+                Advertising
+            </button>
+
+            <button
+                class="category-btn"
+                data-category="safety"
+            >
+                Safety
+            </button>
+
+        </div>
+
+
+        <!-- =========================
+             ACCOUNT FAQ
+        ========================= -->
+
+        <section
+            class="faq-section"
+            data-section="account"
+        >
+
+            <h2 class="section-title">
+                Account & Login
+            </h2>
+
+            <div class="faq-container">
+
+
+                <div
+                    class="faq-item"
+                    data-category="account"
+                >
+
+                    <button class="faq-question">
+
+                        <span>
+                            How do I create an AfriStory account?
+                        </span>
+
+                        <span class="faq-arrow">
+                            ▼
+                        </span>
+
+                    </button>
+
+                    <div class="faq-answer">
+
+                        <p>
+                            Select the registration or Join AfriStory
+                            option and follow the account creation
+                            instructions provided by the platform.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="faq-item"
+                    data-category="account"
+                >
+
+                    <button class="faq-question">
+
+                        <span>
+                            How do I sign in to AfriStory?
+                        </span>
+
+                        <span class="faq-arrow">
+                            ▼
+                        </span>
+
+                    </button>
+
+                    <div class="faq-answer">
+
+                        <p>
+                            Select Sign In and use the authentication
+                            method associated with your AfriStory
+                            account.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="faq-item"
+                    data-category="account"
+                >
+
+                    <button class="faq-question">
+
+                        <span>
+                            I cannot access my account. What should I do?
+                        </span>
+
+                        <span class="faq-arrow">
+                            ▼
+                        </span>
+
+                    </button>
+
+                    <div class="faq-answer">
+
+                        <p>
+                            First check your internet connection and
+                            make sure you are using the correct
+                            authentication method.
+                        </p>
+
+                        <p>
+                            If the problem continues, contact AfriStory
+                            Support and provide details about the issue.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             WATCHING FAQ
+        ========================= -->
+
+        <section
+            class="faq-section"
+            data-section="watching"
+        >
+
+            <h2 class="section-title">
+                Watching Content
+            </h2>
+
+            <div class="faq-container">
+
+
+                <div
+                    class="faq-item"
+                    data-category="watching"
+                >
+
+                    <button class="faq-question">
+
+                        <span>
+                            How do I watch a video or episode?
+                        </span>
+
+                        <span class="faq-arrow">
+                            ▼
+                        </span>
+
+                    </button>
+
+                    <div class="faq-answer">
+
+                        <p>
+                            Browse available content on AfriStory and
+                            select the video or episode you want to watch.
+                            Follow any access instructions displayed for
+                            that content.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="faq-item"
+                    data-category="watching"
+                >
+
+                    <button class="faq-question">
+
+                        <span>
+                            Why is a video not playing?
+                        </span>
+
+                        <span class="faq-arrow">
+                            ▼
+                        </span>
+
+                    </button>
+
+                    <div class="faq-answer">
+
+                        <p>
+                            Video playback can be affected by your
+                            internet connection, browser, device,
+                            temporary server issues, or the availability
+                            of the content.
+                        </p>
+
+                        <p>
+                            Try refreshing the page and checking your
+                            internet connection.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="faq-item"
+                    data-category="watching"
+                >
+
+                    <button class="faq-question">
+
+                        <span>
+                            Can I continue watching an episode later?
+                        </span>
+
+                        <span class="faq-arrow">
+                            ▼
+                        </span>
+
+                    </button>
+
+                    <div class="faq-answer">
+
+                        <p>
+                            AfriStory may provide features such as
+                            Continue or History to help you find content
+                            you have previously watched, depending on
+                            the features available on your account.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="faq-item"
+                    data-category="watching"
+                >
+
+                    <button class="faq-question">
+
+                        <span>
+                            Can I save content to my Favorites?
+                        </span>
+
+                        <span class="faq-arrow">
+                            ▼
+                        </span>
+
+                    </button>
+
+                    <div class="faq-answer">
+
+                        <p>
+                            Where the Favorites feature is available,
+                            you can use it to keep track of content you
+                            want to find again later.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             CREATOR FAQ
+        ========================= -->
+
+        <section
+            class="faq-section"
+            data-section="creator"
+        >
+
+            <h2 class="section-title">
+                Creator Studio
+            </h2>
+
+            <div class="faq-container">
+
+
+                <div
+                    class="faq-item"
+                    data-category="creator"
+                >
+
+                    <button class="faq-question">
+
+                        <span>
+                            How can I become a creator?
+                        </span>
+
+                        <span class="faq-arrow">
+                            ▼
+                        </span>
+
+                    </button>
+
+                    <div class="faq-answer">
+
+                        <p>
+                            Eligible users can access the Creator
+                            Studio features available through AfriStory.
+                            Follow the instructions provided in the
+                            creator area.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="faq-item"
+                    data-category="creator"
+                >
+
+                    <button class="faq-question">
+
+                        <span>
+                            What type of content can creators upload?
+                        </span>
+
+                        <span class="faq-arrow">
+                            ▼
+                        </span>
+
+                    </button>
+
+                    <div class="faq-answer">
+
+                        <p>
+                            Creators should upload content that they have
+                            the legal right or necessary permission to
+                            publish.
+                        </p>
+
+                        <p>
+                            Uploaded content must also comply with
+                            AfriStory's Terms of Service and applicable
+                            laws.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="faq-item"
+                    data-category="creator"
+                >
+
+                    <button class="faq-question">
+
+                        <span>
+                            Am I responsible for the content I upload?
+                        </span>
+
+                        <span class="faq-arrow">
+                            ▼
+                        </span>
+
+                    </button>
+
+                    <div class="faq-answer">
+
+                        <p>
+                            Yes. Creators are responsible for ensuring
+                            that they have the necessary rights,
+                            permissions, and authorization for the
+                            content they publish.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             REWARDS FAQ
+        ========================= -->
+
+        <section
+            class="faq-section"
+            data-section="rewards"
+        >
+
+            <h2 class="section-title">
+                Rewards
+            </h2>
+
+            <div class="faq-container">
+
+
+                <div
+                    class="faq-item"
+                    data-category="rewards"
+                >
+
+                    <button class="faq-question">
+
+                        <span>
+                            What are rewarded advertisements?
+                        </span>
+
+                        <span class="faq-arrow">
+                            ▼
+                        </span>
+
+                    </button>
+
+                    <div class="faq-answer">
+
+                        <p>
+                            Rewarded advertisements are advertising
+                            experiences where a platform feature may
+                            provide an applicable reward or access after
+                            the required advertising experience has been
+                            completed.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="faq-item"
+                    data-category="rewards"
+                >
+
+                    <button class="faq-question">
+
+                        <span>
+                            Why did I not receive access after an ad?
+                        </span>
+
+                        <span class="faq-arrow">
+                            ▼
+                        </span>
+
+                    </button>
+
+                    <div class="faq-answer">
+
+                        <p>
+                            Access may depend on the advertising
+                            experience being successfully completed and
+                            the platform receiving the applicable reward
+                            event.
+                        </p>
+
+                        <p>
+                            If the problem continues after a successful
+                            completion, contact AfriStory Support.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="faq-item"
+                    data-category="rewards"
+                >
+
+                    <button class="faq-question">
+
+                        <span>
+                            Why is a rewarded ad unavailable?
+                        </span>
+
+                        <span class="faq-arrow">
+                            ▼
+                        </span>
+
+                    </button>
+
+                    <div class="faq-answer">
+
+                        <p>
+                            Rewarded advertisements are not guaranteed
+                            to be available at all times. Availability
+                            may depend on advertising demand, location,
+                            device, eligibility, network conditions,
+                            and other factors.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             ADVERTISING FAQ
+        ========================= -->
+
+        <section
+            class="faq-section"
+            data-section="advertising"
+        >
+
+            <h2 class="section-title">
+                Advertising
+            </h2>
+
+            <div class="faq-container">
+
+
+                <div
+                    class="faq-item"
+                    data-category="advertising"
+                >
+
+                    <button class="faq-question">
+
+                        <span>
+                            Why does AfriStory show advertisements?
+                        </span>
+
+                        <span class="faq-arrow">
+                            ▼
+                        </span>
+
+                    </button>
+
+                    <div class="faq-answer">
+
+                        <p>
+                            Advertisements may be displayed to help
+                            support the operation, maintenance, and
+                            development of the AfriStory platform.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="faq-item"
+                    data-category="advertising"
+                >
+
+                    <button class="faq-question">
+
+                        <span>
+                            Will I always see the same advertisements?
+                        </span>
+
+                        <span class="faq-arrow">
+                            ▼
+                        </span>
+
+                    </button>
+
+                    <div class="faq-answer">
+
+                        <p>
+                            No. Advertisements can vary depending on
+                            availability, advertising demand, location,
+                            device, and other factors.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="faq-item"
+                    data-category="advertising"
+                >
+
+                    <button class="faq-question">
+
+                        <span>
+                            Does AfriStory endorse every advertised product?
+                        </span>
+
+                        <span class="faq-arrow">
+                            ▼
+                        </span>
+
+                    </button>
+
+                    <div class="faq-answer">
+
+                        <p>
+                            The appearance of an advertisement does not
+                            necessarily mean that AfriStory endorses or
+                            guarantees the advertised product or service.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             SAFETY FAQ
+        ========================= -->
+
+        <section
+            class="faq-section"
+            data-section="safety"
+        >
+
+            <h2 class="section-title">
+                Safety, Copyright & Reports
+            </h2>
+
+            <div class="faq-container">
+
+
+                <div
+                    class="faq-item"
+                    data-category="safety"
+                >
+
+                    <button class="faq-question">
+
+                        <span>
+                            How do I report inappropriate content?
+                        </span>
+
+                        <span class="faq-arrow">
+                            ▼
+                        </span>
+
+                    </button>
+
+                    <div class="faq-answer">
+
+                        <p>
+                            Contact AfriStory Support and provide the
+                            relevant content URL or enough information
+                            for the content to be identified.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="faq-item"
+                    data-category="safety"
+                >
+
+                    <button class="faq-question">
+
+                        <span>
+                            How do I report copyright infringement?
+                        </span>
+
+                        <span class="faq-arrow">
+                            ▼
+                        </span>
+
+                    </button>
+
+                    <div class="faq-answer">
+
+                        <p>
+                            Review the
+                            <a href="/DMCA.html">
+                                DMCA & Copyright Policy
+                            </a>
+                            for information about submitting a copyright
+                            complaint.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="faq-item"
+                    data-category="safety"
+                >
+
+                    <button class="faq-question">
+
+                        <span>
+                            Where can I read AfriStory's policies?
+                        </span>
+
+                        <span class="faq-arrow">
+                            ▼
+                        </span>
+
+                    </button>
+
+                    <div class="faq-answer">
+
+                        <p>
+                            Our Terms of Service, Privacy Policy, Cookie
+                            Policy, DMCA Policy, and Disclaimer are
+                            available through the links below.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             NO RESULTS
+        ========================= -->
+
+        <div
+            class="no-results"
+            id="noResults"
+        >
+            No questions matched your search.
+            Try another keyword.
+        </div>
+
+
+        <!-- =========================
+             CONTACT
+        ========================= -->
+
+        <div class="contact-box">
+
+            <h2>
+                Still have a question?
+            </h2>
+
+            <p>
+                If you cannot find the answer you are looking for,
+                contact the AfriStory support team and describe the
+                issue as clearly as possible.
+            </p>
+
+            <a
+                class="contact-button"
+                href="mailto:support@afristory.naterlearninghub.me?subject=AfriStory%20FAQ%20Support%20Request"
+            >
+                Contact Support
+            </a>
+
+        </div>
+
+
+        <!-- =========================
+             LINKS
+        ========================= -->
+
+        <div class="footer-links">
+
+            <a href="/">
+                Home
+            </a>
+
+            <a href="/help.html">
+                Help Center
+            </a>
+
+            <a href="/terms.html">
+                Terms of Service
+            </a>
+
+            <a href="/privacy.html">
+                Privacy Policy
+            </a>
+
+            <a href="/cookie-policy.html">
+                Cookie Policy
+            </a>
+
+            <a href="/DMCA.html">
+                DMCA
+            </a>
+
+            <a href="/disclaimer.html">
+                Disclaimer
+            </a>
+
+            <a href="/contact.html">
+                Contact Us
+            </a>
+
+        </div>
+
+    </main>
+
+
+    <!-- =========================
+         FOOTER
+    ========================= -->
+
+    <footer>
+
+        <p>
+            &copy; 2026 AfriStory. All rights reserved.
+        </p>
+
+        <p>
+            <a href="mailto:support@afristory.naterlearninghub.me">
+                support@afristory.naterlearninghub.me
+            </a>
+        </p>
+
+        <div>
+
+            <a href="/">
+                Home
+            </a>
+
+            <a href="/privacy.html">
+                Privacy
+            </a>
+
+            <a href="/terms.html">
+                Terms
+            </a>
+
+            <a href="/cookie-policy.html">
+                Cookies
+            </a>
+
+            <a href="/DMCA.html">
+                DMCA
+            </a>
+
+            <a href="/disclaimer.html">
+                Disclaimer
+            </a>
+
+        </div>
+
+    </footer>
+
+
+    <!-- =========================
+         JAVASCRIPT
+    ========================= -->
+
+    <script>
+
+        /* =========================
+           FAQ ACCORDION
+        ========================= */
+
+        const faqQuestions =
+            document.querySelectorAll('.faq-question');
+
+
+        faqQuestions.forEach(function(question) {
+
+            question.addEventListener('click', function() {
+
+                const item =
+                    question.closest('.faq-item');
+
+                const wasOpen =
+                    item.classList.contains('active');
+
+
+                document
+                    .querySelectorAll('.faq-item.active')
+                    .forEach(function(openItem) {
+
+                        openItem.classList.remove('active');
+
+                    });
+
+
+                if (!wasOpen) {
+
+                    item.classList.add('active');
+
+                }
+
+            });
+
+        });
+
+
+        /* =========================
+           CATEGORY FILTER
+        ========================= */
+
+        const categoryButtons =
+            document.querySelectorAll('.category-btn');
+
+        const faqSections =
+            document.querySelectorAll('.faq-section');
+
+
+        categoryButtons.forEach(function(button) {
+
+            button.addEventListener('click', function() {
+
+                const category =
+                    button.dataset.category;
+
+
+                categoryButtons.forEach(function(btn) {
+
+                    btn.classList.remove('active');
+
+                });
+
+
+                button.classList.add('active');
+
+
+                faqSections.forEach(function(section) {
+
+                    if (
+                        category === 'all' ||
+                        section.dataset.section === category
+                    ) {
+
+                        section.style.display = '';
+
+                    } else {
+
+                        section.style.display = 'none';
+
+                    }
+
+                });
+
+
+                document
+                    .getElementById('noResults')
+                    .style.display = 'none';
+
+            });
+
+        });
+
+
+        /* =========================
+           FAQ SEARCH
+        ========================= */
+
+        const searchInput =
+            document.getElementById('faqSearch');
+
+        const noResults =
+            document.getElementById('noResults');
+
+
+        searchInput.addEventListener(
+            'input',
+            function() {
+
+                const searchTerm =
+                    searchInput.value
+                        .toLowerCase()
+                        .trim();
+
+
+                let visibleCount = 0;
+
+
+                if (searchTerm === '') {
+
+                    faqSections.forEach(function(section) {
+
+                        section.style.display = '';
+
+                    });
+
+                    noResults.style.display = 'none';
+
+                    return;
+
+                }
+
+
+                faqSections.forEach(function(section) {
+
+                    let sectionHasMatch = false;
+
+
+                    const items =
+                        section.querySelectorAll('.faq-item');
+
+
+                    items.forEach(function(item) {
+
+                        const text =
+                            item.textContent
+                                .toLowerCase();
+
+
+                        if (text.includes(searchTerm)) {
+
+                            item.style.display = '';
+
+                            sectionHasMatch = true;
+
+                            visibleCount++;
+
+                        } else {
+
+                            item.style.display = 'none';
+
+                        }
+
+                    });
+
+
+                    if (sectionHasMatch) {
+
+                        section.style.display = '';
+
+                    } else {
+
+                        section.style.display = 'none';
+
+                    }
+
+                });
+
+
+                if (visibleCount === 0) {
+
+                    noResults.style.display = 'block';
+
+                } else {
+
+                    noResults.style.display = 'none';
+
+                }
+
+
+                /* Reset category buttons */
+
+                categoryButtons.forEach(function(button) {
+
+                    button.classList.remove('active');
+
+                });
+
+                document
+                    .querySelector('[data-category="all"]')
+                    .classList.add('active');
+
+            }
+        );
+
+
+        /* =========================
+           OPEN FAQ FROM URL HASH
+        ========================= */
+
+        function openHashFAQ() {
+
+            const hash =
+                window.location.hash.substring(1);
+
+            if (!hash) {
+                return;
+            }
+
+            const target =
+                document.getElementById(hash);
+
+            if (!target) {
+                return;
+            }
+
+            const item =
+                target.classList.contains('faq-item')
+                    ? target
+                    : target.querySelector('.faq-item');
+
+
+            if (item) {
+
+                item.classList.add('active');
+
+                setTimeout(function() {
+
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+
+                }, 150);
+
+            }
+
+        }
+
+
+        window.addEventListener(
+            'load',
+            openHashFAQ
+        );
+
+    </script>
+
+</body>
+
+</html>
