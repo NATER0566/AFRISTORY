@@ -1,1 +1,776 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>DMCA & Copyright Policy | AfriStory</title>
+
+    <meta
+        name="description"
+        content="AfriStory DMCA and Copyright Policy. Learn how to report copyrighted content and submit a copyright complaint."
+    >
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #111111;
+            color: #f5f5f5;
+            line-height: 1.7;
+        }
+
+        a {
+            color: #D4A017;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* =========================
+           HEADER
+        ========================= */
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: rgba(17, 17, 17, 0.96);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .header-inner {
+            width: min(1100px, 92%);
+            min-height: 70px;
+            margin: auto;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 23px;
+            font-weight: 700;
+            color: #D4A017;
+            letter-spacing: -0.5px;
+        }
+
+        .logo:hover {
+            text-decoration: none;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            padding: 9px 16px;
+
+            border: 1px solid rgba(212, 160, 23, 0.4);
+            border-radius: 8px;
+
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 500;
+
+            transition: 0.25s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(212, 160, 23, 0.1);
+            border-color: rgba(212, 160, 23, 0.7);
+            text-decoration: none;
+            transform: translateY(-1px);
+        }
+
+        /* =========================
+           HERO
+        ========================= */
+
+        .hero {
+            width: min(1100px, 92%);
+            margin: 58px auto 38px;
+        }
+
+        .hero-label {
+            display: inline-block;
+
+            margin-bottom: 12px;
+
+            color: #D4A017;
+
+            font-size: 13px;
+            font-weight: 700;
+
+            letter-spacing: 1.7px;
+            text-transform: uppercase;
+        }
+
+        .hero h1 {
+            font-family: 'Space Grotesk', sans-serif;
+
+            font-size: clamp(34px, 6vw, 54px);
+            line-height: 1.08;
+
+            letter-spacing: -1.5px;
+
+            margin-bottom: 18px;
+        }
+
+        .hero p {
+            max-width: 780px;
+
+            color: #a9a9a9;
+
+            font-size: 16px;
+        }
+
+        /* =========================
+           MAIN
+        ========================= */
+
+        main {
+            width: min(1100px, 92%);
+            margin: 0 auto 70px;
+        }
+
+        .policy-card {
+            background: #1B1B1B;
+
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 16px;
+
+            padding: clamp(23px, 5vw, 40px);
+
+            margin-bottom: 22px;
+
+            box-shadow:
+                0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .policy-card h2 {
+            font-family: 'Space Grotesk', sans-serif;
+
+            color: #ffffff;
+
+            font-size: 25px;
+            line-height: 1.3;
+
+            margin-bottom: 15px;
+        }
+
+        .policy-card h3 {
+            color: #D4A017;
+
+            font-size: 18px;
+
+            margin: 27px 0 11px;
+        }
+
+        .policy-card p {
+            color: #c3c3c3;
+
+            font-size: 15px;
+
+            margin-bottom: 15px;
+        }
+
+        .policy-card ul,
+        .policy-card ol {
+            margin: 10px 0 20px 23px;
+
+            color: #c3c3c3;
+
+            font-size: 15px;
+        }
+
+        .policy-card li {
+            margin-bottom: 10px;
+            padding-left: 4px;
+        }
+
+        /* =========================
+           NOTICE
+        ========================= */
+
+        .notice {
+            margin: 22px 0;
+
+            padding: 18px 20px;
+
+            background: rgba(212, 160, 23, 0.08);
+
+            border: 1px solid rgba(212, 160, 23, 0.25);
+
+            border-radius: 12px;
+
+            color: #cfcfcf;
+        }
+
+        .notice strong {
+            color: #D4A017;
+        }
+
+        /* =========================
+           CONTACT
+        ========================= */
+
+        .contact-box {
+            margin-top: 22px;
+
+            padding: 22px;
+
+            background: #151515;
+
+            border: 1px solid rgba(212, 160, 23, 0.25);
+
+            border-radius: 12px;
+        }
+
+        .contact-box p {
+            margin-bottom: 8px;
+        }
+
+        .contact-title {
+            color: #ffffff !important;
+            font-weight: 700;
+        }
+
+        .email {
+            color: #D4A017;
+            font-weight: 700;
+        }
+
+        /* =========================
+           PAGE LINKS
+        ========================= */
+
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+
+            gap: 18px;
+
+            margin-top: 28px;
+            padding-top: 20px;
+
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .footer-links a {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* =========================
+           FOOTER
+        ========================= */
+
+        footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.07);
+
+            padding: 30px 20px;
+
+            text-align: center;
+
+            color: #777777;
+
+            font-size: 13px;
+        }
+
+        footer p {
+            margin-bottom: 10px;
+        }
+
+        footer a {
+            margin: 0 7px;
+        }
+
+        /* =========================
+           MOBILE
+        ========================= */
+
+        @media (max-width: 600px) {
+
+            .header-inner {
+                min-height: 62px;
+            }
+
+            .logo {
+                font-size: 20px;
+            }
+
+            .back-btn {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+
+            .hero {
+                margin-top: 42px;
+            }
+
+            .hero h1 {
+                font-size: 35px;
+                letter-spacing: -1px;
+            }
+
+            .hero p {
+                font-size: 15px;
+            }
+
+            .policy-card {
+                padding: 22px 18px;
+                border-radius: 13px;
+            }
+
+            .policy-card h2 {
+                font-size: 22px;
+            }
+
+            .policy-card p,
+            .policy-card ul,
+            .policy-card ol {
+                font-size: 14px;
+            }
+
+            .contact-box {
+                padding: 18px;
+            }
+
+            .footer-links {
+                gap: 13px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- =========================
+         HEADER
+    ========================= -->
+
+    <header>
+        <div class="header-inner">
+
+            <a href="/" class="logo">
+                AfriStory
+            </a>
+
+            <a href="/" class="back-btn">
+                ← Back to AfriStory
+            </a>
+
+        </div>
+    </header>
+
+
+    <!-- =========================
+         HERO
+    ========================= -->
+
+    <section class="hero">
+
+        <span class="hero-label">
+            Copyright Protection
+        </span>
+
+        <h1>
+            DMCA & Copyright Policy
+        </h1>
+
+        <p>
+            AfriStory respects the intellectual property rights of
+            creators, copyright owners, and other rights holders.
+            This policy explains how copyright concerns can be reported
+            to AfriStory.
+        </p>
+
+    </section>
+
+
+    <!-- =========================
+         CONTENT
+    ========================= -->
+
+    <main>
+
+        <!-- 1 -->
+
+        <section class="policy-card">
+
+            <h2>
+                1. Overview
+            </h2>
+
+            <p>
+                AfriStory is a digital storytelling and entertainment
+                platform that allows creators and users to upload,
+                publish, discover, and watch digital content.
+            </p>
+
+            <p>
+                We respect the rights of copyright owners and expect
+                everyone using AfriStory to respect applicable copyright
+                laws.
+            </p>
+
+            <p>
+                If you believe that content available through AfriStory
+                infringes your copyright, you may submit a copyright
+                infringement notice using the contact information
+                provided below.
+            </p>
+
+        </section>
+
+
+        <!-- 2 -->
+
+        <section class="policy-card">
+
+            <h2>
+                2. Reporting Copyright Infringement
+            </h2>
+
+            <p>
+                If you are a copyright owner or an authorized
+                representative of a copyright owner, you may contact
+                AfriStory regarding content that you believe infringes
+                your copyright.
+            </p>
+
+            <p>
+                To help us investigate your complaint, your notice
+                should contain sufficient information to identify the
+                copyrighted work and the material that you believe
+                infringes it.
+            </p>
+
+            <h3>
+                Information to Include
+            </h3>
+
+            <ol>
+
+                <li>
+                    Your full name and contact information.
+                </li>
+
+                <li>
+                    Identification of the copyrighted work that you
+                    claim has been infringed.
+                </li>
+
+                <li>
+                    A description of the material that you believe
+                    infringes your copyright.
+                </li>
+
+                <li>
+                    The URL or other specific location where the
+                    allegedly infringing content can be found on
+                    AfriStory.
+                </li>
+
+                <li>
+                    A statement explaining your relationship to the
+                    copyrighted work or your authority to act on behalf
+                    of the copyright owner.
+                </li>
+
+                <li>
+                    Any additional information that may help us locate
+                    and review the reported content.
+                </li>
+
+            </ol>
+
+        </section>
+
+
+        <!-- 3 -->
+
+        <section class="policy-card">
+
+            <h2>
+                3. Copyright Complaint Statement
+            </h2>
+
+            <p>
+                Your complaint should accurately identify the material
+                at issue and should be submitted in good faith.
+            </p>
+
+            <div class="notice">
+
+                <strong>Important:</strong>
+
+                Please do not submit false, misleading, or fraudulent
+                copyright complaints. Misuse of the copyright reporting
+                process may have legal consequences.
+
+            </div>
+
+        </section>
+
+
+        <!-- 4 -->
+
+        <section class="policy-card">
+
+            <h2>
+                4. What Happens After a Report
+            </h2>
+
+            <p>
+                After receiving a copyright complaint, AfriStory may
+                review the information provided and take appropriate
+                action based on the circumstances.
+            </p>
+
+            <p>
+                Depending on the situation, actions may include
+                restricting access to the reported material, contacting
+                the uploader, requesting additional information, or
+                taking other measures permitted by applicable law.
+            </p>
+
+            <p>
+                Submitting a complaint does not automatically guarantee
+                that content will be removed. We may request additional
+                information where necessary to evaluate a report.
+            </p>
+
+        </section>
+
+
+        <!-- 5 -->
+
+        <section class="policy-card">
+
+            <h2>
+                5. Counter-Notification
+            </h2>
+
+            <p>
+                If your content has been restricted or removed because
+                of a copyright complaint and you believe the action was
+                made in error, you may contact AfriStory and explain why
+                you believe the restriction should be reconsidered.
+            </p>
+
+            <p>
+                Your request should identify the affected content and
+                provide sufficient information for us to understand the
+                basis of your dispute.
+            </p>
+
+            <p>
+                We may request additional information or documentation
+                before restoring content.
+            </p>
+
+        </section>
+
+
+        <!-- 6 -->
+
+        <section class="policy-card">
+
+            <h2>
+                6. Repeat Copyright Infringement
+            </h2>
+
+            <p>
+                AfriStory may take appropriate action against accounts
+                that repeatedly upload or distribute content that
+                infringes the rights of others.
+            </p>
+
+            <p>
+                Depending on the circumstances, this may include
+                restricting content, suspending account functionality,
+                or terminating an account where appropriate.
+            </p>
+
+        </section>
+
+
+        <!-- 7 -->
+
+        <section class="policy-card">
+
+            <h2>
+                7. Creator Responsibility
+            </h2>
+
+            <p>
+                Creators are responsible for ensuring that they have the
+                necessary rights, permissions, licenses, or other lawful
+                authorization to upload and distribute the content they
+                publish on AfriStory.
+            </p>
+
+            <p>
+                Creators should not upload copyrighted material
+                belonging to another person or organization unless they
+                have the necessary authorization or a lawful basis for
+                doing so.
+            </p>
+
+        </section>
+
+
+        <!-- 8 -->
+
+        <section class="policy-card">
+
+            <h2>
+                8. Copyright Contact
+            </h2>
+
+            <p>
+                Copyright complaints and related copyright questions
+                should be sent to our designated contact email.
+            </p>
+
+            <div class="contact-box">
+
+                <p class="contact-title">
+                    AfriStory Copyright Contact
+                </p>
+
+                <p>
+                    Email:
+                    <a
+                        class="email"
+                        href="mailto:nmbashau@gmail.com?subject=AfriStory%20Copyright%20Complaint"
+                    >
+                        nmbashau@gmail.com
+                    </a>
+                </p>
+
+                <p>
+                    Subject:
+                    <strong>
+                        AfriStory Copyright Complaint
+                    </strong>
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- 9 -->
+
+        <section class="policy-card">
+
+            <h2>
+                9. Policy Updates
+            </h2>
+
+            <p>
+                AfriStory may update this Copyright and DMCA Policy from
+                time to time to reflect changes to our services,
+                applicable requirements, or our copyright procedures.
+            </p>
+
+            <p>
+                The updated version will be published on this page with
+                the applicable effective date.
+            </p>
+
+            <p>
+                <strong>
+                    Last updated:
+                </strong>
+                September 2026
+            </p>
+
+
+            <div class="footer-links">
+
+                <a href="/">
+                    Home
+                </a>
+
+                <a href="/privacy-policy.html">
+                    Privacy Policy
+                </a>
+
+                <a href="/terms.html">
+                    Terms of Service
+                </a>
+
+                <a href="/cookie-policy.html">
+                    Cookie Policy
+                </a>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- =========================
+         FOOTER
+    ========================= -->
+
+    <footer>
+
+        <p>
+            © 2026 AfriStory. All rights reserved.
+        </p>
+
+        <div>
+
+            <a href="/">
+                Home
+            </a>
+
+            <a href="/privacy-policy.html">
+                Privacy
+            </a>
+
+            <a href="/terms.html">
+                Terms
+            </a>
+
+            <a href="/cookie-policy.html">
+                Cookies
+            </a>
+
+        </div>
+
+    </footer>
+
+</body>
+</html>
