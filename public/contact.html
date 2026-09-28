@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Contact Us | AfriStory</title>
+
+    <meta
+        name="description"
+        content="Contact AfriStory support for account assistance, content reports, copyright concerns, creator support, and other questions."
+    >
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #111111;
+            color: #f5f5f5;
+            line-height: 1.7;
+        }
+
+        a {
+            color: #D4A017;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: none;
+        }
+
+
+        /* =========================
+           HEADER
+        ========================= */
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+
+            background: rgba(17, 17, 17, 0.96);
+
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+
+            border-bottom:
+                1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .header-inner {
+            width: min(1100px, 92%);
+            min-height: 70px;
+
+            margin: auto;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 20px;
+        }
+
+        .logo {
+            font-family: 'Space Grotesk', sans-serif;
+
+            color: #D4A017;
+
+            font-size: 23px;
+            font-weight: 700;
+
+            letter-spacing: -0.5px;
+        }
+
+        .logo:hover {
+            text-decoration: none;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            padding: 9px 16px;
+
+            color: #ffffff;
+
+            border:
+                1px solid rgba(212, 160, 23, 0.4);
+
+            border-radius: 8px;
+
+            font-size: 14px;
+            font-weight: 500;
+
+            transition: 0.25s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(212, 160, 23, 0.1);
+
+            border-color:
+                rgba(212, 160, 23, 0.7);
+
+            transform: translateY(-1px);
+        }
+
+
+        /* =========================
+           HERO
+        ========================= */
+
+        .hero {
+            width: min(1100px, 92%);
+
+            margin: 58px auto 42px;
+        }
+
+        .hero-label {
+            display: inline-block;
+
+            margin-bottom: 12px;
+
+            color: #D4A017;
+
+            font-size: 13px;
+            font-weight: 700;
+
+            letter-spacing: 1.7px;
+
+            text-transform: uppercase;
+        }
+
+        .hero h1 {
+            font-family: 'Space Grotesk', sans-serif;
+
+            font-size: clamp(36px, 6vw, 55px);
+
+            line-height: 1.08;
+
+            letter-spacing: -1.5px;
+
+            margin-bottom: 17px;
+        }
+
+        .hero p {
+            max-width: 760px;
+
+            color: #a9a9a9;
+
+            font-size: 16px;
+        }
+
+
+        /* =========================
+           MAIN
+        ========================= */
+
+        main {
+            width: min(1100px, 92%);
+
+            margin: 0 auto 70px;
+        }
+
+
+        /* =========================
+           CONTACT GRID
+        ========================= */
+
+        .contact-grid {
+            display: grid;
+
+            grid-template-columns:
+                minmax(0, 0.9fr)
+                minmax(0, 1.1fr);
+
+            gap: 22px;
+
+            align-items: start;
+        }
+
+
+        /* =========================
+           CONTACT CARDS
+        ========================= */
+
+        .contact-card {
+            padding: 26px;
+
+            background: #1B1B1B;
+
+            border:
+                1px solid rgba(255, 255, 255, 0.07);
+
+            border-radius: 15px;
+        }
+
+        .contact-card h2 {
+            margin-bottom: 10px;
+
+            color: #ffffff;
+
+            font-family: 'Space Grotesk', sans-serif;
+
+            font-size: 22px;
+        }
+
+        .contact-card > p {
+            margin-bottom: 22px;
+
+            color: #929292;
+
+            font-size: 14px;
+        }
+
+
+        /* =========================
+           CONTACT OPTIONS
+        ========================= */
+
+        .contact-option {
+            display: flex;
+
+            align-items: flex-start;
+
+            gap: 15px;
+
+            padding: 17px 0;
+
+            border-bottom:
+                1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .contact-option:first-child {
+            padding-top: 0;
+        }
+
+        .contact-option:last-child {
+            padding-bottom: 0;
+
+            border-bottom: none;
+        }
+
+        .contact-icon {
+            width: 43px;
+            height: 43px;
+
+            flex-shrink: 0;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            background:
+                rgba(212, 160, 23, 0.1);
+
+            border:
+                1px solid rgba(212, 160, 23, 0.2);
+
+            border-radius: 10px;
+
+            color: #D4A017;
+
+            font-size: 18px;
+        }
+
+        .contact-option h3 {
+            margin-bottom: 3px;
+
+            color: #ffffff;
+
+            font-size: 15px;
+
+            font-weight: 600;
+        }
+
+        .contact-option p {
+            color: #858585;
+
+            font-size: 13px;
+
+            line-height: 1.6;
+        }
+
+        .contact-option a {
+            display: inline-block;
+
+            margin-top: 3px;
+
+            font-size: 14px;
+
+            font-weight: 600;
+
+            word-break: break-word;
+        }
+
+
+        /* =========================
+           FORM
+        ========================= */
+
+        .contact-form {
+            padding: 28px;
+
+            background: #1B1B1B;
+
+            border:
+                1px solid rgba(255, 255, 255, 0.07);
+
+            border-radius: 15px;
+        }
+
+        .contact-form h2 {
+            margin-bottom: 8px;
+
+            color: #ffffff;
+
+            font-family: 'Space Grotesk', sans-serif;
+
+            font-size: 22px;
+        }
+
+        .contact-form > p {
+            margin-bottom: 23px;
+
+            color: #929292;
+
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 17px;
+        }
+
+        .form-group label {
+            display: block;
+
+            margin-bottom: 7px;
+
+            color: #dddddd;
+
+            font-size: 13px;
+
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+
+            padding: 13px 14px;
+
+            background: #121212;
+
+            border:
+                1px solid rgba(255, 255, 255, 0.09);
+
+            border-radius: 9px;
+
+            outline: none;
+
+            color: #ffffff;
+
+            font-family: 'Inter', sans-serif;
+
+            font-size: 14px;
+
+            transition: 0.2s ease;
+        }
+
+        .form-group input::placeholder,
+        .form-group textarea::placeholder {
+            color: #666666;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color:
+                rgba(212, 160, 23, 0.65);
+
+            box-shadow:
+                0 0 0 3px rgba(212, 160, 23, 0.07);
+        }
+
+        .form-group textarea {
+            min-height: 150px;
+
+            resize: vertical;
+        }
+
+        .form-group select {
+            cursor: pointer;
+        }
+
+        .form-group select option {
+            background: #1B1B1B;
+
+            color: #ffffff;
+        }
+
+
+        /* =========================
+           SUBMIT BUTTON
+        ========================= */
+
+        .submit-btn {
+            width: 100%;
+
+            padding: 13px 18px;
+
+            margin-top: 5px;
+
+            background: #D4A017;
+
+            border: none;
+
+            border-radius: 9px;
+
+            color: #111111;
+
+            font-family: 'Inter', sans-serif;
+
+            font-size: 14px;
+
+            font-weight: 700;
+
+            cursor: pointer;
+
+            transition: 0.2s ease;
+        }
+
+        .submit-btn:hover {
+            background: #e3b52b;
+
+            transform: translateY(-1px);
+        }
+
+        .form-note {
+            margin-top: 12px;
+
+            color: #686868;
+
+            font-size: 11px;
+
+            line-height: 1.6;
+
+            text-align: center;
+        }
+
+
+        /* =========================
+           RESPONSE NOTICE
+        ========================= */
+
+        .notice {
+            display: none;
+
+            margin-top: 17px;
+
+            padding: 13px 15px;
+
+            background:
+                rgba(46, 204, 113, 0.08);
+
+            border:
+                1px solid rgba(46, 204, 113, 0.2);
+
+            border-radius: 9px;
+
+            color: #8ed9ab;
+
+            font-size: 13px;
+
+            line-height: 1.6;
+        }
+
+
+        /* =========================
+           QUICK LINKS
+        ========================= */
+
+        .quick-links {
+            margin-top: 24px;
+
+            padding: 25px;
+
+            background: #1B1B1B;
+
+            border:
+                1px solid rgba(255, 255, 255, 0.07);
+
+            border-radius: 15px;
+        }
+
+        .quick-links h2 {
+            margin-bottom: 16px;
+
+            color: #ffffff;
+
+            font-family: 'Space Grotesk', sans-serif;
+
+            font-size: 21px;
+        }
+
+        .quick-link-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, minmax(0, 1fr));
+
+            gap: 10px;
+        }
+
+        .quick-link {
+            display: block;
+
+            padding: 13px 14px;
+
+            background: #151515;
+
+            border:
+                1px solid rgba(255, 255, 255, 0.06);
+
+            border-radius: 8px;
+
+            color: #a7a7a7;
+
+            font-size: 13px;
+
+            transition: 0.2s ease;
+        }
+
+        .quick-link:hover {
+            color: #D4A017;
+
+            border-color:
+                rgba(212, 160, 23, 0.3);
+
+            background: #181818;
+        }
+
+
+        /* =========================
+           FOOTER LINKS
+        ========================= */
+
+        .footer-links {
+            display: flex;
+
+            flex-wrap: wrap;
+
+            gap: 18px;
+
+            margin-top: 32px;
+
+            padding-top: 22px;
+
+            border-top:
+                1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .footer-links a {
+            color: #777777;
+
+            font-size: 13px;
+        }
+
+        .footer-links a:hover {
+            color: #D4A017;
+        }
+
+
+        /* =========================
+           FOOTER
+        ========================= */
+
+        footer {
+            padding: 30px 20px;
+
+            border-top:
+                1px solid rgba(255, 255, 255, 0.07);
+
+            color: #666666;
+
+            text-align: center;
+
+            font-size: 13px;
+        }
+
+        footer p {
+            margin-bottom: 9px;
+        }
+
+        footer a {
+            margin: 0 7px;
+
+            color: #777777;
+        }
+
+        footer a:hover {
+            color: #D4A017;
+        }
+
+
+        /* =========================
+           MOBILE
+        ========================= */
+
+        @media (max-width: 800px) {
+
+            .contact-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .quick-link-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+        }
+
+
+        @media (max-width: 600px) {
+
+            .header-inner {
+                min-height: 62px;
+            }
+
+            .logo {
+                font-size: 20px;
+            }
+
+            .back-btn {
+                padding: 8px 12px;
+
+                font-size: 13px;
+            }
+
+            .hero {
+                margin-top: 42px;
+            }
+
+            .hero h1 {
+                font-size: 35px;
+
+                letter-spacing: -1px;
+            }
+
+            .hero p {
+                font-size: 15px;
+            }
+
+            .contact-card,
+            .contact-form,
+            .quick-links {
+                padding: 21px;
+            }
+
+            .quick-link-grid {
+                grid-template-columns: 1fr;
+            }
+
+        }
+
+
+        @media (max-width: 430px) {
+
+            .hero h1 {
+                font-size: 32px;
+            }
+
+            .footer-links {
+                gap: 13px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- =========================
+         HEADER
+    ========================= -->
+
+    <header>
+
+        <div class="header-inner">
+
+            <a href="/" class="logo">
+                AfriStory
+            </a>
+
+            <a href="/" class="back-btn">
+                ← Back to AfriStory
+            </a>
+
+        </div>
+
+    </header>
+
+
+    <!-- =========================
+         HERO
+    ========================= -->
+
+    <section class="hero">
+
+        <span class="hero-label">
+            AfriStory Support
+        </span>
+
+        <h1>
+            Contact Us
+        </h1>
+
+        <p>
+            Need help with AfriStory? Contact our support team for
+            assistance with your account, content, creator features,
+            technical problems, copyright concerns, or other questions.
+        </p>
+
+    </section>
+
+
+    <!-- =========================
+         MAIN
+    ========================= -->
+
+    <main>
+
+
+        <div class="contact-grid">
+
+
+            <!-- =========================
+                 CONTACT INFORMATION
+            ========================= -->
+
+            <section class="contact-card">
+
+                <h2>
+                    Get in touch
+                </h2>
+
+                <p>
+                    Choose the most relevant option below or send us
+                    a message using the contact form.
+                </p>
+
+
+                <!-- Support -->
+
+                <div class="contact-option">
+
+                    <div class="contact-icon">
+                        ?
+                    </div>
+
+                    <div>
+
+                        <h3>
+                            General Support
+                        </h3>
+
+                        <p>
+                            Questions about your account, the platform,
+                            or using AfriStory.
+                        </p>
+
+                        <a
+                            href="mailto:support@afristory.naterlearninghub.me"
+                        >
+                            support@afristory.naterlearninghub.me
+                        </a>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Copyright -->
+
+                <div class="contact-option">
+
+                    <div class="contact-icon">
+                        ©
+                    </div>
+
+                    <div>
+
+                        <h3>
+                            Copyright & DMCA
+                        </h3>
+
+                        <p>
+                            For copyright infringement notices and
+                            copyright-related requests.
+                        </p>
+
+                        <a href="/DMCA.html">
+                            View DMCA Policy →
+                        </a>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Creator -->
+
+                <div class="contact-option">
+
+                    <div class="contact-icon">
+                        ✦
+                    </div>
+
+                    <div>
+
+                        <h3>
+                            Creator Support
+                        </h3>
+
+                        <p>
+                            Help with creator accounts, uploads,
+                            content management, and creator features.
+                        </p>
+
+                        <a
+                            href="mailto:support@afristory.naterlearninghub.me?subject=AfriStory%20Creator%20Support"
+                        >
+                            Contact Creator Support →
+                        </a>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Help Center -->
+
+                <div class="contact-option">
+
+                    <div class="contact-icon">
+                        ?
+                    </div>
+
+                    <div>
+
+                        <h3>
+                            Help Center
+                        </h3>
+
+                        <p>
+                            Find answers to common questions before
+                            contacting support.
+                        </p>
+
+                        <a href="/help.html">
+                            Visit Help Center →
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =========================
+                 CONTACT FORM
+            ========================= -->
+
+            <section class="contact-form">
+
+                <h2>
+                    Send us a message
+                </h2>
+
+                <p>
+                    Complete the form below. Your email application
+                    will open with your message ready to send.
+                </p>
+
+
+                <form id="contactForm">
+
+
+                    <!-- Name -->
+
+                    <div class="form-group">
+
+                        <label for="name">
+                            Your Name
+                        </label>
+
+                        <input
+                            type="text"
+                            id="name"
+                            name="name"
+                            placeholder="Enter your name"
+                            maxlength="100"
+                            required
+                        >
+
+                    </div>
+
+
+                    <!-- Email -->
+
+                    <div class="form-group">
+
+                        <label for="email">
+                            Email Address
+                        </label>
+
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            placeholder="you@example.com"
+                            maxlength="150"
+                            required
+                        >
+
+                    </div>
+
+
+                    <!-- Subject -->
+
+                    <div class="form-group">
+
+                        <label for="subject">
+                            Subject
+                        </label>
+
+                        <select
+                            id="subject"
+                            name="subject"
+                            required
+                        >
+
+                            <option
+                                value=""
+                                selected
+                                disabled
+                            >
+                                Select a topic
+                            </option>
+
+                            <option value="General Support">
+                                General Support
+                            </option>
+
+                            <option value="Account Problem">
+                                Account Problem
+                            </option>
+
+                            <option value="Technical Problem">
+                                Technical Problem
+                            </option>
+
+                            <option value="Creator Support">
+                                Creator Support
+                            </option>
+
+                            <option value="Copyright / DMCA">
+                                Copyright / DMCA
+                            </option>
+
+                            <option value="Content Report">
+                                Content Report
+                            </option>
+
+                            <option value="Advertising">
+                                Advertising
+                            </option>
+
+                            <option value="Other">
+                                Other
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <!-- Message -->
+
+                    <div class="form-group">
+
+                        <label for="message">
+                            Message
+                        </label>
+
+                        <textarea
+                            id="message"
+                            name="message"
+                            placeholder="Describe how we can help..."
+                            maxlength="5000"
+                            required
+                        ></textarea>
+
+                    </div>
+
+
+                    <button
+                        type="submit"
+                        class="submit-btn"
+                    >
+                        Send Message
+                    </button>
+
+
+                    <p class="form-note">
+                        Please do not include passwords, authentication
+                        codes, payment card numbers, or other sensitive
+                        account information in your message.
+                    </p>
+
+
+                    <div
+                        class="notice"
+                        id="formNotice"
+                    >
+                        Your email application should now be open with
+                        your message prepared. Review it and send the
+                        message to AfriStory Support.
+                    </div>
+
+                </form>
+
+            </section>
+
+        </div>
+
+
+        <!-- =========================
+             QUICK LINKS
+        ========================= -->
+
+        <section class="quick-links">
+
+            <h2>
+                Helpful Pages
+            </h2>
+
+            <div class="quick-link-grid">
+
+                <a
+                    href="/help.html"
+                    class="quick-link"
+                >
+                    Help Center
+                </a>
+
+                <a
+                    href="/faq.html"
+                    class="quick-link"
+                >
+                    Frequently Asked Questions
+                </a>
+
+                <a
+                    href="/terms.html"
+                    class="quick-link"
+                >
+                    Terms of Service
+                </a>
+
+                <a
+                    href="/privacy.html"
+                    class="quick-link"
+                >
+                    Privacy Policy
+                </a>
+
+                <a
+                    href="/cookie-policy.html"
+                    class="quick-link"
+                >
+                    Cookie Policy
+                </a>
+
+                <a
+                    href="/DMCA.html"
+                    class="quick-link"
+                >
+                    DMCA & Copyright
+                </a>
+
+                <a
+                    href="/disclaimer.html"
+                    class="quick-link"
+                >
+                    Disclaimer
+                </a>
+
+                <a
+                    href="/"
+                    class="quick-link"
+                >
+                    Return to AfriStory
+                </a>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             FOOTER LINKS
+        ========================= -->
+
+        <div class="footer-links">
+
+            <a href="/">
+                Home
+            </a>
+
+            <a href="/help.html">
+                Help Center
+            </a>
+
+            <a href="/faq.html">
+                FAQ
+            </a>
+
+            <a href="/terms.html">
+                Terms of Service
+            </a>
+
+            <a href="/privacy.html">
+                Privacy Policy
+            </a>
+
+            <a href="/cookie-policy.html">
+                Cookie Policy
+            </a>
+
+            <a href="/DMCA.html">
+                DMCA
+            </a>
+
+            <a href="/disclaimer.html">
+                Disclaimer
+            </a>
+
+        </div>
+
+    </main>
+
+
+    <!-- =========================
+         FOOTER
+    ========================= -->
+
+    <footer>
+
+        <p>
+            &copy; 2026 AfriStory. All rights reserved.
+        </p>
+
+        <p>
+
+            <a
+                href="mailto:support@afristory.naterlearninghub.me"
+            >
+                support@afristory.naterlearninghub.me
+            </a>
+
+        </p>
+
+        <div>
+
+            <a href="/">
+                Home
+            </a>
+
+            <a href="/privacy.html">
+                Privacy
+            </a>
+
+            <a href="/terms.html">
+                Terms
+            </a>
+
+            <a href="/cookie-policy.html">
+                Cookies
+            </a>
+
+            <a href="/DMCA.html">
+                DMCA
+            </a>
+
+            <a href="/disclaimer.html">
+                Disclaimer
+            </a>
+
+        </div>
+
+    </footer>
+
+
+    <!-- =========================
+         JAVASCRIPT
+    ========================= -->
+
+    <script>
+
+        const contactForm =
+            document.getElementById('contactForm');
+
+        const formNotice =
+            document.getElementById('formNotice');
+
+
+        contactForm.addEventListener(
+            'submit',
+            function(event) {
+
+                event.preventDefault();
+
+
+                const name =
+                    document
+                        .getElementById('name')
+                        .value
+                        .trim();
+
+                const email =
+                    document
+                        .getElementById('email')
+                        .value
+                        .trim();
+
+                const subject =
+                    document
+                        .getElementById('subject')
+                        .value
+                        .trim();
+
+                const message =
+                    document
+                        .getElementById('message')
+                        .value
+                        .trim();
+
+
+                if (
+                    !name ||
+                    !email ||
+                    !subject ||
+                    !message
+                ) {
+
+                    return;
+
+                }
+
+
+                /*
+                 * This page does not pretend to have a backend
+                 * contact API. It opens the user's email application.
+                 */
+
+                const destination =
+                    'support@afristory.naterlearninghub.me';
+
+
+                const emailSubject =
+                    encodeURIComponent(
+                        'AfriStory - ' + subject
+                    );
+
+
+                const emailBody =
+                    encodeURIComponent(
+                        'Name: ' +
+                        name +
+                        '\n\n' +
+
+                        'Email: ' +
+                        email +
+                        '\n\n' +
+
+                        'Subject: ' +
+                        subject +
+                        '\n\n' +
+
+                        'Message:\n' +
+                        message
+                    );
+
+
+                const mailto =
+                    'mailto:' +
+                    destination +
+                    '?subject=' +
+                    emailSubject +
+                    '&body=' +
+                    emailBody;
+
+
+                window.location.href = mailto;
+
+
+                formNotice.style.display =
+                    'block';
+
+            }
+        );
+
+    </script>
+
+</body>
+
+</html>
