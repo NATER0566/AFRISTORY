@@ -1,1 +1,897 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Disclaimer | AfriStory</title>
+
+    <meta
+        name="description"
+        content="Read the AfriStory Disclaimer covering content, creators, third-party services, advertising, availability, and platform use."
+    >
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #111111;
+            color: #f5f5f5;
+            line-height: 1.7;
+        }
+
+        a {
+            color: #D4A017;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* =========================
+           HEADER
+        ========================= */
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+
+            background: rgba(17, 17, 17, 0.96);
+
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .header-inner {
+            width: min(1100px, 92%);
+            min-height: 70px;
+            margin: auto;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 20px;
+        }
+
+        .logo {
+            font-family: 'Space Grotesk', sans-serif;
+
+            font-size: 23px;
+            font-weight: 700;
+
+            color: #D4A017;
+
+            letter-spacing: -0.5px;
+        }
+
+        .logo:hover {
+            text-decoration: none;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            padding: 9px 16px;
+
+            border: 1px solid rgba(212, 160, 23, 0.4);
+            border-radius: 8px;
+
+            color: #ffffff;
+
+            font-size: 14px;
+            font-weight: 500;
+
+            transition: 0.25s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(212, 160, 23, 0.1);
+
+            border-color: rgba(212, 160, 23, 0.7);
+
+            text-decoration: none;
+
+            transform: translateY(-1px);
+        }
+
+        /* =========================
+           HERO
+        ========================= */
+
+        .hero {
+            width: min(1100px, 92%);
+            margin: 58px auto 38px;
+        }
+
+        .hero-label {
+            display: inline-block;
+
+            margin-bottom: 12px;
+
+            color: #D4A017;
+
+            font-size: 13px;
+            font-weight: 700;
+
+            letter-spacing: 1.7px;
+
+            text-transform: uppercase;
+        }
+
+        .hero h1 {
+            font-family: 'Space Grotesk', sans-serif;
+
+            font-size: clamp(34px, 6vw, 54px);
+
+            line-height: 1.08;
+
+            letter-spacing: -1.5px;
+
+            margin-bottom: 18px;
+        }
+
+        .hero p {
+            max-width: 780px;
+
+            color: #a9a9a9;
+
+            font-size: 16px;
+        }
+
+        /* =========================
+           MAIN
+        ========================= */
+
+        main {
+            width: min(1100px, 92%);
+            margin: 0 auto 70px;
+        }
+
+        .policy-card {
+            background: #1B1B1B;
+
+            border: 1px solid rgba(255, 255, 255, 0.07);
+
+            border-radius: 16px;
+
+            padding: clamp(23px, 5vw, 40px);
+
+            margin-bottom: 22px;
+
+            box-shadow:
+                0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .policy-card h2 {
+            font-family: 'Space Grotesk', sans-serif;
+
+            color: #ffffff;
+
+            font-size: 25px;
+
+            line-height: 1.3;
+
+            margin-bottom: 15px;
+        }
+
+        .policy-card h3 {
+            color: #D4A017;
+
+            font-size: 18px;
+
+            margin: 27px 0 11px;
+        }
+
+        .policy-card p {
+            color: #c3c3c3;
+
+            font-size: 15px;
+
+            margin-bottom: 15px;
+        }
+
+        .policy-card ul,
+        .policy-card ol {
+            margin: 10px 0 20px 23px;
+
+            color: #c3c3c3;
+
+            font-size: 15px;
+        }
+
+        .policy-card li {
+            margin-bottom: 10px;
+
+            padding-left: 4px;
+        }
+
+        /* =========================
+           NOTICE
+        ========================= */
+
+        .notice {
+            margin: 22px 0;
+
+            padding: 18px 20px;
+
+            background: rgba(212, 160, 23, 0.08);
+
+            border: 1px solid rgba(212, 160, 23, 0.25);
+
+            border-radius: 12px;
+
+            color: #cfcfcf;
+        }
+
+        .notice strong {
+            color: #D4A017;
+        }
+
+        /* =========================
+           CONTACT
+        ========================= */
+
+        .contact-box {
+            margin-top: 22px;
+
+            padding: 22px;
+
+            background: #151515;
+
+            border: 1px solid rgba(212, 160, 23, 0.25);
+
+            border-radius: 12px;
+        }
+
+        .contact-box p {
+            margin-bottom: 8px;
+        }
+
+        .contact-title {
+            color: #ffffff !important;
+
+            font-weight: 700;
+        }
+
+        .email {
+            color: #D4A017;
+
+            font-weight: 700;
+        }
+
+        /* =========================
+           PAGE LINKS
+        ========================= */
+
+        .footer-links {
+            display: flex;
+
+            flex-wrap: wrap;
+
+            gap: 18px;
+
+            margin-top: 28px;
+
+            padding-top: 20px;
+
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .footer-links a {
+            font-size: 14px;
+
+            font-weight: 500;
+        }
+
+        /* =========================
+           FOOTER
+        ========================= */
+
+        footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.07);
+
+            padding: 30px 20px;
+
+            text-align: center;
+
+            color: #777777;
+
+            font-size: 13px;
+        }
+
+        footer p {
+            margin-bottom: 10px;
+        }
+
+        footer a {
+            margin: 0 7px;
+        }
+
+        /* =========================
+           MOBILE
+        ========================= */
+
+        @media (max-width: 600px) {
+
+            .header-inner {
+                min-height: 62px;
+            }
+
+            .logo {
+                font-size: 20px;
+            }
+
+            .back-btn {
+                padding: 8px 12px;
+
+                font-size: 13px;
+            }
+
+            .hero {
+                margin-top: 42px;
+            }
+
+            .hero h1 {
+                font-size: 35px;
+
+                letter-spacing: -1px;
+            }
+
+            .hero p {
+                font-size: 15px;
+            }
+
+            .policy-card {
+                padding: 22px 18px;
+
+                border-radius: 13px;
+            }
+
+            .policy-card h2 {
+                font-size: 22px;
+            }
+
+            .policy-card p,
+            .policy-card ul,
+            .policy-card ol {
+                font-size: 14px;
+            }
+
+            .contact-box {
+                padding: 18px;
+            }
+
+            .footer-links {
+                gap: 13px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- =========================
+         HEADER
+    ========================= -->
+
+    <header>
+
+        <div class="header-inner">
+
+            <a href="/" class="logo">
+                AfriStory
+            </a>
+
+            <a href="/" class="back-btn">
+                ← Back to AfriStory
+            </a>
+
+        </div>
+
+    </header>
+
+
+    <!-- =========================
+         HERO
+    ========================= -->
+
+    <section class="hero">
+
+        <span class="hero-label">
+            Important Information
+        </span>
+
+        <h1>
+            Disclaimer
+        </h1>
+
+        <p>
+            This Disclaimer explains important information about the
+            content, services, creators, advertisements, and other
+            materials available through AfriStory.
+        </p>
+
+    </section>
+
+
+    <!-- =========================
+         CONTENT
+    ========================= -->
+
+    <main>
+
+
+        <!-- 1 -->
+
+        <section class="policy-card">
+
+            <h2>
+                1. General Disclaimer
+            </h2>
+
+            <p>
+                The information and services provided through AfriStory
+                are made available for general informational,
+                entertainment, and storytelling purposes.
+            </p>
+
+            <p>
+                While we make reasonable efforts to maintain the
+                platform and its information, AfriStory does not
+                guarantee that all information, content, features, or
+                services will always be complete, accurate, current, or
+                available.
+            </p>
+
+            <div class="notice">
+
+                <strong>Important:</strong>
+
+                Your use of AfriStory is voluntary. You should use your
+                own judgment when relying on information or content
+                published through the platform.
+
+            </div>
+
+        </section>
+
+
+        <!-- 2 -->
+
+        <section class="policy-card">
+
+            <h2>
+                2. User-Generated Content
+            </h2>
+
+            <p>
+                AfriStory may allow creators and users to upload,
+                publish, or share videos, stories, images, comments,
+                descriptions, and other materials.
+            </p>
+
+            <p>
+                Content uploaded by users or creators represents the
+                views, opinions, experiences, or creative work of the
+                person who published it and does not necessarily
+                represent the views of AfriStory.
+            </p>
+
+            <p>
+                AfriStory does not automatically endorse or guarantee
+                every statement, claim, opinion, recommendation, or
+                representation contained in user-generated content.
+            </p>
+
+        </section>
+
+
+        <!-- 3 -->
+
+        <section class="policy-card">
+
+            <h2>
+                3. Creator Responsibility
+            </h2>
+
+            <p>
+                Creators are responsible for the content they upload to
+                AfriStory.
+            </p>
+
+            <p>
+                Creators should ensure that they have the necessary
+                rights, permissions, licenses, and authorizations to
+                publish their content.
+            </p>
+
+            <p>
+                Creators are also responsible for ensuring that their
+                content complies with applicable laws and AfriStory's
+                Terms of Service and other applicable policies.
+            </p>
+
+        </section>
+
+
+        <!-- 4 -->
+
+        <section class="policy-card">
+
+            <h2>
+                4. Copyright and Intellectual Property
+            </h2>
+
+            <p>
+                AfriStory respects intellectual property rights.
+            </p>
+
+            <p>
+                If you believe that content available on AfriStory
+                infringes your copyright, you may report it through our
+                copyright reporting procedure.
+            </p>
+
+            <p>
+                Please see our
+                <a href="/DMCA.html">
+                    DMCA & Copyright Policy
+                </a>
+                for information about submitting a copyright complaint.
+            </p>
+
+        </section>
+
+
+        <!-- 5 -->
+
+        <section class="policy-card">
+
+            <h2>
+                5. Advertisements
+            </h2>
+
+            <p>
+                AfriStory may display advertisements supplied by
+                third-party advertising networks and advertising
+                partners.
+            </p>
+
+            <p>
+                The appearance of an advertisement on AfriStory does not
+                necessarily mean that AfriStory recommends, guarantees,
+                or endorses the advertised product, service, company,
+                or offer.
+            </p>
+
+            <p>
+                Users should review the terms, privacy practices, and
+                other information provided by an advertiser before
+                interacting with or purchasing from a third-party
+                advertiser.
+            </p>
+
+        </section>
+
+
+        <!-- 6 -->
+
+        <section class="policy-card">
+
+            <h2>
+                6. Rewarded Advertising
+            </h2>
+
+            <p>
+                Certain AfriStory features may allow users to access
+                content or features after completing a rewarded
+                advertising experience.
+            </p>
+
+            <p>
+                Availability of rewarded advertisements may depend on
+                advertising demand, geographic location, device,
+                network conditions, user eligibility, and other factors
+                controlled by the advertising provider.
+            </p>
+
+            <p>
+                AfriStory does not guarantee that a rewarded
+                advertisement will always be available.
+            </p>
+
+            <p>
+                Any reward or access associated with a rewarded
+                advertisement is subject to the applicable AfriStory
+                feature rules and the advertising provider's systems.
+            </p>
+
+        </section>
+
+
+        <!-- 7 -->
+
+        <section class="policy-card">
+
+            <h2>
+                7. Third-Party Services
+            </h2>
+
+            <p>
+                AfriStory may use third-party services to provide
+                functionality such as authentication, advertising,
+                analytics, notifications, content delivery, video
+                playback, hosting, or other platform features.
+            </p>
+
+            <p>
+                These third-party services may operate under their own
+                terms, policies, and privacy practices.
+            </p>
+
+            <p>
+                AfriStory is not responsible for the independent
+                practices, availability, policies, or content of
+                third-party services.
+            </p>
+
+        </section>
+
+
+        <!-- 8 -->
+
+        <section class="policy-card">
+
+            <h2>
+                8. External Links
+            </h2>
+
+            <p>
+                AfriStory may contain links to websites, services, or
+                resources operated by third parties.
+            </p>
+
+            <p>
+                These links are provided for convenience or additional
+                information. AfriStory does not control external
+                websites and does not guarantee their availability,
+                accuracy, security, or privacy practices.
+            </p>
+
+            <p>
+                Visiting an external website is done at the user's own
+                discretion.
+            </p>
+
+        </section>
+
+
+        <!-- 9 -->
+
+        <section class="policy-card">
+
+            <h2>
+                9. Availability of the Platform
+            </h2>
+
+            <p>
+                We work to keep AfriStory available and functional, but
+                we cannot guarantee uninterrupted access.
+            </p>
+
+            <p>
+                The platform may occasionally become unavailable because
+                of maintenance, updates, technical problems, network
+                interruptions, security measures, third-party service
+                interruptions, or circumstances outside our reasonable
+                control.
+            </p>
+
+        </section>
+
+
+        <!-- 10 -->
+
+        <section class="policy-card">
+
+            <h2>
+                10. No Professional Advice
+            </h2>
+
+            <p>
+                Information published through AfriStory should not be
+                interpreted as professional legal, medical, financial,
+                investment, educational, or other specialized advice
+                unless expressly identified as such and provided by a
+                suitably qualified professional.
+            </p>
+
+            <p>
+                Users should seek appropriate professional advice for
+                decisions that require specialized expertise.
+            </p>
+
+        </section>
+
+
+        <!-- 11 -->
+
+        <section class="policy-card">
+
+            <h2>
+                11. Limitation of Reliance
+            </h2>
+
+            <p>
+                Users should independently evaluate information and
+                content before relying on it.
+            </p>
+
+            <p>
+                To the extent permitted by applicable law, AfriStory
+                does not guarantee that content available through the
+                platform will be suitable for every user, purpose, or
+                circumstance.
+            </p>
+
+        </section>
+
+
+        <!-- 12 -->
+
+        <section class="policy-card">
+
+            <h2>
+                12. Changes to This Disclaimer
+            </h2>
+
+            <p>
+                AfriStory may update this Disclaimer from time to time
+                to reflect changes to the platform, our services,
+                applicable requirements, or our policies.
+            </p>
+
+            <p>
+                Any updated version will be published on this page.
+            </p>
+
+            <p>
+                <strong>
+                    Last updated:
+                </strong>
+
+                September 2026
+            </p>
+
+        </section>
+
+
+        <!-- 13 -->
+
+        <section class="policy-card">
+
+            <h2>
+                13. Contact Us
+            </h2>
+
+            <p>
+                If you have questions about this Disclaimer or the
+                operation of AfriStory, you can contact us using the
+                information below.
+            </p>
+
+            <div class="contact-box">
+
+                <p class="contact-title">
+                    AfriStory
+                </p>
+
+                <p>
+                    Email:
+                    <a
+                        class="email"
+                        href="mailto:nmbashau@gmail.com?subject=AfriStory%20Disclaimer%20Question"
+                    >
+                        nmbashau@gmail.com
+                    </a>
+                </p>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <a href="/">
+                    Home
+                </a>
+
+                <a href="/privacy-policy.html">
+                    Privacy Policy
+                </a>
+
+                <a href="/terms.html">
+                    Terms of Service
+                </a>
+
+                <a href="/cookie-policy.html">
+                    Cookie Policy
+                </a>
+
+                <a href="/DMCA.html">
+                    DMCA
+                </a>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- =========================
+         FOOTER
+    ========================= -->
+
+    <footer>
+
+        <p>
+            © 2026 AfriStory. All rights reserved.
+        </p>
+
+        <div>
+
+            <a href="/">
+                Home
+            </a>
+
+            <a href="/privacy-policy.html">
+                Privacy
+            </a>
+
+            <a href="/terms.html">
+                Terms
+            </a>
+
+            <a href="/cookie-policy.html">
+                Cookies
+            </a>
+
+            <a href="/DMCA.html">
+                DMCA
+            </a>
+
+            <a href="/disclaimer.html">
+                Disclaimer
+            </a>
+
+        </div>
+
+    </footer>
+
+</body>
+</html>
