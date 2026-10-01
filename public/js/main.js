@@ -15,11 +15,9 @@ const $$ = selector => [...document.querySelectorAll(selector)];
 function applyAdminVisibility() {
     let isAdmin = false;
     
-    // Check state first
     if (state.user && String(state.user.role).toUpperCase() === 'ADMIN') {
         isAdmin = true;
     } else {
-        // Fallback: Check token in localStorage
         try {
             const token = localStorage.getItem('token');
             if (token) {
@@ -775,32 +773,94 @@ async function loadFollowersList() {
 /* ============================================================================ */
 /* FIX: CREATOR APPROVAL FLOW */
 /* ============================================================================ */
+async function handleCreatorSubmit(event) {
+    event.preventDefault();                           
+    const form = event.target;                           
+    const brandName = form.brandName.value.trim();                           
+    const bio = form.bio.value.trim();                           
+    const terms = form.terms.checked;
+    const submitBtn = form.querySelector('button[type="submit"]');                                    
+    
+    if (!terms) return toast('You must agree to the Creator Guidelines', 'error');
+    if (!brandName) return toast('Creator Name is required', 'error');                                    
+    if (!bio) return toast('Content description is required', 'error');                                    
+    
+    if (submitBtn) {                                       
+        submitBtn.disabled = true;                                       
+        submitBtn.textContent = 'Submitting Application...';                           
+    }                                    
+    
+    try {                                       
+        await api('/creators/become-creator', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ brandName, bio }) 
+        });                                       
+        
+        toast('Application submitted for review!', 'success'); 
+        await loadCreator(); // Reload UI to show Pending state
+    } catch (error) { 
+        toast(error.message, 'error'); 
+    } finally { 
+        if (submitBtn) {
+            submitBtn.disabled = false; 
+            submitBtn.textContent = 'Submit Creator Application'; 
+        }
+    }
+}
+
 async function loadCreator() { 
     try { 
-        // Force the section containers to reset visibility
         const dashboard = $('#creator-dashboard');
         const onboarding = $('#creator-onboarding');
         const pending = $('#creator-pending');
         
-        // Ensure elements exist
         if (!dashboard || !onboarding || !pending) return;
 
         // Fetch the creator profile
         const creator = await api('/creators/me/profile'); 
         
-        // If the API returns successfully but they are NOT verified yet
-        if (creator && creator.isVerified === false) {
+        // 1. REJECTED STATE
+        if (creator && creator.applicationStatus === 'REJECTED') {
+            dashboard.classList.add('hidden');
+            pending.classList.add('hidden');
+            onboarding.classList.remove('hidden');
+            
+            injectCreatorForm(creator.brandName, creator.rejectionReason);
+            return;
+        }
+
+        // 2. PENDING STATE
+        if (creator && creator.applicationStatus === 'PENDING') {
             dashboard.classList.add('hidden');
             onboarding.classList.add('hidden');
             pending.classList.remove('hidden');
-            return; // Stop execution here. Do not load the series or show the dashboard.
+            return; 
         }
 
-        // If they ARE verified
-        if (creator && creator.isVerified === true) {
-            dashboard.classList.remove('hidden');
+        // 3. APPROVED STATE
+        if (creator && (creator.applicationStatus === 'APPROVED' || creator.isVerified === true)) {
             onboarding.classList.add('hidden');
             pending.classList.add('hidden');
+            dashboard.classList.remove('hidden');
+
+            // Beautiful Welcome Message Overlay
+            if (!sessionStorage.getItem('creatorWelcomeSeen')) {
+                let welcomeScreen = $('#creator-welcome-screen');
+                if (!welcomeScreen) {
+                    welcomeScreen = document.createElement('div');
+                    welcomeScreen.id = 'creator-welcome-screen';
+                    welcomeScreen.style.cssText = 'position:absolute; inset:0; background:#111; z-index:50; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; text-align:center; min-height: 60vh; border-radius: 12px; border: 1px solid #333;';
+                    welcomeScreen.innerHTML = `
+                        <div style="font-size:60px; margin-bottom:20px;">🎉</div>
+                        <h2 style="color:#d4a017; font-size:32px; font-weight:800; font-family:'Space Grotesk', sans-serif; margin-bottom:15px;">Congratulations!</h2>
+                        <p style="color:#ccc; font-size:16px; max-width:400px; line-height:1.6; margin-bottom:30px;">Your creator account has been successfully approved! You now have full access to upload your stories, connect with fans, and monetize your content on AfroStory.</p>
+                        <button class="button button-primary" style="padding:15px 30px; font-size:16px;" onclick="document.getElementById('creator-welcome-screen').remove(); sessionStorage.setItem('creatorWelcomeSeen', 'true');">Start Uploading Content</button>
+                    `;
+                    dashboard.style.position = 'relative';
+                    dashboard.appendChild(welcomeScreen);
+                }
+            }
 
             const series = await api(`/creators/${creator._id}/series?limit=100`) || {}; 
             const statsContainer = $('#creator-stats');
@@ -810,7 +870,7 @@ async function loadCreator() {
                     ['UNIQUE VIEWERS', creator.uniqueViewers || 0, ''],
                     ['RETURNING VIEWERS', creator.returningViewers || 0, ''],
                     ['TOTAL EARNINGS', creator.totalEarnings, ''], 
-                    ['FOLLOWERS (CLICK TO VIEW)', creator.totalFollowers, 'data-action="view-followers" style="cursor:pointer; text-decoration: underline; text-decoration-color: #d4a017;" title="Click to view and follow back"'], 
+                    ['FOLLOWERS', creator.totalFollowers, 'data-action="view-followers" style="cursor:pointer; text-decoration: underline; text-decoration-color: #d4a017;" title="Click to view and follow back"'], 
                     ['SERIES', series.series?.length || 0, '']
                 ].map(item => `<div class="stat-card" ${item[2] || ''}><span class="eyebrow">${item[0]}</span><strong>${Number(item[1] || 0).toLocaleString()}</strong></div>`).join(''); 
             }
@@ -826,16 +886,65 @@ async function loadCreator() {
             }
         }
     } catch (error) { 
-        // If the API throws a 404/Error (because the user has never applied)
+        // 4. NEW USER STATE (Throws 404 because no creator profile exists yet)
         const dashboard = $('#creator-dashboard');
         const onboarding = $('#creator-onboarding');
         const pending = $('#creator-pending');
 
         if (dashboard) dashboard.classList.add('hidden');
         if (pending) pending.classList.add('hidden');
-        if (onboarding) onboarding.classList.remove('hidden');
+        if (onboarding) {
+            onboarding.classList.remove('hidden');
+            injectCreatorForm();
+        }
     } 
-} 
+}
+
+function injectCreatorForm(existingBrandName = '', rejectionReason = '') {
+    const onboarding = $('#creator-onboarding');
+    if (!onboarding) return;
+
+    let alertHtml = '';
+    if (rejectionReason) {
+        alertHtml = `
+            <div style="background: rgba(231, 76, 60, 0.1); border: 1px solid #e74c3c; color: #e74c3c; padding: 15px; border-radius: 8px; margin-bottom: 24px; text-align: left;">
+                <strong style="display:block; margin-bottom:5px; font-size:15px;">Application Update Required</strong>
+                <span style="font-size:14px; line-height:1.4;">${esc(rejectionReason)}</span>
+            </div>
+        `;
+    }
+
+    const prefillName = existingBrandName || state.user?.profile?.displayName || state.user?.username || '';
+
+    onboarding.innerHTML = `
+        <p class="eyebrow">SHARE YOUR VOICE</p>
+        <h2 style="margin-bottom:10px;">Become a creator</h2>
+        <p style="color: #999; margin-bottom: 24px;">Join AfroStory to share your original African stories with the world.</p>
+        
+        ${alertHtml}
+
+        <form id="become-creator-form" class="stack-form" style="text-align: left;">
+            <div class="form-group" style="margin-bottom:16px;">
+                <label style="display:block; color:#ccc; margin-bottom:6px; font-size:13px; font-weight:600;">Creator Name</label>
+                <input name="brandName" required maxlength="100" placeholder="The name displayed on your stories..." value="${esc(prefillName)}" style="width:100%; padding:12px; background:#111; border:1px solid #444; color:#fff; border-radius:6px;">
+            </div>
+            
+            <div class="form-group" style="margin-bottom:20px;">
+                <label style="display:block; color:#ccc; margin-bottom:6px; font-size:13px; font-weight:600;">Brief Description of Your Content</label>
+                <textarea name="bio" required maxlength="500" rows="3" placeholder="e.g. I create short serialized Tiv stories based on village life, culture, and traditional experiences." style="width:100%; padding:12px; background:#111; border:1px solid #444; color:#fff; border-radius:6px; font-family:inherit;"></textarea>
+            </div>
+
+            <label style="display:flex; gap:12px; align-items:flex-start; cursor:pointer; margin-bottom:24px;">
+                <input type="checkbox" name="terms" required style="margin-top:4px; width:18px; height:18px; accent-color:#d4a017;">
+                <span style="color:#999; font-size:13px; line-height:1.5;">I agree to AfroStory's Creator Guidelines. I confirm that I will only upload original content or content I have the legal right to use.</span>
+            </label>
+
+            <button class="button button-primary" type="submit" style="width: 100%; padding:14px; font-size:15px;">Submit Creator Application</button>
+        </form>
+    `;
+
+    $('#become-creator-form').addEventListener('submit', handleCreatorSubmit);
+}
 
 async function uploadAsset(path, file) { 
     const isVideo = path.includes('video');
@@ -1698,51 +1807,6 @@ if (commentForm) {
                 submit.textContent = 'Post'; 
             }
         } 
-    });
-}
-
-const becomeCreatorForm = $('#become-creator-form');   
-if (becomeCreatorForm) {               
-    becomeCreatorForm.addEventListener('submit', async (event) => {                           
-        event.preventDefault();                           
-        const form = event.target;                           
-        const brandInput = form.querySelector('[name="brandName"]');                           
-        const bioInput = form.querySelector('[name="bio"]');                           
-        const brandName = brandInput ? brandInput.value.trim() : '';                           
-        const bio = bioInput ? bioInput.value.trim() : '';                           
-        const submitBtn = form.querySelector('button[type="submit"]');                                    
-        
-        if (!brandName) return toast('Brand name is required', 'error');                                    
-        
-        if (submitBtn) {                                       
-            submitBtn.disabled = true;                                       
-            submitBtn.textContent = 'Submitting Application...';                           
-        }                                    
-        
-        try {                                       
-            await api('/creators/become-creator', { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ brandName, bio }) 
-            });                                       
-            
-            const dashboard = $('#creator-dashboard');
-            const onboarding = $('#creator-onboarding');
-            const pending = $('#creator-pending');
-            
-            if (dashboard) dashboard.classList.add('hidden');
-            if (onboarding) onboarding.classList.add('hidden');
-            if (pending) pending.classList.remove('hidden');
-
-            toast('Application submitted for review!', 'success'); 
-        } catch (error) { 
-            toast(error.message, 'error'); 
-        } finally { 
-            if (submitBtn) {
-                submitBtn.disabled = false; 
-                submitBtn.textContent = 'Start creating'; 
-            }
-        }
     });
 }
 
