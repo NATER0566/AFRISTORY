@@ -7,7 +7,8 @@ export default async function uploadRoutes(fastify, opts) {
   // 1. MODERN FAST PATH: Generate signed credentials for direct client-side upload
   fastify.get('/sign', async (request, reply) => {
     try {
-      await verifyCreator(request, reply);
+      // FIX: Changed from verifyCreator to verifyAuth so Admins are not blocked
+      await verifyAuth(request, reply);
 
       if (!request.user) {
         return sendError(reply, 'Unauthorized', 401);
@@ -73,10 +74,11 @@ export default async function uploadRoutes(fastify, opts) {
     }
   });
 
-  // 3. SERVER FALLBACK: Upload video through server (Fixed with proper resource_type & HTTPS)
+  // 3. SERVER FALLBACK: Upload video through server 
   fastify.post('/video', async (request, reply) => {
     try {
-      await verifyCreator(request, reply);
+      // FIX: Changed from verifyCreator to verifyAuth so Admins are not blocked
+      await verifyAuth(request, reply);
 
       if (!request.user) {
         return sendError(reply, 'Unauthorized', 401);
@@ -101,7 +103,6 @@ export default async function uploadRoutes(fastify, opts) {
         data.file.pipe(uploadStream);
       });
 
-      // FIXED: Strictly specify resource_type: 'video' and secure: true
       const mediaUrl = result.secure_url || cloudinary.url(result.public_id, {
         resource_type: 'video',
         secure: true,
