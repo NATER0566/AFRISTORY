@@ -1,12 +1,12 @@
 import Creator from '../models/Creator.js';
 import User from '../models/User.js';
 import Series from '../models/Series.js';
-import Follow from '../models/Follow.js'; // NEW: Import dedicated follow model
-import UserFollow from '../models/UserFollow.js'; // NEW: Import normal user follow model
+import Follow from '../models/Follow.js';
+import UserFollow from '../models/UserFollow.js';
 import { verifyAuth, verifyCreator } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { paginate, formatDecimal } from '../utils/helpers.js';
-import { createNotification } from '../utils/notificationService.js'; // NEW: Added central service
+import { createNotification } from '../utils/notificationService.js';
 
 export default async function creatorRoutes(fastify, opts) {
   // Get creator profile
@@ -28,8 +28,8 @@ export default async function creatorRoutes(fastify, opts) {
       sendSuccess(reply, {
         ...creator.toObject(),
         totalViews: formatDecimal(creator.totalViews),
-        uniqueViewers: creator.uniqueViewers || 0, // NEW FEATURE: Pass analytics to frontend
-        returningViewers: creator.returningViewers || 0, // NEW FEATURE: Pass analytics to frontend
+        uniqueViewers: creator.uniqueViewers || 0,
+        returningViewers: creator.returningViewers || 0,
         totalEarnings: formatDecimal(creator.totalEarnings),
         totalSeries: seriesCount,
       });
@@ -39,7 +39,7 @@ export default async function creatorRoutes(fastify, opts) {
     }
   });
 
-  // Become a creator
+  // Become a creator (FIXED FOR RE-APPLYING)
   fastify.post('/become-creator', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
@@ -50,27 +50,41 @@ export default async function creatorRoutes(fastify, opts) {
 
       const { brandName, bio, socialLinks } = request.body || {};
 
-      const existingCreator = await Creator.findOne({ userId: request.user._id });
-      if (existingCreator) {
-        return sendError(reply, 'You are already a creator', 409);
-      }
-
-      // Fetch user to use their username as the default brand name
       const user = await User.findById(request.user._id);
-      
-      // If no brandName is provided, default to their username
       const finalBrandName = brandName || user.username || 'Creator';
 
-      const creator = new Creator({
-        userId: request.user._id,
-        brandName: finalBrandName,
-        bio: bio || '',
-        socialLinks: socialLinks || {},
-      });
+      let creator = await Creator.findOne({ userId: request.user._id });
 
-      await creator.save();
+      // If a creator profile already exists, check its status
+      if (creator) {
+        if (creator.applicationStatus === 'REJECTED') {
+          // If rejected, allow them to re-apply by updating the existing document
+          creator.brandName = finalBrandName;
+          creator.bio = bio || '';
+          if (socialLinks) creator.socialLinks = socialLinks;
+          creator.applicationStatus = 'PENDING'; // Put back in review queue
+          creator.rejectionReason = null; // Clear the old rejection reason
+          creator.isVerified = false;
+          await creator.save();
+        } else {
+          // If they are PENDING or APPROVED, block them from applying again
+          const statusMsg = creator.applicationStatus === 'PENDING' 
+            ? 'Your application is currently under review.' 
+            : 'You are already an approved creator.';
+          return sendError(reply, statusMsg, 409);
+        }
+      } else {
+        // If no profile exists at all, create a brand new one
+        creator = new Creator({
+          userId: request.user._id,
+          brandName: finalBrandName,
+          bio: bio || '',
+          socialLinks: socialLinks || {},
+        });
+        await creator.save();
+      }
 
-      // Update user role
+      // Ensure user role is updated to CREATOR (so they have access to the studio tab)
       user.role = 'CREATOR';
       await user.save();
 
@@ -90,10 +104,10 @@ export default async function creatorRoutes(fastify, opts) {
         });
       }
 
-      sendSuccess(reply, creator, 'Creator account created successfully', 201);
+      sendSuccess(reply, creator, 'Creator application submitted successfully', 201);
     } catch (error) {
       fastify.log.error(error);
-      sendError(reply, 'Failed to create creator account', 500, error.message);
+      sendError(reply, 'Failed to process creator application', 500, error.message);
     }
   });
 
@@ -207,8 +221,8 @@ export default async function creatorRoutes(fastify, opts) {
       sendSuccess(reply, {
         ...creator.toObject(),
         totalViews: formatDecimal(creator.totalViews),
-        uniqueViewers: creator.uniqueViewers || 0, // NEW FEATURE: Dashboard Support
-        returningViewers: creator.returningViewers || 0, // NEW FEATURE: Dashboard Support
+        uniqueViewers: creator.uniqueViewers || 0,
+        returningViewers: creator.returningViewers || 0,
         totalEarnings: formatDecimal(creator.totalEarnings),
       });
     } catch (error) {
@@ -217,7 +231,7 @@ export default async function creatorRoutes(fastify, opts) {
     }
   });
 
-  // NEW: Get paginated list of actual users following the logged-in creator (For Creator Studio)
+  // Get paginated list of actual users following the logged-in creator
   fastify.get('/me/followers', async (request, reply) => {
     try {
       await verifyCreator(request, reply);
@@ -241,12 +255,10 @@ export default async function creatorRoutes(fastify, opts) {
 
       const total = await Follow.countDocuments({ creatorId: creator._id });
 
-      // For each follower, check if the creator also follows them back (Mutual check)
       const followerDetails = await Promise.all(follows.map(async (f) => {
         const followerUser = f.followerId;
         if (!followerUser) return null;
 
-        // Find if this follower has a creator profile to check reverse follow
         const followerCreator = await Creator.findOne({ userId: followerUser._id });
         let isMutual = false;
         
@@ -254,23 +266,21 @@ export default async function creatorRoutes(fastify, opts) {
           const reverseCheck = await Follow.findOne({ followerId: creator.userId, creatorId: followerCreator._id });
           isMutual = !!reverseCheck;
         } else {
-          // Normal User Follow Check
           const reverseUserCheck = await UserFollow.findOne({ followerId: creator.userId, followingId: followerUser._id });
           isMutual = !!reverseUserCheck;
         }
 
         return {
-          // CRITICAL FIX: To allow "Follow Back", the target MUST be the follower's Creator ID, not the Follow Record ID.
           _id: followerCreator ? followerCreator._id : null,
-          followerId: followerUser._id, // Fallback strictly used if they aren't a creator
+          followerId: followerUser._id, 
           userId: followerUser._id,
           username: followerUser.username,
           displayName: followerUser.profile?.displayName || followerUser.username,
           profileImage: followerUser.profile?.avatarUrl || followerUser.profileImage || null,
           createdAt: f.createdAt,
           isMutual,
-          isFollowing: isMutual, // Frontend compatibility alias
-          isCreator: !!followerCreator // Target proper follow endpoint on frontend
+          isFollowing: isMutual, 
+          isCreator: !!followerCreator
         };
       }));
 
@@ -284,7 +294,7 @@ export default async function creatorRoutes(fastify, opts) {
     }
   });
 
-  // SECURE & ATOMIC FOLLOW ENDPOINT (Prevents self-follows, duplicate spam, and handles counts securely)
+  // SECURE & ATOMIC FOLLOW ENDPOINT
   fastify.post('/:creatorId/follow', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
@@ -300,12 +310,10 @@ export default async function creatorRoutes(fastify, opts) {
         return sendError(reply, 'Creator not found', 404);
       }
 
-      // 1. REJECT SELF-FOLLOWS AT APPLICATION LEVEL
       if (targetCreator.userId.toString() === request.user._id.toString()) {
         return sendError(reply, 'You cannot follow yourself', 400);
       }
 
-      // 2. ATOMIC UPSERT USING UNIQUE INDEX TO PREVENT DUPLICATE / SPAM WRITES
       const existingFollow = await Follow.findOne({
         followerId: request.user._id,
         creatorId: targetCreator._id
@@ -319,29 +327,25 @@ export default async function creatorRoutes(fastify, opts) {
         }, 'You already follow this creator');
       }
 
-      // Create new secure follow relation
       await Follow.create({
         followerId: request.user._id,
         creatorId: targetCreator._id
       });
 
-      // Increment count safely
       targetCreator.totalFollowers = (targetCreator.totalFollowers || 0) + 1;
       await targetCreator.save();
 
-      // Fetch the follower's profile picture to make the push notification beautiful
       const followerUser = await User.findById(request.user._id).select('profile profileImage');
       const followerAvatar = followerUser?.profile?.avatarUrl || followerUser?.profileImage || null;
 
-      // NEW: Trigger Central Notification asynchronously + BEAUTIFUL BRANDING
       createNotification({
         userId: targetCreator.userId,
         type: 'NEW_FOLLOWER',
         title: 'New Follower 🎉',
         message: `${request.user.username} is now following you!`,
         targetUrl: '#profile',
-        icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192', // ADDED GOLD BRANDING
-        image: followerAvatar, // ADDED: Shows the new follower's face in the pop-up!
+        icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192',
+        image: followerAvatar,
         dedupeKey: `follow_${request.user._id}_${targetCreator._id}`
       }).catch(err => fastify.log.error('Push error:', err));
 
@@ -351,7 +355,6 @@ export default async function creatorRoutes(fastify, opts) {
         isFollowing: true 
       }, 'Following creator');
     } catch (error) {
-      // Handle unique index race-condition safely if dual simultaneous requests hit
       if (error.code === 11000) {
         const creator = await Creator.findById(request.params.creatorId);
         return sendSuccess(reply, { 
@@ -365,7 +368,7 @@ export default async function creatorRoutes(fastify, opts) {
     }
   });
 
-  // UNFOLLOW ENDPOINT (Idempotent, decrements safely without negative counts)
+  // UNFOLLOW ENDPOINT
   fastify.delete('/:creatorId/follow', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
