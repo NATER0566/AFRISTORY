@@ -2,47 +2,10 @@ const API_BASE = '/api/admin';
 
 // SweetAlert Dark Theme Configuration
 const swalConfig = {
-    background: '#1a1a2e',
-    color: '#fff',
+    background: '#1b1b1b',
+    color: '#f5f5f5',
     confirmButtonColor: '#d4a017',
     cancelButtonColor: '#333'
-};
-
-// ============================================================================
-// BULLETPROOF AUTHENTICATION CHECK
-// ============================================================================
-window.onload = async () => {
-    let isAdmin = false;
-
-    try {
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-            const u = JSON.parse(userStr);
-            const role = u.role || (u.user && u.user.role);
-            if (role && String(role).toUpperCase() === 'ADMIN') isAdmin = true;
-        }
-    } catch (e) {}
-
-    if (!isAdmin) {
-        try {
-            const response = await fetch('/api/auth/me', { credentials: 'include' });
-            if (response.ok) {
-                const data = await response.json();
-                const user = data.data || data.user || data;
-                if (user && user.role && String(user.role).toUpperCase() === 'ADMIN') isAdmin = true;
-            }
-        } catch (error) {
-            console.error("Backend auth check failed:", error);
-        }
-    }
-
-    if (!isAdmin) {
-        window.location.replace('/');
-        return;
-    }
-
-    document.getElementById('page-loader').style.display = 'none';
-    loadDashboardStats();
 };
 
 // ============================================================================
@@ -95,7 +58,10 @@ async function uploadToCloudinary(file, type) {
     formData.append('folder', folder);
 
     const response = await fetch(url, { method: 'POST', body: formData });
-    if (!response.ok) throw new Error('Cloudinary direct upload failed');
+    if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error?.message || 'Cloudinary direct upload failed');
+    }
     
     const data = await response.json();
     return data.secure_url;
@@ -108,11 +74,14 @@ window.loadDashboardStats = async function() {
     const data = await adminApi('/dashboard/stats');
     if (!data) return; 
 
-    document.getElementById('stats-grid').innerHTML = `
+    const grid = document.getElementById('stats-grid');
+    if (!grid) return;
+
+    grid.innerHTML = `
         <div class="card"><h3>Total Users</h3><p>${(data.totalUsers || 0).toLocaleString()}</p></div>
         <div class="card"><h3>Verified Creators</h3><p>${(data.totalCreators || 0).toLocaleString()}</p></div>
         <div class="card"><h3>Total Episodes</h3><p>${(data.totalEpisodes || 0).toLocaleString()}</p></div>
-        <div class="card"><h3>Total Transaction Vol</h3><p>◈${(data.totalVolume || 0).toLocaleString()}</p></div>
+        <div class="card"><h3>Total Transaction Vol</h3><p>₦${(data.totalVolume || 0).toLocaleString()}</p></div>
         <div class="card" style="border-left: 4px solid #e74c3c;">
             <h3>Pending Reports</h3><p>${data.pendingReports || 0}</p>
         </div>
@@ -124,7 +93,8 @@ window.loadDashboardStats = async function() {
 
 window.loadUsers = async function() {
     const tbody = document.getElementById('users-tbody');
-    tbody.innerHTML = '<tr><td colspan="5">Loading users...</td></tr>';
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Loading users...</td></tr>';
     
     const data = await adminApi('/users?limit=50');
     if (!data || !data.users || !data.users.length) {
@@ -134,9 +104,9 @@ window.loadUsers = async function() {
 
     tbody.innerHTML = data.users.map(user => `
         <tr>
-            <td><strong>${user.username}</strong></td>
-            <td>${user.email}</td>
-            <td>${user.role}</td>
+            <td><strong>${user.username || 'Unknown'}</strong></td>
+            <td>${user.email || 'No email'}</td>
+            <td>${user.role || 'USER'}</td>
             <td><span class="badge badge-${user.isActive ? 'active' : 'suspended'}">${user.isActive ? 'Active' : 'Suspended'}</span></td>
             <td class="action-cell">
                 ${user.isActive 
@@ -166,7 +136,8 @@ window.toggleUserStatus = async function(userId, action) {
 // --- CREATOR APPROVAL SYSTEM ---
 window.loadCreators = async function() {
     const tbody = document.getElementById('creators-tbody');
-    tbody.innerHTML = '<tr><td colspan="5">Loading creators...</td></tr>';
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Loading creators...</td></tr>';
     
     const data = await adminApi('/creators?verified=false');
     if (!data || !data.creators || !data.creators.length) {
@@ -176,9 +147,9 @@ window.loadCreators = async function() {
 
     tbody.innerHTML = data.creators.map(c => `
         <tr>
-            <td>${c.userId?.username || 'N/A'}<br><small>${c.userId?.email || ''}</small></td>
+            <td>${c.userId?.username || 'N/A'}<br><small style="color:#aaa;">${c.userId?.email || ''}</small></td>
             <td><strong>${c.brandName || c.penName || 'N/A'}</strong></td>
-            <td style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.bio || 'No bio provided'}</td>
+            <td style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color:#aaa;">${c.bio || 'No bio provided'}</td>
             <td><span class="badge badge-pending">Pending Review</span></td>
             <td class="action-cell">
                 <button class="btn btn-success" onclick="verifyCreator('${c._id}')">Approve</button>
@@ -229,7 +200,9 @@ window.rejectCreator = async function(id) {
 // --- BANNERS & SLIDESHOW (IMAGE & VIDEO) ---
 window.loadSlides = async function() {
     const tbody = document.getElementById('image-slides-tbody');
-    tbody.innerHTML = '<tr><td colspan="5">Loading image slides...</td></tr>';
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Loading image slides...</td></tr>';
+    
     const data = await adminApi('/banners?type=IMAGE');
     if (!data || !data.length) {
         tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No active image slides.</td></tr>';
@@ -237,9 +210,9 @@ window.loadSlides = async function() {
     }
     tbody.innerHTML = data.map(slide => `
         <tr>
-            <td><img src="${slide.mediaUrl}" style="width: 80px; height: 45px; object-fit: cover; border-radius: 4px;"></td>
-            <td><strong>${slide.title}</strong><br><small>${slide.description}</small></td>
-            <td><a href="${slide.targetUrl}" target="_blank" style="color:#d4a017;">${slide.buttonText}</a></td>
+            <td><img src="${slide.mediaUrl}" style="width: 80px; height: 45px; object-fit: cover; border-radius: 4px; border: 1px solid #444;"></td>
+            <td><strong style="color:#fff;">${slide.title}</strong><br><small style="color:#aaa;">${slide.description || ''}</small></td>
+            <td><a href="${slide.targetUrl || '#'}" target="_blank" style="color:#d4a017; text-decoration:none;">${slide.buttonText || 'Link'}</a></td>
             <td><span class="badge badge-active">Live</span></td>
             <td><button class="btn btn-danger" onclick="deleteBanner('${slide._id}', 'image')">Delete</button></td>
         </tr>
@@ -248,7 +221,9 @@ window.loadSlides = async function() {
 
 window.loadVideoAnnouncements = async function() {
     const tbody = document.getElementById('video-slides-tbody');
-    tbody.innerHTML = '<tr><td colspan="5">Loading video announcements...</td></tr>';
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Loading video announcements...</td></tr>';
+    
     const data = await adminApi('/banners?type=VIDEO');
     if (!data || !data.length) {
         tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No active video announcements.</td></tr>';
@@ -256,9 +231,9 @@ window.loadVideoAnnouncements = async function() {
     }
     tbody.innerHTML = data.map(slide => `
         <tr>
-            <td><video src="${slide.mediaUrl}" style="width: 80px; height: 45px; object-fit: cover; border-radius: 4px;" muted></video></td>
-            <td><span class="badge badge-pending">${slide.badgeText}</span></td>
-            <td><strong>${slide.title}</strong><br><small>${slide.description}</small></td>
+            <td><video src="${slide.mediaUrl}" style="width: 80px; height: 45px; object-fit: cover; border-radius: 4px; border: 1px solid #444;" muted></video></td>
+            <td><span class="badge badge-pending">${slide.badgeText || 'UPDATE'}</span></td>
+            <td><strong style="color:#fff;">${slide.title}</strong><br><small style="color:#aaa;">${slide.description || ''}</small></td>
             <td><span class="badge badge-active">Live</span></td>
             <td><button class="btn btn-danger" onclick="deleteBanner('${slide._id}', 'video')">Delete</button></td>
         </tr>
@@ -266,8 +241,9 @@ window.loadVideoAnnouncements = async function() {
 };
 
 window.deleteBanner = async function(id, type) {
-    const { isConfirmed } = await Swal.fire({ title: 'Remove Banner?', text: "It will be removed from the homepage.", icon: 'warning', showCancelButton: true, confirmButtonText: 'Yes, Delete', ...swalConfig });
+    const { isConfirmed } = await Swal.fire({ title: 'Remove Banner?', text: "It will be permanently removed from the homepage.", icon: 'warning', showCancelButton: true, confirmButtonText: 'Yes, Delete', ...swalConfig });
     if (!isConfirmed) return;
+    
     const res = await adminApi(`/banners/${id}`, 'DELETE');
     if (res) {
         Swal.fire({ title: 'Deleted', text: 'Banner removed.', icon: 'success', ...swalConfig });
@@ -275,73 +251,12 @@ window.deleteBanner = async function(id, type) {
     }
 };
 
-// Handle Image Form Submission
-document.getElementById('slide-upload-form')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const form = e.target;
-    const btn = form.querySelector('button');
-    btn.disabled = true; btn.textContent = 'Uploading to Cloudinary...';
-
-    try {
-        const file = form.imageFile.files[0];
-        const mediaUrl = await uploadToCloudinary(file, 'image');
-
-        btn.textContent = 'Saving Banner...';
-        await adminApi('/banners', 'POST', {
-            title: form.title.value,
-            description: form.description.value,
-            buttonText: form.buttonText.value,
-            targetUrl: form.targetUrl.value,
-            mediaUrl: mediaUrl,
-            mediaType: 'IMAGE',
-            category: 'PROMO_IMAGE'
-        });
-
-        Swal.fire('Success', 'Image banner added to homepage', 'success');
-        form.reset();
-        loadSlides();
-    } catch (err) {
-        Swal.fire('Error', err.message, 'error');
-    } finally {
-        btn.disabled = false; btn.textContent = 'Upload Image Slide';
-    }
-});
-
-// Handle Video Form Submission
-document.getElementById('video-slide-form')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const form = e.target;
-    const btn = form.querySelector('button');
-    btn.disabled = true; btn.textContent = 'Uploading to Cloudinary...';
-
-    try {
-        const file = form.videoFile.files[0];
-        const mediaUrl = await uploadToCloudinary(file, 'video');
-
-        btn.textContent = 'Saving Announcement...';
-        await adminApi('/banners', 'POST', {
-            title: form.title.value,
-            description: form.description.value,
-            badgeText: form.badgeText.value,
-            mediaUrl: mediaUrl,
-            mediaType: 'VIDEO',
-            category: 'PROMO_VIDEO'
-        });
-
-        Swal.fire('Success', 'Video announcement added to homepage', 'success');
-        form.reset();
-        loadVideoAnnouncements();
-    } catch (err) {
-        Swal.fire('Error', err.message, 'error');
-    } finally {
-        btn.disabled = false; btn.textContent = 'Upload Video Announcement';
-    }
-});
-
-// --- MODERATION & PAYOUTS ---
+// --- MODERATION ---
 window.loadReports = async function() {
     const tbody = document.getElementById('reports-tbody');
-    tbody.innerHTML = '<tr><td colspan="5">Loading reports...</td></tr>';
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Loading reports...</td></tr>';
+    
     const data = await adminApi('/reports?status=PENDING');
     if (!data || !data.reports || !data.reports.length) {
         tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No pending reports.</td></tr>';
@@ -350,8 +265,8 @@ window.loadReports = async function() {
     tbody.innerHTML = data.reports.map(r => `
         <tr>
             <td>${r.reportedBy?.username || 'Unknown'}</td>
-            <td><strong>${r.targetType}</strong><br><small>ID: ${r.targetId}</small></td>
-            <td>${r.reason}<br><small>${r.description || ''}</small></td>
+            <td><strong style="color:#fff;">${r.targetType}</strong><br><small style="color:#aaa;">ID: ${r.targetId}</small></td>
+            <td>${r.reason}<br><small style="color:#aaa;">${r.description || ''}</small></td>
             <td><span class="badge badge-pending">Action Required</span></td>
             <td class="action-cell">
                 <button class="btn btn-danger" onclick="resolveReport('${r._id}', 'remove_content')">Takedown</button>
@@ -364,14 +279,22 @@ window.loadReports = async function() {
 window.resolveReport = async function(id, action) {
     const { isConfirmed } = await Swal.fire({ title: 'Confirm Action', text: `Apply action: ${action.replace('_', ' ')}?`, icon: 'warning', showCancelButton: true, confirmButtonText: 'Yes', ...swalConfig });
     if (!isConfirmed) return;
+    
     const status = action === 'dismiss' ? 'DISMISSED' : 'RESOLVED';
     const res = await adminApi(`/reports/${id}/resolve`, 'PUT', { status, actionTaken: action });
-    if (res) { Swal.fire('Resolved', 'Report processed successfully.', 'success'); loadReports(); loadDashboardStats(); }
+    if (res) { 
+        Swal.fire('Resolved', 'Report processed successfully.', 'success'); 
+        loadReports(); 
+        loadDashboardStats(); 
+    }
 };
 
+// --- PAYOUTS ---
 window.loadPayouts = async function() {
     const tbody = document.getElementById('payouts-tbody');
-    tbody.innerHTML = '<tr><td colspan="5">Loading withdrawal requests...</td></tr>';
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Loading withdrawal requests...</td></tr>';
+    
     const data = await adminApi('/payouts?status=PENDING');
     if (!data || !data.payouts || !data.payouts.length) {
         tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No pending payouts.</td></tr>';
@@ -380,8 +303,8 @@ window.loadPayouts = async function() {
     tbody.innerHTML = data.payouts.map(tx => `
         <tr>
             <td>${tx.userId?.email || 'N/A'}</td>
-            <td><strong>₦${tx.amount}</strong></td>
-            <td>${tx.metadata?.bankName || 'Wallet'}<br><small>${tx.metadata?.accountNumber || ''}</small></td>
+            <td><strong style="color:#2ecc71;">₦${tx.amount}</strong></td>
+            <td>${tx.metadata?.bankName || 'Wallet'}<br><small style="color:#aaa;">${tx.metadata?.accountNumber || ''}</small></td>
             <td><span class="badge badge-pending">Pending Transfer</span></td>
             <td class="action-cell">
                 <button class="btn btn-success" onclick="processPayout('${tx._id}', 'approve')">Mark Paid</button>
@@ -402,7 +325,106 @@ window.processPayout = async function(id, action) {
         ...swalConfig
     });
     if (!input) return;
+    
     const payload = isApprove ? { payoutReference: input } : { reason: input };
     const res = await adminApi(`/payouts/${id}/${action}`, 'PUT', payload);
-    if (res) { Swal.fire('Success', `Payout ${action}d successfully.`, 'success'); loadPayouts(); loadDashboardStats(); }
+    if (res) { 
+        Swal.fire('Success', `Payout ${action}d successfully.`, 'success'); 
+        loadPayouts(); 
+        loadDashboardStats(); 
+    }
 };
+
+// ============================================================================
+// INITIALIZATION & EVENT LISTENERS
+// ============================================================================
+document.addEventListener("DOMContentLoaded", async () => {
+    // 1. Auth Check First
+    try {
+        const response = await fetch('/api/auth/me', { credentials: 'include' });
+        if (!response.ok) throw new Error("Not logged in");
+        
+        const data = await response.json();
+        const user = data.data || data.user || data;
+        
+        if (!user || String(user.role).toUpperCase() !== 'ADMIN') {
+            throw new Error("Not an admin");
+        }
+    } catch (error) {
+        console.error("Auth failed:", error);
+        window.location.replace('/');
+        return;
+    }
+
+    // 2. Hide Loader and Start App
+    const loader = document.getElementById('page-loader');
+    if (loader) loader.style.display = 'none';
+    
+    loadDashboardStats();
+
+    // 3. Attach Form Listeners Safely
+    const imgForm = document.getElementById('slide-upload-form');
+    if (imgForm) {
+        imgForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = imgForm.querySelector('button');
+            btn.disabled = true; btn.textContent = 'Uploading Image...';
+
+            try {
+                const file = imgForm.imageFile.files[0];
+                const mediaUrl = await uploadToCloudinary(file, 'image');
+
+                btn.textContent = 'Saving...';
+                await adminApi('/banners', 'POST', {
+                    title: imgForm.title.value,
+                    description: imgForm.description.value,
+                    buttonText: imgForm.buttonText.value,
+                    targetUrl: imgForm.targetUrl.value,
+                    mediaUrl: mediaUrl,
+                    mediaType: 'IMAGE',
+                    category: 'PROMO_IMAGE'
+                });
+
+                Swal.fire('Success', 'Image banner added to homepage', 'success');
+                imgForm.reset();
+                loadSlides();
+            } catch (err) {
+                Swal.fire('Error', err.message, 'error');
+            } finally {
+                btn.disabled = false; btn.textContent = 'Upload Image Slide';
+            }
+        });
+    }
+
+    const vidForm = document.getElementById('video-slide-form');
+    if (vidForm) {
+        vidForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = vidForm.querySelector('button');
+            btn.disabled = true; btn.textContent = 'Uploading Video...';
+
+            try {
+                const file = vidForm.videoFile.files[0];
+                const mediaUrl = await uploadToCloudinary(file, 'video');
+
+                btn.textContent = 'Saving...';
+                await adminApi('/banners', 'POST', {
+                    title: vidForm.title.value,
+                    description: vidForm.description.value,
+                    badgeText: vidForm.badgeText.value,
+                    mediaUrl: mediaUrl,
+                    mediaType: 'VIDEO',
+                    category: 'PROMO_VIDEO'
+                });
+
+                Swal.fire('Success', 'Video announcement added', 'success');
+                vidForm.reset();
+                loadVideoAnnouncements();
+            } catch (err) {
+                Swal.fire('Error', err.message, 'error');
+            } finally {
+                btn.disabled = false; btn.textContent = 'Upload Video Announcement';
+            }
+        });
+    }
+});
