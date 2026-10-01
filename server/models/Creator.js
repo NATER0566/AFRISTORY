@@ -38,12 +38,10 @@ const creatorSchema = new mongoose.Schema(
       type: mongoose.Decimal128,
       default: 0,
     },
-    // NEW FEATURE: Creator-level unique viewer count
     uniqueViewers: {
       type: Number,
       default: 0,
     },
-    // NEW FEATURE: Creator-level returning viewer count
     returningViewers: {
       type: Number,
       default: 0,
@@ -67,6 +65,17 @@ const creatorSchema = new mongoose.Schema(
     isVerified: {
       type: Boolean,
       default: false,
+    },
+    // NEW FEATURE: Track exact application status
+    applicationStatus: {
+      type: String,
+      enum: ['PENDING', 'APPROVED', 'REJECTED'],
+      default: 'PENDING',
+    },
+    // NEW FEATURE: Save the reason for rejection to show the user
+    rejectionReason: {
+      type: String,
+      default: null,
     },
     bankAccount: {
       accountNumber: { type: String, default: null },
