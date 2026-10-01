@@ -11,7 +11,7 @@ const swalConfig = {
 const $ = selector => document.querySelector(selector); const $$ = selector => [...document.querySelectorAll(selector)];
 
 // ============================================================================
-// CORE API WRAPPER (FIXED FOR FASTIFY EMPTY BODY ERROR)
+// CORE API WRAPPER (FIXED SILENT NULL RETURNS)
 // ============================================================================
 async function adminApi(endpoint, method = 'GET', body = null) {
     const options = {
@@ -20,7 +20,7 @@ async function adminApi(endpoint, method = 'GET', body = null) {
         headers: { 'Content-Type': 'application/json' }
     };
     
-    // FIX: Fastify throws "Body cannot be empty" if Content-Type is JSON but no body exists.
+    // Prevents Fastify "Body cannot be empty" errors on PUT/POST requests
     if (body) {
         options.body = JSON.stringify(body);
     } else if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
@@ -35,12 +35,29 @@ async function adminApi(endpoint, method = 'GET', body = null) {
             return null;
         }
         
-        const result = await response.json();
-        if (!result.success) throw new Error(result.message || 'API Error');
-        return result.data !== undefined ? result.data : result;
+        const contentType = response.headers.get('content-type') || '';
+        let result;
+
+        if (contentType.includes('application/json')) {
+            result = await response.json();
+        } else {
+            const text = await response.text();
+            throw new Error(`Server returned ${response.status}: ${text || 'Empty response'}`);
+        }
+
+        if (!response.ok || result.success === false) {
+            throw new Error(result.message || result.error || `Request failed with HTTP ${response.status}`);
+        }
+        
+        // FIX: If backend successfully completes but sends no data (like Reject/Delete), 
+        // return an object so the frontend `if (res)` check doesn't fail silently.
+        return (result.data !== undefined && result.data !== null) ? result.data : { success: true };
+
     } catch (error) {
-        console.error("Admin API Error:", error);
-        if (window.Swal) Swal.fire({ title: 'Error', text: error.message, icon: 'error', ...swalConfig });
+        console.error(`Admin API Error [${method} ${endpoint}]:`, error);
+        if (window.Swal) {
+            Swal.fire({ title: 'Error', text: error.message, icon: 'error', ...swalConfig });
+        }
         return null;
     }
 }
@@ -75,7 +92,7 @@ async function uploadToCloudinary(file, type) {
 // ============================================================================
 // DATA LOADERS
 // ============================================================================
-async function loadDashboardStats() {
+window.loadDashboardStats = async function() {
     const data = await adminApi('/dashboard/stats');
     if (!data) return; 
 
@@ -94,7 +111,7 @@ async function loadDashboardStats() {
             <h3>Pending Payouts</h3><p>${data.pendingPayouts || 0}</p>
         </div>
     `;
-}
+};
 
 window.loadUsers = async function() {
     const tbody = $('#users-tbody');
@@ -254,75 +271,78 @@ document.addEventListener('click', async event => {
             if (res) loadUsers();
         }
 
-        // Approve Creator
-        const approveCreatorBtn = event.target.closest('[data-action="approve-creator"]');
-        if (approveCreatorBtn) {
-            const id = approveCreatorBtn.dataset.id;
-            const { isConfirmed } = await Swal.fire({ title: 'Approve Creator?', text: 'This grants them full publishing rights on AfroStory.', icon: 'question', showCancelButton: true, confirmButtonText: 'Yes, Approve', ...swalConfig });
-            if (!isConfirmed) return;
-            const res = await adminApi(`/creators/${id}/verify`, 'PUT');
+        // Approve Creator 
+        const approveCreatorBtn = event.target.closest('[data-action="approve-creator"]'); 
+        if (approveCreatorBtn) { 
+            const id = approveCreatorBtn.dataset.id; 
+            const { isConfirmed } = await Swal.fire({ title: 'Approve Creator?', text: 'This grants them full publishing rights on AfroStory.', icon: 'question', showCancelButton: true, confirmButtonText: 'Yes, Approve', ...swalConfig }); 
+            if (!isConfirmed) return; 
+            const res = await adminApi(`/creators/${id}/verify`, 'PUT'); 
             if (res) { 
-                Swal.fire({ title: 'Approved!', text: 'Creator can now upload content.', icon: 'success', ...swalConfig });
-                loadCreators(); loadDashboardStats(); 
-            }
-        }
-
-        // Reject Creator
-        const rejectCreatorBtn = event.target.closest('[data-action="reject-creator"]');
-        if (rejectCreatorBtn) {
-            const id = rejectCreatorBtn.dataset.id;
-            const result = await Swal.fire({ title: 'Reject Creator', input: 'text', inputLabel: 'Reason for rejection (this will be sent to the user):', inputPlaceholder: 'e.g. Incomplete profile details', showCancelButton: true, inputValidator: (value) => { if (!value) return 'You need to write a reason!'; }, ...swalConfig });
-            if (!result.isConfirmed || !result.value) return;
-            const res = await adminApi(`/creators/${id}/reject`, 'PUT', { reason: result.value });
-            if (res) { 
-                Swal.fire({ title: 'Rejected', text: 'Creator has been removed from the queue.', icon: 'success', ...swalConfig });
+                Swal.fire({ title: 'Approved!', text: 'Creator can now upload content.', icon: 'success', ...swalConfig }); 
                 loadCreators(); 
-            }
-        }
-
-        // Delete Banner
-        const deleteBannerBtn = event.target.closest('[data-action="delete-banner"]');
-        if (deleteBannerBtn) {
-            const id = deleteBannerBtn.dataset.id;
-            const type = deleteBannerBtn.dataset.type;
-            const { isConfirmed } = await Swal.fire({ title: 'Remove Banner?', text: "It will be permanently removed from the homepage.", icon: 'warning', showCancelButton: true, confirmButtonText: 'Yes, Delete', ...swalConfig });
-            if (!isConfirmed) return;
-            const res = await adminApi(`/banners/${id}`, 'DELETE');
-            if (res) {
-                Swal.fire({ title: 'Deleted', text: 'Banner removed.', icon: 'success', ...swalConfig });
-                type === 'image' ? loadSlides() : loadVideoAnnouncements();
-            }
-        }
-
-        // Resolve Report
-        const resolveReportBtn = event.target.closest('[data-action="resolve-report"]');
-        if (resolveReportBtn) {
-            const id = resolveReportBtn.dataset.id;
-            const action = resolveReportBtn.dataset.resolve;
-            const { isConfirmed } = await Swal.fire({ title: 'Confirm Action', text: `Apply action: ${action.replace('_', ' ')}?`, icon: 'warning', showCancelButton: true, confirmButtonText: 'Yes', ...swalConfig });
-            if (!isConfirmed) return;
-            const status = action === 'dismiss' ? 'DISMISSED' : 'RESOLVED';
-            const res = await adminApi(`/reports/${id}/resolve`, 'PUT', { status, actionTaken: action });
+                loadDashboardStats(); 
+            } 
+        } 
+        
+        // Reject Creator 
+        const rejectCreatorBtn = event.target.closest('[data-action="reject-creator"]'); 
+        if (rejectCreatorBtn) { 
+            const id = rejectCreatorBtn.dataset.id; 
+            const result = await Swal.fire({ title: 'Reject Creator', input: 'text', inputLabel: 'Reason for rejection (this will be sent to the user):', inputPlaceholder: 'e.g. Incomplete profile details', showCancelButton: true, inputValidator: (value) => { if (!value) return 'You need to write a reason!'; }, ...swalConfig }); 
+            if (!result.isConfirmed || !result.value) return; 
+            const res = await adminApi(`/creators/${id}/reject`, 'PUT', { reason: result.value }); 
+            if (res) { 
+                Swal.fire({ title: 'Rejected', text: 'Creator has been removed from the queue.', icon: 'success', ...swalConfig }); 
+                loadCreators(); 
+            } 
+        } 
+        
+        // Delete Banner 
+        const deleteBannerBtn = event.target.closest('[data-action="delete-banner"]'); 
+        if (deleteBannerBtn) { 
+            const id = deleteBannerBtn.dataset.id; 
+            const type = deleteBannerBtn.dataset.type; 
+            const { isConfirmed } = await Swal.fire({ title: 'Remove Banner?', text: "It will be permanently removed from the homepage.", icon: 'warning', showCancelButton: true, confirmButtonText: 'Yes, Delete', ...swalConfig }); 
+            if (!isConfirmed) return; 
+            const res = await adminApi(`/banners/${id}`, 'DELETE'); 
+            if (res) { 
+                Swal.fire({ title: 'Deleted', text: 'Banner removed.', icon: 'success', ...swalConfig }); 
+                type === 'image' ? loadSlides() : loadVideoAnnouncements(); 
+            } 
+        } 
+        
+        // Resolve Report 
+        const resolveReportBtn = event.target.closest('[data-action="resolve-report"]'); 
+        if (resolveReportBtn) { 
+            const id = resolveReportBtn.dataset.id; 
+            const action = resolveReportBtn.dataset.resolve; 
+            const { isConfirmed } = await Swal.fire({ title: 'Confirm Action', text: `Apply action: ${action.replace('_', ' ')}?`, icon: 'warning', showCancelButton: true, confirmButtonText: 'Yes', ...swalConfig }); 
+            if (!isConfirmed) return; 
+            const status = action === 'dismiss' ? 'DISMISSED' : 'RESOLVED'; 
+            const res = await adminApi(`/reports/${id}/resolve`, 'PUT', { status, actionTaken: action }); 
             if (res) { 
                 Swal.fire({title: 'Resolved', text: 'Report processed successfully.', icon: 'success', ...swalConfig}); 
-                loadReports(); loadDashboardStats(); 
-            }
-        }
-
-        // Process Payout
-        const processPayoutBtn = event.target.closest('[data-action="process-payout"]');
-        if (processPayoutBtn) {
-            const id = processPayoutBtn.dataset.id;
-            const action = processPayoutBtn.dataset.process;
-            const isApprove = action === 'approve';
-            const result = await Swal.fire({ title: isApprove ? 'Mark as Paid' : 'Decline Payout', input: 'text', inputLabel: isApprove ? 'Enter bank transaction reference:' : 'Enter reason for rejection:', showCancelButton: true, inputValidator: (value) => { if (!value) return 'This field is required!'; }, ...swalConfig });
-            if (!result.isConfirmed || !result.value) return;
-            const payload = isApprove ? { payoutReference: result.value } : { reason: result.value };
-            const res = await adminApi(`/payouts/${id}/${action}`, 'PUT', payload);
+                loadReports(); 
+                loadDashboardStats(); 
+            } 
+        } 
+        
+        // Process Payout 
+        const processPayoutBtn = event.target.closest('[data-action="process-payout"]'); 
+        if (processPayoutBtn) { 
+            const id = processPayoutBtn.dataset.id; 
+            const action = processPayoutBtn.dataset.process; 
+            const isApprove = action === 'approve'; 
+            const result = await Swal.fire({ title: isApprove ? 'Mark as Paid' : 'Decline Payout', input: 'text', inputLabel: isApprove ? 'Enter bank transaction reference:' : 'Enter reason for rejection:', showCancelButton: true, inputValidator: (value) => { if (!value) return 'This field is required!'; }, ...swalConfig }); 
+            if (!result.isConfirmed || !result.value) return; 
+            const payload = isApprove ? { payoutReference: result.value } : { reason: result.value }; 
+            const res = await adminApi(`/payouts/${id}/${action}`, 'PUT', payload); 
             if (res) { 
                 Swal.fire({title: 'Success', text: `Payout ${action}d successfully.`, icon: 'success', ...swalConfig}); 
-                loadPayouts(); loadDashboardStats(); 
-            }
+                loadPayouts(); 
+                loadDashboardStats(); 
+            } 
         }
     } catch (e) {
         console.error('Click Handler Error:', e);
@@ -330,8 +350,8 @@ document.addEventListener('click', async event => {
 });
 
 document.addEventListener('submit', async event => {
-    // Handle Image Banner Upload
-    if (event.target.id === 'slide-upload-form') {
+    // Handle Image Banner Upload - FIX: Matched form ID to HTML
+    if (event.target.id === 'image-slide-form') {
         event.preventDefault(); // INSTANTLY PREVENT PAGE REFRESH
         const form = event.target;
         const btn = form.querySelector('button');
@@ -339,13 +359,13 @@ document.addEventListener('submit', async event => {
         btn.disabled = true; btn.textContent = 'Uploading Image...';
 
         try {
-            const fileInput = form.imageFile;
+            const fileInput = form.querySelector('[name="imageFile"]');
             if (!fileInput || !fileInput.files[0]) throw new Error("Please select an image file.");
             
             const mediaUrl = await uploadToCloudinary(fileInput.files[0], 'image');
-
+            
             btn.textContent = 'Saving...';
-            await adminApi('/banners', 'POST', {
+            const res = await adminApi('/banners', 'POST', {
                 title: form.title.value,
                 description: form.description.value,
                 buttonText: form.buttonText.value,
@@ -355,15 +375,17 @@ document.addEventListener('submit', async event => {
                 category: 'PROMO_IMAGE'
             });
 
-            Swal.fire('Success', 'Image banner added to homepage', 'success', swalConfig);
-            form.reset();
-            loadSlides();
+            if (res) {
+                Swal.fire('Success', 'Image banner added to homepage', 'success', swalConfig);
+                form.reset();
+                loadSlides();
+            }
         } catch (err) {
             Swal.fire('Error', err.message, 'error', swalConfig);
         } finally {
             btn.disabled = false; btn.textContent = originalText;
         }
-    }
+    } 
 
     // Handle Video Announcement Upload
     if (event.target.id === 'video-slide-form') {
@@ -374,13 +396,13 @@ document.addEventListener('submit', async event => {
         btn.disabled = true; btn.textContent = 'Uploading Video...';
 
         try {
-            const fileInput = form.videoFile;
+            const fileInput = form.querySelector('[name="videoFile"]');
             if (!fileInput || !fileInput.files[0]) throw new Error("Please select a video file.");
             
             const mediaUrl = await uploadToCloudinary(fileInput.files[0], 'video');
-
+            
             btn.textContent = 'Saving...';
-            await adminApi('/banners', 'POST', {
+            const res = await adminApi('/banners', 'POST', {
                 title: form.title.value,
                 description: form.description.value,
                 badgeText: form.badgeText.value,
@@ -389,15 +411,17 @@ document.addEventListener('submit', async event => {
                 category: 'PROMO_VIDEO'
             });
 
-            Swal.fire('Success', 'Video announcement added', 'success', swalConfig);
-            form.reset();
-            loadVideoAnnouncements();
+            if (res) {
+                Swal.fire('Success', 'Video announcement added', 'success', swalConfig);
+                form.reset();
+                loadVideoAnnouncements();
+            }
         } catch (err) {
             Swal.fire('Error', err.message, 'error', swalConfig);
         } finally {
             btn.disabled = false; btn.textContent = originalText;
         }
-    }
+    } 
 });
 
 // ============================================================================
@@ -415,8 +439,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    const loader = $('#page-loader');
-    if (loader) loader.style.display = 'none';
-    
-    loadDashboardStats();
+    const loader = $('#page-loader'); 
+    if (loader) loader.style.display = 'none'; 
+    loadDashboardStats(); 
 });
