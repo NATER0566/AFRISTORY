@@ -9,7 +9,7 @@ const swalConfig = {
 };
 
 // ============================================================================
-// CORE API WRAPPER
+// CORE API WRAPPER (FIXED FOR FASTIFY EMPTY BODY ERROR)
 // ============================================================================
 async function adminApi(endpoint, method = 'GET', body = null) {
     const options = {
@@ -18,7 +18,13 @@ async function adminApi(endpoint, method = 'GET', body = null) {
         headers: { 'Content-Type': 'application/json' }
     };
     
-    if (body) options.body = JSON.stringify(body);
+    // FIX: Fastify throws "Body cannot be empty" if Content-Type is JSON but no body exists.
+    // If there is no body on a POST/PUT request, we send an empty JSON object.
+    if (body) {
+        options.body = JSON.stringify(body);
+    } else if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
+        options.body = '{}'; 
+    }
 
     try {
         const response = await fetch(`${API_BASE}${endpoint}`, options);
@@ -42,14 +48,12 @@ async function adminApi(endpoint, method = 'GET', body = null) {
 // DIRECT CLOUDINARY UPLOAD
 // ============================================================================
 async function uploadToCloudinary(file, type) {
-    // 1. Get secure signature from server
     const signRes = await fetch(`/api/upload/sign?type=${type}`, { credentials: 'include' }).then(r => r.json());
     if (!signRes || !signRes.data || !signRes.data.signature) throw new Error('Failed to secure upload connection');
     
     const { signature, timestamp, apiKey, cloudName, folder } = signRes.data;
     const url = `https://api.cloudinary.com/v1_1/${cloudName}/${type}/upload`;
 
-    // 2. Upload directly to Cloudinary
     const formData = new FormData();
     formData.append('file', file);
     formData.append('api_key', apiKey);
@@ -336,10 +340,77 @@ window.processPayout = async function(id, action) {
 };
 
 // ============================================================================
-// INITIALIZATION & EVENT LISTENERS
+// FIX: GLOBAL EVENT LISTENER TO PREVENT PAGE RELOADS
+// ============================================================================
+document.addEventListener('submit', async (e) => {
+    // Handle Image Banner Upload
+    if (e.target.id === 'slide-upload-form') {
+        e.preventDefault();
+        const form = e.target;
+        const btn = form.querySelector('button');
+        btn.disabled = true; btn.textContent = 'Uploading Image...';
+
+        try {
+            const file = form.imageFile.files[0];
+            const mediaUrl = await uploadToCloudinary(file, 'image');
+
+            btn.textContent = 'Saving...';
+            await adminApi('/banners', 'POST', {
+                title: form.title.value,
+                description: form.description.value,
+                buttonText: form.buttonText.value,
+                targetUrl: form.targetUrl.value,
+                mediaUrl: mediaUrl,
+                mediaType: 'IMAGE',
+                category: 'PROMO_IMAGE'
+            });
+
+            Swal.fire('Success', 'Image banner added to homepage', 'success');
+            form.reset();
+            loadSlides();
+        } catch (err) {
+            Swal.fire('Error', err.message, 'error');
+        } finally {
+            btn.disabled = false; btn.textContent = 'Upload Image Slide';
+        }
+    }
+
+    // Handle Video Announcement Upload
+    if (e.target.id === 'video-slide-form') {
+        e.preventDefault();
+        const form = e.target;
+        const btn = form.querySelector('button');
+        btn.disabled = true; btn.textContent = 'Uploading Video...';
+
+        try {
+            const file = form.videoFile.files[0];
+            const mediaUrl = await uploadToCloudinary(file, 'video');
+
+            btn.textContent = 'Saving...';
+            await adminApi('/banners', 'POST', {
+                title: form.title.value,
+                description: form.description.value,
+                badgeText: form.badgeText.value,
+                mediaUrl: mediaUrl,
+                mediaType: 'VIDEO',
+                category: 'PROMO_VIDEO'
+            });
+
+            Swal.fire('Success', 'Video announcement added', 'success');
+            form.reset();
+            loadVideoAnnouncements();
+        } catch (err) {
+            Swal.fire('Error', err.message, 'error');
+        } finally {
+            btn.disabled = false; btn.textContent = 'Upload Video Announcement';
+        }
+    }
+});
+
+// ============================================================================
+// INITIALIZATION
 // ============================================================================
 document.addEventListener("DOMContentLoaded", async () => {
-    // 1. Auth Check First
     try {
         const response = await fetch('/api/auth/me', { credentials: 'include' });
         if (!response.ok) throw new Error("Not logged in");
@@ -356,75 +427,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    // 2. Hide Loader and Start App
     const loader = document.getElementById('page-loader');
     if (loader) loader.style.display = 'none';
     
     loadDashboardStats();
-
-    // 3. Attach Form Listeners Safely
-    const imgForm = document.getElementById('slide-upload-form');
-    if (imgForm) {
-        imgForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = imgForm.querySelector('button');
-            btn.disabled = true; btn.textContent = 'Uploading Image...';
-
-            try {
-                const file = imgForm.imageFile.files[0];
-                const mediaUrl = await uploadToCloudinary(file, 'image');
-
-                btn.textContent = 'Saving...';
-                await adminApi('/banners', 'POST', {
-                    title: imgForm.title.value,
-                    description: imgForm.description.value,
-                    buttonText: imgForm.buttonText.value,
-                    targetUrl: imgForm.targetUrl.value,
-                    mediaUrl: mediaUrl,
-                    mediaType: 'IMAGE',
-                    category: 'PROMO_IMAGE'
-                });
-
-                Swal.fire('Success', 'Image banner added to homepage', 'success');
-                imgForm.reset();
-                loadSlides();
-            } catch (err) {
-                Swal.fire('Error', err.message, 'error');
-            } finally {
-                btn.disabled = false; btn.textContent = 'Upload Image Slide';
-            }
-        });
-    }
-
-    const vidForm = document.getElementById('video-slide-form');
-    if (vidForm) {
-        vidForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = vidForm.querySelector('button');
-            btn.disabled = true; btn.textContent = 'Uploading Video...';
-
-            try {
-                const file = vidForm.videoFile.files[0];
-                const mediaUrl = await uploadToCloudinary(file, 'video');
-
-                btn.textContent = 'Saving...';
-                await adminApi('/banners', 'POST', {
-                    title: vidForm.title.value,
-                    description: vidForm.description.value,
-                    badgeText: vidForm.badgeText.value,
-                    mediaUrl: mediaUrl,
-                    mediaType: 'VIDEO',
-                    category: 'PROMO_VIDEO'
-                });
-
-                Swal.fire('Success', 'Video announcement added', 'success');
-                vidForm.reset();
-                loadVideoAnnouncements();
-            } catch (err) {
-                Swal.fire('Error', err.message, 'error');
-            } finally {
-                btn.disabled = false; btn.textContent = 'Upload Video Announcement';
-            }
-        });
-    }
 });
