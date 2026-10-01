@@ -149,7 +149,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const email = $('login-email').value.trim().toLowerCase();
         const password = $('login-password').value;
         
-        // FIX 6: Explicitly guard the front-end before locking the button so errors aren't silently swallowed.
         if (!emailOk(email)) {
             alertMessage('error', 'Please enter a valid email address.');
             return;
@@ -449,7 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // 2. ADMIN IMAGE SLIDESHOW
+    // 2. ADMIN IMAGE SLIDESHOW (FIXED API CALL)
     class ImageCarousel {
         constructor() {
             this.slides = [];
@@ -465,7 +464,8 @@ document.addEventListener('DOMContentLoaded', () => {
         async init() {
             if(!this.track) return;
             try {
-                const res = await fetch('/api/admin/slides?type=image');
+                // Fetch using correct endpoint and query format
+                const res = await fetch('/api/admin/banners?type=IMAGE');
                 if (!res.ok) return;
                 const data = await res.json();
                 const payload = data.data || data;
@@ -484,13 +484,14 @@ document.addEventListener('DOMContentLoaded', () => {
             this.slides.forEach((slide, idx) => {
                 const slideEl = document.createElement('div');
                 slideEl.className = `carousel-slide ${idx === 0 ? 'active' : ''}`;
-                slideEl.style.backgroundImage = `url('${safeImage(slide.imageUrl)}')`;
+                // Fixed mediaUrl mapping
+                slideEl.style.backgroundImage = `url('${safeImage(slide.mediaUrl)}')`;
                 slideEl.innerHTML = `
                     <div class="carousel-overlay"></div>
                     <div class="carousel-content text-left">
                         <h2 class="text-3xl md:text-4xl font-bold font-display mb-3 text-white">${slide.title || ''}</h2>
                         <p class="text-gray-300 mb-6 text-lg max-w-md">${slide.description || ''}</p>
-                        ${slide.buttonLink ? `<a href="${slide.buttonLink}" class="btn-solid inline-block self-start" ${slide.buttonLink.startsWith('/') ? 'data-open-auth="login"' : ''}>${slide.buttonText || 'Learn More'}</a>` : ''}
+                        ${slide.targetUrl ? `<a href="${slide.targetUrl}" class="btn-solid inline-block self-start" ${slide.targetUrl.startsWith('/') ? 'data-open-auth="login"' : ''}>${slide.buttonText || 'Learn More'}</a>` : ''}
                     </div>
                 `;
                 this.track.appendChild(slideEl);
@@ -524,7 +525,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 3. ADMIN VIDEO SHOWCASE
+    // 3. ADMIN VIDEO SHOWCASE (FIXED API CALL)
     class AdminVideoCarousel {
         constructor() {
             this.slides = [];
@@ -539,7 +540,8 @@ document.addEventListener('DOMContentLoaded', () => {
         async init() {
             if(!this.track) return;
             try {
-                const res = await fetch('/api/admin/slides?type=video');
+                // Fetch using correct endpoint and query format
+                const res = await fetch('/api/admin/banners?type=VIDEO');
                 if (!res.ok) return;
                 const data = await res.json();
                 const payload = data.data || data;
@@ -558,16 +560,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 const slideEl = document.createElement('div');
                 slideEl.className = `carousel-slide ${idx === 0 ? 'active' : ''}`;
                 
-                const mediaUrl = slide.videoUrl || '';
+                // Fixed mediaUrl mapping
+                const mediaUrl = slide.mediaUrl || '';
                 
                 slideEl.innerHTML = `
                     <video src="${mediaUrl}" poster="${safeImage(slide.thumbnailUrl)}" playsinline loop></video>
                     <div class="video-carousel-overlay"></div>
                     <button class="play-pause-btn" aria-label="Play video"><i data-lucide="play" fill="currentColor"></i></button>
                     <div class="video-carousel-content">
-                        <span class="badge">${slide.category || 'FEATURED'}</span>
+                        <span class="badge" style="display: inline-block; margin-bottom: 12px; padding: 6px 12px; border-radius: 5px; background: rgba(212,160,23,0.2); color: #D4A017; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;">${slide.badgeText || 'FEATURED'}</span>
                         <h3 class="text-white font-display text-2xl font-bold">${slide.title || 'Promotional Video'}</h3>
-                        <p class="text-gray-300 text-sm mt-1 max-w-lg">${slide.caption || ''}</p>
+                        <p class="text-gray-300 text-sm mt-1 max-w-lg">${slide.description || ''}</p>
                     </div>
                 `;
                 this.track.appendChild(slideEl);
