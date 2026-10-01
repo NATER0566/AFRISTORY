@@ -9,7 +9,7 @@ const swalConfig = {
 };
 
 // ============================================================================
-// CORE API WRAPPER (FIXED FOR FASTIFY EMPTY BODY ERROR)
+// CORE API WRAPPER
 // ============================================================================
 async function adminApi(endpoint, method = 'GET', body = null) {
     const options = {
@@ -18,8 +18,7 @@ async function adminApi(endpoint, method = 'GET', body = null) {
         headers: { 'Content-Type': 'application/json' }
     };
     
-    // FIX: Fastify throws "Body cannot be empty" if Content-Type is JSON but no body exists.
-    // If there is no body on a POST/PUT request, we send an empty JSON object.
+    // Prevents Fastify "Body cannot be empty" errors on PUT/POST requests
     if (body) {
         options.body = JSON.stringify(body);
     } else if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
@@ -72,7 +71,89 @@ async function uploadToCloudinary(file, type) {
 }
 
 // ============================================================================
-// DATA LOADERS
+// IRONCLAD FORM UPLOAD HANDLERS (PREVENTS PAGE REFRESH)
+// ============================================================================
+window.handleImageUpload = async function(e) {
+    e.preventDefault(); // Stop page refresh instantly
+    const form = e.target;
+    const btn = form.querySelector('button');
+    const originalText = btn.textContent;
+    
+    btn.disabled = true; 
+    btn.textContent = 'Uploading Image...';
+
+    try {
+        const fileInput = form.imageFile;
+        if (!fileInput || !fileInput.files[0]) {
+            throw new Error("Please select an image file first.");
+        }
+        
+        const mediaUrl = await uploadToCloudinary(fileInput.files[0], 'image');
+
+        btn.textContent = 'Saving...';
+        await adminApi('/banners', 'POST', {
+            title: form.title.value,
+            description: form.description.value,
+            buttonText: form.buttonText.value,
+            targetUrl: form.targetUrl.value,
+            mediaUrl: mediaUrl,
+            mediaType: 'IMAGE',
+            category: 'PROMO_IMAGE'
+        });
+
+        Swal.fire('Success', 'Image banner added successfully', 'success', swalConfig);
+        form.reset();
+        loadSlides();
+    } catch (err) {
+        Swal.fire('Error', err.message, 'error', swalConfig);
+    } finally {
+        btn.disabled = false; 
+        btn.textContent = originalText;
+    }
+    return false;
+};
+
+window.handleVideoUpload = async function(e) {
+    e.preventDefault(); // Stop page refresh instantly
+    const form = e.target;
+    const btn = form.querySelector('button');
+    const originalText = btn.textContent;
+    
+    btn.disabled = true; 
+    btn.textContent = 'Uploading Video...';
+
+    try {
+        const fileInput = form.videoFile;
+        if (!fileInput || !fileInput.files[0]) {
+            throw new Error("Please select a video file first.");
+        }
+        
+        const mediaUrl = await uploadToCloudinary(fileInput.files[0], 'video');
+
+        btn.textContent = 'Saving...';
+        await adminApi('/banners', 'POST', {
+            title: form.title.value,
+            description: form.description.value,
+            badgeText: form.badgeText.value,
+            mediaUrl: mediaUrl,
+            mediaType: 'VIDEO',
+            category: 'PROMO_VIDEO'
+        });
+
+        Swal.fire('Success', 'Video announcement added successfully', 'success', swalConfig);
+        form.reset();
+        loadVideoAnnouncements();
+    } catch (err) {
+        Swal.fire('Error', err.message, 'error', swalConfig);
+    } finally {
+        btn.disabled = false; 
+        btn.textContent = originalText;
+    }
+    return false;
+};
+
+// ============================================================================
+// DATA LOADERS & ACTIONS
 // ============================================================================
 window.loadDashboardStats = async function() {
     const data = await adminApi('/dashboard/stats');
@@ -123,7 +204,7 @@ window.loadUsers = async function() {
 };
 
 window.toggleUserStatus = async function(userId, action) {
-    const { isConfirmed } = await Swal.fire({
+    const result = await Swal.fire({
         title: 'Are you sure?',
         text: `Do you want to ${action} this user?`,
         icon: 'warning',
@@ -132,7 +213,7 @@ window.toggleUserStatus = async function(userId, action) {
         ...swalConfig
     });
     
-    if (!isConfirmed) return;
+    if (!result.isConfirmed) return;
     const res = await adminApi(`/users/${userId}/${action}`, 'PUT');
     if (res) loadUsers();
 };
@@ -164,7 +245,7 @@ window.loadCreators = async function() {
 };
 
 window.verifyCreator = async function(id) {
-    const { isConfirmed } = await Swal.fire({
+    const result = await Swal.fire({
         title: 'Approve Creator?',
         text: 'This grants them full publishing rights on AfroStory.',
         icon: 'question',
@@ -173,7 +254,7 @@ window.verifyCreator = async function(id) {
         ...swalConfig
     });
     
-    if (!isConfirmed) return;
+    if (!result.isConfirmed) return;
     const res = await adminApi(`/creators/${id}/verify`, 'PUT');
     if (res) { 
         Swal.fire({ title: 'Approved!', text: 'Creator can now upload content.', icon: 'success', ...swalConfig });
@@ -183,7 +264,7 @@ window.verifyCreator = async function(id) {
 };
 
 window.rejectCreator = async function(id) {
-    const { value: reason } = await Swal.fire({
+    const result = await Swal.fire({
         title: 'Reject Creator',
         input: 'text',
         inputLabel: 'Reason for rejection (this will be sent to the user):',
@@ -193,8 +274,10 @@ window.rejectCreator = async function(id) {
         ...swalConfig
     });
 
-    if (!reason) return;
-    const res = await adminApi(`/creators/${id}/reject`, 'PUT', { reason });
+    // Safely check if user confirmed and provided a reason
+    if (!result.isConfirmed || !result.value) return;
+
+    const res = await adminApi(`/creators/${id}/reject`, 'PUT', { reason: result.value });
     if (res) { 
         Swal.fire({ title: 'Rejected', text: 'Creator has been removed from the queue.', icon: 'success', ...swalConfig });
         loadCreators(); 
@@ -245,8 +328,16 @@ window.loadVideoAnnouncements = async function() {
 };
 
 window.deleteBanner = async function(id, type) {
-    const { isConfirmed } = await Swal.fire({ title: 'Remove Banner?', text: "It will be permanently removed from the homepage.", icon: 'warning', showCancelButton: true, confirmButtonText: 'Yes, Delete', ...swalConfig });
-    if (!isConfirmed) return;
+    const result = await Swal.fire({ 
+        title: 'Remove Banner?', 
+        text: "It will be permanently removed from the homepage.", 
+        icon: 'warning', 
+        showCancelButton: true, 
+        confirmButtonText: 'Yes, Delete', 
+        ...swalConfig 
+    });
+    
+    if (!result.isConfirmed) return;
     
     const res = await adminApi(`/banners/${id}`, 'DELETE');
     if (res) {
@@ -281,13 +372,20 @@ window.loadReports = async function() {
 };
 
 window.resolveReport = async function(id, action) {
-    const { isConfirmed } = await Swal.fire({ title: 'Confirm Action', text: `Apply action: ${action.replace('_', ' ')}?`, icon: 'warning', showCancelButton: true, confirmButtonText: 'Yes', ...swalConfig });
-    if (!isConfirmed) return;
+    const result = await Swal.fire({ 
+        title: 'Confirm Action', 
+        text: `Apply action: ${action.replace('_', ' ')}?`, 
+        icon: 'warning', 
+        showCancelButton: true, 
+        confirmButtonText: 'Yes', 
+        ...swalConfig 
+    });
+    if (!result.isConfirmed) return;
     
     const status = action === 'dismiss' ? 'DISMISSED' : 'RESOLVED';
     const res = await adminApi(`/reports/${id}/resolve`, 'PUT', { status, actionTaken: action });
     if (res) { 
-        Swal.fire('Resolved', 'Report processed successfully.', 'success'); 
+        Swal.fire({title: 'Resolved', text: 'Report processed successfully.', icon: 'success', ...swalConfig}); 
         loadReports(); 
         loadDashboardStats(); 
     }
@@ -320,7 +418,7 @@ window.loadPayouts = async function() {
 
 window.processPayout = async function(id, action) {
     const isApprove = action === 'approve';
-    const { value: input } = await Swal.fire({
+    const result = await Swal.fire({
         title: isApprove ? 'Mark as Paid' : 'Decline Payout',
         input: 'text',
         inputLabel: isApprove ? 'Enter bank transaction reference:' : 'Enter reason for rejection:',
@@ -328,89 +426,30 @@ window.processPayout = async function(id, action) {
         inputValidator: (value) => { if (!value) return 'This field is required!'; },
         ...swalConfig
     });
-    if (!input) return;
+
+    if (!result.isConfirmed || !result.value) return;
     
-    const payload = isApprove ? { payoutReference: input } : { reason: input };
+    const payload = isApprove ? { payoutReference: result.value } : { reason: result.value };
     const res = await adminApi(`/payouts/${id}/${action}`, 'PUT', payload);
     if (res) { 
-        Swal.fire('Success', `Payout ${action}d successfully.`, 'success'); 
+        Swal.fire({title: 'Success', text: `Payout ${action}d successfully.`, icon: 'success', ...swalConfig}); 
         loadPayouts(); 
         loadDashboardStats(); 
     }
 };
 
 // ============================================================================
-// FIX: GLOBAL EVENT LISTENER TO PREVENT PAGE RELOADS
-// ============================================================================
-document.addEventListener('submit', async (e) => {
-    // Handle Image Banner Upload
-    if (e.target.id === 'slide-upload-form') {
-        e.preventDefault();
-        const form = e.target;
-        const btn = form.querySelector('button');
-        btn.disabled = true; btn.textContent = 'Uploading Image...';
-
-        try {
-            const file = form.imageFile.files[0];
-            const mediaUrl = await uploadToCloudinary(file, 'image');
-
-            btn.textContent = 'Saving...';
-            await adminApi('/banners', 'POST', {
-                title: form.title.value,
-                description: form.description.value,
-                buttonText: form.buttonText.value,
-                targetUrl: form.targetUrl.value,
-                mediaUrl: mediaUrl,
-                mediaType: 'IMAGE',
-                category: 'PROMO_IMAGE'
-            });
-
-            Swal.fire('Success', 'Image banner added to homepage', 'success');
-            form.reset();
-            loadSlides();
-        } catch (err) {
-            Swal.fire('Error', err.message, 'error');
-        } finally {
-            btn.disabled = false; btn.textContent = 'Upload Image Slide';
-        }
-    }
-
-    // Handle Video Announcement Upload
-    if (e.target.id === 'video-slide-form') {
-        e.preventDefault();
-        const form = e.target;
-        const btn = form.querySelector('button');
-        btn.disabled = true; btn.textContent = 'Uploading Video...';
-
-        try {
-            const file = form.videoFile.files[0];
-            const mediaUrl = await uploadToCloudinary(file, 'video');
-
-            btn.textContent = 'Saving...';
-            await adminApi('/banners', 'POST', {
-                title: form.title.value,
-                description: form.description.value,
-                badgeText: form.badgeText.value,
-                mediaUrl: mediaUrl,
-                mediaType: 'VIDEO',
-                category: 'PROMO_VIDEO'
-            });
-
-            Swal.fire('Success', 'Video announcement added', 'success');
-            form.reset();
-            loadVideoAnnouncements();
-        } catch (err) {
-            Swal.fire('Error', err.message, 'error');
-        } finally {
-            btn.disabled = false; btn.textContent = 'Upload Video Announcement';
-        }
-    }
-});
-
-// ============================================================================
 // INITIALIZATION
 // ============================================================================
 document.addEventListener("DOMContentLoaded", async () => {
+    // 1. Instantly attach form listeners to prevent page reload
+    const imgForm = document.getElementById('slide-upload-form');
+    if (imgForm) imgForm.addEventListener('submit', window.handleImageUpload);
+
+    const vidForm = document.getElementById('video-slide-form');
+    if (vidForm) vidForm.addEventListener('submit', window.handleVideoUpload);
+
+    // 2. Perform Auth Check safely
     try {
         const response = await fetch('/api/auth/me', { credentials: 'include' });
         if (!response.ok) throw new Error("Not logged in");
