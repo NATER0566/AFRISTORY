@@ -364,7 +364,7 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
-  // Revoke or Reject creator status
+  // FIX: Properly reject by deleting the application from the database
   fastify.put('/creators/:creatorId/reject', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -375,9 +375,7 @@ export default async function adminRoutes(fastify, opts) {
       const creator = await Creator.findById(creatorId);
       if (!creator) return sendError(reply, 'Creator not found', 404);
 
-      creator.isVerified = false;
-      await creator.save();
-
+      // 1. Notify the user BEFORE deleting so we still have their userId
       createNotification({
         userId: creator.userId,
         type: 'CREATOR_REJECTED',
@@ -387,7 +385,10 @@ export default async function adminRoutes(fastify, opts) {
         dedupeKey: `creator_reject_${creator._id}_${Date.now()}`
       }).catch(err => fastify.log.error('Notification error:', err));
 
-      sendSuccess(reply, null, 'Creator verification rejected/revoked');
+      // 2. Delete the application completely so it leaves the pending queue
+      await Creator.findByIdAndDelete(creatorId);
+
+      sendSuccess(reply, null, 'Creator verification rejected and removed from queue');
     } catch (error) {
       fastify.log.error(error);
       sendError(reply, 'Failed to reject creator', 500, error.message);
