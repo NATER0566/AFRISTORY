@@ -12,7 +12,7 @@ import { paginate, formatDecimal } from '../utils/helpers.js';
 import { createNotification } from '../utils/notificationService.js';
 
 // =========================================================================
-// DYNAMIC BANNER SCHEMA
+// DYNAMIC BANNER SCHEMA (For the new index.html Image/Video Slideshow)
 // =========================================================================
 const bannerSchema = new mongoose.Schema({
   title: { type: String, required: true },
@@ -34,6 +34,7 @@ export default async function adminRoutes(fastify, opts) {
   // 1. DASHBOARD ANALYTICS & STATS
   // =========================================================================
 
+  // Comprehensive aggregate stats for the admin overview
   fastify.get('/dashboard/stats', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -49,7 +50,7 @@ export default async function adminRoutes(fastify, opts) {
       ] = await Promise.all([
         User.countDocuments(),
         Creator.countDocuments({ isVerified: true }),
-        Creator.countDocuments({ applicationStatus: 'PENDING' }), // Updated to check status
+        Creator.countDocuments({ isVerified: false }),
         Series.countDocuments(),
         Episode.countDocuments(),
         Report.countDocuments({ status: 'PENDING' }),
@@ -79,6 +80,7 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
+  // Time-series growth metrics (defaults to 30 days)
   fastify.get('/analytics', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -116,12 +118,14 @@ export default async function adminRoutes(fastify, opts) {
   });
 
   // =========================================================================
-  // HOMEPAGE BANNERS & SLIDESHOWS
+  // NEW: HOMEPAGE BANNERS & SLIDESHOWS
   // =========================================================================
 
+  // Get active banners based on type (IMAGE or VIDEO)
+  // FIX: This route is now PUBLIC so index.html can fetch the banners without throwing a 401 Unauthorized Error
   fastify.get('/banners', async (request, reply) => {
     try {
-      if (!(await verifyAdmin(request, reply))) return;
+      // Removed verifyAdmin lock here!
       
       const { type } = request.query; 
       let query = { isActive: true };
@@ -135,6 +139,7 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
+  // Create a new banner/slideshow item
   fastify.post('/banners', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -149,6 +154,7 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
+  // Delete a banner
   fastify.delete('/banners/:id', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -167,6 +173,7 @@ export default async function adminRoutes(fastify, opts) {
   // 2. USER MANAGEMENT
   // =========================================================================
 
+  // Get paginated users with filtering & search
   fastify.get('/users', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -210,6 +217,7 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
+  // Get detailed profile of a single user (including creator info and wallet)
   fastify.get('/users/:userId', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -234,6 +242,7 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
+  // Suspend user
   fastify.put('/users/:userId/suspend', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -247,6 +256,7 @@ export default async function adminRoutes(fastify, opts) {
       user.isActive = false;
       await user.save();
 
+      // Notify the user of account suspension
       createNotification({
         userId: user._id,
         type: 'ACCOUNT_SUSPENDED',
@@ -263,6 +273,7 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
+  // Unsuspend user
   fastify.put('/users/:userId/unsuspend', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -285,6 +296,7 @@ export default async function adminRoutes(fastify, opts) {
   // 3. CREATOR ONBOARDING & VERIFICATION
   // =========================================================================
 
+  // List creator applications with filter for verification status
   fastify.get('/creators', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -294,12 +306,7 @@ export default async function adminRoutes(fastify, opts) {
 
       let query = {};
       if (verified !== undefined) {
-        // Check for PENDING status so rejected ones don't show up in the admin list
-        if (verified === 'false') {
-          query.applicationStatus = 'PENDING';
-        } else {
-          query.isVerified = true;
-        }
+        query.isVerified = verified === 'true';
       }
 
       const [creators, total] = await Promise.all([
@@ -326,7 +333,7 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
-  // APPROVE CREATOR
+  // Verify creator profile
   fastify.put('/creators/:creatorId/verify', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -335,12 +342,10 @@ export default async function adminRoutes(fastify, opts) {
       const creator = await Creator.findById(creatorId);
       if (!creator) return sendError(reply, 'Creator not found', 404);
 
-      // Set to approved
       creator.isVerified = true;
-      creator.applicationStatus = 'APPROVED';
-      creator.rejectionReason = null;
       await creator.save();
 
+      // Ensure base user has CREATOR role access
       await User.findByIdAndUpdate(creator.userId, { role: 'CREATOR' });
 
       createNotification({
@@ -359,7 +364,7 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
-  // REJECT CREATOR (Keeps the record, sets status to REJECTED)
+  // Revoke or Reject creator status
   fastify.put('/creators/:creatorId/reject', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -370,22 +375,22 @@ export default async function adminRoutes(fastify, opts) {
       const creator = await Creator.findById(creatorId);
       if (!creator) return sendError(reply, 'Creator not found', 404);
 
-      // Update to rejected
       creator.isVerified = false;
-      creator.applicationStatus = 'REJECTED';
-      creator.rejectionReason = reason || 'Your creator application requires changes or has been declined.';
       await creator.save();
 
       createNotification({
         userId: creator.userId,
         type: 'CREATOR_REJECTED',
         title: 'Creator Application Update',
-        message: creator.rejectionReason,
+        message: reason || 'Your creator application requires changes or has been declined.',
         targetUrl: '#creator-setup',
         dedupeKey: `creator_reject_${creator._id}_${Date.now()}`
       }).catch(err => fastify.log.error('Notification error:', err));
 
-      sendSuccess(reply, creator, 'Creator verification rejected');
+      // Actually delete the creator from the database entirely so they can re-apply cleanly
+      await Creator.findByIdAndDelete(creatorId);
+
+      sendSuccess(reply, null, 'Creator verification rejected/revoked');
     } catch (error) {
       fastify.log.error(error);
       sendError(reply, 'Failed to reject creator', 500, error.message);
@@ -396,6 +401,7 @@ export default async function adminRoutes(fastify, opts) {
   // 4. CONTENT MODERATION (SERIES & EPISODES)
   // =========================================================================
 
+  // Browse all series across the platform
   fastify.get('/series', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -431,6 +437,7 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
+  // Takedown or Restore a Series
   fastify.put('/series/:seriesId/status', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -452,6 +459,7 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
+  // Delete a specific episode for severe policy violations
   fastify.delete('/episodes/:episodeId', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -460,6 +468,7 @@ export default async function adminRoutes(fastify, opts) {
       const episode = await Episode.findById(episodeId);
       if (!episode) return sendError(reply, 'Episode not found', 404);
 
+      // Decrement episode count on parent series
       await Series.findByIdAndUpdate(episode.seriesId, {
         $inc: { totalEpisodes: -1 }
       });
@@ -477,6 +486,7 @@ export default async function adminRoutes(fastify, opts) {
   // 5. REPORT & DISPUTE RESOLUTION (WITH AUTOMATIC ENFORCEMENT)
   // =========================================================================
 
+  // Get moderation reports
   fastify.get('/reports', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -509,6 +519,7 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
+  // Resolve moderation report and execute enforcement actions
   fastify.put('/reports/:reportId/resolve', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -552,6 +563,7 @@ export default async function adminRoutes(fastify, opts) {
   // 6. FINANCIALS & CREATOR PAYOUT APPROVALS
   // =========================================================================
 
+  // Get pending creator withdrawal requests
   fastify.get('/payouts', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -585,6 +597,7 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
+  // Approve creator withdrawal
   fastify.put('/payouts/:transactionId/approve', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -607,6 +620,7 @@ export default async function adminRoutes(fastify, opts) {
       tx.processedAt = new Date();
       await tx.save();
 
+      // Notify creator that funds have been disbursed
       createNotification({
         userId: tx.userId,
         type: 'PAYOUT_COMPLETED',
@@ -623,6 +637,7 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
+  // Reject creator withdrawal and return balance to wallet
   fastify.put('/payouts/:transactionId/reject', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -639,11 +654,13 @@ export default async function adminRoutes(fastify, opts) {
         return sendError(reply, `Transaction is already ${tx.status}`, 400);
       }
 
+      // Mark transaction rejected
       tx.status = 'REJECTED';
       tx.adminNotes = reason || 'Declined by administration';
       tx.processedAt = new Date();
       await tx.save();
 
+      // Refund the reserved balance back to the creator's wallet
       await Wallet.findOneAndUpdate(
         { userId: tx.userId },
         { $inc: { balance: tx.amount } }
@@ -669,6 +686,7 @@ export default async function adminRoutes(fastify, opts) {
   // 7. SYSTEM MONITORING & CLIENT ERROR LOGS
   // =========================================================================
 
+  // Lightweight performance and client-side error receiver
   fastify.post('/log-client-error', async (request, reply) => {
     try {
       const { type, message, stack, url, time, userId } = request.body || {};
