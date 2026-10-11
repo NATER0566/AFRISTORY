@@ -435,14 +435,22 @@ async function openEpisode(id) {
                     
                     <div style="display:flex; flex-direction:column; gap:12px; width: 85%; max-width: 300px;">
                         
-                        <!-- ROCKET SLOTH REWARDED BUTTON -->
-                        <button type="button" id="waterfall-ad-btn-${episode._id}" data-action="waterfall-ad-unlock" data-episode-id="${episode._id}" class="button button-accent" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:bold; font-size:15px; padding:12px; border-radius:8px;">
-                            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> 
+                        <!-- ROCKET SLOTH BUTTON (Default) -->
+                        <button type="button" 
+                                id="waterfall-ad-btn-${episode._id}" 
+                                data-action="waterfall-ad-unlock" 
+                                data-episode-id="${episode._id}" 
+                                class="button button-accent" 
+                                style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:bold; font-size:15px; padding:12px; border-radius:8px;">
+                            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg> 
                             Watch Ad to Unlock
                         </button>
 
-                        <!-- ADBNK FALLBACK CONTAINER -->
+                        <!-- ADBNK BUTTON CONTAINER (Hidden until fallback triggers) -->
                         <div id="adbnk-slot-${episode._id}" style="display:none; width:100%;">
+                            <!-- ADBNK SDK will automatically convert this ins tag into its own button -->
                             <ins class="adsbyadbnk"
                                  data-zone-id="zone_f3fcad23db83"
                                  data-reward-user-id="${state.user?._id || ''}"
@@ -569,6 +577,14 @@ async function openEpisode(id) {
             feedContainer.appendChild(card); 
             feedObserver.observe(card); 
         }); 
+        
+        // Let ADBNK process dynamically added ad tags
+        setTimeout(() => {
+            if (window.adbnk && typeof window.adbnk.push === 'function') {
+                window.adbnk.push({});
+            }
+        }, 800);
+        
     } catch (error) {
         logFrontendError('open_episode_failed', error.message, error.stack);
         toast('Failed to load feed', 'error');
@@ -1439,40 +1455,21 @@ document.addEventListener('click', async event => {
         if (waterfallBtn && !waterfallBtn.disabled) {
             event.preventDefault();
             const epId = waterfallBtn.dataset.episodeId;
-            const originalText = waterfallBtn.innerHTML;
 
-            waterfallBtn.disabled = true;
-            waterfallBtn.innerHTML = 'Loading ad...';
-
-            let rsStarted = false;
-
-            const switchAdbnk = () => {
-                const adbnkContainer = document.getElementById(`adbnk-slot-${epId}`);
-                if (adbnkContainer) {
-                    waterfallBtn.style.display = 'none'; // Hide primary button
-                    adbnkContainer.style.display = 'block'; // Show ADBNK fallback
-
-                    if (window.adbnk && typeof window.adbnk.refresh === 'function') {
-                        window.adbnk.refresh('zone_f3fcad23db83');
-                    }
-                } else {
-                    toast('Ad unavailable right now. Try refreshing.', 'error');
-                    waterfallBtn.disabled = false;
-                    waterfallBtn.innerHTML = originalText;
-                }
-            };
-
-            // Attempt Rocket Sloth
-            waterfallBtn.setAttribute('data-rs-rewarded', '');
+            // Notify user and switch buttons
+            toast('Primary ad network unavailable. Please use the alternative button.', 'info');
             
-            // If Rocket Sloth has an explicit API we can try to intercept its launch,
-            // otherwise rely on the DOM change and a fallback timeout:
-            setTimeout(() => {
-                if (!rsStarted) {
-                    switchAdbnk();
-                }
-            }, 3500); // 3.5 seconds before falling back
+            waterfallBtn.style.display = 'none'; // Hide RS button
             
+            const adbnkContainer = document.getElementById(`adbnk-slot-${epId}`);
+            if (adbnkContainer) {
+                adbnkContainer.style.display = 'block'; // Show ADBNK wrapper
+                
+                // Force ADBNK to re-parse the tags in case they were added dynamically
+                if (window.adbnk && typeof window.adbnk.push === 'function') {
+                    window.adbnk.push({});
+                }
+            }
             return;
         }
         /* -------------------------------------- */
@@ -1794,45 +1791,57 @@ document.addEventListener('rs:rewarded', async (event) => {
 /* ============================================================================ */
 /* ADBNK REWARD COMPLETION LISTENER */
 /* ============================================================================ */
-document.addEventListener('adbnk:reward', async (event) => {
-    const reward = event.detail || {};
-    const episodeId = reward.customData;
-    
+async function handleAdbnkUnlock(rewardData) {
+    const episodeId = rewardData.customData || rewardData.custom_data || state.currentEpisode?._id;
+    const txId = rewardData.transactionId || rewardData.transaction_id;
+
     if (!episodeId) return;
 
-    toast('Ad completed! Syncing unlock status...', 'info');
+    toast('Ad verified! Unlocking story...', 'success');
 
-    // ADBNK's server pings the backend directly. 
-    // We give the backend 2.5 seconds to write the record, then verify it.
-    setTimeout(async () => {
-        try {
-            const res = await api(`/ads/check-unlock/${episodeId}?userId=${state.user?._id || ''}`);
-            if (res && res.unlocked) {
-                toast('Episode unlocked securely!', 'success');
-                
-                // Remove lock screen
-                const epData = state.feedEpisodes.find(e => e._id === episodeId);
-                if (epData) epData.hasAccess = true;
-                if (state.currentEpisode && state.currentEpisode._id === episodeId) {
-                    state.currentEpisode.hasAccess = true;
-                }
+    try {
+        await api('/wallet/unlock-episode', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                episodeId: episodeId, 
+                method: 'AD', 
+                provider: 'ADBNK', 
+                transactionId: txId 
+            })
+        });
 
-                const lockUI = document.getElementById(`lock-${episodeId}`);
-                if (lockUI) {
-                    lockUI.classList.add('hidden');
-                    const videoEl = lockUI.parentElement?.querySelector('video');
-                    if (videoEl) {
-                        videoEl.setAttribute('controls', 'true');
-                        videoEl.play().catch(e => console.log('Autoplay blocked:', err));
-                    }
-                }
-            } else {
-                toast('Ad processing delayed. Please refresh or try again.', 'error');
-            }
-        } catch (error) {
-            toast('Failed to verify unlock status.', 'error');
+        // 1. Update state
+        const epData = state.feedEpisodes.find(e => e._id === episodeId);
+        if (epData) epData.hasAccess = true;
+        if (state.currentEpisode && state.currentEpisode._id === episodeId) {
+            state.currentEpisode.hasAccess = true;
         }
-    }, 2500);
+
+        // 2. Hide lock overlay and resume playback
+        const lockUI = document.getElementById(`lock-${episodeId}`);
+        if (lockUI) {
+            lockUI.classList.add('hidden');
+            const card = lockUI.closest('.feed-video-card');
+            const videoEl = card ? card.querySelector('video') : null;
+            if (videoEl) {
+                videoEl.setAttribute('controls', 'true');
+                videoEl.play().catch(e => console.warn('Autoplay blocked:', e));
+            }
+        }
+    } catch (err) {
+        toast('Unlock failed: ' + err.message, 'error');
+    }
+}
+
+// Global handler (ADBNK SDK primary trigger)
+window.onAdbnkReward = function(reward) {
+    handleAdbnkUnlock(reward || {});
+};
+
+// Event listener (ADBNK SDK secondary trigger)
+document.addEventListener('adbnk:reward', (event) => {
+    handleAdbnkUnlock(event.detail || {});
 });
 
 const uploadForm = $('#upload-form');
