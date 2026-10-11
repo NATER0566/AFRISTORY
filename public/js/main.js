@@ -427,6 +427,7 @@ async function openEpisode(id) {
             let lockScreen = ''; 
             
             if (!episode.hasAccess) { 
+                // PHASE 6: DYNAMIC EMPTY CONTAINER FOR ADBNK
                 lockScreen = `
                 <div class="feed-lock-overlay hidden" id="lock-${episode._id}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: 50;"> 
                     <span class="lock-icon" style="font-size:40px;color:#d4a017;">◈</span> 
@@ -448,14 +449,8 @@ async function openEpisode(id) {
                             Watch Ad to Unlock
                         </button>
 
-                        <!-- HIDDEN ADBNK FALLBACK CONTAINER -->
-                        <div id="adbnk-slot-${episode._id}" style="display:none; width:100%;">
-                            <ins class="adsbyadbnk"
-                                 data-zone-id="zone_f3fcad23db83"
-                                 data-reward-user-id="${state.user?._id || ''}"
-                                 data-reward-custom-data="${episode._id}">
-                            </ins>
-                        </div>
+                        <!-- DYNAMIC ADBNK TARGET CONTAINER -->
+                        <div id="adbnk-slot-${episode._id}" style="display:none; width:100%; min-height:50px;"></div>
                         
                         <!-- COIN UNLOCK BUTTON -->
                         <button type="button" class="button" data-action="unlock-current" style="width:100%; background:transparent; border:1px solid #555; color:#fff; font-weight:600; font-size:14px; padding:12px; border-radius:8px;">
@@ -1970,3 +1965,6 @@ async function boot() {
 }
 
 (async () => { if (await boot()) setSection(location.hash.slice(1) || 'discover'); })();
+
+
+check the new main js you provide I paste it here if is right then we procedd the  I wil deploy then you tell mw were the  ads will be showing ok then after that how they can show on app.html since app.html is wheere our player lives 
