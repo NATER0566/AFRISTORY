@@ -435,7 +435,7 @@ async function openEpisode(id) {
                     
                     <div style="display:flex; flex-direction:column; gap:12px; width: 85%; max-width: 300px;">
                         
-                        <!-- ROCKET SLOTH BUTTON (Default) -->
+                        <!-- PRIMARY AD BUTTON (ROCKET SLOTH) -->
                         <button type="button" 
                                 id="waterfall-ad-btn-${episode._id}" 
                                 data-action="waterfall-ad-unlock" 
@@ -448,9 +448,9 @@ async function openEpisode(id) {
                             Watch Ad to Unlock
                         </button>
 
-                        <!-- ADBNK BUTTON CONTAINER (Hidden until fallback triggers) -->
+                        <!-- ADBNK FALLBACK CONTAINER -->
                         <div id="adbnk-slot-${episode._id}" style="display:none; width:100%;">
-                            <!-- ADBNK SDK will automatically convert this ins tag into its own button -->
+                            <!-- ADBNK SDK naturally converts this ins tag into its own interactive ad button -->
                             <ins class="adsbyadbnk"
                                  data-zone-id="zone_f3fcad23db83"
                                  data-reward-user-id="${state.user?._id || ''}"
@@ -578,13 +578,11 @@ async function openEpisode(id) {
             feedObserver.observe(card); 
         }); 
         
-        // Let ADBNK process dynamically added ad tags
-        setTimeout(() => {
-            if (window.adbnk && typeof window.adbnk.push === 'function') {
-                window.adbnk.push({});
-            }
-        }, 800);
-        
+        // This ensures the ADBNK SDK naturally parses its tags
+        if (window.adbnk && typeof window.adbnk.push === 'function') {
+            window.adbnk.push({});
+        }
+
     } catch (error) {
         logFrontendError('open_episode_failed', error.message, error.stack);
         toast('Failed to load feed', 'error');
