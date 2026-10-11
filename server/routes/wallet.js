@@ -93,8 +93,8 @@ export default async function walletRoutes(fastify, opts) {
         return sendError(reply, 'Unauthorized', 401);
       }
 
-      // We accept a method ('COIN' or 'AD'). Defaults to COIN.
-      const { episodeId, method = 'COIN', receipt = {} } = request.body || {};
+      // ADDED: Accept provider and transactionId parameters
+      const { episodeId, method = 'COIN', provider = 'ROCKET_SLOTH', receipt = {}, transactionId } = request.body || {};
 
       if (!episodeId) {
         await session.abortTransaction();
@@ -134,19 +134,33 @@ export default async function walletRoutes(fastify, opts) {
       }
 
       // ============================================
-      // LOGIC 1: UNLOCK USING AN AD (FIXED FOR ROCKET SLOTH)
+      // LOGIC 1: UNLOCK USING AN AD (DUAL SUPPORT FOR ROCKET SLOTH & ADBNK)
       // ============================================
       if (method.toUpperCase() === 'AD') {
-        const rawStatus = receipt.status || String(receipt);
-        const status = typeof rawStatus === 'string' ? rawStatus.toLowerCase() : rawStatus;
         
-        // SECURE CHECK: We explicitly verify the exact payload Rocket Sloth sends on completion
-        const isSuccess = status === 'granted' && receipt.reward === true;
-        
-        if (!isSuccess) {
-          fastify.log.warn(`[AD_REJECTED] User ${request.user._id} attempted to unlock episode ${episodeId} without completing the ad. Receipt: ${JSON.stringify(receipt)}`);
-          await session.abortTransaction();
-          return sendError(reply, 'You must watch the full ad to unlock this episode.', 403);
+        if (provider === 'ADBNK') {
+          // ADBNK Verification
+          if (!transactionId) {
+            await session.abortTransaction();
+            return sendError(reply, 'Missing ADBNK transaction ID', 400);
+          }
+          // Prevent replay attacks
+          const existingTx = await Transaction.findOne({ 'metadata.adbnkTxId': transactionId }).session(session);
+          if (existingTx) {
+            await session.abortTransaction();
+            return sendError(reply, 'This ad reward has already been claimed', 400);
+          }
+        } else {
+          // Rocket Sloth Verification
+          const rawStatus = receipt.status || String(receipt);
+          const status = typeof rawStatus === 'string' ? rawStatus.toLowerCase() : rawStatus;
+          const isSuccess = status === 'granted' && receipt.reward === true;
+          
+          if (!isSuccess) {
+            fastify.log.warn(`[AD_REJECTED] User ${request.user._id} attempted to unlock episode ${episodeId} without completing the ad.`);
+            await session.abortTransaction();
+            return sendError(reply, 'You must watch the full ad to unlock this episode.', 403);
+          }
         }
 
         // Ad is verified. Create unlock record.
@@ -155,6 +169,8 @@ export default async function walletRoutes(fastify, opts) {
           episodeId,
           seriesId: episode.seriesId,
           method: 'AD',
+          provider: provider,
+          transactionId: transactionId || `rs_${Date.now()}`
         });
         await unlock.save({ session });
 
@@ -162,8 +178,22 @@ export default async function walletRoutes(fastify, opts) {
         episode.totalUnlocks += 1;
         await episode.save({ session });
 
+        // If ADBNK, save a marker transaction so the transactionId cannot be reused
+        if (provider === 'ADBNK') {
+          const transaction = new Transaction({
+            userId: request.user._id,
+            type: 'UNLOCK',
+            amount: mongoose.Types.Decimal128.fromString('0.00'),
+            reference: generateReference('ADBNK'),
+            description: `Ad unlock via ADBNK: ${episode.title}`,
+            status: 'COMPLETED',
+            metadata: { adbnkTxId: transactionId, episodeId, provider: 'ADBNK' }
+          });
+          await transaction.save({ session });
+        }
+
         await session.commitTransaction();
-        fastify.log.info(`[AD_UNLOCKED] User ${request.user._id} successfully unlocked episode ${episodeId} via Ad.`);
+        fastify.log.info(`[AD_UNLOCKED] User ${request.user._id} successfully unlocked episode ${episodeId} via Ad (${provider}).`);
         return sendSuccess(reply, { unlocked: true, method: 'AD' }, 'Episode unlocked successfully with Ad');
       }
 
