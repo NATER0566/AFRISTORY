@@ -181,19 +181,31 @@ export default async function rewardRoutes(fastify) {
     try {
       if (!(await verifyAuth(request, reply))) { await session.abortTransaction(); return; }
       
-      const { method = 'MANUAL', receipt = {} } = request.body || {};
+      // ADDED: Accept provider and transactionId parameters
+      const { method = 'MANUAL', provider = 'ROCKET_SLOTH', receipt = {}, transactionId } = request.body || {};
 
-      // SECURE CHECK: If this reward requires an Ad, verify the receipt
+      // SECURE CHECK: Dual support for Rocket Sloth & ADBNK
       if (method === 'AD') {
-        const rawStatus = receipt.status || String(receipt);
-        const status = typeof rawStatus === 'string' ? rawStatus.toLowerCase() : rawStatus;
-        
-        const isSuccess = status === 'granted' && receipt.reward === true;
-        
-        if (!isSuccess) {
-          fastify.log.warn(`[REWARD_REJECTED] User ${request.user._id} attempted to claim reward ${request.params.rewardId} without completing the ad.`);
-          await session.abortTransaction();
-          return sendError(reply, 'You must watch the full ad to claim this reward.', 403);
+        if (provider === 'ADBNK') {
+          if (!transactionId) {
+            await session.abortTransaction();
+            return sendError(reply, 'Missing ADBNK transaction ID', 400);
+          }
+          const existingTx = await Transaction.findOne({ 'metadata.adbnkTxId': transactionId }).session(session);
+          if (existingTx) {
+            await session.abortTransaction();
+            return sendError(reply, 'This ad reward has already been claimed', 400);
+          }
+        } else {
+          const rawStatus = receipt.status || String(receipt);
+          const status = typeof rawStatus === 'string' ? rawStatus.toLowerCase() : rawStatus;
+          const isSuccess = status === 'granted' && receipt.reward === true;
+          
+          if (!isSuccess) {
+            fastify.log.warn(`[REWARD_REJECTED] User ${request.user._id} attempted to claim reward ${request.params.rewardId} without completing the ad.`);
+            await session.abortTransaction();
+            return sendError(reply, 'You must watch the full ad to claim this reward.', 403);
+          }
         }
       }
 
@@ -202,6 +214,20 @@ export default async function rewardRoutes(fastify) {
       
       const result = await issueReward({ reward, user: request.user, request, session, period: periodKey(new Date(), reward.recurrenceType) });
       if (result.duplicate) { await session.abortTransaction(); return sendError(reply, 'Reward already claimed for this period', 409); }
+      
+      // If ADBNK, save a marker transaction so they can't reuse the ad
+      if (method === 'AD' && provider === 'ADBNK') {
+          await Transaction.create([{
+            userId: request.user._id,
+            type: 'BONUS',
+            amount: mongoose.Types.Decimal128.fromString('0.00'), // Zero financial value, just a marker
+            reference: generateReference('ADBNK_RWD'),
+            description: `ADBNK Verification Marker`,
+            status: 'COMPLETED',
+            metadata: { adbnkTxId: transactionId, rewardId: reward._id, provider: 'ADBNK' }
+          }], { session });
+      }
+
       await session.commitTransaction();
 
       if (!result.pending && result.claim) {
