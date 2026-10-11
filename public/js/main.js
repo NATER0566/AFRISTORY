@@ -435,22 +435,14 @@ async function openEpisode(id) {
                     
                     <div style="display:flex; flex-direction:column; gap:12px; width: 85%; max-width: 300px;">
                         
-                        <!-- PRIMARY AD BUTTON (ROCKET SLOTH) -->
-                        <button type="button" 
-                                id="waterfall-ad-btn-${episode._id}" 
-                                data-action="waterfall-ad-unlock" 
-                                data-episode-id="${episode._id}" 
-                                class="button button-accent" 
-                                style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:bold; font-size:15px; padding:12px; border-radius:8px;">
-                            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none">
-                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                            </svg> 
+                        <!-- ROCKET SLOTH REWARDED BUTTON -->
+                        <button type="button" id="waterfall-ad-btn-${episode._id}" data-action="waterfall-ad-unlock" data-episode-id="${episode._id}" class="button button-accent" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:bold; font-size:15px; padding:12px; border-radius:8px;">
+                            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> 
                             Watch Ad to Unlock
                         </button>
 
                         <!-- ADBNK FALLBACK CONTAINER -->
                         <div id="adbnk-slot-${episode._id}" style="display:none; width:100%;">
-                            <!-- ADBNK SDK naturally converts this ins tag into its own interactive ad button -->
                             <ins class="adsbyadbnk"
                                  data-zone-id="zone_f3fcad23db83"
                                  data-reward-user-id="${state.user?._id || ''}"
@@ -577,12 +569,6 @@ async function openEpisode(id) {
             feedContainer.appendChild(card); 
             feedObserver.observe(card); 
         }); 
-        
-        // This ensures the ADBNK SDK naturally parses its tags
-        if (window.adbnk && typeof window.adbnk.push === 'function') {
-            window.adbnk.push({});
-        }
-
     } catch (error) {
         logFrontendError('open_episode_failed', error.message, error.stack);
         toast('Failed to load feed', 'error');
@@ -1795,41 +1781,45 @@ async function handleAdbnkUnlock(rewardData) {
 
     if (!episodeId) return;
 
-    toast('Ad verified! Unlocking story...', 'success');
+    toast('Ad completed! Waiting for secure server verification...', 'info');
 
-    try {
-        await api('/wallet/unlock-episode', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                episodeId: episodeId, 
-                method: 'AD', 
-                provider: 'ADBNK', 
-                transactionId: txId 
-            })
-        });
+    let attempts = 0;
+    
+    const checkInterval = setInterval(async () => {
+        attempts++;
+        try {
+            const res = await api(`/ads/check-unlock/${episodeId}?userId=${state.user?._id || ''}`, { method: 'GET' });
+            
+            if (res && res.unlocked) {
+                clearInterval(checkInterval);
+                toast('Episode unlocked securely!', 'success');
+                
+                // 1. Update frontend state
+                const epData = state.feedEpisodes.find(e => e._id === episodeId);
+                if (epData) epData.hasAccess = true;
+                if (state.currentEpisode && state.currentEpisode._id === episodeId) {
+                    state.currentEpisode.hasAccess = true;
+                }
 
-        // 1. Update state
-        const epData = state.feedEpisodes.find(e => e._id === episodeId);
-        if (epData) epData.hasAccess = true;
-        if (state.currentEpisode && state.currentEpisode._id === episodeId) {
-            state.currentEpisode.hasAccess = true;
-        }
-
-        // 2. Hide lock overlay and resume playback
-        const lockUI = document.getElementById(`lock-${episodeId}`);
-        if (lockUI) {
-            lockUI.classList.add('hidden');
-            const card = lockUI.closest('.feed-video-card');
-            const videoEl = card ? card.querySelector('video') : null;
-            if (videoEl) {
-                videoEl.setAttribute('controls', 'true');
-                videoEl.play().catch(e => console.warn('Autoplay blocked:', e));
+                // 2. Hide lock overlay and resume video playback
+                const lockUI = document.getElementById(`lock-${episodeId}`);
+                if (lockUI) {
+                    lockUI.classList.add('hidden');
+                    const card = lockUI.closest('.feed-video-card');
+                    const videoEl = card ? card.querySelector('video') : null;
+                    if (videoEl) {
+                        videoEl.setAttribute('controls', 'true');
+                        videoEl.play().catch(e => console.warn('Autoplay blocked:', e));
+                    }
+                }
+            } else if (attempts >= 5) {
+                clearInterval(checkInterval);
+                toast('Verification delayed. Please check your network and refresh.', 'error');
             }
+        } catch (err) {
+            console.error("Status check failed", err);
         }
-    } catch (err) {
-        toast('Unlock failed: ' + err.message, 'error');
-    }
+    }, 2000);
 }
 
 // Global handler (ADBNK SDK primary trigger)
