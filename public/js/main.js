@@ -112,6 +112,59 @@ const api = async (path, options = {}) => {
     }
 };
 
+let adbnkSdkPromise;
+
+function loadAdbnkSdk() {
+    if (adbnkSdkPromise) return adbnkSdkPromise;
+
+    adbnkSdkPromise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://js.adbnk.co/sdk.js';
+        script.async = true;
+        script.onload = () => resolve();
+        script.onerror = () => {
+            adbnkSdkPromise = null;
+            reject(new Error('Advertisement service could not be loaded.'));
+        };
+        document.head.appendChild(script);
+    });
+
+    return adbnkSdkPromise;
+}
+
+function waitForAdbnkSlot(slot, timeout = 15000) {
+    return new Promise((resolve, reject) => {
+        const hasAd = () => slot.querySelector('iframe, video, [data-adbnk-rendered], .adbnk-ad');
+        const existingAd = hasAd();
+        if (existingAd) {
+            resolve(existingAd);
+            return;
+        }
+
+        const observer = new MutationObserver(() => {
+            const ad = hasAd();
+            if (!ad) return;
+            clearTimeout(timer);
+            observer.disconnect();
+            resolve(ad);
+        });
+        const timer = setTimeout(() => {
+            observer.disconnect();
+            reject(new Error('Advertisement is currently unavailable. Please try again later or unlock with coins.'));
+        }, timeout);
+
+        observer.observe(slot, { childList: true, subtree: true, attributes: true });
+    });
+}
+
+function resetAdbnkButton(button, slot) {
+    button.disabled = false;
+    button.style.display = 'flex';
+    button.textContent = 'Watch Ad to Unlock';
+    slot.style.display = 'none';
+    slot.replaceChildren();
+}
+
 const esc = value => {
     if (value == null) return '';
     return String(value)
@@ -1451,11 +1504,12 @@ document.addEventListener('click', async event => {
                     state.adbnkPendingIds[epId] = pending.pendingId;
                     adbnkContainer.style.display = 'block';
                     adbnkBtn.style.display = 'none';
-                    if (window.adbnk && typeof window.adbnk.push === 'function') window.adbnk.push({});
+                    await loadAdbnkSdk();
+                    await waitForAdbnkSlot(adbnkContainer);
                 } catch (error) {
-                    adbnkBtn.disabled = false;
-                    adbnkBtn.textContent = 'Watch Ad to Unlock';
-                    toast(error.message, 'error');
+                    state.adbnkPendingIds[epId] = null;
+                    resetAdbnkButton(adbnkBtn, adbnkContainer);
+                    toast(error.message || 'Advertisement is currently unavailable. Please try again later or unlock with coins.', 'error');
                 }
             }
             return;
