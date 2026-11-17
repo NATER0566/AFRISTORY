@@ -24,6 +24,7 @@ export const OPTIONAL_ENV = [
   'ONESIGNAL_API_KEY',
   'ADSCOD_PUBLISHER_KEY',
   'ADSCOD_API_URL',
+  'ADBNK_WEBHOOK_SECRET',
 ];
 
 const validators = {
@@ -49,6 +50,7 @@ const validators = {
   ONESIGNAL_API_KEY: value => Boolean(value && value.trim()),
   ADSCOD_PUBLISHER_KEY: value => Boolean(value && value.trim()),
   ADSCOD_API_URL: value => Boolean(value && value.trim()),
+  ADBNK_WEBHOOK_SECRET: value => Boolean(value && value.trim()),
 };
 
 export function getEnvironmentStatus() {

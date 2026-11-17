@@ -54,5 +54,6 @@ const transactionSchema = new mongoose.Schema(
 // Index for better query performance
 transactionSchema.index({ userId: 1, createdAt: -1 });
 transactionSchema.index({ type: 1 });
+transactionSchema.index({ 'metadata.adbnkTxId': 1 }, { unique: true, sparse: true });
 
 export default mongoose.model('Transaction', transactionSchema);

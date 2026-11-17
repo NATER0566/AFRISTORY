@@ -34,6 +34,14 @@ const unlockSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    provider: {
+      type: String,
+      default: null,
+    },
+    transactionId: {
+      type: String,
+      default: null,
+    },
   },
   { timestamps: true }
 );
