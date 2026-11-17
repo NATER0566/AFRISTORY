@@ -22,6 +22,14 @@ const unlockSchema = new mongoose.Schema(
       enum: ['COIN', 'AD', 'VIP', 'FREE'],
       required: true,
     },
+    provider: {
+      type: String,
+      default: null,
+    },
+    transactionId: {
+      type: String,
+      default: null,
+    },
     unlockedAt: {
       type: Date,
       default: Date.now,

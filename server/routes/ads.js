@@ -1,113 +1,270 @@
-import User from '../models/User.js';
-import Unlock from '../models/Unlock.js';
+import mongoose from 'mongoose';
 import Episode from '../models/Episode.js';
-import Creator from '../models/Creator.js';
-import Wallet from '../models/Wallet.js';
-import Transaction from '../models/Transaction.js';
+import Unlock from '../models/Unlock.js';
+import PendingReward from '../models/PendingReward.js';
+import AdbnkReward from '../models/AdbnkReward.js';
+import { verifyAuth } from '../middleware/auth.js';
+import { sendError, sendSuccess } from '../utils/response.js';
 
-export default async function adsRoutes(fastify, opts) {
-  
-  // ---------------------------------------------------------
-  // ADBNK Server-Side Verification (SSV) Webhook
-  // Target: https://afristory.onrender.com/api/ads/adbnk-callback
-  // ---------------------------------------------------------
-  fastify.all('/adbnk-callback', async (request, reply) => {
-    try {
-      // 1. ADBNK can send data via GET query parameters or POST body
-      const payload = request.method === 'GET' ? request.query : (request.body || {});
+export const ADBNK_ZONE_CODE = 'zone_f3fcad23db83';
+export const ADBNK_VERIFY_URL = 'https://api.adbnk.co/ad/reward/verify';
+export const ADBNK_CALLBACK_URL = 'https://afristory.onrender.com/api/ads/adbnk-callback';
 
-      fastify.log.info({
-        method: request.method,
-        payload
-      }, 'ADBNK SSV Callback Received');
+// The numeric provider ID must be mapped by an administrator before Shape 1 rewards grant.
+export const ADBNK_ZONE_ID_MAP = {};
 
-      // 2. Extract standard ADBNK rewarded callback fields
-      const transactionId = payload.transactionId || payload.transaction_id || payload.tx_id;
-      const userId = payload.userId || payload.user_id || payload.uid;
-      const episodeId = payload.customData || payload.custom_data || payload.extra;
+export function normalizeAdbnkPayload(payload = {}) {
+  return {
+    transactionId: payload.transactionId || payload.transaction_id || null,
+    signature: payload.signature || null,
+    keyId: payload.keyId || payload.key_id || null,
+    userId: payload.userId || payload.user_id || null,
+    customData: payload.customData || payload.custom_data || null,
+    zoneId: payload.zoneId || payload.zone_id || null,
+    pendingId: payload.pendingId || payload.pending_id || null,
+  };
+}
 
-      // Basic validation
-      if (!userId || !episodeId) {
-        fastify.log.warn('ADBNK Callback missing userId or episodeId');
-        // Return 200 so ADBNK does not retry corrupt payloads indefinitely
-        return reply.code(200).send('MISSING_DATA');
-      }
+export function validateAdbnkRecord(record, expected) {
+  if (!record || record.valid !== true) return { valid: false, reason: 'provider_invalid' };
+  if (record.zone_id === undefined || record.zone_id === null || record.zone_id === '') {
+    return { valid: false, reason: 'zone_unmapped' };
+  }
 
-      // 3. Replay Protection: Check if this transactionId has already been recorded
-      if (transactionId) {
-        const alreadyClaimed = await Transaction.findOne({ 'metadata.adbnkTxId': transactionId });
-        if (alreadyClaimed) {
-          fastify.log.info(`ADBNK transaction ${transactionId} already processed. Skipping duplicate.`);
-          return reply.code(200).send('ALREADY_PROCESSED');
-        }
-      }
+  const mappedZone = ADBNK_ZONE_ID_MAP[String(record.zone_id)];
+  if (mappedZone !== ADBNK_ZONE_CODE) return { valid: false, reason: 'zone_unmapped' };
 
-      // 4. Verify episode exists
-      const episode = await Episode.findById(episodeId);
-      if (!episode) {
-        fastify.log.warn(`ADBNK Callback: Episode ${episodeId} not found`);
-        return reply.code(200).send('EPISODE_NOT_FOUND');
-      }
+  if (expected?.userId && String(record.user_id) !== String(expected.userId)) {
+    return { valid: false, reason: 'user_mismatch' };
+  }
+  if (expected?.episodeId && String(record.custom_data) !== String(expected.episodeId)) {
+    return { valid: false, reason: 'episode_mismatch' };
+  }
+  return { valid: true };
+}
 
-      // 5. Unlock the episode for the user in the database
-      await Unlock.findOneAndUpdate(
-        { userId, episodeId },
-        {
-          userId,
-          episodeId,
-          seriesId: episode.seriesId,
-          unlockedAt: new Date(),
-          method: 'AD',
-          provider: 'ADBNK',
-          transactionId: transactionId || `adbnk_${Date.now()}`
-        },
-        { upsert: true, new: true }
-      );
+export async function verifyWithAdbnk({ transactionId, signature, keyId, fetchImpl = fetch }) {
+  if (!transactionId || !signature || !keyId) {
+    const error = new Error('Missing ADBNK verification fields');
+    error.statusCode = 400;
+    throw error;
+  }
 
-      // 6. Record transaction for auditing, accounting, and anti-fraud
-      await Transaction.create({
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetchImpl(ADBNK_VERIFY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        transaction_id: transactionId,
+        signature,
+        key_id: keyId,
+      }),
+      signal: controller.signal,
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok || !body || body.code !== 0) {
+      const error = new Error('ADBNK verification request failed');
+      error.statusCode = response.status >= 500 ? 503 : 403;
+      throw error;
+    }
+    return body.data || {};
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function markPendingFailed(pendingId) {
+  if (!pendingId || !mongoose.isValidObjectId(pendingId)) return;
+  await PendingReward.updateOne(
+    { _id: pendingId, status: 'pending' },
+    { $set: { status: 'failed' } }
+  );
+}
+
+async function grantAdbnkReward({ providerRecord, pending, userId, episodeId, source, transactionId }) {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const existing = await AdbnkReward.findOne({ transactionId }).session(session);
+    if (existing) {
+      await session.abortTransaction();
+      return { duplicate: true, unlocked: true };
+    }
+
+    const episode = await Episode.findById(episodeId).session(session);
+    if (!episode) throw Object.assign(new Error('Episode not found'), { statusCode: 404 });
+
+    const unlock = await Unlock.findOne({ userId, episodeId, isActive: true }).session(session);
+    if (!unlock) {
+      await Unlock.create([{
         userId,
-        type: 'UNLOCK',
-        status: 'COMPLETED',
-        amount: 0,
-        description: `Ad unlock via ADBNK (${episode.title || 'Episode'})`,
-        metadata: {
-          adbnkTxId: transactionId,
-          episodeId,
-          seriesId: episode.seriesId,
-          provider: 'ADBNK'
-        }
-      });
+        episodeId,
+        seriesId: episode.seriesId,
+        method: 'AD',
+        provider: 'ADBNK',
+        transactionId,
+      }], { session });
+      await Episode.updateOne({ _id: episodeId }, { $inc: { totalUnlocks: 1, totalAdUnlocks: 1 } }, { session });
+    }
 
-      fastify.log.info(`Episode ${episodeId} unlocked successfully for user ${userId} via ADBNK`);
+    await AdbnkReward.create([{
+      transactionId,
+      userId,
+      episodeId,
+      pendingRewardId: pending?._id || null,
+      providerData: providerRecord,
+      source,
+    }], { session });
 
-      // 7. Acknowledge with HTTP 200 OK
-      return reply.code(200).send('OK');
+    if (pending) {
+      await PendingReward.updateOne(
+        { _id: pending._id, status: 'pending' },
+        { $set: { status: 'used' } },
+        { session }
+      );
+    }
 
+    await session.commitTransaction();
+    return { duplicate: false, unlocked: true };
+  } catch (error) {
+    await session.abortTransaction();
+    if (error?.code === 11000) return { duplicate: true, unlocked: true };
+    throw error;
+  } finally {
+    await session.endSession();
+  }
+}
+
+async function loadPendingForUser(pendingId, userId) {
+  if (!pendingId || !mongoose.isValidObjectId(pendingId)) return null;
+  const pending = await PendingReward.findOne({ _id: pendingId, userId });
+  if (!pending || pending.status !== 'pending' || pending.expiresAt <= new Date()) return null;
+  return pending;
+}
+
+export default async function adsRoutes(fastify) {
+  fastify.post('/adbnk/pending', async (request, reply) => {
+    if (!(await verifyAuth(request, reply)) || !request.user) return;
+    const { episodeId } = request.body || {};
+    if (!mongoose.isValidObjectId(episodeId)) return sendError(reply, 'Valid episode ID is required', 400);
+
+    const episode = await Episode.findById(episodeId).select('_id isFree adUnlockable');
+    if (!episode || episode.isFree || !episode.adUnlockable) return sendError(reply, 'Episode is not eligible for ad unlock', 400);
+
+    const pending = await PendingReward.create({
+      userId: request.user._id,
+      episodeId,
+      zoneCode: ADBNK_ZONE_CODE,
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+    });
+    return sendSuccess(reply, { pendingId: pending._id.toString(), zoneCode: ADBNK_ZONE_CODE });
+  });
+
+  fastify.post('/adbnk/verify', async (request, reply) => {
+    if (!(await verifyAuth(request, reply)) || !request.user) return;
+    const { transactionId, signature, keyId, pendingId } = request.body || {};
+    if (!transactionId || !signature || !keyId || !pendingId) return sendError(reply, 'Missing ADBNK verification fields', 400);
+
+    const pending = await loadPendingForUser(pendingId, request.user._id);
+    if (!pending) {
+      const pendingById = mongoose.isValidObjectId(pendingId) ? await PendingReward.findOne({ _id: pendingId, userId: request.user._id }) : null;
+      if (!pendingById || pendingById.status !== 'pending' || pendingById.expiresAt <= new Date()) {
+        return sendError(reply, 'Pending reward is invalid or expired', 403);
+      }
+    }
+    const validPending = pending || await PendingReward.findOne({ _id: pendingId, userId: request.user._id, status: 'pending' });
+
+    let providerRecord;
+    try {
+      providerRecord = await verifyWithAdbnk({ transactionId, signature, keyId });
     } catch (error) {
-      fastify.log.error('ADBNK Webhook Error: ' + error.message);
-      // Return 200 so ad network does not deactivate your webhook endpoint
-      return reply.code(200).send('ERROR_HANDLED');
+      await markPendingFailed(pendingId);
+      return sendError(reply, error.statusCode === 503 ? 'ADBNK verification unavailable' : 'ADBNK reward is invalid', error.statusCode || 403);
+    }
+
+    const expected = { userId: request.user._id, episodeId: validPending.episodeId };
+    if (providerRecord.user_id !== undefined || providerRecord.custom_data !== undefined || providerRecord.zone_id !== undefined) {
+      const validation = validateAdbnkRecord(providerRecord, expected);
+      if (!validation.valid) {
+        await markPendingFailed(pendingId);
+        return sendError(reply, 'ADBNK reward does not match this unlock request', 403);
+      }
+    } else if (providerRecord.valid !== true) {
+      await markPendingFailed(pendingId);
+      return sendError(reply, 'ADBNK reward is invalid', 403);
+    }
+
+    try {
+      const result = await grantAdbnkReward({
+        providerRecord,
+        pending: validPending,
+        userId: request.user._id,
+        episodeId: validPending.episodeId,
+        source: 'verify',
+        transactionId,
+      });
+      return sendSuccess(reply, result, result.duplicate ? 'Reward already processed' : 'Episode unlocked');
+    } catch (error) {
+      fastify.log.error(error);
+      return sendError(reply, 'Unable to apply ADBNK reward', error.statusCode || 500);
     }
   });
 
-  // ---------------------------------------------------------
-  // Episode Access Verification Helper
-  // Used by the frontend after ad completion to verify unlock status
-  // ---------------------------------------------------------
-  fastify.get('/check-unlock/:episodeId', async (request, reply) => {
-    try {
-      const { episodeId } = request.params;
-      const userId = request.user?._id || request.query.userId;
+  fastify.all('/adbnk-callback', async (request, reply) => {
+    const payload = request.method === 'GET' ? request.query : (request.body || {});
+    const fields = normalizeAdbnkPayload(payload);
+    if (!fields.transactionId || !fields.signature || !fields.keyId) return reply.code(400).send({ ok: false });
 
-      if (!userId || !episodeId) {
-        return reply.code(400).send({ unlocked: false });
+    try {
+      const providerRecord = await verifyWithAdbnk(fields);
+      if (providerRecord.valid !== true) return reply.code(200).send({ ok: false });
+
+      const existing = await AdbnkReward.findOne({ transactionId: fields.transactionId });
+      if (existing) return reply.code(200).send({ ok: true, duplicate: true });
+
+      const validation = validateAdbnkRecord(providerRecord, {
+        userId: providerRecord.user_id,
+        episodeId: providerRecord.custom_data,
+      });
+      if (!validation.valid) {
+        request.log.warn({ transactionId: fields.transactionId, reason: validation.reason }, 'ADBNK callback rejected');
+        return reply.code(200).send({ ok: false, manualReview: true });
       }
 
-      const unlocked = await Unlock.findOne({ userId, episodeId });
-      return reply.code(200).send({ unlocked: !!unlocked });
-    } catch (err) {
-      return reply.code(200).send({ unlocked: false });
+      if (!mongoose.isValidObjectId(providerRecord.user_id) || !mongoose.isValidObjectId(providerRecord.custom_data)) {
+        request.log.warn({ transactionId: fields.transactionId }, 'ADBNK callback has no usable server association');
+        return reply.code(200).send({ ok: false, manualReview: true });
+      }
+
+      const pending = await PendingReward.findOne({
+        userId: providerRecord.user_id,
+        episodeId: providerRecord.custom_data,
+        zoneCode: ADBNK_ZONE_CODE,
+        status: 'pending',
+        expiresAt: { $gt: new Date() },
+      });
+      if (!pending) return reply.code(200).send({ ok: false, manualReview: true });
+
+      await grantAdbnkReward({
+        providerRecord,
+        pending,
+        userId: providerRecord.user_id,
+        episodeId: providerRecord.custom_data,
+        source: 'ssv',
+        transactionId: fields.transactionId,
+      });
+      return reply.code(200).send({ ok: true });
+    } catch (error) {
+      request.log.error(error);
+      return reply.code(error.statusCode === 503 ? 503 : 200).send({ ok: false });
     }
+  });
+
+  fastify.get('/check-unlock/:episodeId', async (request, reply) => {
+    if (!(await verifyAuth(request, reply)) || !request.user) return;
+    const unlocked = await Unlock.exists({ userId: request.user._id, episodeId: request.params.episodeId, isActive: true });
+    return reply.send({ unlocked: Boolean(unlocked) });
   });
 }
