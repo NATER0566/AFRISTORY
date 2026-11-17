@@ -117,6 +117,12 @@ let adbnkSdkPromise;
 function loadAdbnkSdk() {
     if (adbnkSdkPromise) return adbnkSdkPromise;
 
+    const existingScript = document.querySelector('script[src="https://js.adbnk.co/sdk.js"]');
+    if (existingScript) {
+        adbnkSdkPromise = Promise.resolve();
+        return adbnkSdkPromise;
+    }
+
     adbnkSdkPromise = new Promise((resolve, reject) => {
         const script = document.createElement('script');
         script.src = 'https://js.adbnk.co/sdk.js';
@@ -497,8 +503,8 @@ async function openEpisode(id) {
                         <div id="adbnk-slot-${episode._id}" style="display:none; width:100%;">
                             <ins class="adsbyadbnk"
                                  data-zone-id="zone_f3fcad23db83"
-                                 data-reward-user-id="${state.user?._id || ''}"
-                                 data-reward-custom-data="${episode._id}">
+                                 data-reward-user-id="${esc(state.user?._id)}"
+                                 data-reward-custom-data="${esc(episode._id)}">
                             </ins>
                         </div>
                         
@@ -1501,6 +1507,11 @@ document.addEventListener('click', async event => {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ episodeId: epId })
                     });
+                    if (!pending?.pendingId || pending.zoneCode !== 'zone_f3fcad23db83') {
+                        throw new Error('Advertisement service returned an invalid pending reward.');
+                    }
+                    window.currentPendingId = pending.pendingId;
+                    window.currentPendingEpisodeId = epId;
                     state.adbnkPendingIds[epId] = pending.pendingId;
                     adbnkContainer.style.display = 'block';
                     adbnkBtn.style.display = 'none';
@@ -1773,14 +1784,15 @@ document.addEventListener('rs:rewarded', async (event) => {
 /* ============================================================================ */
 async function handleAdbnkUnlock(rewardData) {
     const episodeId = rewardData.customData || rewardData.custom_data;
-    const pendingId = episodeId ? state.adbnkPendingIds[episodeId] : null;
+    const pendingId = window.currentPendingId;
 
-    if (!episodeId || !pendingId || rewardData.verified !== true) {
-        toast('Ad claim received. Secure verification is pending.', 'info');
+    if (!episodeId || !pendingId || window.currentPendingEpisodeId !== episodeId) {
+        toast('Reward could not be verified. Try again.', 'error');
         return;
     }
 
     try {
+        toast('Verifying reward...', 'info');
         await api('/ads/adbnk/verify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1791,8 +1803,16 @@ async function handleAdbnkUnlock(rewardData) {
                 pendingId
             })
         });
-        toast('Episode unlocked securely!', 'success');
+
+        const access = await api(`/ads/check-unlock/${encodeURIComponent(episodeId)}`);
+        if (!access?.unlocked) {
+            throw new Error('Reward verification completed, but episode access was not confirmed.');
+        }
+
+        toast('Episode unlocked!', 'success');
         state.adbnkPendingIds[episodeId] = null;
+        window.currentPendingId = null;
+        window.currentPendingEpisodeId = null;
         const epData = state.feedEpisodes.find(e => e._id === episodeId);
         if (epData) epData.hasAccess = true;
         if (state.currentEpisode && state.currentEpisode._id === episodeId) state.currentEpisode.hasAccess = true;
