@@ -26,19 +26,17 @@ test('normalizes documented callback field aliases', () => {
   });
 });
 
-test('accepts a mapped Shape 1 record and rejects mismatched association', () => {
-  ADBNK_ZONE_ID_MAP['12345'] = ADBNK_ZONE_CODE;
-  const record = { valid: true, zone_id: '12345', user_id: 'user_1', custom_data: 'episode_1' };
+test('accepts Shape 1 zone 1040 and rejects an unmapped zone', () => {
+  const record = { valid: true, zone_id: '1040', user_id: 'user_1', custom_data: 'episode_1' };
   assert.deepEqual(validateAdbnkRecord(record, { userId: 'user_1', episodeId: 'episode_1' }), { valid: true });
   assert.equal(validateAdbnkRecord(record, { userId: 'other', episodeId: 'episode_1' }).valid, false);
-  delete ADBNK_ZONE_ID_MAP['12345'];
+  assert.equal(validateAdbnkRecord({ ...record, zone_id: '99999' }, { userId: 'user_1', episodeId: 'episode_1' }).reason, 'zone_unmapped');
+  assert.equal(ADBNK_ZONE_ID_MAP['1040'], ADBNK_ZONE_CODE);
 });
 
-test('rejects an unmapped zone and invalid provider result', () => {
+test('rejects an invalid provider result', () => {
   assert.equal(validateAdbnkRecord({ valid: false }, {}).valid, false);
-  assert.equal(validateAdbnkRecord({ valid: true, zone_id: 'unknown' }, {}).reason, 'zone_unmapped');
 });
-
 test('requires all provider verification fields', async () => {
   await assert.rejects(
     verifyWithAdbnk({ transactionId: 'rt_1', signature: 'sig_1' }),

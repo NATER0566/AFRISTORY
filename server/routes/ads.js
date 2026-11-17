@@ -10,8 +10,7 @@ export const ADBNK_ZONE_CODE = 'zone_f3fcad23db83';
 export const ADBNK_VERIFY_URL = 'https://api.adbnk.co/ad/reward/verify';
 export const ADBNK_CALLBACK_URL = 'https://afristory.onrender.com/api/ads/adbnk-callback';
 
-// The numeric provider ID must be mapped by an administrator before Shape 1 rewards grant.
-export const ADBNK_ZONE_ID_MAP = {};
+export const ADBNK_ZONE_ID_MAP = { "1040": "zone_f3fcad23db83" };
 
 export function normalizeAdbnkPayload(payload = {}) {
   return {
@@ -224,15 +223,6 @@ export default async function adsRoutes(fastify) {
       const existing = await AdbnkReward.findOne({ transactionId: fields.transactionId });
       if (existing) return reply.code(200).send({ ok: true, duplicate: true });
 
-      const validation = validateAdbnkRecord(providerRecord, {
-        userId: providerRecord.user_id,
-        episodeId: providerRecord.custom_data,
-      });
-      if (!validation.valid) {
-        request.log.warn({ transactionId: fields.transactionId, reason: validation.reason }, 'ADBNK callback rejected');
-        return reply.code(200).send({ ok: false, manualReview: true });
-      }
-
       if (!mongoose.isValidObjectId(providerRecord.user_id) || !mongoose.isValidObjectId(providerRecord.custom_data)) {
         request.log.warn({ transactionId: fields.transactionId }, 'ADBNK callback has no usable server association');
         return reply.code(200).send({ ok: false, manualReview: true });
@@ -247,11 +237,20 @@ export default async function adsRoutes(fastify) {
       });
       if (!pending) return reply.code(200).send({ ok: false, manualReview: true });
 
+      const validation = validateAdbnkRecord(providerRecord, {
+        userId: pending.userId,
+        episodeId: pending.episodeId,
+      });
+      if (!validation.valid) {
+        request.log.warn({ transactionId: fields.transactionId, reason: validation.reason }, 'ADBNK callback rejected');
+        return reply.code(200).send({ ok: false, manualReview: true });
+      }
+
       await grantAdbnkReward({
         providerRecord,
         pending,
-        userId: providerRecord.user_id,
-        episodeId: providerRecord.custom_data,
+        userId: pending.userId,
+        episodeId: pending.episodeId,
         source: 'ssv',
         transactionId: fields.transactionId,
       });
