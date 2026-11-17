@@ -3,7 +3,7 @@ const PREVIEW_LIMIT = 10; // Seconds before the video locks
 const state = { 
     user: null, profile: null, rewards: null, series: [], 
     currentSeries: null, currentEpisode: null, hls: null, 
-    recommendedEpisodes: [], feedEpisodes: [], adbnkPendingIds: {}
+    recommendedEpisodes: [], feedEpisodes: [] 
 };
 
 const $ = selector => document.querySelector(selector);
@@ -111,65 +111,6 @@ const api = async (path, options = {}) => {
         clearTimeout(timeoutId);
     }
 };
-
-let adbnkSdkPromise;
-
-function loadAdbnkSdk() {
-    if (adbnkSdkPromise) return adbnkSdkPromise;
-
-    const existingScript = document.querySelector('script[src="https://js.adbnk.co/sdk.js"]');
-    if (existingScript) {
-        adbnkSdkPromise = Promise.resolve();
-        return adbnkSdkPromise;
-    }
-
-    adbnkSdkPromise = new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://js.adbnk.co/sdk.js';
-        script.async = true;
-        script.onload = () => resolve();
-        script.onerror = () => {
-            adbnkSdkPromise = null;
-            reject(new Error('Advertisement service could not be loaded.'));
-        };
-        document.head.appendChild(script);
-    });
-
-    return adbnkSdkPromise;
-}
-
-function waitForAdbnkSlot(slot, timeout = 15000) {
-    return new Promise((resolve, reject) => {
-        const hasAd = () => slot.querySelector('iframe, video, [data-adbnk-rendered], .adbnk-ad');
-        const existingAd = hasAd();
-        if (existingAd) {
-            resolve(existingAd);
-            return;
-        }
-
-        const observer = new MutationObserver(() => {
-            const ad = hasAd();
-            if (!ad) return;
-            clearTimeout(timer);
-            observer.disconnect();
-            resolve(ad);
-        });
-        const timer = setTimeout(() => {
-            observer.disconnect();
-            reject(new Error('Advertisement is currently unavailable. Please try again later or unlock with coins.'));
-        }, timeout);
-
-        observer.observe(slot, { childList: true, subtree: true, attributes: true });
-    });
-}
-
-function resetAdbnkButton(button, slot) {
-    button.disabled = false;
-    button.style.display = 'flex';
-    button.textContent = 'Watch Ad to Unlock';
-    slot.style.display = 'none';
-    slot.replaceChildren();
-}
 
 const esc = value => {
     if (value == null) return '';
@@ -494,7 +435,8 @@ async function openEpisode(id) {
                     
                     <div style="display:flex; flex-direction:column; gap:12px; width: 85%; max-width: 300px;">
                         
-                        <button type="button" id="adbnk-ad-btn-${episode._id}" data-action="adbnk-ad-unlock" data-episode-id="${episode._id}" class="button button-accent" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:bold; font-size:15px; padding:12px; border-radius:8px;">
+                        <!-- ROCKET SLOTH REWARDED BUTTON -->
+                        <button type="button" id="waterfall-ad-btn-${episode._id}" data-action="waterfall-ad-unlock" data-episode-id="${episode._id}" class="button button-accent" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:bold; font-size:15px; padding:12px; border-radius:8px;">
                             <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> 
                             Watch Ad to Unlock
                         </button>
@@ -503,8 +445,8 @@ async function openEpisode(id) {
                         <div id="adbnk-slot-${episode._id}" style="display:none; width:100%;">
                             <ins class="adsbyadbnk"
                                  data-zone-id="zone_f3fcad23db83"
-                                 data-reward-user-id="${esc(state.user?._id)}"
-                                 data-reward-custom-data="${esc(episode._id)}">
+                                 data-reward-user-id="${state.user?._id || ''}"
+                                 data-reward-custom-data="${episode._id}">
                             </ins>
                         </div>
                         
@@ -1492,35 +1434,24 @@ document.addEventListener('click', async event => {
         
         if (event.target.closest('[data-action="view-followers"]')) loadFollowersList();          
 
-        const adbnkBtn = event.target.closest('[data-action="adbnk-ad-unlock"]');
-        if (adbnkBtn && !adbnkBtn.disabled) {
+        /* --- WATERFALL AD UNLOCK DISPATCHER --- */
+        const waterfallBtn = event.target.closest('[data-action="waterfall-ad-unlock"]');
+        if (waterfallBtn && !waterfallBtn.disabled) {
             event.preventDefault();
-            const epId = adbnkBtn.dataset.episodeId;
+            const epId = waterfallBtn.dataset.episodeId;
+
+            // Notify user and switch buttons
+            toast('Primary ad network unavailable. Please use the alternative button.', 'info');
+            
+            waterfallBtn.style.display = 'none'; // Hide RS button
             
             const adbnkContainer = document.getElementById(`adbnk-slot-${epId}`);
             if (adbnkContainer) {
-                adbnkBtn.disabled = true;
-                adbnkBtn.textContent = 'Preparing secure ad...';
-                try {
-                    const pending = await api('/ads/adbnk/pending', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ episodeId: epId })
-                    });
-                    if (!pending?.pendingId || pending.zoneCode !== 'zone_f3fcad23db83') {
-                        throw new Error('Advertisement service returned an invalid pending reward.');
-                    }
-                    window.currentPendingId = pending.pendingId;
-                    window.currentPendingEpisodeId = epId;
-                    state.adbnkPendingIds[epId] = pending.pendingId;
-                    adbnkContainer.style.display = 'block';
-                    adbnkBtn.style.display = 'none';
-                    await loadAdbnkSdk();
-                    await waitForAdbnkSlot(adbnkContainer);
-                } catch (error) {
-                    state.adbnkPendingIds[epId] = null;
-                    resetAdbnkButton(adbnkBtn, adbnkContainer);
-                    toast(error.message || 'Advertisement is currently unavailable. Please try again later or unlock with coins.', 'error');
+                adbnkContainer.style.display = 'block'; // Show ADBNK wrapper
+                
+                // Force ADBNK to re-parse the tags in case they were added dynamically
+                if (window.adbnk && typeof window.adbnk.push === 'function') {
+                    window.adbnk.push({});
                 }
             }
             return;
@@ -1773,63 +1704,130 @@ document.addEventListener('click', async event => {
 });
 
 /* ============================================================================ */
-/* ROCKET SLOTH AD INTERCEPTOR: no authenticated completion signal is available. */
+/* ROCKET SLOTH AD INTERCEPTOR */
 /* ============================================================================ */
 document.addEventListener('rs:rewarded', async (event) => {
-    toast('Rocket rewards are disabled until an authenticated completion callback is available.', 'error');
+    const btn = event.target;
+    const receipt = event.detail || {};
+
+    // 1. Episode Unlock Logic
+    if (btn.id && btn.id.startsWith('waterfall-ad-btn-')) {
+        const episodeId = btn.dataset.episodeId;
+        
+        btn.disabled = true;
+        btn.innerHTML = 'Verifying ad...';
+
+        try {
+            const response = await api('/wallet/unlock-episode', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ episodeId: episodeId, method: 'AD', provider: 'ROCKET_SLOTH', receipt: receipt }) 
+            });
+
+            toast('Ad verified! Unlocking episode...', 'success');
+            
+            const epData = state.feedEpisodes.find(e => e._id === episodeId);
+            if (epData) epData.hasAccess = true;
+            if (state.currentEpisode && state.currentEpisode._id === episodeId) {
+                state.currentEpisode.hasAccess = true;
+            }
+            
+            const lockUI = document.getElementById(`lock-${episodeId}`);
+            if (lockUI) {
+                lockUI.classList.add('hidden');
+                const videoEl = lockUI.parentElement?.querySelector('video');
+                if (videoEl) {
+                    videoEl.setAttribute('controls', 'true');
+                    videoEl.play().catch(e => console.log("Autoplay blocked:", e));
+                }
+            }
+        } catch (error) {
+            toast('Ad verification failed. You must watch the full ad to unlock.', 'error');
+            btn.disabled = false;
+            btn.innerHTML = 'Watch Ad to Unlock';
+        }
+    }
+
+    // 2. Reward Claim Logic
+    if (btn.dataset.rewardId) {
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Verifying ad...';
+        
+        try {
+            await api(`/rewards/${encodeURIComponent(btn.dataset.rewardId)}/claim`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ method: 'AD', receipt: receipt }) 
+            });
+            
+            toast('Reward verified and added to your wallet', 'success'); 
+            await loadRewards(); 
+            refreshNotificationBadge();
+        } catch (error) { 
+            toast('Ad verification failed. You must watch the full ad to claim.', 'error');
+            btn.disabled = false; 
+            btn.textContent = originalText; 
+        }
+    }
 });
 
 /* ============================================================================ */
 /* ADBNK REWARD COMPLETION LISTENER */
 /* ============================================================================ */
 async function handleAdbnkUnlock(rewardData) {
-    const episodeId = rewardData.customData || rewardData.custom_data;
-    const pendingId = window.currentPendingId;
+    const episodeId = rewardData.customData || rewardData.custom_data || state.currentEpisode?._id;
+    const txId = rewardData.transactionId || rewardData.transaction_id;
 
-    if (!episodeId || !pendingId || window.currentPendingEpisodeId !== episodeId) {
-        toast('Reward could not be verified. Try again.', 'error');
-        return;
-    }
+    if (!episodeId) return;
 
-    try {
-        toast('Verifying reward...', 'info');
-        await api('/ads/adbnk/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                transactionId: rewardData.transactionId || rewardData.transaction_id,
-                signature: rewardData.signature,
-                keyId: rewardData.keyId || rewardData.key_id,
-                pendingId
-            })
-        });
+    toast('Ad completed! Waiting for secure server verification...', 'info');
 
-        const access = await api(`/ads/check-unlock/${encodeURIComponent(episodeId)}`);
-        if (!access?.unlocked) {
-            throw new Error('Reward verification completed, but episode access was not confirmed.');
-        }
+    let attempts = 0;
+    
+    const checkInterval = setInterval(async () => {
+        attempts++;
+        try {
+            const res = await api(`/ads/check-unlock/${episodeId}?userId=${state.user?._id || ''}`, { method: 'GET' });
+            
+            if (res && res.unlocked) {
+                clearInterval(checkInterval);
+                toast('Episode unlocked securely!', 'success');
+                
+                // 1. Update frontend state
+                const epData = state.feedEpisodes.find(e => e._id === episodeId);
+                if (epData) epData.hasAccess = true;
+                if (state.currentEpisode && state.currentEpisode._id === episodeId) {
+                    state.currentEpisode.hasAccess = true;
+                }
 
-        toast('Episode unlocked!', 'success');
-        state.adbnkPendingIds[episodeId] = null;
-        window.currentPendingId = null;
-        window.currentPendingEpisodeId = null;
-        const epData = state.feedEpisodes.find(e => e._id === episodeId);
-        if (epData) epData.hasAccess = true;
-        if (state.currentEpisode && state.currentEpisode._id === episodeId) state.currentEpisode.hasAccess = true;
-        const lockUI = document.getElementById(`lock-${episodeId}`);
-        if (lockUI) {
-            lockUI.classList.add('hidden');
-            const videoEl = lockUI.closest('.feed-video-card')?.querySelector('video');
-            if (videoEl) {
-                videoEl.setAttribute('controls', 'true');
-                videoEl.play().catch(() => {});
+                // 2. Hide lock overlay and resume video playback
+                const lockUI = document.getElementById(`lock-${episodeId}`);
+                if (lockUI) {
+                    lockUI.classList.add('hidden');
+                    const card = lockUI.closest('.feed-video-card');
+                    const videoEl = card ? card.querySelector('video') : null;
+                    if (videoEl) {
+                        videoEl.setAttribute('controls', 'true');
+                        videoEl.play().catch(e => console.warn('Autoplay blocked:', e));
+                    }
+                }
+            } else if (attempts >= 5) {
+                clearInterval(checkInterval);
+                toast('Verification delayed. Please check your network and refresh.', 'error');
             }
+        } catch (err) {
+            console.error("Status check failed", err);
         }
-    } catch (error) {
-        toast(error.message || 'Ad verification failed. No unlock was granted.', 'error');
-    }
+    }, 2000);
 }
 
+// Global handler (ADBNK SDK primary trigger)
+window.onAdbnkReward = function(reward) {
+    handleAdbnkUnlock(reward || {});
+};
+
+// Event listener (ADBNK SDK secondary trigger)
 document.addEventListener('adbnk:reward', (event) => {
     handleAdbnkUnlock(event.detail || {});
 });
