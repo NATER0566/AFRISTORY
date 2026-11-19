@@ -90,11 +90,12 @@ export default async function walletRoutes(fastify, opts) {
       await verifyAuth(request, reply);
 
       if (!request.user) {
+        await session.abortTransaction();
         return sendError(reply, 'Unauthorized', 401);
       }
 
-      // ADDED: Accept provider and transactionId parameters
-      const { episodeId, method = 'COIN', provider = 'ROCKET_SLOTH', receipt = {}, transactionId } = request.body || {};
+      const { episodeId, method = 'COIN', provider = 'ROCKET_SLOTH', receipt, transactionId } = request.body || {};
+      const safeReceipt = (receipt && typeof receipt === 'object') ? receipt : {};
 
       if (!episodeId) {
         await session.abortTransaction();
@@ -136,26 +137,28 @@ export default async function walletRoutes(fastify, opts) {
       // ============================================
       // LOGIC 1: UNLOCK USING AN AD
       // ============================================
-      if (method.toUpperCase() === 'AD') {
+      if (String(method).toUpperCase() === 'AD') {
+        const rawStatus = safeReceipt.status || '';
+        const status = typeof rawStatus === 'string' ? rawStatus.toLowerCase().trim() : '';
+        const rewardGranted = safeReceipt.reward === true || safeReceipt.reward === 'true' || safeReceipt.reward === 1;
+        const isSuccess = status === 'granted' && rewardGranted;
 
-        const rawStatus = receipt.status || String(receipt);
-        const status = typeof rawStatus === 'string' ? rawStatus.toLowerCase() : rawStatus;
-        const isSuccess = status === 'granted' && receipt.reward === true;
-        
         if (!isSuccess) {
           fastify.log.warn(`[AD_REJECTED] User ${request.user._id} attempted to unlock episode ${episodeId} without completing the ad.`);
           await session.abortTransaction();
           return sendError(reply, 'You must watch the full ad to unlock this episode.', 403);
         }
 
-        // Ad is verified. Create unlock record.
+        const resolvedTxId = transactionId || safeReceipt.transactionId || safeReceipt.id || `rs_${Date.now()}`;
+
+        // Ad is verified. Create permanent unlock record in MongoDB.
         const unlock = new Unlock({
           userId: request.user._id,
           episodeId,
           seriesId: episode.seriesId,
           method: 'AD',
           provider: provider,
-          transactionId: transactionId || `rs_${Date.now()}`
+          transactionId: resolvedTxId
         });
         await unlock.save({ session });
 
