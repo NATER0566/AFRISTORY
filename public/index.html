@@ -22,13 +22,13 @@
   <meta property="og:description" content="Watch premium original series, short films, and documentaries made by African creators.">
   <meta property="og:image" content="/images/og-image.jpg">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="theme-color" content="#111111">
+  <meta name="theme-color" content="#0B0B0D">
   <meta name="csrf-token" content="{{ csrfToken }}">
   
   <!-- FONTS & EXTERNAL LIBS -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Space+Grotesk:wght@500;600;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/zxcvbn/4.4.2/zxcvbn.js"></script>
@@ -36,281 +36,738 @@
   <script src="https://cdn.tailwindcss.com"></script>
   
   <script>
-    tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif'], display:['Space Grotesk', 'sans-serif']},colors:{background:'#111111',surface:'#1B1B1B',accent:'#D4A017',action:'#E67E22',success:'#2ECC71',danger:'#E74C3C'}}}};
+    tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif'], display:['Space Grotesk', 'sans-serif']},colors:{background:'#0B0B0D',surface:'#16161A',accent:'#F5B82E',action:'#F97316',success:'#2ECC71',danger:'#E74C3C'}}}};
   </script>
 
   <style>
-    body { background-color: #111111; color: #f5f5f5; font-family: 'Inter', sans-serif; overflow-x: hidden; margin: 0; -webkit-font-smoothing: antialiased; }
+    :root {
+      --bg-base: #0B0B0D;
+      --bg-surface: #16161A;
+      --gold: #F5B82E;
+      --gold-deep: #D4A017;
+      --ember: #F97316;
+      --ember-hover: #EA580C;
+      --text-primary: #FFFFFF;
+      --text-secondary: #E2E8F0;
+      --text-muted: #CBD5E1;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      margin: 0;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
     button { cursor: pointer; font-family: inherit; }
-    
+
+    /* ================= PREMIERE LAUNCH RIBBON ================= */
+    .premiere-ribbon {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 36px;
+      z-index: 1002;
+      background: linear-gradient(90deg, #1E1608 0%, #3A2506 50%, #1E1608 100%);
+      border-bottom: 1px solid rgba(245, 184, 46, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 16px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: #FEF3C7;
+    }
+    .premiere-ribbon .ribbon-pill {
+      background: var(--gold);
+      color: #0B0B0D;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .premiere-ribbon button {
+      background: none;
+      border: 0;
+      color: var(--gold);
+      font-weight: 900;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      font-size: 12px;
+      padding: 0;
+    }
+    @media (max-width: 640px) {
+      .premiere-ribbon { font-size: 11px; gap: 6px; }
+      .premiere-ribbon .hide-xs { display: none; }
+    }
+
     /* ================= HEADER & LOGO ALIGNMENT ================= */
     .public-header {
-      position: fixed; top: 0; left: 0; right: 0; min-height: 88px; z-index: 1000;
-      display: flex; align-items: center; justify-content: space-between; padding: 12px 5vw;
-      background: rgba(17,17,17,0.97); border-bottom: 1px solid #292929; gap: 28px;
+      position: fixed;
+      top: 36px;
+      left: 0;
+      right: 0;
+      min-height: 82px;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 5vw;
+      background: rgba(11, 11, 13, 0.88);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      gap: 24px;
     }
     
-    .brand-logo-container { display: flex; align-items: center; gap: 18px; text-decoration: none; min-width: 0; flex-shrink: 1; }
-    .brand-mark-box { width: 46px; height: 46px; font-size: 28px; flex-shrink: 0; background-color: #D4A017; color: #111; font-family: Georgia, 'Times New Roman', serif; font-weight: bold; display: flex; align-items: center; justify-content: center; transform: rotate(-6deg); border-radius: 4px; }
-    .brand-text { font-size: 25px; font-weight: 900; letter-spacing: 1px; }
+    .brand-logo-container { display: flex; align-items: center; gap: 16px; text-decoration: none; min-width: 0; flex-shrink: 1; }
+    .brand-mark-box {
+      width: 46px; height: 46px; font-size: 28px; flex-shrink: 0;
+      background: linear-gradient(135deg, #F5B82E, #D4A017);
+      color: #0B0B0D; font-family: Georgia, 'Times New Roman', serif; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      transform: rotate(-6deg); border-radius: 6px;
+      box-shadow: 0 8px 24px rgba(245, 184, 46, 0.35);
+    }
+    .brand-text { font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 900; letter-spacing: 1px; }
     .brand-text-afro { color: #ffffff; }
-    .brand-text-story { color: #D4A017; }
+    .brand-text-story { color: var(--gold); }
     
-    .header-actions { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
-    .btn-outline, .btn-solid { min-height: 44px; padding: 0 20px; border-radius: 8px; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; transition: 0.2s; }
-    .btn-outline { border: 1px solid #D4A017; color: #D4A017; background: transparent; }
-    .btn-outline:hover { background: #D4A017; color: #111; }
-    .btn-solid { background: #E67E22; color: #fff; border: 1px solid #E67E22; }
-    .btn-solid:hover { background: #cf6f1b; border-color: #cf6f1b; }
+    .header-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .btn-outline, .btn-solid {
+      min-height: 44px; padding: 0 22px; border-radius: 10px;
+      font-size: 14px; font-weight: 800; letter-spacing: 0.02em;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-outline { border: 1.5px solid var(--gold); color: var(--gold); background: rgba(245, 184, 46, 0.06); }
+    .btn-outline:hover { background: var(--gold); color: #0B0B0D; transform: translateY(-1px); }
+    .btn-solid {
+      background: linear-gradient(135deg, #F97316 0%, #EA580C 100%);
+      color: #fff; border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: 0 8px 24px rgba(249, 115, 22, 0.35);
+    }
+    .btn-solid:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(249, 115, 22, 0.5); }
 
     @media (max-width: 600px) {
-        .public-header { min-height: 82px; padding: 10px 18px; gap: 16px; }
-        .brand-logo-container { gap: 12px; }
-        
-        /* RESTORED LOGO BOX ON MOBILE */
-        .brand-mark-box { width: 40px; height: 40px; font-size: 24px; display: flex; }
-        
-        .brand-text { font-size: 20px; letter-spacing: .5px; }
-        .header-actions { gap: 8px; }
-        .btn-outline, .btn-solid { min-height: 40px; padding: 0 12px; font-size: 12px; }
+      .public-header { min-height: 76px; padding: 10px 16px; gap: 12px; }
+      .brand-logo-container { gap: 10px; }
+      .brand-mark-box { width: 38px; height: 38px; font-size: 22px; display: flex; }
+      .brand-text { font-size: 20px; letter-spacing: 0.5px; }
+      .header-actions { gap: 8px; }
+      .btn-outline, .btn-solid { min-height: 40px; padding: 0 13px; font-size: 12px; }
     }
 
     @media (max-width: 390px) {
-        .brand-text { width: 75px; white-space: normal; line-height: 0.95; }
-        .brand-text-afro, .brand-text-story { display: block; }
-        .header-actions { gap: 6px; }
-        .btn-outline, .btn-solid { padding: 0 9px; font-size: 11px; }
+      .brand-text { width: 75px; white-space: normal; line-height: 0.95; }
+      .brand-text-afro, .brand-text-story { display: block; }
+      .header-actions { gap: 6px; }
+      .btn-outline, .btn-solid { padding: 0 10px; font-size: 11px; }
     }
 
-    /* ================= MAIN HERO (STATIC) ================= */
-    .afrostory-hero { position: relative; width: 100%; min-height: 560px; padding: 110px 5vw 70px; background: radial-gradient(circle at 80% 35%, rgba(212,160,23,0.12), transparent 35%), linear-gradient(135deg, #111111 0%, #151515 55%, #1b1710 100%); border-bottom: 1px solid #252525; overflow: hidden; margin-top: 88px; }
-    .afrostory-hero::before { content: ""; position: absolute; width: 520px; height: 520px; right: -180px; top: -150px; border: 1px solid rgba(212,160,23,0.12); border-radius: 50%; }
-    .afrostory-hero::after { content: ""; position: absolute; width: 350px; height: 350px; right: 20px; bottom: -220px; border: 1px solid rgba(212,160,23,0.08); border-radius: 50%; }
+    /* ================= MAIN HERO (HIGH-CONTRAST CINEMA STAGE) ================= */
+    .afrostory-hero {
+      position: relative; width: 100%; min-height: 580px;
+      padding: 90px 5vw 75px;
+      background:
+        radial-gradient(circle at 82% 28%, rgba(245, 184, 46, 0.2), transparent 42%),
+        radial-gradient(circle at 18% 80%, rgba(249, 115, 22, 0.14), transparent 45%),
+        linear-gradient(135deg, #0B0B0D 0%, #121216 55%, #1D160B 100%);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      margin-top: 118px;
+    }
+    .afrostory-hero::before {
+      content: ""; position: absolute; width: 540px; height: 540px; right: -160px; top: -140px;
+      border: 1px solid rgba(245, 184, 46, 0.18); border-radius: 50%; pointer-events: none;
+    }
+    .afrostory-hero::after {
+      content: ""; position: absolute; width: 380px; height: 380px; right: 40px; bottom: -210px;
+      border: 1px solid rgba(249, 115, 22, 0.15); border-radius: 50%; pointer-events: none;
+    }
 
-    .hero-inner { position: relative; z-index: 2; width: 100%; max-width: 1250px; min-height: 430px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 80px; }
-    .hero-copy { max-width: 720px; }
-    .hero-eyebrow { display: inline-flex; align-items: center; gap: 10px; color: #D4A017; font-size: 13px; font-weight: 800; letter-spacing: 2px; margin-bottom: 20px; }
+    .hero-inner {
+      position: relative; z-index: 2; width: 100%; max-width: 1260px; min-height: 430px;
+      margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 64px;
+    }
+    .hero-copy { max-width: 730px; }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 6px 14px; border-radius: 999px;
+      background: rgba(245, 184, 46, 0.14); border: 1px solid rgba(245, 184, 46, 0.35);
+      color: var(--gold); font-size: 12px; font-weight: 900; letter-spacing: 0.14em;
+      text-transform: uppercase; margin-bottom: 22px;
+    }
     
-    .hero-copy h1 { margin: 0 0 24px; font-family: 'Space Grotesk', sans-serif; font-size: clamp(3rem, 6vw, 5.8rem); line-height: 0.98; letter-spacing: -2px; font-weight: 900; color: #fff; }
-    .hero-copy p { max-width: 650px; margin: 0 0 32px; color: #bdbdbd; font-size: clamp(1rem, 2vw, 1.2rem); line-height: 1.7; }
+    .hero-copy h1 {
+      margin: 0 0 22px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(3.1rem, 6.2vw, 5.9rem);
+      line-height: 0.96;
+      letter-spacing: -0.03em;
+      font-weight: 900;
+      color: #FFFFFF;
+      text-shadow: 0 6px 30px rgba(0, 0, 0, 0.65);
+    }
+    .hero-copy h1 .hero-gold-highlight {
+      background: linear-gradient(90deg, #F5B82E 0%, #F97316 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-copy p {
+      max-width: 640px; margin: 0 0 30px;
+      color: #E2E8F0; font-size: clamp(1.05rem, 2vw, 1.25rem);
+      font-weight: 500; line-height: 1.65;
+    }
 
     .hero-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-    .hero-primary { display: inline-flex; align-items: center; justify-content: center; gap: 9px; padding: 14px 24px; border: 0; border-radius: 7px; background: #E67E22; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.2s ease; }
-    .hero-primary:hover { background: #cf6f1b; transform: translateY(-2px); }
-    .hero-primary svg { width: 18px; height: 18px; }
-    .hero-secondary { display: inline-flex; align-items: center; gap: 8px; padding: 13px 22px; border: 1px solid #444; border-radius: 7px; color: #ddd; text-decoration: none; font-size: 15px; font-weight: 600; transition: 0.2s ease; cursor: pointer; }
-    .hero-secondary:hover { border-color: #D4A017; color: #D4A017; }
-    .hero-secondary svg { width: 16px; height: 16px; }
+    .hero-primary {
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 16px 28px; border: 0; border-radius: 10px;
+      background: linear-gradient(135deg, #F97316 0%, #EA580C 100%);
+      color: #fff; font-size: 16px; font-weight: 900; letter-spacing: 0.01em;
+      box-shadow: 0 14px 34px rgba(249, 115, 22, 0.42);
+      transition: all 0.22s ease;
+    }
+    .hero-primary:hover { transform: translateY(-2px); box-shadow: 0 18px 40px rgba(249, 115, 22, 0.58); }
+    .hero-primary svg { width: 19px; height: 19px; }
 
-    .hero-brand-panel { width: 330px; min-width: 330px; display: flex; align-items: center; gap: 22px; padding: 32px; border: 1px solid #303030; border-radius: 18px; background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015)); box-shadow: 0 25px 60px rgba(0,0,0,0.35); }
-    .hero-brand-mark { width: 78px; height: 78px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #D4A017; color: #111; font-family: Georgia, serif; font-size: 48px; font-weight: bold; transform: rotate(-6deg); border-radius: 4px; }
+    .hero-secondary {
+      display: inline-flex; align-items: center; gap: 9px;
+      padding: 15px 24px; border: 1.5px solid rgba(255, 255, 255, 0.28);
+      background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(8px);
+      border-radius: 10px; color: #FFFFFF; text-decoration: none;
+      font-size: 15px; font-weight: 800; transition: 0.2s ease;
+    }
+    .hero-secondary:hover { border-color: var(--gold); color: var(--gold); background: rgba(245, 184, 46, 0.08); }
+    .hero-secondary svg { width: 17px; height: 17px; }
+
+    .hero-proof-strip {
+      margin-top: 26px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+      font-size: 13px; font-weight: 700; color: #CBD5E1;
+    }
+    .hero-proof-strip span { display: inline-flex; align-items: center; gap: 6px; }
+    .hero-proof-strip i { color: var(--gold); }
+
+    .hero-brand-panel {
+      width: 360px; min-width: 360px; display: flex; flex-direction: column; gap: 20px;
+      padding: 30px; border: 1px solid rgba(245, 184, 46, 0.32); border-radius: 20px;
+      background: linear-gradient(155deg, rgba(28, 28, 34, 0.92), rgba(15, 15, 19, 0.96));
+      backdrop-filter: blur(16px);
+      box-shadow: 0 28px 70px rgba(0, 0, 0, 0.6);
+    }
+    .hero-brand-top { display: flex; align-items: center; gap: 18px; }
     .hero-brand-name { font-family: 'Space Grotesk', sans-serif; font-size: 27px; font-weight: 900; letter-spacing: 0.5px; }
     .hero-brand-name span { color: #fff; }
-    .hero-brand-name strong { color: #D4A017; }
-    .hero-brand-panel p { margin: 10px 0 0; color: #777; font-size: 13px; line-height: 1.6; }
+    .hero-brand-name strong { color: var(--gold); }
+    .hero-inside-list {
+      list-style: none; padding: 16px 0 0; margin: 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex; flex-direction: column; gap: 11px;
+      font-size: 13px; font-weight: 700; color: #F1F5F9;
+    }
+    .hero-inside-list li { display: flex; align-items: center; gap: 9px; }
 
-    @media (max-width: 850px) {
-        .afrostory-hero { min-height: auto; padding: 105px 24px 55px; margin-top: 80px; }
-        .hero-inner { min-height: auto; flex-direction: column; align-items: stretch; gap: 40px; }
-        .hero-copy h1 { font-size: clamp(2.7rem, 12vw, 4rem); letter-spacing: -1.5px; }
-        .hero-copy p { font-size: 1rem; line-height: 1.65; }
-        .hero-brand-panel { width: 100%; min-width: 0; max-width: 520px; }
+    @media (max-width: 900px) {
+      .afrostory-hero { min-height: auto; padding: 65px 22px 55px; margin-top: 112px; }
+      .hero-inner { min-height: auto; flex-direction: column; align-items: stretch; gap: 36px; }
+      .hero-copy h1 { font-size: clamp(2.8rem, 11vw, 4.2rem); letter-spacing: -0.025em; }
+      .hero-brand-panel { width: 100%; min-width: 0; max-width: 540px; }
     }
     @media (max-width: 500px) {
-        .afrostory-hero { padding: 40px 20px 45px; margin-top: 80px; }
-        .hero-actions { width: 100%; flex-direction: column; align-items: stretch; }
-        .hero-primary, .hero-secondary { width: 100%; justify-content: center; }
-        .hero-brand-panel { padding: 24px; flex-direction: column; text-align: center; }
-        .hero-brand-mark { width: 64px; height: 64px; font-size: 38px; }
-        .hero-brand-name { font-size: 22px; }
+      .afrostory-hero { padding: 42px 18px 46px; margin-top: 110px; }
+      .hero-actions { width: 100%; flex-direction: column; align-items: stretch; }
+      .hero-primary, .hero-secondary { width: 100%; justify-content: center; }
     }
 
-    /* ================= UNIVERSAL CAROUSEL STRUCTURE ================= */
-    .carousel-section { padding: 40px 4vw; background: #111; }
-    .carousel-header { font-family: 'Space Grotesk', sans-serif; font-size: 1.5rem; font-weight: 700; margin-bottom: 20px; color: #fff; display: flex; align-items: center; gap: 8px;}
-    .carousel-wrapper { width: 100%; max-width: 1200px; margin: 0 auto; height: 50vh; min-height: 350px; max-height: 500px; position: relative; border-radius: 12px; overflow: hidden; background: #1B1B1B; border: 1px solid #333; }
+    /* ================= UNIVERSAL CAROUSEL STRUCTURE (PROMO IMAGES) ================= */
+    .carousel-section { padding: 48px 4vw; background: var(--bg-base); }
+    .carousel-header {
+      width: 100%; max-width: 1240px; margin: 0 auto 20px;
+      font-family: 'Space Grotesk', sans-serif; font-size: clamp(1.6rem, 3vw, 2.2rem);
+      font-weight: 900; color: #FFFFFF; letter-spacing: -0.01em;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .carousel-wrapper {
+      width: 100%; max-width: 1240px; margin: 0 auto;
+      height: 54vh; min-height: 380px; max-height: 520px;
+      position: relative; border-radius: 18px; overflow: hidden;
+      background: #16161A; border: 1px solid rgba(245, 184, 46, 0.25);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+    }
     .carousel-track { width: 100%; height: 100%; position: relative; }
-    .carousel-slide { position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s ease-in-out; background-size: cover; background-position: center; z-index: 1; display: flex; align-items: center; justify-content: center; }
+    .carousel-slide {
+      position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s ease-in-out;
+      background-size: cover; background-position: center; z-index: 1;
+      display: flex; align-items: center; justify-content: flex-start;
+    }
     .carousel-slide.active { opacity: 1; z-index: 2; }
     
-    .carousel-overlay { position: absolute; inset: 0; background: linear-gradient(to right, rgba(17,17,17,0.95) 0%, rgba(17,17,17,0.4) 100%); z-index: 2; }
-    .video-carousel-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); z-index: 2; pointer-events: none; transition: background 0.3s; }
-    
-    .carousel-content { position: relative; z-index: 3; height: 100%; width: 100%; display: flex; flex-direction: column; justify-content: center; padding: 40px; max-width: 600px; }
-    .video-carousel-content { position: absolute; bottom: 0; left: 0; right: 0; padding: 30px; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%); z-index: 3; pointer-events: none;}
-    
-    .carousel-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.6); color: white; border: 1px solid #555; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 50%; transition: 0.2s; }
-    .carousel-nav:hover { background: #D4A017; color: #111; border-color: #D4A017; }
-    .carousel-nav.prev { left: 15px; }
-    .carousel-nav.next { right: 15px; }
-    
-    .carousel-indicators { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; gap: 8px; }
-    .carousel-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.4); cursor: pointer; transition: 0.3s; }
-    .carousel-dot.active { background: #D4A017; transform: scale(1.3); }
+    .carousel-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(95deg, rgba(11,11,13,0.94) 0%, rgba(11,11,13,0.72) 52%, rgba(11,11,13,0.18) 100%);
+      z-index: 2;
+    }
+    .carousel-content {
+      position: relative; z-index: 3; height: 100%; width: 100%;
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 44px 56px; max-width: 680px;
+    }
+    .carousel-content h2, .carousel-content h3 {
+      font-family: 'Space Grotesk', sans-serif !important;
+      font-weight: 900 !important;
+      font-size: clamp(1.85rem, 3.6vw, 2.9rem) !important;
+      line-height: 1.08 !important;
+      color: #FFFFFF !important;
+      text-shadow: 0 4px 22px rgba(0,0,0,0.92);
+      margin-bottom: 14px !important;
+    }
+    .carousel-content p {
+      font-size: clamp(1rem, 1.4vw, 1.15rem) !important;
+      font-weight: 600 !important;
+      line-height: 1.6 !important;
+      color: #F1F5F9 !important;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.9);
+      margin-bottom: 24px !important;
+    }
 
-    .play-pause-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; background: rgba(212,160,23,0.9); color: #111; width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; transition: 0.2s; }
-    .play-pause-btn:hover { transform: translate(-50%, -50%) scale(1.1); }
-    .carousel-slide video, .carousel-slide img { width: 100%; height: 100%; object-fit: cover; }
+    .carousel-nav {
+      position: absolute; top: 50%; transform: translateY(-50%); z-index: 10;
+      background: rgba(11,11,13,0.75); backdrop-filter: blur(8px);
+      color: #FFFFFF; border: 1.5px solid rgba(255,255,255,0.28);
+      width: 46px; height: 46px; display: flex; align-items: center; justify-content: center;
+      border-radius: 50%; transition: 0.2s;
+    }
+    .carousel-nav:hover { background: var(--gold); color: #0B0B0D; border-color: var(--gold); }
+    .carousel-nav.prev { left: 16px; }
+    .carousel-nav.next { right: 16px; }
+    
+    .carousel-indicators { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; gap: 9px; }
+    .carousel-dot { width: 10px; height: 10px; border-radius: 999px; background: rgba(255,255,255,0.45); cursor: pointer; transition: 0.3s; }
+    .carousel-dot.active { width: 26px; background: var(--gold); }
 
-    /* ================= FEATURED VIDEO SHOWCASE ================= */
-    .video-showcase-section { padding: 70px 4vw; background: #111; }
-    .video-showcase-heading { width: 100%; max-width: 1200px; margin: 0 auto 25px; }
-    .showcase-eyebrow { display: block; margin-bottom: 8px; color: #D4A017; font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
-    .video-showcase-heading h2 { margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; color: #fff; }
-    .video-showcase-heading p { margin: 10px 0 0; color: #888; font-size: 15px; }
+    @media (max-width: 700px) {
+      .carousel-content { padding: 28px 24px; }
+    }
 
-    .video-showcase { position: relative; width: 100%; max-width: 1200px; height: 560px; margin: 0 auto; overflow: hidden; border-radius: 18px; border: 1px solid #303030; background: #181818; box-shadow: 0 25px 70px rgba(0,0,0,0.35); }
+    /* ================= FEATURED VIDEO SHOWCASE (AUTO-VISIBLE + BOLD TEXT) ================= */
+    .video-showcase-section { padding: 64px 4vw; background: var(--bg-base); }
+    .video-showcase-heading {
+      width: 100%; max-width: 1240px; margin: 0 auto 24px;
+      display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+    }
+    .showcase-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-bottom: 8px; color: var(--gold);
+      font-size: 12px; font-weight: 900; letter-spacing: 0.16em; text-transform: uppercase;
+    }
+    .showcase-eyebrow::before {
+      content: ""; width: 8px; height: 8px; border-radius: 50%;
+      background: #EF4444; box-shadow: 0 0 10px #EF4444;
+    }
+    .video-showcase-heading h2 {
+      margin: 0; font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(2.1rem, 4.2vw, 3.2rem); font-weight: 900;
+      letter-spacing: -0.02em; color: #FFFFFF;
+    }
+    .video-showcase-heading p {
+      margin: 8px 0 0; color: #CBD5E1; font-size: 16px; font-weight: 600;
+    }
+
+    .video-showcase {
+      position: relative; width: 100%; max-width: 1240px; height: 590px;
+      margin: 0 auto; overflow: hidden; border-radius: 20px;
+      border: 1.5px solid rgba(245, 184, 46, 0.3);
+      background: #121216;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.65);
+    }
     .video-showcase-track { position: relative; width: 100%; height: 100%; }
-    .video-showcase-slide { position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s ease; background: #000; }
-    .video-showcase-slide.active { opacity: 1; z-index: 2; }
-    .video-showcase-slide video, .video-showcase-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .video-showcase-slide::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.25) 55%, rgba(0,0,0,0.12) 100%); pointer-events: none; }
-    
-    .video-showcase-content { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; padding: 45px; max-width: 650px; pointer-events: none; }
-    .video-showcase-content .badge { display: inline-block; margin-bottom: 12px; padding: 6px 12px; border-radius: 5px; background: rgba(212,160,23,0.2); color: #D4A017; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; }
-    .video-showcase-content h3 { margin: 0 0 10px; font-family: 'Space Grotesk', sans-serif; font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 800; color: #fff; }
-    .video-showcase-content p { margin: 0; color: #ddd; font-size: 15px; line-height: 1.6; }
-    
-    .video-play-btn { absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; background: rgba(212,160,23,0.9); color: #111; width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; transition: 0.2s; pointer-events: auto; }
-    .video-play-btn:hover { background: #D4A017; transform: translate(-50%, -50%) scale(1.1); }
+    .video-showcase-slide {
+      position: absolute; inset: 0; opacity: 0; visibility: hidden;
+      transition: opacity 0.55s ease, visibility 0.55s ease;
+      background: #0B0B0D;
+    }
+    .video-showcase-slide.active { opacity: 1; visibility: visible; z-index: 2; }
+    .video-showcase-slide video,
+    .video-showcase-slide img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+      filter: contrast(1.05) saturate(1.08);
+    }
 
-    .video-showcase-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 20; width: 46px; height: 46px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.25); background: rgba(0,0,0,0.6); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
-    .video-showcase-nav:hover { background: #D4A017; color: #111; border-color: #D4A017; }
+    /* Keep top & center video bright & unobstructed; crisp vignette only behind bottom text */
+    .video-carousel-overlay,
+    .video-showcase-slide::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to top,
+        rgba(8, 8, 10, 0.96) 0%,
+        rgba(8, 8, 10, 0.72) 32%,
+        rgba(8, 8, 10, 0.12) 64%,
+        rgba(8, 8, 10, 0.25) 100%
+      ) !important;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    /* Hide center blocking play button when autoplaying video is active */
+    .video-showcase-slide.video-live .play-pause-btn,
+    .video-showcase-slide.video-live .video-play-btn {
+      opacity: 0 !important;
+      pointer-events: none !important;
+      transform: translate(-50%, -50%) scale(0.8);
+    }
+
+    .play-pause-btn,
+    .video-play-btn {
+      position: absolute; top: 44%; left: 50%; transform: translate(-50%, -50%);
+      z-index: 10; background: rgba(245, 184, 46, 0.95); color: #0B0B0D;
+      width: 68px; height: 68px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      border: 3px solid rgba(255,255,255,0.65);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+      transition: all 0.25s ease;
+    }
+    .play-pause-btn:hover,
+    .video-play-btn:hover { transform: translate(-50%, -50%) scale(1.1); background: #FFFFFF; }
+
+    /* Top-right Sound Toggle Pill on Video Slides */
+    .video-sound-pill {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      z-index: 25;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 15px;
+      border-radius: 999px;
+      background: rgba(11, 11, 13, 0.78);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1.5px solid rgba(245, 184, 46, 0.55);
+      color: #FFFFFF;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      transition: all 0.2s ease;
+    }
+    .video-sound-pill:hover {
+      background: var(--gold);
+      color: #0B0B0D;
+    }
+
+    /* High-Clarity Bold Typography for BOTH .video-carousel-content & .video-showcase-content */
+    .video-carousel-content,
+    .video-showcase-content {
+      position: absolute !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      z-index: 6 !important;
+      padding: 42px 48px 54px !important;
+      max-width: 820px !important;
+      background: none !important;
+      pointer-events: none;
+    }
+    .video-carousel-content .badge,
+    .video-showcase-content .badge {
+      display: inline-flex !important;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 12px !important;
+      padding: 6px 13px !important;
+      border-radius: 6px !important;
+      background: rgba(245, 184, 46, 0.22) !important;
+      border: 1px solid rgba(245, 184, 46, 0.65) !important;
+      color: #FDE68A !important;
+      font-size: 12px !important;
+      font-weight: 900 !important;
+      letter-spacing: 0.14em !important;
+      text-transform: uppercase !important;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+    }
+    .video-carousel-content h3,
+    .video-showcase-content h3 {
+      margin: 0 0 10px !important;
+      font-family: 'Space Grotesk', sans-serif !important;
+      font-size: clamp(1.85rem, 4vw, 3.15rem) !important;
+      font-weight: 900 !important;
+      line-height: 1.06 !important;
+      letter-spacing: -0.02em !important;
+      color: #FFFFFF !important;
+      text-shadow: 0 4px 24px rgba(0, 0, 0, 0.98), 0 1px 3px rgba(0, 0, 0, 0.95) !important;
+    }
+    .video-carousel-content p,
+    .video-showcase-content p {
+      margin: 0 !important;
+      color: #F8FAFC !important;
+      font-size: clamp(0.98rem, 1.5vw, 1.15rem) !important;
+      font-weight: 600 !important;
+      line-height: 1.55 !important;
+      max-width: 640px !important;
+      text-shadow: 0 2px 14px rgba(0, 0, 0, 0.98) !important;
+    }
+
+    /* Conversion Trap CTA overlay inside Video Showcase */
+    .showcase-trap-cta {
+      position: absolute;
+      right: 36px;
+      bottom: 48px;
+      z-index: 22;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+    }
+    .showcase-trap-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 14px 24px;
+      border-radius: 12px;
+      border: 1.5px solid rgba(255, 255, 255, 0.35);
+      background: linear-gradient(135deg, #F97316 0%, #EA580C 100%);
+      color: #FFFFFF;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.75);
+      transition: all 0.22s ease;
+    }
+    .showcase-trap-btn:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 16px 38px rgba(249, 115, 22, 0.55);
+    }
+    .showcase-trap-sub {
+      font-size: 11px;
+      font-weight: 800;
+      color: #FDE68A;
+      background: rgba(11, 11, 13, 0.8);
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(245, 184, 46, 0.35);
+    }
+
+    .video-showcase-nav {
+      position: absolute; top: 50%; transform: translateY(-50%); z-index: 20;
+      width: 48px; height: 48px; border-radius: 50%;
+      border: 1.5px solid rgba(255,255,255,0.35);
+      background: rgba(11,11,13,0.75); backdrop-filter: blur(8px);
+      color: #fff; display: flex; align-items: center; justify-content: center;
+      transition: 0.2s;
+    }
+    .video-showcase-nav:hover { background: var(--gold); color: #0B0B0D; border-color: var(--gold); }
     .video-showcase-nav.prev { left: 18px; }
     .video-showcase-nav.next { right: 18px; }
     
-    .video-showcase-dots { position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 20; display: flex; gap: 8px; }
+    .video-showcase-dots { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 20; display: flex; gap: 8px; }
 
-    .video-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #666; text-align: center; background:#1B1B1B;}
-    .video-placeholder h3 { margin: 18px 0 5px; color: #ddd; font-size: 20px; }
-    .video-placeholder p { color: #777; }
-
-    @media (max-width: 700px) {
-        .video-showcase-section { padding: 50px 20px; }
-        .video-showcase { height: 440px; border-radius: 14px; }
-        .video-showcase-content { padding: 25px; }
-        .video-showcase-nav { width: 40px; height: 40px; }
-        .video-showcase-nav.prev { left: 10px; }
-        .video-showcase-nav.next { right: 10px; }
+    @media (max-width: 820px) {
+      .video-showcase-section { padding: 48px 16px; }
+      .video-showcase { height: 480px; border-radius: 16px; }
+      .video-carousel-content,
+      .video-showcase-content { padding: 24px 20px 104px !important; }
+      .showcase-trap-cta {
+        left: 20px;
+        right: 20px;
+        bottom: 42px;
+        align-items: stretch;
+      }
+      .showcase-trap-btn { justify-content: center; padding: 12px 18px; font-size: 13px; }
+      .showcase-trap-sub { display: none; }
+      .video-showcase-nav { width: 40px; height: 40px; top: 38%; }
+      .video-showcase-nav.prev { left: 10px; }
+      .video-showcase-nav.next { right: 10px; }
     }
 
     /* ================= CONTENT GRIDS & ADS ================= */
-    .section-container { padding: 20px 4vw 40px; max-width: 1400px; margin: 0 auto; }
-    .section-title { font-family: 'Space Grotesk', sans-serif; font-size: 1.8rem; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; color: #fff; }
-    .scroll-hint { font-size: 13px; color: #888; margin-bottom: 24px; display: flex; align-items: center; gap: 6px; }
+    .section-container { padding: 28px 4vw 44px; max-width: 1400px; margin: 0 auto; }
+    .section-title {
+      font-family: 'Space Grotesk', sans-serif; font-size: clamp(1.65rem, 3vw, 2.25rem);
+      font-weight: 900; margin-bottom: 8px; display: flex; align-items: center; gap: 10px;
+      color: #FFFFFF; letter-spacing: -0.01em;
+    }
+    .scroll-hint { font-size: 14px; font-weight: 600; color: #CBD5E1; margin-bottom: 24px; display: flex; align-items: center; gap: 6px; }
     
-    .horizontal-scroll { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 16px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+    .horizontal-scroll { display: flex; gap: 18px; overflow-x: auto; padding-bottom: 16px; scroll-snap-type: x mandatory; scrollbar-width: none; }
     .horizontal-scroll::-webkit-scrollbar { display: none; }
     
-    /* OVERLAY CARD DESIGN (Cinematic 4:5 aspect ratio, text over image) */
+    /* OVERLAY CARD DESIGN */
     .content-card { 
-        flex: 0 0 280px; 
-        aspect-ratio: 4/5; 
-        scroll-snap-align: start; 
-        cursor: pointer; 
-        transition: transform 0.2s; 
-        position: relative; 
-        border-radius: 12px; 
-        overflow: hidden; 
-        border: 1px solid #333; 
-        display: block; 
-        background: #000; 
-        padding: 0; 
-        text-align: left; 
+      flex: 0 0 280px; 
+      aspect-ratio: 4/5; 
+      scroll-snap-align: start; 
+      cursor: pointer; 
+      transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease; 
+      position: relative; 
+      border-radius: 14px; 
+      overflow: hidden; 
+      border: 1.5px solid rgba(255, 255, 255, 0.14); 
+      display: block; 
+      background: #121216; 
+      padding: 0; 
+      text-align: left; 
     }
-    .content-card:hover { transform: translateY(-5px); border-color: #D4A017; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-    .content-card img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; display: block; }
-    .content-card:hover img { transform: scale(1.05); }
+    .content-card:hover { transform: translateY(-6px); border-color: var(--gold); box-shadow: 0 16px 34px rgba(0,0,0,0.7); }
+    .content-card img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.45s ease; display: block; }
+    .content-card:hover img { transform: scale(1.06); }
     
     .card-overlay { 
-        position: absolute; inset: 0; 
-        background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.2) 60%, transparent 100%); 
-        display: flex; flex-direction: column; justify-content: flex-end; 
-        padding: 20px; pointer-events: none; 
+      position: absolute; inset: 0; 
+      background: linear-gradient(to top, rgba(8,8,10,0.97) 0%, rgba(8,8,10,0.45) 55%, rgba(8,8,10,0.08) 100%); 
+      display: flex; flex-direction: column; justify-content: flex-end; 
+      padding: 20px; pointer-events: none; 
     }
-    .card-title { font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 20px; color: #fff; margin: 0 0 6px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
-    .card-meta { font-size: 13px; color: #ccc; display: flex; justify-content: space-between; align-items: center; }
+    .card-title {
+      font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 21px;
+      color: #FFFFFF; margin: 0 0 6px 0;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.95);
+    }
+    .card-meta { font-size: 13px; font-weight: 700; color: #E2E8F0; display: flex; justify-content: space-between; align-items: center; }
     
-    .card-play-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(212,160,23,0.9); color: #111; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0; transition: 0.3s; }
-    .content-card:hover .card-play-btn { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+    .card-play-btn {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: rgba(245, 184, 46, 0.95); color: #0B0B0D;
+      width: 54px; height: 54px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: 0.3s;
+      box-shadow: 0 10px 26px rgba(0,0,0,0.65);
+    }
+    .content-card:hover .card-play-btn { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
 
     @media (max-width: 600px) {
-        .content-card { flex: 0 0 240px; }
-        .card-title { font-size: 18px; }
-        .card-overlay { padding: 15px; }
-        .card-play-btn { opacity: 1; width: 44px; height: 44px; } /* Play button always visible on mobile */
+      .content-card { flex: 0 0 245px; }
+      .card-title { font-size: 18px; }
+      .card-overlay { padding: 16px; }
+      .card-play-btn { opacity: 1; width: 46px; height: 46px; }
     }
 
     /* Categories */
-    .category-card { background: #1B1B1B; border: 1px solid #333; padding: 24px; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center;}
-    .category-card:hover { border-color: #D4A017; background: #222; transform: translateY(-3px);}
-    .category-card svg { margin-bottom: 12px; color: #888; transition: color 0.2s; }
-    .category-card:hover svg { color: #D4A017; }
-    .category-card span { font-weight: 600; font-size: 14px; }
+    .category-card {
+      background: #16161A; border: 1.5px solid rgba(255, 255, 255, 0.12);
+      padding: 26px 20px; border-radius: 14px; text-align: center;
+      cursor: pointer; transition: 0.22s; display: flex; flex-direction: column; align-items: center;
+    }
+    .category-card:hover { border-color: var(--gold); background: #1F1F26; transform: translateY(-4px); }
+    .category-card svg { margin-bottom: 12px; color: var(--gold); transition: transform 0.2s; }
+    .category-card:hover svg { transform: scale(1.12); }
+    .category-card span { font-weight: 800; font-size: 15px; color: #FFFFFF; }
 
     /* Ads Container for Rocket Sloth */
     .ad-container { width: 100%; max-width: 1200px; margin: 30px auto; background: transparent; border: none; display: flex; align-items: center; justify-content: center; height: auto; min-height: auto; overflow: visible; padding: 0 4vw; }
     .ad-container > div { width: 100%; height: auto; display: flex; justify-content: center; align-items: center; }
 
+    /* ================= STICKY CONVERSION HOOK BAR ================= */
+    .sticky-conversion-bar {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translate(-50%, 140%);
+      width: calc(100% - 32px);
+      max-width: 760px;
+      z-index: 990;
+      background: rgba(18, 18, 23, 0.94);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1.5px solid rgba(245, 184, 46, 0.5);
+      border-radius: 16px;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      box-shadow: 0 22px 60px rgba(0, 0, 0, 0.85);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .sticky-conversion-bar.visible {
+      transform: translate(-50%, 0);
+    }
+    @media (max-width: 640px) {
+      .sticky-conversion-bar {
+        bottom: 12px;
+        padding: 12px 14px;
+        gap: 10px;
+      }
+      .sticky-conversion-bar .sticky-sub { display: none; }
+    }
+
     /* ================= AUTH MODAL ================= */
-    .auth-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 15px; opacity: 0; transition: opacity 0.3s ease; }
+    .auth-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.88); backdrop-filter: blur(10px); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 15px; opacity: 0; transition: opacity 0.3s ease; }
     .auth-modal-overlay.active { display: flex; opacity: 1; }
-    .auth-modal-box { background: #1B1B1B; border: 1px solid #333; border-radius: 16px; width: 100%; max-width: 900px; display: flex; overflow: hidden; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8); max-height: 90vh; }
+    .auth-modal-box { background: #16161A; border: 1.5px solid rgba(245, 184, 46, 0.3); border-radius: 18px; width: 100%; max-width: 920px; display: flex; overflow: hidden; position: relative; box-shadow: 0 28px 65px rgba(0, 0, 0, 0.9); max-height: 92vh; }
     
-    .auth-modal-left { width: 40%; background: #000; position: relative; padding: 40px; display: flex; flex-direction: column; justify-content: flex-end; color: #fff; }
-    .auth-modal-left::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, #111 0%, rgba(17,17,17,0.2) 100%); }
-    .auth-modal-left-content { position: relative; z-index: 10; }
+    .auth-modal-left { width: 42%; background: linear-gradient(160deg, #1E170A 0%, #0B0B0D 100%); position: relative; padding: 40px; display: flex; flex-direction: column; justify-content: flex-end; color: #fff; border-right: 1px solid rgba(255,255,255,0.08); }
+    .auth-modal-left::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 20% 20%, rgba(245, 184, 46, 0.18), transparent 60%); }
     
-    .auth-modal-right { width: 60%; padding: 30px 40px; background: #1B1B1B; overflow-y: auto; }
-    .modal-close { position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.5); border: none; color: #fff; font-size: 20px; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; transition: 0.2s; z-index: 50; display: flex; align-items: center; justify-content: center;}
-    .modal-close:hover { background: #D4A017; color: #111; }
+    .auth-modal-right { width: 58%; padding: 32px 40px; background: #16161A; overflow-y: auto; }
+    .modal-close { position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; font-size: 20px; width: 38px; height: 38px; border-radius: 50%; cursor: pointer; transition: 0.2s; z-index: 50; display: flex; align-items: center; justify-content: center; }
+    .modal-close:hover { background: var(--gold); color: #0B0B0D; }
 
     @media (max-width: 768px) {
-        .auth-modal-left { display: none; }
-        .auth-modal-right { width: 100%; padding: 25px; }
+      .auth-modal-left { display: none; }
+      .auth-modal-right { width: 100%; padding: 25px; }
     }
 
     /* AUTH FORMS CSS */
     .auth-form{animation:rise .35s ease}@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
-    .field{background:#111;border:1px solid #444;border-radius:6px;padding:.85rem 1rem;width:100%;color:#f5f5f5; display: block; box-sizing: border-box;}
-    .field:focus{outline:1px solid #D4A017;border-color:#D4A017}
+    .field{background:#0B0B0D;border:1.5px solid #333;border-radius:8px;padding:.9rem 1rem;width:100%;color:#FFFFFF;font-weight:500;display: block; box-sizing: border-box;}
+    .field:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(245,184,46,0.18)}
     .password-field{position:relative}
     .password-field .field{padding-right:3rem}
-    .password-toggle{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);border:0;background:none;color:#999;padding:.25rem}
-    .password-toggle:hover,.password-toggle:focus{color:#D4A017}
-    .primary{background:#D4A017;color:#111;border:0;border-radius:6px;padding:.9rem;font-weight:700;width:100%; cursor: pointer; display: block; text-align: center;}
-    .link{background:none;border:0;color:#D4A017;font-weight:700}
-    .code{letter-spacing:.7em;text-align:center;font-size:1.5rem}
-    .bar{height:5px;flex:1;background:#444;border-radius:9px}
+    .password-toggle{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);border:0;background:none;color:#CBD5E1;padding:.25rem}
+    .password-toggle:hover,.password-toggle:focus{color:var(--gold)}
+    .primary{background:linear-gradient(135deg, #F5B82E, #D4A017);color:#0B0B0D;border:0;border-radius:8px;padding:.95rem;font-weight:900;font-size:15px;width:100%; cursor: pointer; display: block; text-align: center; box-shadow: 0 8px 24px rgba(245,184,46,0.3);}
+    .primary:hover{filter:brightness(1.06)}
+    .link{background:none;border:0;color:var(--gold);font-weight:800}
+    .code{letter-spacing:.7em;text-align:center;font-size:1.5rem;font-weight:800}
+    .bar{height:5px;flex:1;background:#333;border-radius:9px}
     
-    /* FIX: Force SweetAlert2 on top of the modal overlay (z-index 2000) */
     .swal2-container { z-index: 9999 !important; }
     .swal2-popup.big-alert { padding: 2em; font-size: 1.2rem; border-radius: 12px; }
     .swal2-title.big-title { font-size: 1.5rem !important; }
 
     /* ================= FOOTER ================= */
-    .public-footer { background: #0a0a0a; border-top: 1px solid #222; padding: 70px 4vw 40px; margin-top: 40px; }
+    .public-footer { background: #070709; border-top: 1px solid rgba(255,255,255,0.1); padding: 70px 4vw 90px; margin-top: 40px; }
     .footer-grid { width: 100%; max-width: 1200px; margin: 0 auto 50px; display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 50px; }
     .footer-col { min-width: 0; }
-    .footer-col h4 { color: #fff; margin: 0 0 24px; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    .footer-col h4 { color: #fff; margin: 0 0 24px; font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; }
     
     .footer-links-box { display: flex; flex-direction: column; gap: 12px; }
-    .footer-links-box a, .footer-links-box button { width: 100%; display: flex; align-items: center; justify-content: center; background: #141414; border: 1px solid #2a2a2a; padding: 14px 16px; border-radius: 8px; color: #bbb; font-size: 13px; font-weight: 600; text-align: center; transition: all 0.2s ease; cursor: pointer; }
-    .footer-links-box a:hover, .footer-links-box button:hover { background: rgba(212,160,23,0.1); color: #D4A017; border-color: #D4A017; transform: translateY(-2px); }
+    .footer-links-box a, .footer-links-box button { width: 100%; display: flex; align-items: center; justify-content: center; background: #121216; border: 1px solid #2A2A32; padding: 14px 16px; border-radius: 8px; color: #E2E8F0; font-size: 13px; font-weight: 700; text-align: center; transition: all 0.2s ease; cursor: pointer; }
+    .footer-links-box a:hover, .footer-links-box button:hover { background: rgba(245,184,46,0.12); color: var(--gold); border-color: var(--gold); transform: translateY(-2px); }
 
-    .footer-bottom { width: 100%; max-width: 1200px; margin: 0 auto; border-top: 1px solid #222; padding-top: 30px; display: flex; justify-content: space-between; align-items: center; gap: 20px; color: #666; font-size: 13px; }
+    .footer-bottom { width: 100%; max-width: 1200px; margin: 0 auto; border-top: 1px solid #1E1E24; padding-top: 30px; display: flex; justify-content: space-between; align-items: center; gap: 20px; color: #94A3B8; font-size: 13px; font-weight: 600; }
 
     @media (max-width: 800px) {
-        .footer-grid { grid-template-columns: repeat(2, 1fr); gap: 35px; }
-        .footer-bottom { flex-direction: column; text-align: center; }
+      .footer-grid { grid-template-columns: repeat(2, 1fr); gap: 35px; }
+      .footer-bottom { flex-direction: column; text-align: center; }
     }
     @media (max-width: 500px) {
-        .footer-grid { grid-template-columns: 1fr; gap: 40px; }
-        .footer-links-box { flex-direction: column; }
+      .footer-grid { grid-template-columns: 1fr; gap: 40px; }
+      .footer-links-box { flex-direction: column; }
     }
   </style>
 </head>
 <body>
+
+  <!-- ================= PREMIERE WELCOME RIBBON ================= -->
+  <div class="premiere-ribbon">
+    <span class="ribbon-pill">FREE ACCESS</span>
+    <span>Join AfroStory free &amp; unlock full episodes<span class="hide-xs"> + daily Story Coin rewards</span></span>
+    <button type="button" data-open-auth="register" data-track-cta="top-ribbon">Enter Inside →</button>
+  </div>
 
   <!-- ================= HEADER ================= -->
   <header class="public-header" id="main-header">
@@ -321,92 +778,112 @@
       </div>
     </a>
     <div class="header-actions">
-      <button class="btn-outline" data-open-auth="login">Sign In</button>
-      <button class="btn-solid" data-open-auth="register">Join Free</button>
+      <button class="btn-outline" data-open-auth="login" data-track-cta="header-login">Sign In</button>
+      <button class="btn-solid" data-open-auth="register" data-track-cta="header-register">Join Free</button>
     </div>
   </header>
 
-  <!-- ================= MAIN HERO (STATIC) ================= -->
+  <!-- ================= MAIN HERO ================= -->
   <section class="afrostory-hero">
     <div class="hero-inner">
-        <div class="hero-copy">
-            <span class="hero-eyebrow"><div class="brand-mark-box" style="width: 24px; height: 24px; font-size: 15px; min-width: 24px; border-radius: 3px;">A</div> AFROSTORY</span>
-            <h1>
-                Your Story.<br>
-                Your Platform.
-            </h1>
-            <p>
-                Discover African stories, films, series and documentaries
-                created by storytellers from across the continent.
-            </p>
-            <div class="hero-actions">
-                <button class="hero-primary" data-open-auth="register">
-                    <i data-lucide="play" fill="currentColor"></i>
-                    Start Watching
-                </button>
-                <button class="hero-secondary" onclick="document.getElementById('trending-now').scrollIntoView({behavior: 'smooth'})">
-                    Explore Stories
-                    <i data-lucide="arrow-down"></i>
-                </button>
-            </div>
+      <div class="hero-copy">
+        <span class="hero-eyebrow"><i data-lucide="sparkles" width="14" height="14"></i> AFRICA'S PREMIER STREAMING STAGE</span>
+        <h1>
+          Your Story.<br>
+          <span class="hero-gold-highlight">Your Platform.</span>
+        </h1>
+        <p>
+          Stream gripping African originals, serialized dramas, folklore, and documentaries created directly by storytellers across the continent.
+        </p>
+        <div class="hero-actions">
+          <button class="hero-primary" data-open-auth="register" data-track-cta="hero-primary">
+            <i data-lucide="play" fill="currentColor"></i>
+            Start Watching Free
+          </button>
+          <button class="hero-secondary" onclick="document.getElementById('top-trending-videos').scrollIntoView({behavior: 'smooth'})">
+            Watch Live Trailers
+            <i data-lucide="arrow-down"></i>
+          </button>
         </div>
-        
-        <div class="hero-brand-panel hidden md:flex">
-            <div class="brand-mark-box" style="width: 78px; height: 78px; font-size: 48px;">A</div>
-            <div>
-                <div class="brand-text" style="font-size: 27px; line-height: 1;">
-                    <span class="brand-text-afro">AFRO</span><span class="brand-text-story">STORY</span>
-                </div>
-                <p class="mt-2 text-gray-500 text-sm">African stories.<br>A global stage.</p>
-            </div>
+        <div class="hero-proof-strip">
+          <span><i data-lucide="check-circle-2" width="16"></i> Free Instant Sign-Up</span>
+          <span><i data-lucide="coins" width="16"></i> Earn Free Daily Coins</span>
+          <span><i data-lucide="film" width="16"></i> New Episodes Weekly</span>
         </div>
+      </div>
+      
+      <div class="hero-brand-panel hidden md:flex">
+        <div class="hero-brand-top">
+          <div class="brand-mark-box" style="width: 72px; height: 72px; font-size: 44px;">A</div>
+          <div>
+            <div class="brand-text" style="font-size: 26px; line-height: 1;">
+              <span class="brand-text-afro">AFRO</span><span class="brand-text-story">STORY</span>
+            </div>
+            <p class="mt-1 text-slate-300 text-xs font-bold uppercase tracking-wider">Inside Member Vault</p>
+          </div>
+        </div>
+        <ul class="hero-inside-list">
+          <li><i data-lucide="unlock" class="text-accent" width="16"></i> Full episodes &amp; serialized cliffhangers</li>
+          <li><i data-lucide="gift" class="text-accent" width="16"></i> Daily check-in &amp; ad-unlock Story Coins</li>
+          <li><i data-lucide="tv" class="text-accent" width="16"></i> Tiv, Yoruba, Igbo, Hausa &amp; Pan-African cinema</li>
+        </ul>
+        <button class="btn-solid w-full" data-open-auth="register" data-track-cta="hero-vault-card">Create Free Account</button>
+      </div>
     </div>
   </section>
 
-  <!-- ================= 1. TOP TRENDING VIDEOS (Smart Placeholder for Ad Bots) ================= -->
+  <!-- ================= 1. TOP TRENDING VIDEOS (AUTO-VISIBLE ON LOAD) ================= -->
   <section class="video-showcase-section" id="top-trending-videos">
     <div class="video-showcase-heading">
-        <div>
-            <span class="showcase-eyebrow">TOP TRENDING</span>
-            <h2>Watch Now</h2>
-            <p>The most popular episodes streaming on AfroStory right now.</p>
-        </div>
+      <div>
+        <span class="showcase-eyebrow">LIVE PREMIERE PREVIEW</span>
+        <h2>Watch Now</h2>
+        <p>Live scenes streaming right now — create a free account to watch full episodes inside.</p>
+      </div>
+      <button class="btn-outline" data-open-auth="register" data-track-cta="trending-heading-cta">Unlock Full Library →</button>
     </div>
 
     <div class="video-showcase" id="trending-video-slideshow">
-        <div id="trending-video-track" class="video-showcase-track">
-            <!-- SMART PLACEHOLDER CARDS FOR AD BOT REVIEW -->
-            <div class="video-showcase-slide active">
-                <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #111, #1a1a1a); display: flex; align-items: center; justify-content: center;"></div>
-                <div class="video-carousel-overlay"></div>
-                <button class="play-pause-btn" aria-label="Play video" style="pointer-events: none;"><i data-lucide="play" fill="currentColor"></i></button>
-                <div class="video-carousel-content">
-                    <span class="badge">TRENDING NOW</span>
-                    <h3 class="text-white font-display text-2xl font-bold">Premium African Stories</h3>
-                    <p class="text-gray-300 text-sm mt-1 max-w-lg">Watch authentic documentaries and short films.</p>
-                </div>
-            </div>
+      <div id="trending-video-track" class="video-showcase-track">
+        <!-- SMART CINEMATIC FALLBACK UNTIL LIVE API HYDRATES -->
+        <div class="video-showcase-slide active">
+          <img src="https://images.unsplash.com/photo-1539650116574-75c0c6d73f6e?auto=format&fit=crop&w=1400&q=80" alt="Premium African Stories">
+          <div class="video-carousel-overlay"></div>
+          <div class="video-carousel-content">
+            <span class="badge">TRENDING NOW</span>
+            <h3>Premium African Stories</h3>
+            <p>Watch authentic serialized dramas, folklore, and short films straight from African creators.</p>
+          </div>
         </div>
+      </div>
 
-        <button class="video-showcase-nav prev" id="trend-vid-prev" aria-label="Previous video"><i data-lucide="chevron-left"></i></button>
-        <button class="video-showcase-nav next" id="trend-vid-next" aria-label="Next video"><i data-lucide="chevron-right"></i></button>
-        <div class="video-showcase-dots" id="trend-vid-dots"><div class="carousel-dot active"></div></div>
+      <div class="showcase-trap-cta">
+        <button type="button" class="showcase-trap-btn" data-open-auth="register" data-track-cta="trending-video-trap">
+          <i data-lucide="play" fill="currentColor" width="17" height="17"></i>
+          Watch Full Episode Inside
+        </button>
+        <span class="showcase-trap-sub">Free account • Instant access</span>
+      </div>
+
+      <button class="video-showcase-nav prev" id="trend-vid-prev" aria-label="Previous video"><i data-lucide="chevron-left"></i></button>
+      <button class="video-showcase-nav next" id="trend-vid-next" aria-label="Next video"><i data-lucide="chevron-right"></i></button>
+      <div class="video-showcase-dots" id="trend-vid-dots"><div class="carousel-dot active"></div></div>
     </div>
   </section>
 
-  <!-- ================= 2. PROMOTIONAL IMAGE SLIDESHOW (Smart Placeholder for Ad Bots) ================= -->
-  <section class="carousel-section pt-10 pb-4">
+  <!-- ================= 2. PROMOTIONAL IMAGE SLIDESHOW ================= -->
+  <section class="carousel-section pt-6 pb-4">
     <h2 class="carousel-header"><i data-lucide="sparkles" class="text-accent"></i> Discover AfroStory</h2>
     <div class="carousel-wrapper" id="promo-image-slideshow">
       
       <div id="image-slides-track" class="carousel-track">
-        <!-- SMART PLACEHOLDER CARDS FOR AD BOT REVIEW -->
-        <div class="carousel-slide active" style="background-color: #1a1a2e;">
+        <div class="carousel-slide active" style="background-image: url('https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?auto=format&fit=crop&w=1400&q=80');">
           <div class="carousel-overlay"></div>
           <div class="carousel-content text-left">
-            <h2 class="text-3xl md:text-4xl font-bold font-display mb-3 text-white">Explore African Stories</h2>
-            <p class="text-gray-300 mb-6 text-lg md:text-xl max-w-md">Join our community to explore original content, creators, and experiences from across Africa.</p>
-            <button class="btn-solid inline-block self-start" data-open-auth="register">Join the Community</button>
+            <span class="inline-block w-fit mb-3 px-3 py-1 rounded bg-accent/20 border border-accent/50 text-accent text-xs font-black tracking-widest uppercase">EXCLUSIVE ORIGINALS</span>
+            <h2>Explore African Stories</h2>
+            <p>Join thousands of viewers discovering original series, cultural epics, and bold filmmakers across Africa.</p>
+            <button class="btn-solid inline-flex self-start" data-open-auth="register" data-track-cta="promo-image-cta">Join Free &amp; Explore</button>
           </div>
         </div>
       </div>
@@ -417,34 +894,40 @@
     </div>
   </section>
 
-  <!-- ================= 3. PROMOTIONAL VIDEO SLIDESHOW (Smart Placeholder for Ad Bots) ================= -->
-  <section class="video-showcase-section" style="padding-top: 20px; border-top: 1px solid #222;" id="featured-announcements">
+  <!-- ================= 3. PROMOTIONAL VIDEO SLIDESHOW (AUTO-VISIBLE ON LOAD) ================= -->
+  <section class="video-showcase-section" style="padding-top: 28px; border-top: 1px solid rgba(255,255,255,0.08);" id="featured-announcements">
     <div class="video-showcase-heading">
-        <div>
-            <span class="showcase-eyebrow">PLATFORM UPDATES</span>
-            <h2>Featured Announcements</h2>
-            <p>Trailers, creator highlights, and official AfroStory updates.</p>
-        </div>
+      <div>
+        <span class="showcase-eyebrow">SPOTLIGHT TRAILERS</span>
+        <h2>Featured Announcements</h2>
+        <p>Official trailers, creator premieres, and exclusive drops happening inside AfroStory.</p>
+      </div>
     </div>
 
     <div class="video-showcase" id="promo-video-slideshow">
-        <div id="video-slides-track" class="video-showcase-track">
-            <!-- SMART PLACEHOLDER CARDS FOR AD BOT REVIEW -->
-            <div class="video-showcase-slide active">
-                <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #111, #1a1a1a); display: flex; align-items: center; justify-content: center;"></div>
-                <div class="video-carousel-overlay"></div>
-                <button class="play-pause-btn" aria-label="Play video" style="pointer-events: none;"><i data-lucide="play" fill="currentColor"></i></button>
-                <div class="video-carousel-content">
-                    <span class="badge">PLATFORM UPDATE</span>
-                    <h3 class="text-white font-display text-2xl font-bold">New Stories Added Weekly</h3>
-                    <p class="text-gray-300 text-sm mt-1 max-w-lg">Check out our latest original content drops.</p>
-                </div>
-            </div>
+      <div id="video-slides-track" class="video-showcase-track">
+        <div class="video-showcase-slide active">
+          <img src="https://images.unsplash.com/photo-1523821741446-edb2b68bb7a0?auto=format&fit=crop&w=1400&q=80" alt="Featured Announcements">
+          <div class="video-carousel-overlay"></div>
+          <div class="video-carousel-content">
+            <span class="badge">PLATFORM PREMIERE</span>
+            <h3>New Stories Added Weekly</h3>
+            <p>Sign up free to unlock full episodes, earn reward coins, and follow your favorite African creators.</p>
+          </div>
         </div>
+      </div>
 
-        <button class="video-showcase-nav prev" id="vid-slide-prev" aria-label="Previous video"><i data-lucide="chevron-left"></i></button>
-        <button class="video-showcase-nav next" id="vid-slide-next" aria-label="Next video"><i data-lucide="chevron-right"></i></button>
-        <div class="video-showcase-dots" id="vid-slide-dots"><div class="carousel-dot active"></div></div>
+      <div class="showcase-trap-cta">
+        <button type="button" class="showcase-trap-btn" data-open-auth="register" data-track-cta="promo-video-trap">
+          <i data-lucide="unlock" width="17" height="17"></i>
+          Unlock Inside Now
+        </button>
+        <span class="showcase-trap-sub">Takes 15 seconds • Free</span>
+      </div>
+
+      <button class="video-showcase-nav prev" id="vid-slide-prev" aria-label="Previous video"><i data-lucide="chevron-left"></i></button>
+      <button class="video-showcase-nav next" id="vid-slide-next" aria-label="Next video"><i data-lucide="chevron-right"></i></button>
+      <div class="video-showcase-dots" id="vid-slide-dots"><div class="carousel-dot active"></div></div>
     </div>
   </section>
 
@@ -453,34 +936,40 @@
     <div data-rs-ad></div>
   </div>
 
-  <!-- ================= TRENDING CONTENT GRID (Smart Placeholder for Ad Bots) ================= -->
+  <!-- ================= TRENDING CONTENT GRID ================= -->
   <section class="section-container" id="trending-now">
-    <h2 class="section-title"><i data-lucide="trending-up" class="text-accent"></i> Trending Episodes</h2>
-    <p class="scroll-hint"><i data-lucide="arrow-right-circle" width="16"></i> Swipe or scroll to view more</p>
+    <div class="flex flex-wrap items-end justify-between gap-4 mb-2">
+      <div>
+        <h2 class="section-title"><i data-lucide="trending-up" class="text-accent"></i> Trending Episodes</h2>
+        <p class="scroll-hint"><i data-lucide="arrow-right-circle" width="16" class="text-accent"></i> Tap any story card to preview &amp; unlock inside</p>
+      </div>
+      <button class="btn-solid mb-4" data-open-auth="register" data-track-cta="trending-grid-cta">See All Inside →</button>
+    </div>
     
     <div class="horizontal-scroll" id="trending-feed">
-      <!-- SMART PLACEHOLDER CARDS FOR AD BOT REVIEW -->
-      <div class="content-card text-left" style="pointer-events: none;">
-        <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #1b1b1b, #222); display: flex; align-items: center; justify-content: center;"></div>
+      <div class="content-card text-left" data-open-auth="register">
+        <img src="https://images.unsplash.com/photo-1539650116574-75c0c6d73f6e?auto=format&fit=crop&w=600&q=80" alt="AfroStory Premium">
         <div class="card-play-btn"><i data-lucide="play" fill="currentColor"></i></div>
         <div class="card-overlay">
-            <span style="color: #D4A017; font-size: 11px; font-weight: 800; letter-spacing: 1px; margin-bottom: 8px; display: block; text-transform: uppercase;">DRAMA</span>
-            <h3 class="card-title">AfroStory Premium</h3>
-            <div class="card-meta">
-                <span class="truncate pr-2">Original Series</span>
-            </div>
+          <span style="color: #F5B82E; font-size: 11px; font-weight: 900; letter-spacing: 1.2px; margin-bottom: 6px; display: block; text-transform: uppercase;">DRAMA • EP 1 FREE</span>
+          <h3 class="card-title">AfroStory Premium</h3>
+          <div class="card-meta">
+            <span class="truncate pr-2">Original Series</span>
+            <span class="text-accent font-extrabold">Watch →</span>
+          </div>
         </div>
       </div>
       
-      <div class="content-card text-left" style="pointer-events: none;">
-        <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #1b1b1b, #222); display: flex; align-items: center; justify-content: center;"></div>
+      <div class="content-card text-left" data-open-auth="register">
+        <img src="https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?auto=format&fit=crop&w=600&q=80" alt="African Rhythms">
         <div class="card-play-btn"><i data-lucide="play" fill="currentColor"></i></div>
         <div class="card-overlay">
-            <span style="color: #D4A017; font-size: 11px; font-weight: 800; letter-spacing: 1px; margin-bottom: 8px; display: block; text-transform: uppercase;">DOCUMENTARY</span>
-            <h3 class="card-title">African Rhythms</h3>
-            <div class="card-meta">
-                <span class="truncate pr-2">Original Series</span>
-            </div>
+          <span style="color: #F5B82E; font-size: 11px; font-weight: 900; letter-spacing: 1.2px; margin-bottom: 6px; display: block; text-transform: uppercase;">DOCUMENTARY • HD</span>
+          <h3 class="card-title">African Rhythms</h3>
+          <div class="card-meta">
+            <span class="truncate pr-2">Original Series</span>
+            <span class="text-accent font-extrabold">Watch →</span>
+          </div>
         </div>
       </div>
     </div>
@@ -489,59 +978,65 @@
   <!-- ================= BROWSE CATEGORIES ================= -->
   <section class="section-container">
     <h2 class="section-title"><i data-lucide="compass" class="text-accent"></i> Browse Categories</h2>
+    <p class="scroll-hint">Select a genre to jump straight into our full member catalog</p>
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-      <div class="category-card" data-open-auth="login"><i data-lucide="theater" width="32" height="32"></i><span>Drama</span></div>
-      <div class="category-card" data-open-auth="login"><i data-lucide="smile" width="32" height="32"></i><span>Comedy</span></div>
-      <div class="category-card" data-open-auth="login"><i data-lucide="swords" width="32" height="32"></i><span>Epic</span></div>
-      <div class="category-card" data-open-auth="login"><i data-lucide="heart" width="32" height="32"></i><span>Romance</span></div>
-      <div class="category-card" data-open-auth="login"><i data-lucide="video" width="32" height="32"></i><span>Documentary</span></div>
-      <div class="category-card" data-open-auth="login"><i data-lucide="flame" width="32" height="32"></i><span>Thriller</span></div>
+      <div class="category-card" data-open-auth="register"><i data-lucide="theater" width="32" height="32"></i><span>Drama</span></div>
+      <div class="category-card" data-open-auth="register"><i data-lucide="smile" width="32" height="32"></i><span>Comedy</span></div>
+      <div class="category-card" data-open-auth="register"><i data-lucide="swords" width="32" height="32"></i><span>Epic &amp; Tradition</span></div>
+      <div class="category-card" data-open-auth="register"><i data-lucide="heart" width="32" height="32"></i><span>Romance</span></div>
+      <div class="category-card" data-open-auth="register"><i data-lucide="video" width="32" height="32"></i><span>Documentary</span></div>
+      <div class="category-card" data-open-auth="register"><i data-lucide="flame" width="32" height="32"></i><span>Thriller</span></div>
     </div>
   </section>
 
-  <!-- ================= ABOUT AFROSTORY (SEO) ================= -->
+  <!-- ================= ABOUT AFROSTORY (SEO + VALUE HOOK) ================= -->
   <section class="section-container my-8">
-    <div class="max-w-4xl mx-auto bg-surface p-8 md:p-10 rounded-2xl border border-gray-800 relative overflow-hidden">
+    <div class="max-w-5xl mx-auto bg-surface p-8 md:p-12 rounded-2xl border border-gray-800 relative overflow-hidden">
       <div class="absolute top-0 right-0 opacity-5 w-64 h-64 pointer-events-none"><i data-lucide="play-circle" width="100%" height="100%"></i></div>
-      <h2 class="text-3xl font-display font-bold mb-6 text-white relative z-10">Your Story, Your Platform</h2>
-      <div class="text-gray-300 text-base md:text-lg leading-relaxed space-y-4 relative z-10">
+      <span class="inline-block mb-3 text-xs font-black tracking-widest uppercase text-accent">WHY MILLIONS LOVE AFRICAN CINEMA</span>
+      <h2 class="text-3xl md:text-4xl font-display font-black mb-6 text-white relative z-10">Your Story, Your Platform</h2>
+      <div class="text-slate-200 text-base md:text-lg font-medium leading-relaxed space-y-4 relative z-10">
         <p>
           AfroStory is a digital streaming platform dedicated entirely to authentic African narratives. We believe that the stories of the continent deserve a global stage, untainted by stereotypes.
         </p>
         <p>
-          From urban thrillers to rich traditional folklore and insightful documentaries, AfroStory connects you directly with talented African creators. Watch original series, discover new filmmakers, and explore a growing library of continental cinema.
+          From urban thrillers to rich traditional folklore and insightful documentaries, AfroStory connects you directly with talented African creators. Watch original series, unlock episodes with free daily coins, and explore a growing library of continental cinema.
         </p>
+      </div>
+      <div class="mt-8 relative z-10">
+        <button class="btn-solid" data-open-auth="register" data-track-cta="about-cta">Create Your Free Account</button>
       </div>
     </div>
   </section>
 
   <!-- ================= CREATOR CTA ================= -->
   <section class="section-container">
-    <div class="w-full bg-gradient-to-r from-[#E67E22] to-[#D4A017] rounded-2xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between">
+    <div class="w-full bg-gradient-to-r from-[#EA580C] via-[#F97316] to-[#D4A017] rounded-2xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between shadow-2xl">
       <div class="mb-6 md:mb-0 text-center md:text-left">
-        <h2 class="text-3xl font-display font-bold text-white mb-2">Are you a Storyteller?</h2>
-        <p class="text-white/90 text-lg">Join our Creator Studio and connect your series with audiences.</p>
+        <span class="inline-block mb-2 px-3 py-1 rounded-full bg-black/25 text-white text-xs font-black tracking-wider uppercase">CREATOR STUDIO</span>
+        <h2 class="text-3xl md:text-4xl font-display font-black text-white mb-2">Are you a Storyteller?</h2>
+        <p class="text-white font-semibold text-lg">Publish your series, grow your fanbase, and monetize every view on AfroStory.</p>
       </div>
-      <button class="bg-black text-white px-8 py-4 rounded-lg font-bold whitespace-nowrap hover:bg-gray-900 transition" data-open-auth="register">Join Creator Studio</button>
+      <button class="bg-black text-white px-8 py-4 rounded-xl font-black text-base whitespace-nowrap hover:bg-gray-900 transition shadow-xl" data-open-auth="register" data-track-cta="creator-banner-cta">Join Creator Studio →</button>
     </div>
   </section>
 
   <!-- ================= FAQ ================= -->
   <section class="section-container py-12">
     <div class="max-w-4xl mx-auto">
-      <h2 class="text-center text-2xl font-display font-bold mb-8 text-white">Frequently Asked Questions</h2>
+      <h2 class="text-center text-3xl font-display font-black mb-8 text-white">Frequently Asked Questions</h2>
       <div class="space-y-4">
-        <div class="bg-surface p-5 rounded-lg border border-gray-800">
-          <h3 class="font-bold text-accent mb-2">What is AfroStory?</h3>
-          <p class="text-sm text-gray-400">AfroStory is a digital streaming platform focused on delivering authentic African movies, series, documentaries, and short films directly to a global audience.</p>
+        <div class="bg-surface p-6 rounded-xl border border-gray-800">
+          <h3 class="font-extrabold text-lg text-accent mb-2">What is AfroStory?</h3>
+          <p class="text-base text-slate-300 font-medium">AfroStory is a digital streaming platform focused on delivering authentic African movies, serialized dramas, documentaries, and short films directly to a global audience.</p>
         </div>
-        <div class="bg-surface p-5 rounded-lg border border-gray-800">
-          <h3 class="font-bold text-accent mb-2">How do I become a creator?</h3>
-          <p class="text-sm text-gray-400">Create a free user account, navigate to the Studio section, and submit a creator application for our admins to review.</p>
+        <div class="bg-surface p-6 rounded-xl border border-gray-800">
+          <h3 class="font-extrabold text-lg text-accent mb-2">Is it free to register and watch?</h3>
+          <p class="text-base text-slate-300 font-medium">Yes. Creating an account is completely free, and you can watch free previews, earn daily Story Coins, or unlock premium episodes anytime inside the app.</p>
         </div>
-        <div class="bg-surface p-5 rounded-lg border border-gray-800">
-          <h3 class="font-bold text-accent mb-2">Where do the stories come from?</h3>
-          <p class="text-sm text-gray-400">Our content library is built by passionate independent filmmakers, storytellers, and production studios from across the African continent.</p>
+        <div class="bg-surface p-6 rounded-xl border border-gray-800">
+          <h3 class="font-extrabold text-lg text-accent mb-2">How do I become a creator?</h3>
+          <p class="text-base text-slate-300 font-medium">Create a free user account, navigate to the Creator Studio section inside, and submit your creator application for fast admin approval.</p>
         </div>
       </div>
     </div>
@@ -552,60 +1047,68 @@
     <div data-rs-ad></div>
   </div>
 
+  <!-- ================= STICKY CONVERSION BAR ================= -->
+  <div class="sticky-conversion-bar" id="sticky-conversion-bar" role="region" aria-label="Member invitation">
+    <div class="flex items-center gap-3 min-w-0">
+      <div class="brand-mark-box" style="width: 38px; height: 38px; font-size: 22px;">A</div>
+      <div class="min-w-0">
+        <div class="text-white font-display font-black text-sm md:text-base truncate">Ready to watch the full episodes?</div>
+        <div class="sticky-sub text-xs font-semibold text-slate-300 truncate">Join AfroStory free in 15 seconds &amp; start streaming immediately.</div>
+      </div>
+    </div>
+    <button type="button" class="btn-solid whitespace-nowrap" data-open-auth="register" data-track-cta="sticky-bottom-bar">Join Free →</button>
+  </div>
+
   <!-- ================= FOOTER ================= -->
   <footer class="public-footer">
     <div class="footer-grid">
-        <!-- ABOUT -->
-        <div class="footer-col">
-            <a class="brand-logo-container mb-6" href="/">
-                <div class="brand-mark-box" style="transform: rotate(-6deg) scale(0.9); margin-right: 2px;">A</div>
-                <div class="brand-text" style="font-size: 20px;">
-                    <span class="brand-text-afro">AFRO</span><span class="brand-text-story">STORY</span>
-                </div>
-            </a>
-            <p class="text-sm text-gray-500 leading-relaxed mb-6">
-                Discover African stories, films, series, documentaries,
-                and original content from creators across the continent.
-            </p>
-        </div>
+      <div class="footer-col">
+        <a class="brand-logo-container mb-6" href="/">
+          <div class="brand-mark-box" style="transform: rotate(-6deg) scale(0.9); margin-right: 2px;">A</div>
+          <div class="brand-text" style="font-size: 20px;">
+            <span class="brand-text-afro">AFRO</span><span class="brand-text-story">STORY</span>
+          </div>
+        </a>
+        <p class="text-sm text-slate-400 font-medium leading-relaxed mb-6">
+          Discover African stories, films, series, documentaries,
+          and original content from creators across the continent.
+        </p>
+      </div>
 
-        <!-- PLATFORM -->
-        <div class="footer-col">
-            <h4>Platform</h4>
-            <div class="footer-links-box">
-                <button data-open-auth="login">Sign In</button>
-                <button data-open-auth="register">Join AfroStory</button>
-                <button data-open-auth="login">Creator Studio</button>
-            </div>
+      <div class="footer-col">
+        <h4>Platform</h4>
+        <div class="footer-links-box">
+          <button data-open-auth="login">Sign In</button>
+          <button data-open-auth="register">Join AfroStory Free</button>
+          <button data-open-auth="register">Creator Studio</button>
         </div>
+      </div>
 
-        <!-- LEGAL -->
-        <div class="footer-col">
-            <h4>Legal</h4>
-            <div class="footer-links-box">
-                <a href="/terms.html">Terms of Service</a>
-                <a href="/privacy.html">Privacy Policy</a>
-                <a href="/cookie.html">Cookie Policy</a>
-                <a href="/dmca.html">DMCA</a>
-                <a href="/disclaimer.html">Disclaimer</a>
-            </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <div class="footer-links-box">
+          <a href="/terms.html">Terms of Service</a>
+          <a href="/privacy.html">Privacy Policy</a>
+          <a href="/cookie.html">Cookie Policy</a>
+          <a href="/dmca.html">DMCA</a>
+          <a href="/disclaimer.html">Disclaimer</a>
         </div>
+      </div>
 
-        <!-- SUPPORT -->
-        <div class="footer-col">
-            <h4>Support</h4>
-            <div class="footer-links-box">
-                <a href="/help.html">Help Center</a>
-                <a href="/faq.html">FAQ</a>
-                <a href="/contact.html">Contact Us</a>
-                <a href="/sitemap.html">Sitemap</a>
-            </div>
+      <div class="footer-col">
+        <h4>Support</h4>
+        <div class="footer-links-box">
+          <a href="/help.html">Help Center</a>
+          <a href="/faq.html">FAQ</a>
+          <a href="/contact.html">Contact Us</a>
+          <a href="/sitemap.html">Sitemap</a>
         </div>
+      </div>
     </div>
 
     <div class="footer-bottom">
-        <p>&copy; 2026 AfroStory. All rights reserved.</p>
-        <p>support@afristory.naterlearninghub.me</p>
+      <p>&copy; 2026 AfroStory. All rights reserved.</p>
+      <p>support@afristory.naterlearninghub.me</p>
     </div>
   </footer>
 
@@ -623,11 +1126,12 @@
               <span class="brand-text-afro">AFRO</span><span class="brand-text-story">STORY</span>
             </div>
           </div>
-          <h2 class="text-2xl font-display font-bold text-white mb-2">The Home of African Stories.</h2>
-          <ul class="space-y-3 mt-6 text-gray-300 text-sm">
-            <li class="flex items-center gap-2"><i data-lucide="check-circle-2" class="text-accent" width="16"></i> HD Streaming</li>
-            <li class="flex items-center gap-2"><i data-lucide="check-circle-2" class="text-accent" width="16"></i> Support Creators</li>
-            <li class="flex items-center gap-2"><i data-lucide="check-circle-2" class="text-accent" width="16"></i> Original Series</li>
+          <span class="inline-block mb-3 px-3 py-1 rounded bg-accent/20 border border-accent/40 text-accent text-xs font-black uppercase tracking-wider">FREE VIP MEMBER ACCESS</span>
+          <h2 class="text-2xl font-display font-black text-white mb-2">The Home of African Stories.</h2>
+          <ul class="space-y-3 mt-6 text-slate-200 text-sm font-semibold">
+            <li class="flex items-center gap-2"><i data-lucide="check-circle-2" class="text-accent" width="18"></i> Full HD Serialized Dramas</li>
+            <li class="flex items-center gap-2"><i data-lucide="check-circle-2" class="text-accent" width="18"></i> Earn Free Daily Story Coins</li>
+            <li class="flex items-center gap-2"><i data-lucide="check-circle-2" class="text-accent" width="18"></i> Direct Support for African Creators</li>
           </ul>
         </div>
       </div>
@@ -635,7 +1139,6 @@
       <!-- RIGHT SIDE: FORMS -->
       <div class="auth-modal-right w-full md:w-3/5 p-6 md:p-10 bg-surface flex flex-col justify-center">
         
-        <!-- MOBILE LOGO FOR AUTH FORMS -->
         <div class="flex items-center gap-3 mb-6 md:hidden">
           <div class="brand-mark-box" style="width: 36px; height: 36px; min-width: 36px; font-size: 20px; border-radius: 4px;">A</div>
           <div class="brand-text" style="font-size: 22px;">
@@ -645,29 +1148,29 @@
 
         <!-- LOGIN FORM -->
         <form id="login-form" class="auth-form space-y-4" novalidate>
-          <h2 class="text-2xl font-bold text-white">Welcome back</h2>
-          <p class="text-gray-400 text-sm">Sign in to continue your journey.</p>
+          <h2 class="text-2xl font-display font-black text-white">Welcome back</h2>
+          <p class="text-slate-300 text-sm font-medium">Sign in to continue watching your stories.</p>
           <input class="field mt-4" id="login-email" type="email" autocomplete="email" placeholder="Email address" required>
           <div class="password-field mt-4">
             <input class="field" id="login-password" type="password" autocomplete="current-password" placeholder="Password" required>
             <button class="password-toggle" type="button" data-password-toggle="#login-password" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
           </div>
           <div class="flex justify-between items-center mt-2">
-            <label class="text-sm text-gray-400 flex items-center gap-2 cursor-pointer"><input id="remember-me" type="checkbox"> Remember me</label>
+            <label class="text-sm text-slate-300 font-medium flex items-center gap-2 cursor-pointer"><input id="remember-me" type="checkbox"> Remember me</label>
             <button class="link text-sm" type="button" data-mode="forgot">Forgot password?</button>
           </div>
           <button class="primary mt-4" type="submit">Sign in</button>
-          <div class="border-t border-gray-700 pt-4 mt-4 text-center text-sm text-gray-400">New to AfroStory? <button class="link" type="button" data-mode="register">Create an account</button></div>
+          <div class="border-t border-gray-700 pt-4 mt-4 text-center text-sm text-slate-300">New to AfroStory? <button class="link" type="button" data-mode="register">Create a free account</button></div>
           <div class="grid grid-cols-2 gap-2 mt-4">
-            <button class="field hover:border-accent transition-colors flex justify-center items-center cursor-pointer" type="button" data-sso="google"><img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5 mr-2" alt="Google"> Google</button>
-            <button class="field hover:border-accent transition-colors flex justify-center items-center cursor-pointer" type="button" data-sso="github"><img src="https://www.svgrepo.com/show/512317/github-142.svg" class="w-5 h-5 invert mr-2" alt="GitHub"> GitHub</button>
+            <button class="field hover:border-accent transition-colors flex justify-center items-center cursor-pointer font-bold" type="button" data-sso="google"><img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5 mr-2" alt="Google"> Google</button>
+            <button class="field hover:border-accent transition-colors flex justify-center items-center cursor-pointer font-bold" type="button" data-sso="github"><img src="https://www.svgrepo.com/show/512317/github-142.svg" class="w-5 h-5 invert mr-2" alt="GitHub"> GitHub</button>
           </div>
         </form>
 
         <!-- REGISTER FORM -->
         <form id="register-form" class="auth-form hidden space-y-4" novalidate>
-          <h2 class="text-2xl font-bold text-white">Create your account</h2>
-          <p class="text-gray-400 text-sm">Join a home for African stories.</p>
+          <h2 class="text-2xl font-display font-black text-white">Create your free account</h2>
+          <p class="text-slate-300 text-sm font-medium">Unlock full episodes &amp; join Africa's storytelling community.</p>
           <input class="field mt-4" id="reg-username" type="text" autocomplete="username" placeholder="Username" required>
           <input class="field mt-4" id="reg-email" type="email" autocomplete="email" placeholder="Email address" required>
           <div class="password-field mt-4">
@@ -675,25 +1178,25 @@
             <button class="password-toggle" type="button" data-password-toggle="#reg-password" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
           </div>
           <div class="flex gap-1 mt-2"><i id="str-bar-1" class="bar"></i><i id="str-bar-2" class="bar"></i><i id="str-bar-3" class="bar"></i><i id="str-bar-4" class="bar"></i></div>
-          <p id="password-feedback" class="text-xs text-gray-500 mt-1"></p>
+          <p id="password-feedback" class="text-xs text-slate-400 mt-1"></p>
           <div class="password-field mt-4">
             <input class="field" id="reg-confirm" type="password" autocomplete="new-password" placeholder="Confirm password" required>
             <button class="password-toggle" type="button" data-password-toggle="#reg-confirm" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
           </div>
-          <div class="bg-surface border border-gray-800 p-3 rounded-lg mt-4">
-            <label class="text-sm text-gray-400 flex items-center gap-2 cursor-pointer">
+          <div class="bg-black/40 border border-gray-800 p-3 rounded-lg mt-4">
+            <label class="text-sm text-slate-300 flex items-center gap-2 cursor-pointer">
               <input id="reg-terms" type="checkbox" required> 
-              <span>I agree to the <a href="/terms.html" class="text-accent hover:underline" target="_blank">Terms of Service</a>.</span>
+              <span>I agree to the <a href="/terms.html" class="text-accent hover:underline font-bold" target="_blank">Terms of Service</a>.</span>
             </label>
           </div>
-          <button class="primary mt-4" type="submit">Create account</button>
-          <p class="text-center text-sm text-gray-400 mt-4">Already a member? <button class="link" type="button" data-mode="login">Sign in</button></p>
+          <button class="primary mt-4" type="submit">Create free account &amp; watch</button>
+          <p class="text-center text-sm text-slate-300 mt-4">Already a member? <button class="link" type="button" data-mode="login">Sign in</button></p>
         </form>
 
         <!-- FORGOT PASSWORD FORM -->
         <form id="forgot-form" class="auth-form hidden space-y-4" novalidate>
-          <h2 class="text-2xl font-bold text-white">Reset password</h2>
-          <p class="text-gray-400 text-sm">We will send a secure 15-minute code.</p>
+          <h2 class="text-2xl font-display font-black text-white">Reset password</h2>
+          <p class="text-slate-300 text-sm">We will send a secure 15-minute code.</p>
           <input class="field mt-4" id="forgot-email" type="email" placeholder="Registered email" required>
           <button class="primary mt-4" type="submit">Send reset code</button>
           <button class="link text-sm w-full mt-4" type="button" data-mode="login">Back to sign in</button>
@@ -701,11 +1204,11 @@
 
         <!-- RESET PASSWORD FORM -->
         <form id="reset-form" class="auth-form hidden space-y-4" novalidate>
-          <h2 class="text-2xl font-bold text-white">Set new password</h2>
-          <p class="text-gray-400 text-sm">Enter the code sent to your email.</p>
+          <h2 class="text-2xl font-display font-black text-white">Set new password</h2>
+          <p class="text-slate-300 text-sm">Enter the code sent to your email.</p>
           <input class="field code mt-4" id="reset-code" inputmode="numeric" maxlength="6" placeholder="------" required>
           <div class="bg-accent/10 border border-accent/20 rounded-lg p-3 text-center mt-2">
-            <p class="text-xs text-accent font-semibold">Check your Spam/Junk folder if missing.</p>
+            <p class="text-xs text-accent font-bold">Check your Spam/Junk folder if missing.</p>
           </div>
           <div class="password-field mt-4">
             <input class="field" id="reset-password" type="password" placeholder="New password" required>
@@ -717,11 +1220,11 @@
 
         <!-- VERIFY EMAIL FORM -->
         <form id="verify-form" class="auth-form hidden space-y-4" novalidate>
-          <h2 class="text-2xl font-bold text-white">Verify your email</h2>
-          <p class="text-gray-400 text-sm">Enter the six-digit code sent to your email.</p>
+          <h2 class="text-2xl font-display font-black text-white">Verify your email</h2>
+          <p class="text-slate-300 text-sm">Enter the six-digit code sent to your email.</p>
           <input class="field code mt-4" id="verify-code" inputmode="numeric" maxlength="6" placeholder="------" required>
           <div class="bg-accent/10 border border-accent/20 rounded-lg p-3 text-center mt-2">
-            <p class="text-xs text-accent font-semibold">Check your Spam/Junk folder if missing.</p>
+            <p class="text-xs text-accent font-bold">Check your Spam/Junk folder if missing.</p>
           </div>
           <button class="primary mt-4" type="submit">Verify account</button>
           <button id="resend-otp" class="link text-sm w-full mt-4" type="button">Resend code</button>
@@ -733,6 +1236,155 @@
   
   <!-- LOAD SEPARATE JS LOGIC -->
   <script src="/js/auth.js"></script>
+
+  <!-- ================= MODERN VIDEO AUTO-VISIBILITY, SWIPE & CONVERSION TELEMETRY ================= -->
+  <script>
+    (function () {
+      let globalMuted = true;
+
+      function syncSlideVideoPlayback(trackEl) {
+        if (!trackEl) return;
+        const slides = Array.from(trackEl.querySelectorAll('.video-showcase-slide'));
+        slides.forEach((slide) => {
+          const video = slide.querySelector('video');
+          if (!video) return;
+
+          video.muted = globalMuted;
+          video.defaultMuted = true;
+          video.loop = true;
+          video.playsInline = true;
+          video.setAttribute('muted', '');
+          video.setAttribute('playsinline', '');
+          video.setAttribute('autoplay', '');
+          if (!video.getAttribute('preload')) video.setAttribute('preload', 'auto');
+
+          if (!video.dataset.framePrimed) {
+            video.dataset.framePrimed = 'true';
+            video.addEventListener('loadedmetadata', () => {
+              slide.classList.add('video-live');
+              if (video.currentTime === 0 && Number.isFinite(video.duration) && video.duration > 1) {
+                try { video.currentTime = 0.25; } catch (e) {}
+              }
+              if (slide.classList.contains('active')) {
+                video.play().catch(() => {});
+              }
+            }, { once: true });
+
+            video.addEventListener('playing', () => {
+              slide.classList.add('video-live');
+            });
+          }
+
+          if (!slide.querySelector('.video-sound-pill')) {
+            const soundBtn = document.createElement('button');
+            soundBtn.type = 'button';
+            soundBtn.className = 'video-sound-pill';
+            soundBtn.innerHTML = globalMuted ? '🔇 Tap for Sound' : '🔊 Sound On';
+            soundBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              globalMuted = !globalMuted;
+              document.querySelectorAll('.video-showcase-slide video').forEach((v) => {
+                v.muted = globalMuted;
+              });
+              document.querySelectorAll('.video-sound-pill').forEach((pill) => {
+                pill.innerHTML = globalMuted ? '🔇 Tap for Sound' : '🔊 Sound On';
+              });
+              if (slide.classList.contains('active')) {
+                video.play().catch(() => {});
+              }
+            });
+            slide.appendChild(soundBtn);
+          }
+
+          if (slide.classList.contains('active')) {
+            if (video.readyState === 0) {
+              try { video.load(); } catch (e) {}
+            }
+            const p = video.play();
+            if (p && typeof p.then === 'function') {
+              p.then(() => slide.classList.add('video-live')).catch(() => {
+                video.muted = true;
+                video.play().then(() => slide.classList.add('video-live')).catch(() => {});
+              });
+            }
+          } else if (!video.paused) {
+            video.pause();
+          }
+        });
+      }
+
+      function observeVideoTrack(trackId) {
+        const track = document.getElementById(trackId);
+        if (!track) return;
+        syncSlideVideoPlayback(track);
+        const observer = new MutationObserver(() => syncSlideVideoPlayback(track));
+        observer.observe(track, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['class', 'src']
+        });
+      }
+
+      function attachTouchSwipe(wrapperId, prevBtnId, nextBtnId) {
+        const wrapper = document.getElementById(wrapperId);
+        const prevBtn = document.getElementById(prevBtnId);
+        const nextBtn = document.getElementById(nextBtnId);
+        if (!wrapper || !prevBtn || !nextBtn) return;
+
+        let startX = 0;
+        wrapper.addEventListener('touchstart', (e) => {
+          startX = e.changedTouches[0].screenX;
+        }, { passive: true });
+
+        wrapper.addEventListener('touchend', (e) => {
+          const deltaX = e.changedTouches[0].screenX - startX;
+          if (Math.abs(deltaX) > 45) {
+            if (deltaX < 0) nextBtn.click();
+            else prevBtn.click();
+          }
+        }, { passive: true });
+      }
+
+      function initConversionHooks() {
+        const stickyBar = document.getElementById('sticky-conversion-bar');
+        const modal = document.getElementById('auth-modal');
+
+        window.addEventListener('scroll', () => {
+          if (!stickyBar) return;
+          const modalOpen = modal && modal.classList.contains('active');
+          if (window.scrollY > 520 && !modalOpen) {
+            stickyBar.classList.add('visible');
+          } else {
+            stickyBar.classList.remove('visible');
+          }
+        }, { passive: true });
+
+        document.addEventListener('click', (e) => {
+          const cta = e.target.closest('[data-track-cta]');
+          if (!cta) return;
+          try {
+            const key = 'afrostory_cta_events';
+            const events = JSON.parse(localStorage.getItem(key) || '[]');
+            events.push({ cta: cta.dataset.trackCta, ts: Date.now() });
+            localStorage.setItem(key, JSON.stringify(events.slice(-25)));
+          } catch (err) {}
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        observeVideoTrack('trending-video-track');
+        observeVideoTrack('video-slides-track');
+        attachTouchSwipe('trending-video-slideshow', 'trend-vid-prev', 'trend-vid-next');
+        attachTouchSwipe('promo-image-slideshow', 'img-slide-prev', 'img-slide-next');
+        attachTouchSwipe('promo-video-slideshow', 'vid-slide-prev', 'vid-slide-next');
+        initConversionHooks();
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+          window.lucide.createIcons();
+        }
+      });
+    })();
+  </script>
 
 </body>
 </html>
