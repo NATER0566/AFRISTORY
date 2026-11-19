@@ -1,5 +1,5 @@
 const API = '/api';
-const PREVIEW_LIMIT = 10; // Seconds before the video locks
+const PREVIEW_LIMIT = 10; // Seconds of gripping hook preview before the video locks
 const state = { 
     user: null, profile: null, rewards: null, series: [], 
     currentSeries: null, currentEpisode: null, hls: null, 
@@ -143,6 +143,32 @@ const image = value => {
 };
 
 /* ============================================================================ */
+/* HOOK PREVIEW HELPERS (AUTO-PLAY GRIPPING SCENE INSTEAD OF STATIC COVERS) */
+/* ============================================================================ */
+function getEpisodeHookStart(episode) {
+    if (!episode) return 0;
+    if (Number.isFinite(Number(episode.hookStart)) && Number(episode.hookStart) > 0) {
+        return Number(episode.hookStart);
+    }
+    const rawUrl = episode.mediaUrl || episode.videoUrl || episode.hlsUrl || '';
+    const hashMatch = String(rawUrl).match(/#t=(\d+(?:\.\d+)?)/i);
+    if (hashMatch) return Number(hashMatch[1]) || 0;
+    return 0;
+}
+
+function getCleanMediaUrl(rawUrl) {
+    if (!rawUrl || typeof rawUrl !== 'string') return '';
+    return rawUrl.split('#')[0];
+}
+
+function getEpisodeCardVideoUrl(episode) {
+    const cleanUrl = getCleanMediaUrl(episode?.mediaUrl || episode?.videoUrl || episode?.hlsUrl || '');
+    if (!cleanUrl || cleanUrl.includes('.m3u8')) return '';
+    const hookStart = getEpisodeHookStart(episode);
+    return `${cleanUrl}#t=${hookStart},${hookStart + 5}`;
+}
+
+/* ============================================================================ */
 /* FORMATTERS */
 /* ============================================================================ */
 function formatRating(rating, count) {
@@ -255,10 +281,26 @@ function card(series) {
     return `<article class="series-card" data-series-id="${esc(series._id)}"><div class="card-image" style="background-image:url('${image(series.coverImage)}')"><span class="card-tag">${esc(series.genre || 'SERIES')}</span></div><div class="card-body"><h3>${esc(series.title)}</h3><p>${esc(series.language || 'English')} &nbsp; · &nbsp; ${esc(series.genre || 'Story')}</p></div></article>`; 
 }
 
-function episodeCard(episode) { 
+function episodeCard(episode, tagOverride = null) { 
     const series = episode.seriesId || {}; 
     const creator = series.creatorId || {}; 
-    return `<article class="series-card episode-card" data-episode-id="${esc(episode._id)}"><div class="card-image" style="background-image:url('${image(episode.thumbnailUrl || series.coverImage)}')"><span class="card-tag">${esc(episode.genre || 'EPISODE')}</span></div><div class="card-body"><h3>${esc(episode.title)}</h3><p>${esc(series.title || 'Story')} · ${esc(episode.culturalCategory || 'African story')}</p><p>${esc(creator.brandName || '')} · ${esc(episode.language || 'English')} · ${Math.round(Number(episode.duration || 0) / 60)} min</p></div></article>`; 
+    const previewVideoUrl = getEpisodeCardVideoUrl(episode);
+    const tagLabel = tagOverride || esc(episode.genre || 'EPISODE');
+    const previewVideoHtml = previewVideoUrl 
+        ? `<video class="card-preview-video" src="${esc(previewVideoUrl)}" muted autoplay loop playsinline preload="metadata"></video>` 
+        : '';
+
+    return `<article class="series-card episode-card" data-episode-id="${esc(episode._id)}">
+        <div class="card-image" style="background-image:url('${image(series.coverImage)}')">
+            ${previewVideoHtml}
+            <span class="card-tag">${tagLabel}</span>
+        </div>
+        <div class="card-body">
+            <h3>${esc(episode.title)}</h3>
+            <p>${esc(series.title || 'Story')} · ${esc(episode.culturalCategory || 'African story')}</p>
+            <p>${esc(creator.brandName || '')} · ${esc(episode.language || 'English')} · ${Math.round(Number(episode.duration || 0) / 60)} min</p>
+        </div>
+    </article>`; 
 }
 
 async function loadDiscover() {
@@ -307,23 +349,59 @@ async function loadDiscover() {
 } 
 
 /* ============================================================================ */
-/* TIKTOK STYLE FEED & ROCKET SLOTH ADS */
+/* TIKTOK STYLE FEED & AUTO-PLAY GRIPPING HOOK PREVIEW */
 /* ============================================================================ */
+function ensureUnmutePill(videoEl) {
+    const cardEl = videoEl?.closest('.feed-video-card');
+    if (!cardEl || cardEl.querySelector('.unmute-pill')) return;
+    const pill = document.createElement('button');
+    pill.type = 'button';
+    pill.className = 'unmute-pill';
+    pill.innerHTML = '🔇 Tap for sound';
+    pill.addEventListener('click', (e) => {
+        e.stopPropagation();
+        videoEl.muted = false;
+        videoEl.play().catch(() => {});
+        pill.remove();
+    });
+    cardEl.appendChild(pill);
+}
+
 function safePlay(videoEl) {
     if (!videoEl) return;
     const playPromise = videoEl.play();
     if (playPromise !== undefined) {
-        playPromise.catch((err) => {
-            if (err.name !== 'AbortError') {
-                console.log('Autoplay blocked. User must interact first.');
+        playPromise.then(() => {
+            if (!videoEl.muted) {
+                videoEl.closest('.feed-video-card')?.querySelector('.unmute-pill')?.remove();
+            }
+        }).catch((err) => {
+            if (err.name === 'AbortError') return;
+            // Fallback to muted autoplay so the gripping video scene ALWAYS starts immediately
+            if (!videoEl.muted) {
+                videoEl.muted = true;
+                videoEl.play().then(() => ensureUnmutePill(videoEl)).catch(() => {});
             }
         });
     }
 }
 
-function attachVideoSource(videoEl) {
+function seekToHookIfNeeded(videoEl, episode) {
+    if (!videoEl || !episode || episode.hasAccess) return;
+    const hookStart = getEpisodeHookStart(episode);
+    if (hookStart > 0 && videoEl.currentTime < hookStart) {
+        try {
+            if (Number.isFinite(videoEl.duration) && hookStart < videoEl.duration - 2) {
+                videoEl.currentTime = hookStart;
+            }
+        } catch (e) {}
+    }
+}
+
+function attachVideoSource(videoEl, episode = null) {
     if (!videoEl || videoEl.dataset.loaded === 'true') return;
-    const actualMediaUrl = videoEl.dataset.mediaUrl || '';
+    const rawMediaUrl = videoEl.dataset.mediaUrl || '';
+    const actualMediaUrl = getCleanMediaUrl(rawMediaUrl);
     if (!actualMediaUrl) return;
     videoEl.dataset.loaded = 'true';
 
@@ -341,6 +419,10 @@ function attachVideoSource(videoEl) {
     } else {
         videoEl.src = actualMediaUrl;
     }
+
+    if (episode) {
+        videoEl.addEventListener('loadedmetadata', () => seekToHookIfNeeded(videoEl, episode), { once: true });
+    }
 }
 
 let currentlyPlaying = null;
@@ -353,18 +435,21 @@ const feedObserver = new IntersectionObserver((entries) => {
             if (currentlyPlaying && currentlyPlaying !== video) {
                 currentlyPlaying.pause();
             }
-            attachVideoSource(video);
+            const epId = entry.target.dataset.episodeId;
+            const epData = state.feedEpisodes.find(e => e._id === epId) || {};
+            attachVideoSource(video, epData);
+            seekToHookIfNeeded(video, epData);
             safePlay(video);
             currentlyPlaying = video;
 
             // Preload only the immediate next video to avoid network congestion
             const nextCard = entry.target.nextElementSibling;
             if (nextCard) {
-                attachVideoSource(nextCard.querySelector('video'));
+                const nextEpId = nextCard.dataset.episodeId;
+                const nextEpData = state.feedEpisodes.find(e => e._id === nextEpId) || null;
+                attachVideoSource(nextCard.querySelector('video'), nextEpData);
             }
             
-            const epId = entry.target.dataset.episodeId;
-            const epData = state.feedEpisodes.find(e => e._id === epId) || {};
             state.currentEpisode = epData;
             state.currentSeries = epData.seriesId && typeof epData.seriesId === 'object' ? epData.seriesId : { _id: epData.seriesId };
             loadComments(epData._id);
@@ -428,11 +513,7 @@ async function openSeries(id) {
         const seriesGrid = $('#series-grid');
         if (seriesGrid) {
             if (episodes.length > 0) {
-                seriesGrid.innerHTML = episodes.map((episode, index) => {
-                    const series = episode.seriesId || {}; 
-                    const creator = series.creatorId || {}; 
-                    return `<article class="series-card episode-card" data-episode-id="${esc(episode._id)}"><div class="card-image" style="background-image:url('${image(episode.thumbnailUrl || series.coverImage)}')"><span class="card-tag">EPISODE ${index + 1}</span></div><div class="card-body"><h3>${esc(episode.title)}</h3><p>${esc(series.title || 'Story')} · ${esc(episode.culturalCategory || 'African story')}</p><p>${esc(creator.brandName || '')} · ${esc(episode.language || 'English')} · ${Math.round(Number(episode.duration || 0) / 60)} min</p></div></article>`;
-                }).join('');
+                seriesGrid.innerHTML = episodes.map((episode, index) => episodeCard(episode, `EPISODE ${index + 1}`)).join('');
             } else {
                 seriesGrid.innerHTML = '<p style="grid-column: 1/-1;">This story has no episodes yet.</p>';
             }
@@ -465,33 +546,31 @@ async function openEpisode(id, preloadedEpisodes = null) {
 
         episodes.forEach((episode, index) => { 
             const actualMediaUrl = episode.mediaUrl || episode.videoUrl || episode.hlsUrl || ''; 
+            const hookStart = getEpisodeHookStart(episode);
+            const previewEnd = hookStart + PREVIEW_LIMIT;
             
-            const card = document.createElement('div'); 
-            card.className = 'feed-video-card'; 
-            card.dataset.episodeId = episode._id; 
+            const cardEl = document.createElement('div'); 
+            cardEl.className = 'feed-video-card'; 
+            cardEl.dataset.episodeId = episode._id; 
             
             let lockScreen = ''; 
             
             if (!episode.hasAccess) { 
                 lockScreen = `
-                <div class="feed-lock-overlay hidden" id="lock-${episode._id}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: 50;"> 
-                    <span class="lock-icon" style="font-size:40px;color:#d4a017;">◈</span> 
-                    <h3 style="color:#fff; margin-top:15px; font-size: 22px;">Premium Story</h3> 
-                    <p style="color:#ccc; margin-bottom: 25px; font-size: 14px; text-align: center; padding: 0 20px;">You've reached the end of the free preview.</p> 
+                <div class="feed-lock-overlay hidden" id="lock-${episode._id}"> 
+                    <span class="lock-icon">◈</span> 
+                    <h3>Premium Story</h3> 
+                    <p>You've reached the end of the free preview. Unlock now to watch the full episode from the beginning.</p> 
                     
                     <div style="display:flex; flex-direction:column; gap:12px; width: 85%; max-width: 300px;">
-                        
-                        <!-- ROCKET SLOTH REWARDED BUTTON -->
-                        <button type="button" id="waterfall-ad-btn-${episode._id}" data-rs-rewarded data-action="waterfall-ad-unlock" data-episode-id="${episode._id}" class="button button-accent" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:bold; font-size:15px; padding:12px; border-radius:8px;">
+                        <button type="button" id="waterfall-ad-btn-${episode._id}" data-rs-rewarded data-action="waterfall-ad-unlock" data-episode-id="${episode._id}" class="button button-accent" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px;">
                             <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> 
-                            Watch Ad to Unlock
+                            <span>Watch Ad to Unlock</span>
                         </button>
 
-                        <!-- EXISTING COIN UNLOCK BUTTON -->
-                        <button type="button" class="button" data-action="unlock-current" style="width:100%; background:transparent; border:1px solid #555; color:#fff; font-weight:600; font-size:14px; padding:12px; border-radius:8px;">
+                        <button type="button" class="button" data-action="unlock-current" style="width:100%;">
                             Use ${episode.coinCost || 10} Coins
                         </button>
-
                     </div>
                 </div>`; 
             } 
@@ -509,8 +588,9 @@ async function openEpisode(id, preloadedEpisodes = null) {
                 ? `<div class="follow-badge-icon" style="position: absolute; bottom: 0; right: 0; background: #76a86b; color: #fff; width: 14px; height: 14px; border-radius: 50%; font-size: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid #111;">✓</div>`
                 : `<div class="follow-badge-icon" style="position: absolute; bottom: 0; right: 0; background: #d4a017; color: #111; width: 14px; height: 14px; border-radius: 50%; font-size: 14px; line-height: 14px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid #111;">+</div>`;
 
-            card.innerHTML = `
-                <video poster="${image(episode.thumbnailUrl || episode.seriesId?.coverImage)}" preload="${index <= 1 ? 'auto' : 'none'}" loop playsinline ${episode.hasAccess ? 'controls' : ''}></video> 
+            // No static poster attribute — auto-plays live gripping video frame immediately
+            cardEl.innerHTML = `
+                <video preload="${index <= 1 ? 'auto' : 'none'}" loop playsinline ${episode.hasAccess ? 'controls' : ''}></video> 
                 ${lockScreen} 
                 <div class="feed-overlay"> 
                     <h3 style="margin:0; font-size:18px; font-weight:700;">${esc(episode.title)}</h3> 
@@ -544,42 +624,41 @@ async function openEpisode(id, preloadedEpisodes = null) {
                     </button> 
                 </div>`; 
             
-            const videoEl = card.querySelector('video'); 
+            const videoEl = cardEl.querySelector('video'); 
             videoEl.dataset.mediaUrl = actualMediaUrl;
 
-            // Only initialize streams for the first two cards immediately
             if (index <= 1) {
-                attachVideoSource(videoEl);
+                attachVideoSource(videoEl, episode);
             }
 
             let hasTrackedView = false;
 
             if (!episode.hasAccess) { 
                 videoEl.addEventListener('timeupdate', () => { 
-                    if (!hasTrackedView && videoEl.currentTime > 10) {
+                    if (!hasTrackedView && (videoEl.currentTime - hookStart) >= 5) {
                         hasTrackedView = true;
                         api(`/episodes/${episode._id}/record-view`, { method: 'POST' }).catch(() => {});
                     }
 
                     if (episode.hasAccess) return; 
                     
-                    if (videoEl.currentTime >= PREVIEW_LIMIT) { 
-                        if (Math.abs(videoEl.currentTime - PREVIEW_LIMIT) > 1) {
-                            videoEl.currentTime = PREVIEW_LIMIT; 
+                    if (videoEl.currentTime >= previewEnd) { 
+                        if (Math.abs(videoEl.currentTime - previewEnd) > 1) {
+                            videoEl.currentTime = previewEnd; 
                         }
                         videoEl.pause(); 
                         videoEl.removeAttribute('controls'); 
-                        const lockUI = card.querySelector(`#lock-${episode._id}`);
+                        const lockUI = cardEl.querySelector(`#lock-${episode._id}`);
                         if (lockUI) lockUI.classList.remove('hidden'); 
                     } 
                 }); 
                 videoEl.addEventListener('seeked', () => { 
                     if (episode.hasAccess) return;
-                    if (videoEl.currentTime >= PREVIEW_LIMIT) { 
+                    if (videoEl.currentTime >= previewEnd) { 
                         videoEl.pause(); 
-                        videoEl.currentTime = PREVIEW_LIMIT; 
+                        videoEl.currentTime = previewEnd; 
                         videoEl.removeAttribute('controls'); 
-                        const lockUI = card.querySelector(`#lock-${episode._id}`);
+                        const lockUI = cardEl.querySelector(`#lock-${episode._id}`);
                         if (lockUI) lockUI.classList.remove('hidden'); 
                     } 
                 }); 
@@ -595,8 +674,8 @@ async function openEpisode(id, preloadedEpisodes = null) {
             videoEl.addEventListener('pause', () => saveProgressFeed(episode, videoEl)); 
             videoEl.addEventListener('ended', () => saveProgressFeed(episode, videoEl, true)); 
             
-            feedContainer.appendChild(card); 
-            feedObserver.observe(card); 
+            feedContainer.appendChild(cardEl); 
+            feedObserver.observe(cardEl); 
         }); 
     } catch (error) {
         logFrontendError('open_episode_failed', error.message, error.stack);
@@ -623,7 +702,7 @@ async function saveProgressFeed(episode, video, completed = false) {
 }
 
 /* ============================================================================ */
-/* PREMIUM EPISODE UNLOCK (COINS ONLY NOW) */
+/* PREMIUM EPISODE UNLOCK (COINS) */
 /* ============================================================================ */
 async function unlockEpisode() {
     if (!state.currentEpisode) return;
@@ -665,6 +744,7 @@ async function unlockEpisode() {
             lockScreen.classList.add('hidden'); 
             const videoEl = lockScreen.parentElement.querySelector('video'); 
             if (videoEl) { 
+                videoEl.currentTime = 0;
                 videoEl.setAttribute('controls', 'true'); 
                 safePlay(videoEl); 
             } 
@@ -815,7 +895,7 @@ async function loadFollowersList() {
 }
 
 /* ============================================================================ */
-/* FIX: CREATOR APPROVAL FLOW */
+/* CREATOR APPROVAL FLOW */
 /* ============================================================================ */
 async function handleCreatorSubmit(event) {
     event.preventDefault();                           
@@ -1080,6 +1160,7 @@ async function submitUpload(event) {
     const genre = values.get('genre'); 
     const culturalCategory = values.get('culturalCategory'); 
     const language = values.get('language'); 
+    const hookStart = Math.max(0, Math.floor(Number(values.get('hookStart')) || 0));
     
     if (!seriesId || !file?.size) return toast('Choose a series and video', 'error'); 
     if (!genre || !culturalCategory || !language) return toast('Choose a genre, cultural category, and language', 'error'); 
@@ -1089,11 +1170,11 @@ async function submitUpload(event) {
     
     try { 
         const upload = await uploadAsset('/upload/video', file); 
-        const mediaUrl = upload.hlsUrl || upload.mediaUrl || upload.secure_url || upload.url; 
-        if (!mediaUrl || !/^https?:\/\/.+\.(mp4|m3u8)(?:\?.*)?$/i.test(mediaUrl)) throw new Error('Cloudinary did not return a playable MP4 or HLS URL'); 
-        
-        const thumbnail = values.get('thumbnail'); 
-        const thumbnailUpload = thumbnail?.size ? await uploadAsset('/upload/image', thumbnail) : null; 
+        const baseMediaUrl = upload.hlsUrl || upload.mediaUrl || upload.secure_url || upload.url; 
+        if (!baseMediaUrl || !/^https?:\/\/.+\.(mp4|m3u8)(?:\?.*)?$/i.test(baseMediaUrl)) throw new Error('Cloudinary did not return a playable MP4 or HLS URL'); 
+
+        // Preserve hookStart both in payload and as URL fragment (#t=X) so feed auto-plays the gripping scene
+        const mediaUrl = hookStart > 0 ? `${baseMediaUrl}#t=${hookStart}` : baseMediaUrl;
         const access = values.get('access'); 
         
         await api(`/episodes/series/${encodeURIComponent(seriesId)}/create`, { 
@@ -1103,7 +1184,8 @@ async function submitUpload(event) {
                 title: values.get('title'), 
                 description: values.get('description'), 
                 mediaUrl, 
-                thumbnailUrl: thumbnailUpload?.url || null, 
+                thumbnailUrl: null,
+                hookStart,
                 genre, 
                 culturalCategory, 
                 language, 
@@ -1120,7 +1202,7 @@ async function submitUpload(event) {
         if (modal) modal.classList.add('hidden'); 
         form.reset(); 
         await loadCreator(); 
-        toast('Upload successful!', 'success'); 
+        toast('Upload successful! Your gripping scene is live in the feed.', 'success'); 
     } catch (error) { 
         toast(error.message, 'error'); 
     } finally { 
@@ -1164,7 +1246,7 @@ async function loadHistory() {
         if (listEl) {
             listEl.innerHTML = list.filter(item => item.episodeId).map(item => `
                 <button class="profile-list-row history-row" data-history-episode="${esc(item.episodeId._id)}" data-history-series="${esc(item.seriesId?._id)}" style="width: 100%; cursor: pointer; text-align: left; margin-bottom: 10px; border-radius: 8px;">
-                    <div style="width: 90px; height: 60px; border-radius: 6px; background-color: #333; background-image: url('${image(item.episodeId.thumbnailUrl || item.seriesId?.coverImage)}'); background-size: cover; background-position: center; flex-shrink: 0;"></div>
+                    <div style="width: 90px; height: 60px; border-radius: 6px; background-color: #333; background-image: url('${image(item.seriesId?.coverImage)}'); background-size: cover; background-position: center; flex-shrink: 0;"></div>
                     <div style="flex: 1; min-width: 0;">
                         <strong style="color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">${esc(item.seriesId?.title || 'Series')}</strong>
                         <p style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(item.episodeId.title || 'Episode')}</p>
@@ -1186,7 +1268,7 @@ async function loadContinue() {
         if (listEl) {
             listEl.innerHTML = list.filter(item => !item.completed && item.episodeId).map(item => `
                 <button class="profile-list-row history-row" data-history-episode="${esc(item.episodeId._id)}" data-history-series="${esc(item.seriesId?._id)}" style="width: 100%; cursor: pointer; text-align: left; margin-bottom: 10px; border-radius: 8px;">
-                    <div style="width: 90px; height: 60px; border-radius: 6px; background-color: #333; background-image: url('${image(item.episodeId.thumbnailUrl || item.seriesId?.coverImage)}'); background-size: cover; background-position: center; flex-shrink: 0;"></div>
+                    <div style="width: 90px; height: 60px; border-radius: 6px; background-color: #333; background-image: url('${image(item.seriesId?.coverImage)}'); background-size: cover; background-position: center; flex-shrink: 0;"></div>
                     <div style="flex: 1; min-width: 0;">
                         <strong style="color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">${esc(item.seriesId?.title || 'Series')}</strong>
                         <p style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(item.episodeId.title || 'Episode')}</p>
@@ -1376,7 +1458,7 @@ async function searchLibrary(event) {
         if (resEl) resEl.innerHTML = '<p>Searching...</p>';
         const result = await api(`/search/global?q=${encodeURIComponent(query)}&limit=50`) || {};
         const seriesHtml = (result.series?.data || []).map(card).join('');
-        const episodesHtml = (result.episodes?.data || []).map(episodeCard).join('');
+        const episodesHtml = (result.episodes?.data || []).map(ep => episodeCard(ep)).join('');
         if (resEl) resEl.innerHTML = (seriesHtml + episodesHtml) || '<p>No stories matched your search.</p>';
     } catch (error) { toast(error.message, 'error'); }
 } 
@@ -1385,7 +1467,7 @@ async function loadTrending() {
     try { 
         const result = await api('/search/trending') || {}; 
         const listEl = $('#trending-list');
-        if (listEl) listEl.innerHTML = (result.trending || []).map(episodeCard).join('') || '<p>No trending episodes yet.</p>'; 
+        if (listEl) listEl.innerHTML = (result.trending || []).map(ep => episodeCard(ep)).join('') || '<p>No trending episodes yet.</p>'; 
     } catch (error) { toast(error.message, 'error'); } 
 } 
 
@@ -1719,11 +1801,12 @@ document.addEventListener('rs:rewarded', async (event) => {
     if (btn.id && btn.id.startsWith('waterfall-ad-btn-')) {
         const episodeId = btn.dataset.episodeId;
         
+        delete btn.dataset.rsLoading;
         btn.disabled = true;
         btn.innerHTML = 'Verifying ad...';
 
         try {
-            const response = await api('/wallet/unlock-episode', { 
+            await api('/wallet/unlock-episode', { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
                 body: JSON.stringify({ episodeId: episodeId, method: 'AD', provider: 'ROCKET_SLOTH', receipt: receipt }) 
@@ -1742,20 +1825,23 @@ document.addEventListener('rs:rewarded', async (event) => {
                 lockUI.classList.add('hidden');
                 const videoEl = lockUI.parentElement?.querySelector('video');
                 if (videoEl) {
+                    videoEl.currentTime = 0;
                     videoEl.setAttribute('controls', 'true');
                     safePlay(videoEl);
                 }
             }
         } catch (error) {
             toast('Ad verification failed. You must watch the full ad to unlock.', 'error');
+            delete btn.dataset.rsLoading;
             btn.disabled = false;
-            btn.innerHTML = 'Watch Ad to Unlock';
+            btn.innerHTML = btn.dataset.originalHtml || 'Watch Ad to Unlock';
         }
     }
 
     // 2. Reward Claim Logic
     if (btn.dataset.rewardId) {
-        const originalText = btn.textContent;
+        const originalHtml = btn.dataset.originalHtml || btn.textContent;
+        delete btn.dataset.rsLoading;
         btn.disabled = true;
         btn.textContent = 'Verifying ad...';
         
@@ -1771,8 +1857,9 @@ document.addEventListener('rs:rewarded', async (event) => {
             refreshNotificationBadge();
         } catch (error) { 
             toast('Ad verification failed. You must watch the full ad to claim.', 'error');
+            delete btn.dataset.rsLoading;
             btn.disabled = false; 
-            btn.textContent = originalText; 
+            btn.innerHTML = originalHtml; 
         }
     }
 });
