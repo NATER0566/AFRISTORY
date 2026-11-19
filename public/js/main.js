@@ -507,7 +507,6 @@ async function openSeries(id) {
         state.currentSeries = seriesInfo;
         discoverLoaded = true;
 
-        // Ensure Discover section is visible even if the user clicked the series from Search or Favorites
         $$('.app-section').forEach(section => section.classList.toggle('hidden', section.id !== 'section-discover'));
         $$('.nav-item[data-section]').forEach(item => item.classList.toggle('active', item.dataset.section === 'discover'));
         $('#genre-filter')?.closest('.discover-filters')?.classList.remove('hidden');
@@ -566,7 +565,6 @@ async function openEpisode(id, preloadedEpisodes = null) {
         feedObserver.disconnect();
         feedContainer.innerHTML = '<div class="feed-loading"></div>'; 
 
-        // Unwrap episode payload whether backend returns { data: {...} } or { episode: {...} }
         const rawEp = await api(`/episodes/${id}`).catch(() => null);
         if (requestId !== activeFeedRequestId) return;
 
@@ -585,7 +583,6 @@ async function openEpisode(id, preloadedEpisodes = null) {
             const filtered = ordered.filter(ep => String(ep._id) !== String(id));
             episodes = [currentEp, ...filtered];
         } else {
-            // Fetch all episodes of the clicked series AND discovery episodes from other series in parallel
             const [seriesRes, feedRes] = await Promise.all([
                 targetSeriesId ? api(`/series/${targetSeriesId}/episodes?limit=100`).catch(() => ({})) : Promise.resolve({}),
                 api('/episodes/feed?sort=trending&limit=15').catch(() => ({}))
@@ -603,7 +600,6 @@ async function openEpisode(id, preloadedEpisodes = null) {
                 seriesId: (ep.seriesId && typeof ep.seriesId === 'object') ? ep.seriesId : (seriesMeta || ep.seriesId)
             }));
 
-            // Start strictly from the clicked episode, then continue sequentially through the rest of this series
             const clickedIdx = normalizedSeriesEpisodes.findIndex(ep => String(ep._id) === String(id));
             let seriesQueue = [];
             if (clickedIdx !== -1) {
@@ -624,7 +620,6 @@ async function openEpisode(id, preloadedEpisodes = null) {
                 seriesQueue = [fallbackFirst, ...normalizedSeriesEpisodes.filter(ep => String(ep._id) !== String(id))];
             }
 
-            // Once the series runs out of episodes, append episodes from OTHER series for discovery
             const seriesEpisodeIds = new Set(normalizedSeriesEpisodes.map(ep => String(ep._id)));
             seriesEpisodeIds.add(String(id));
 
@@ -1895,13 +1890,22 @@ document.addEventListener('click', async event => {
 /* ROCKET SLOTH AD INTERCEPTOR */
 /* ============================================================================ */
 document.addEventListener('rs:rewarded', async (event) => {
-    const btn = event.target;
+    const rawTarget = event.target;
+    const btn = (rawTarget && typeof rawTarget.closest === 'function')
+        ? (rawTarget.closest('[data-rs-rewarded]') || rawTarget)
+        : rawTarget;
+    if (!btn) return;
+
     const receipt = event.detail || {};
 
     // 1. Episode Unlock Logic
-    if (btn.id && btn.id.startsWith('waterfall-ad-btn-')) {
-        const episodeId = btn.dataset.episodeId;
-        
+    if (btn.dataset?.action === 'waterfall-ad-unlock' || (btn.id && btn.id.startsWith('waterfall-ad-btn-'))) {
+        const episodeId = btn.dataset.episodeId || state.currentEpisode?._id;
+        if (!episodeId) return;
+
+        const originalHtml = btn.dataset.originalHtml || btn.innerHTML;
+        btn.dataset.originalHtml = originalHtml;
+
         delete btn.dataset.rsLoading;
         btn.disabled = true;
         btn.innerHTML = 'Verifying ad...';
@@ -1910,7 +1914,7 @@ document.addEventListener('rs:rewarded', async (event) => {
             await api('/wallet/unlock-episode', { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ episodeId: episodeId, method: 'AD', provider: 'ROCKET_SLOTH', receipt: receipt }) 
+                body: JSON.stringify({ episodeId, method: 'AD', provider: 'ROCKET_SLOTH', receipt }) 
             });
 
             toast('Ad verified! Unlocking episode...', 'success');
@@ -1935,13 +1939,15 @@ document.addEventListener('rs:rewarded', async (event) => {
             toast('Ad verification failed. You must watch the full ad to unlock.', 'error');
             delete btn.dataset.rsLoading;
             btn.disabled = false;
-            btn.innerHTML = btn.dataset.originalHtml || 'Watch Ad to Unlock';
+            btn.innerHTML = originalHtml || 'Watch Ad to Unlock';
         }
     }
 
     // 2. Reward Claim Logic
-    if (btn.dataset.rewardId) {
-        const originalHtml = btn.dataset.originalHtml || btn.textContent;
+    if (btn.dataset?.rewardId) {
+        const originalHtml = btn.dataset.originalHtml || btn.innerHTML;
+        btn.dataset.originalHtml = originalHtml;
+
         delete btn.dataset.rsLoading;
         btn.disabled = true;
         btn.textContent = 'Verifying ad...';
@@ -1950,7 +1956,7 @@ document.addEventListener('rs:rewarded', async (event) => {
             await api(`/rewards/${encodeURIComponent(btn.dataset.rewardId)}/claim`, { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ method: 'AD', receipt: receipt }) 
+                body: JSON.stringify({ method: 'AD', provider: 'ROCKET_SLOTH', receipt }) 
             });
             
             toast('Reward verified and added to your wallet', 'success'); 
