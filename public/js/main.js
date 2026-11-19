@@ -143,7 +143,7 @@ const image = value => {
 };
 
 /* ============================================================================ */
-/* HOOK PREVIEW HELPERS (AUTO-PLAY GRIPPING SCENE INSTEAD OF STATIC COVERS) */
+/* HOOK PREVIEW & EPISODE ORDER HELPERS */
 /* ============================================================================ */
 function getEpisodeHookStart(episode) {
     if (!episode) return 0;
@@ -166,6 +166,17 @@ function getEpisodeCardVideoUrl(episode) {
     if (!cleanUrl || cleanUrl.includes('.m3u8')) return '';
     const hookStart = getEpisodeHookStart(episode);
     return `${cleanUrl}#t=${hookStart},${hookStart + 5}`;
+}
+
+function sortSeriesEpisodes(episodes) {
+    return [...episodes].sort((a, b) => {
+        const numA = Number(a.episodeNumber);
+        const numB = Number(b.episodeNumber);
+        if (Number.isFinite(numA) && Number.isFinite(numB) && numA !== numB) {
+            return numA - numB;
+        }
+        return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+    });
 }
 
 /* ============================================================================ */
@@ -349,7 +360,7 @@ async function loadDiscover() {
 } 
 
 /* ============================================================================ */
-/* TIKTOK STYLE FEED & AUTO-PLAY GRIPPING HOOK PREVIEW */
+/* TIKTOK STYLE FEED & SEQUENTIAL SERIES QUEUE */
 /* ============================================================================ */
 function ensureUnmutePill(videoEl) {
     const cardEl = videoEl?.closest('.feed-video-card');
@@ -377,7 +388,6 @@ function safePlay(videoEl) {
             }
         }).catch((err) => {
             if (err.name === 'AbortError') return;
-            // Fallback to muted autoplay so the gripping video scene ALWAYS starts immediately
             if (!videoEl.muted) {
                 videoEl.muted = true;
                 videoEl.play().then(() => ensureUnmutePill(videoEl)).catch(() => {});
@@ -436,7 +446,7 @@ const feedObserver = new IntersectionObserver((entries) => {
                 currentlyPlaying.pause();
             }
             const epId = entry.target.dataset.episodeId;
-            const epData = state.feedEpisodes.find(e => e._id === epId) || {};
+            const epData = state.feedEpisodes.find(e => String(e._id) === String(epId)) || {};
             attachVideoSource(video, epData);
             seekToHookIfNeeded(video, epData);
             safePlay(video);
@@ -446,7 +456,7 @@ const feedObserver = new IntersectionObserver((entries) => {
             const nextCard = entry.target.nextElementSibling;
             if (nextCard) {
                 const nextEpId = nextCard.dataset.episodeId;
-                const nextEpData = state.feedEpisodes.find(e => e._id === nextEpId) || null;
+                const nextEpData = state.feedEpisodes.find(e => String(e._id) === String(nextEpId)) || null;
                 attachVideoSource(nextCard.querySelector('video'), nextEpData);
             }
             
@@ -481,16 +491,28 @@ async function openDefaultFeed() {
 
 async function openSeries(id) {
     try {
-        const [seriesInfo, episodesData] = await Promise.all([
+        const [rawSeries, episodesData] = await Promise.all([
             api(`/series/${id}`).catch(() => null),
-            api(`/series/${id}/episodes?limit=50`).catch(() => ({}))
+            api(`/series/${id}/episodes?limit=100`).catch(() => ({}))
         ]);
         
-        const episodes = episodesData.episodes || [];
-        if (!seriesInfo) throw new Error("Could not load series details");
+        const seriesInfo = rawSeries?.series || rawSeries;
+        if (!seriesInfo || !seriesInfo._id) throw new Error("Could not load series details");
+
+        const episodes = sortSeriesEpisodes(episodesData.episodes || []).map(ep => ({
+            ...ep,
+            seriesId: (ep.seriesId && typeof ep.seriesId === 'object') ? ep.seriesId : seriesInfo
+        }));
 
         state.currentSeries = seriesInfo;
-        episodes.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+        discoverLoaded = true;
+
+        // Ensure Discover section is visible even if the user clicked the series from Search or Favorites
+        $$('.app-section').forEach(section => section.classList.toggle('hidden', section.id !== 'section-discover'));
+        $$('.nav-item[data-section]').forEach(item => item.classList.toggle('active', item.dataset.section === 'discover'));
+        $('#genre-filter')?.closest('.discover-filters')?.classList.remove('hidden');
+        $('#save-current')?.classList.add('hidden');
+        location.hash = 'discover';
 
         $$('#section-discover .section-heading').forEach(el => el.classList.add('hidden'));
         const creatorGrid = $('#creator-grid');
@@ -505,7 +527,7 @@ async function openSeries(id) {
                     <h2 style="position: relative; z-index: 10;">${esc(seriesInfo.title)}</h2>
                     <p style="position: relative; z-index: 10; max-width: 600px;">${esc(seriesInfo.description || 'No description available.')}</p>
                     <p style="color:#d4a017; margin-top:10px; position: relative; z-index: 10;">${esc(seriesInfo.language || 'English')} &nbsp; · &nbsp; ${esc(seriesInfo.genre || 'Story')}</p>
-                    ${episodes.length > 0 ? `<button class="button button-primary" data-episode-id="${episodes[0]._id}" style="margin-top:15px; position: relative; z-index: 10;">Play Episode 1</button>` : ''}
+                    ${episodes.length > 0 ? `<button class="button button-primary" data-episode-id="${esc(episodes[0]._id)}" style="margin-top:15px; position: relative; z-index: 10;">Play Episode 1</button>` : ''}
                 </article>
             `;
         }
@@ -513,7 +535,7 @@ async function openSeries(id) {
         const seriesGrid = $('#series-grid');
         if (seriesGrid) {
             if (episodes.length > 0) {
-                seriesGrid.innerHTML = episodes.map((episode, index) => episodeCard(episode, `EPISODE ${index + 1}`)).join('');
+                seriesGrid.innerHTML = episodes.map((episode, index) => episodeCard(episode, `EPISODE ${episode.episodeNumber || (index + 1)}`)).join('');
             } else {
                 seriesGrid.innerHTML = '<p style="grid-column: 1/-1;">This story has no episodes yet.</p>';
             }
@@ -525,23 +547,104 @@ async function openSeries(id) {
     }
 }
 
+let activeFeedRequestId = 0;
+
 async function openEpisode(id, preloadedEpisodes = null) {
+    const requestId = ++activeFeedRequestId;
     try {
+        if (currentlyPlaying) {
+            currentlyPlaying.pause();
+            currentlyPlaying = null;
+        }
+
         state.currentEpisode = { _id: id }; 
         setSection('watch');
         window.scrollTo({ top: 0, behavior: 'smooth' });
         
         const feedContainer = $('#tiktok-feed');
         if (!feedContainer) return;
-        feedContainer.innerHTML = '<div style="text-align:center; margin-top:50px;"></div>'; 
-
-        const currentEp = await api(`/episodes/${id}`) || {}; 
-        let episodes = preloadedEpisodes || ((await api('/episodes/feed?sort=trending&limit=15') || {}).episodes || []);
-        episodes = episodes.filter(ep => ep._id !== id); 
-        if (currentEp._id) episodes.unshift(currentEp); 
-        
-        state.feedEpisodes = episodes;
         feedObserver.disconnect();
+        feedContainer.innerHTML = '<div class="feed-loading"></div>'; 
+
+        // Unwrap episode payload whether backend returns { data: {...} } or { episode: {...} }
+        const rawEp = await api(`/episodes/${id}`).catch(() => null);
+        if (requestId !== activeFeedRequestId) return;
+
+        const currentEp = rawEp?.episode || rawEp || {};
+        if (!currentEp._id) currentEp._id = id;
+
+        const targetSeriesId = (currentEp.seriesId && typeof currentEp.seriesId === 'object')
+            ? currentEp.seriesId._id
+            : (currentEp.seriesId || state.currentSeries?._id || null);
+
+        let episodes = [];
+
+        if (Array.isArray(preloadedEpisodes) && preloadedEpisodes.length > 0) {
+            const startIndex = preloadedEpisodes.findIndex(ep => String(ep._id) === String(id));
+            const ordered = startIndex > 0 ? preloadedEpisodes.slice(startIndex) : [...preloadedEpisodes];
+            const filtered = ordered.filter(ep => String(ep._id) !== String(id));
+            episodes = [currentEp, ...filtered];
+        } else {
+            // Fetch all episodes of the clicked series AND discovery episodes from other series in parallel
+            const [seriesRes, feedRes] = await Promise.all([
+                targetSeriesId ? api(`/series/${targetSeriesId}/episodes?limit=100`).catch(() => ({})) : Promise.resolve({}),
+                api('/episodes/feed?sort=trending&limit=15').catch(() => ({}))
+            ]);
+            if (requestId !== activeFeedRequestId) return;
+
+            const rawSeriesEpisodes = sortSeriesEpisodes(seriesRes?.episodes || []);
+            const seriesMeta = (currentEp.seriesId && typeof currentEp.seriesId === 'object')
+                ? currentEp.seriesId
+                : (state.currentSeries && String(state.currentSeries._id) === String(targetSeriesId) ? state.currentSeries : null);
+
+            const normalizedSeriesEpisodes = rawSeriesEpisodes.map((ep, idx) => ({
+                ...ep,
+                episodeNumber: ep.episodeNumber || (idx + 1),
+                seriesId: (ep.seriesId && typeof ep.seriesId === 'object') ? ep.seriesId : (seriesMeta || ep.seriesId)
+            }));
+
+            // Start strictly from the clicked episode, then continue sequentially through the rest of this series
+            const clickedIdx = normalizedSeriesEpisodes.findIndex(ep => String(ep._id) === String(id));
+            let seriesQueue = [];
+            if (clickedIdx !== -1) {
+                const mergedFirst = {
+                    ...normalizedSeriesEpisodes[clickedIdx],
+                    ...currentEp,
+                    episodeNumber: currentEp.episodeNumber || normalizedSeriesEpisodes[clickedIdx].episodeNumber,
+                    seriesId: (currentEp.seriesId && typeof currentEp.seriesId === 'object')
+                        ? currentEp.seriesId
+                        : normalizedSeriesEpisodes[clickedIdx].seriesId
+                };
+                seriesQueue = [mergedFirst, ...normalizedSeriesEpisodes.slice(clickedIdx + 1)];
+            } else {
+                const fallbackFirst = {
+                    ...currentEp,
+                    seriesId: (currentEp.seriesId && typeof currentEp.seriesId === 'object') ? currentEp.seriesId : (seriesMeta || currentEp.seriesId)
+                };
+                seriesQueue = [fallbackFirst, ...normalizedSeriesEpisodes.filter(ep => String(ep._id) !== String(id))];
+            }
+
+            // Once the series runs out of episodes, append episodes from OTHER series for discovery
+            const seriesEpisodeIds = new Set(normalizedSeriesEpisodes.map(ep => String(ep._id)));
+            seriesEpisodeIds.add(String(id));
+
+            const discoveryEpisodes = (feedRes?.episodes || []).filter(ep => {
+                if (seriesEpisodeIds.has(String(ep._id))) return false;
+                const epSeriesId = (ep.seriesId && typeof ep.seriesId === 'object') ? ep.seriesId._id : ep.seriesId;
+                return !targetSeriesId || String(epSeriesId) !== String(targetSeriesId);
+            });
+
+            episodes = [...seriesQueue, ...discoveryEpisodes];
+        }
+
+        state.feedEpisodes = episodes;
+        if (episodes[0]) {
+            state.currentEpisode = episodes[0];
+            state.currentSeries = (episodes[0].seriesId && typeof episodes[0].seriesId === 'object')
+                ? episodes[0].seriesId
+                : (state.currentSeries || { _id: episodes[0].seriesId });
+        }
+
         feedContainer.innerHTML = ''; 
 
         episodes.forEach((episode, index) => { 
@@ -588,7 +691,6 @@ async function openEpisode(id, preloadedEpisodes = null) {
                 ? `<div class="follow-badge-icon" style="position: absolute; bottom: 0; right: 0; background: #76a86b; color: #fff; width: 14px; height: 14px; border-radius: 50%; font-size: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid #111;">✓</div>`
                 : `<div class="follow-badge-icon" style="position: absolute; bottom: 0; right: 0; background: #d4a017; color: #111; width: 14px; height: 14px; border-radius: 50%; font-size: 14px; line-height: 14px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid #111;">+</div>`;
 
-            // No static poster attribute — auto-plays live gripping video frame immediately
             cardEl.innerHTML = `
                 <video preload="${index <= 1 ? 'auto' : 'none'}" loop playsinline ${episode.hasAccess ? 'controls' : ''}></video> 
                 ${lockScreen} 
@@ -617,7 +719,7 @@ async function openEpisode(id, preloadedEpisodes = null) {
                     <button class="feed-action-btn" data-action="save-current" title="Save to Favorites"> 
                         <svg viewBox="0 0 24 24" width="30" height="30" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg> 
                         <span>Save</span> 
-                    </button> 
+                    </button>
                     <button class="feed-action-btn" onclick="document.getElementById('comments-sheet').classList.remove('hidden')" title="Comments"> 
                         <svg viewBox="0 0 24 24" width="30" height="30" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg> 
                         <span>Reply</span> 
@@ -1173,7 +1275,6 @@ async function submitUpload(event) {
         const baseMediaUrl = upload.hlsUrl || upload.mediaUrl || upload.secure_url || upload.url; 
         if (!baseMediaUrl || !/^https?:\/\/.+\.(mp4|m3u8)(?:\?.*)?$/i.test(baseMediaUrl)) throw new Error('Cloudinary did not return a playable MP4 or HLS URL'); 
 
-        // Preserve hookStart both in payload and as URL fragment (#t=X) so feed auto-plays the gripping scene
         const mediaUrl = hookStart > 0 ? `${baseMediaUrl}#t=${hookStart}` : baseMediaUrl;
         const access = values.get('access'); 
         
@@ -1283,12 +1384,12 @@ async function loadContinue() {
 
 async function openHistoryEpisode(seriesId, episodeId) { 
     try { 
-        const [series, episode] = await Promise.all([api(`/series/${seriesId}`), api(`/episodes/${episodeId}`)]); 
-        if(series && episode) {
-            state.currentSeries = series; 
-            setSection('watch'); 
-            await openEpisode(episode._id); 
+        if (seriesId && seriesId !== 'undefined') {
+            const rawSeries = await api(`/series/${seriesId}`).catch(() => null);
+            const series = rawSeries?.series || rawSeries;
+            if (series) state.currentSeries = series;
         }
+        await openEpisode(episodeId); 
     } catch (error) { toast(error.message, 'error'); } 
 } 
 
@@ -1814,9 +1915,9 @@ document.addEventListener('rs:rewarded', async (event) => {
 
             toast('Ad verified! Unlocking episode...', 'success');
             
-            const epData = state.feedEpisodes.find(e => e._id === episodeId);
+            const epData = state.feedEpisodes.find(e => String(e._id) === String(episodeId));
             if (epData) epData.hasAccess = true;
-            if (state.currentEpisode && state.currentEpisode._id === episodeId) {
+            if (state.currentEpisode && String(state.currentEpisode._id) === String(episodeId)) {
                 state.currentEpisode.hasAccess = true;
             }
             
