@@ -40,7 +40,7 @@
 
     *, *::before, *::after { box-sizing: border-box; }
 
-    .discover-filters { display: flex; gap: 12px; margin: 0 0 24px; }
+    .discover-filters { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 24px; }
     .discover-filters label { color: #999; display: flex; flex-direction: column; font-size: 11px; gap: 6px; }
     .discover-filters select { background: #242424; border: 1px solid #343434; border-radius: 6px; color: #f5f5f5; padding: 9px 28px 9px 10px; }
     .profile-form { max-width: 520px; }
@@ -49,6 +49,18 @@
     .notification-unread { border-left: 3px solid #d4a017; }
     .comment-replies { border-left: 1px solid #343434; margin: 12px 0 0 18px; padding-left: 14px; }
     .empty-state { text-align: center; padding: 40px 20px; color: #888; font-size: 14px; border: 1px dashed #333; border-radius: 12px; margin-top: 20px; }
+    .creator-rejection-banner {
+      background: rgba(231, 76, 60, 0.12);
+      border: 1px solid rgba(231, 76, 60, 0.45);
+      border-radius: 12px;
+      color: #ffb4ab;
+      font-size: 13.5px;
+      line-height: 1.5;
+      margin-bottom: 18px;
+      padding: 14px 16px;
+      text-align: left;
+    }
+    .creator-rejection-banner strong { color: #ff6b5b; display: block; margin-bottom: 4px; }
 
     /* ==============================================================
        2. BUTTON SPINNER & TOAST NOTIFICATIONS
@@ -765,6 +777,7 @@
     <main class="main-content">
       <div class="discover-filters">
         <label>Genre<select id="genre-filter"><option value="">All genres</option><option>Action</option><option>Drama</option><option>Comedy</option><option>Romance</option><option>Thriller</option><option>Sci-Fi</option><option>Horror</option><option>Documentary</option><option>Afro-Futurism</option><option>Folklore</option><option>Urban Drama</option><option>Animation</option><option>Historical</option><option>Adventure</option><option>Mystery</option><option>Crime</option><option>Family</option><option>Faith &amp; Inspirational</option><option>Musical</option><option>Biography</option><option>Short Film</option></select></label>
+        <label>Language<select id="language-filter"><option value="">All languages</option><option>English</option><option>Nigerian Pidgin</option><option>Tiv</option><option>Igbo</option><option>Yoruba</option><option>Hausa</option><option>French</option><option>Arabic</option><option>Swahili</option></select></label>
         <label>Sort<select id="sort-filter"><option value="trending">Trending</option><option value="newest">Newest</option><option value="rating">Top rated</option></select></label>
       </div>
 
@@ -786,7 +799,7 @@
         <button class="watch-home-btn desktop-only" data-section="discover" aria-label="Back to Home" title="Back to Home">
           <span>← Back to Home</span>
         </button>
-        <button class="watch-next-btn desktop-only" onclick="const feed = document.getElementById('tiktok-feed'); if(feed) feed.scrollBy({top: feed.clientHeight, behavior: 'smooth'});" aria-label="Next Video" title="Next Video">
+        <button id="watch-next-btn" class="watch-next-btn desktop-only" data-action="next-episode" onclick="const feed = document.getElementById('tiktok-feed'); if(feed) feed.scrollBy({top: feed.clientHeight, behavior: 'smooth'});" aria-label="Next Video" title="Next Video">
           <span>Next Episode</span> <i>↓</i>
         </button>
 
@@ -814,7 +827,11 @@
       <section id="section-wallet" class="app-section hidden">
         <div class="section-heading">
           <div><p class="eyebrow">YOUR STORY ECONOMY</p><h1>Wallet</h1></div>
-          <div><button class="button button-primary" data-action="buy-coins">Get coins <span>↗</span></button><button class="button button-accent" data-action="buy-pass">Get a pass</button></div>
+          <div style="display:flex; flex-wrap:wrap; gap:10px;">
+            <button class="button button-primary" data-action="buy-coins">Get coins <span>↗</span></button>
+            <button class="button button-accent" data-action="buy-pass">Get a pass</button>
+            <button id="withdraw-earnings-btn" class="button button-quiet hidden" data-action="withdraw-earnings">Withdraw</button>
+          </div>
         </div>
         <div class="wallet-overview">
           <div class="balance-card"><span class="eyebrow">AVAILABLE COINS</span><strong style="display: inline-flex; align-items: center; gap: 6px;"><span style="color: #d4a017; font-size: 0.9em;">◈</span><span id="wallet-balance">0</span></strong><span class="balance-caption">Use coins to unlock premium episodes.</span></div>
@@ -833,6 +850,7 @@
           <div class="rewards-balance"><span class="eyebrow">CURRENT BALANCE</span><strong style="display: inline-flex; align-items: center; gap: 6px;"><span style="color: #d4a017; font-size: 0.9em;">◈</span><span id="rewards-balance">0</span></strong><span>story coins</span><div class="reward-streak"><b id="reward-current-streak">0</b> day streak <small>Best <span id="reward-best-streak">0</span></small></div></div>
         </div>
         <div id="daily-reward-card" class="daily-reward-card"></div>
+        <div id="rewarded-ad-card" class="daily-reward-card hidden"></div>
         <div class="section-heading compact-heading"><div><p class="eyebrow">SOCIAL MEDIA REWARDS</p><h2>Support AfroStory</h2><p class="muted">Support AfroStory on social media and earn bonus coins.</p></div></div>
         <div id="social-rewards-grid" class="rewards-grid"></div>
         <div class="section-heading compact-heading"><div><p class="eyebrow">EARN COINS</p><h2>Available missions</h2></div></div>
@@ -843,17 +861,21 @@
 
       <!-- CREATOR STUDIO SECTION -->
       <section id="section-creator" class="app-section hidden">
-        <div id="creator-onboarding" class="hidden" style="text-align:center; max-width:400px; margin:100px auto;">
+        <div id="creator-onboarding" class="hidden" style="text-align:center; max-width:420px; margin:80px auto;">
           <p class="eyebrow">SHARE YOUR VOICE</p><h2>Become a creator</h2><p style="color: #999; margin-bottom: 24px;">Create a home for your stories and upload episodes.</p>
+          <div id="creator-rejection-banner" class="creator-rejection-banner hidden"></div>
           <form id="become-creator-form" class="stack-form" style="text-align: left;">
             <label>Creator Name<input name="brandName" required maxlength="100" placeholder="e.g. Nater Studios"></label>
             <label>Bio (Optional)<textarea name="bio" maxlength="500" placeholder="Tell viewers what to expect..."></textarea></label>
             <button class="button button-primary" type="submit" style="width: 100%; margin-top: 10px;">Start creating</button>
           </form>
         </div>
-        <div id="creator-pending" class="hidden" style="text-align:center; max-width:400px; margin:100px auto;">
+        <div id="creator-pending" class="hidden" style="text-align:center; max-width:420px; margin:80px auto;">
           <p class="eyebrow" style="color: #d4a017;">APPLICATION RECEIVED</p><h2>Under Review</h2><p style="color: #999; margin-bottom: 24px;">Your creator profile is currently being reviewed by our administrators. We will get back to you shortly. Once approved, you will be able to upload your content here.</p>
-          <button class="button button-quiet" type="button" onclick="document.querySelector('[data-section=\'discover\']').click()">Explore stories meanwhile</button>
+          <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+            <button class="button button-primary" type="button" data-action="refresh-creator-status">Check approval status</button>
+            <button class="button button-quiet" type="button" onclick="document.querySelector('[data-section=\'discover\']').click()">Explore stories meanwhile</button>
+          </div>
         </div>
         <div id="creator-dashboard" class="hidden">
           <div class="section-heading"><div><p class="eyebrow">MAKE YOUR MARK</p><h1>Creator studio</h1></div><button class="button button-primary" data-action="new-series">New series <span>+</span></button></div>
@@ -1003,6 +1025,7 @@
       <form id="upload-form" class="stack-form">
         <label>Series<select id="upload-series" name="seriesId" required></select></label>
         <label>Episode title<input name="title" required maxlength="200"></label>
+        <label>Episode number (optional)<input name="episodeNumber" type="number" min="1" placeholder="Auto-increments if left blank"></label>
         <label>Description<textarea name="description" maxlength="2000"></textarea></label>
         <label>Access<select name="access" required><option value="Ad">Ad-supported</option><option value="Premium">Premium</option></select></label>
         <label>Coin cost<input name="coinCost" type="number" min="1" value="10" required></label>
@@ -1104,18 +1127,31 @@
         });
       }
 
-      // 3. Auto-strip static posters on Watch feed videos so live video plays immediately
+      // 3. Auto-strip static posters & seek hookStart immediately on Watch feed videos
       const feedEl = document.getElementById('tiktok-feed');
       if (feedEl) {
         new MutationObserver(function () {
-          feedEl.querySelectorAll('video[poster]').forEach((video) => {
-            video.removeAttribute('poster');
-            video.setAttribute('preload', 'auto');
+          feedEl.querySelectorAll('video').forEach((video) => {
+            if (video.hasAttribute('poster')) {
+              video.removeAttribute('poster');
+              video.setAttribute('preload', 'auto');
+            }
+            const hook = Number(video.dataset.hookStart || 0);
+            if (hook > 0 && !video.dataset.hookApplied) {
+              video.dataset.hookApplied = 'true';
+              const applyHook = () => {
+                if (video.currentTime < 0.5 && (!video.duration || hook < video.duration - 1)) {
+                  try { video.currentTime = hook; } catch (_) {}
+                }
+              };
+              if (video.readyState >= 1) applyHook();
+              else video.addEventListener('loadedmetadata', applyHook, { once: true });
+            }
           });
         }).observe(feedEl, { childList: true, subtree: true });
       }
 
-      // 4. Instant "Processing..." state & anti-scroll lock when clicking Watch Ad to Unlock
+      // 4. Instant "Processing..." state & anti-scroll lock when clicking Watch Ad to Unlock / Earn
       let activeAdTrigger = null;
       let processingResetTimer = null;
 
@@ -1163,7 +1199,7 @@
         }
 
         clearTimeout(processingResetTimer);
-        processingResetTimer = setTimeout(clearAdProcessingState, 7000);
+        processingResetTimer = setTimeout(clearAdProcessingState, 8000);
       }, true);
 
       // 5. Detect Rocket Sloth popups & re-check sidebar boundary on any injected ad node
@@ -1184,21 +1220,29 @@
         }
       }).observe(document.body, { childList: true, subtree: true });
 
-      // 6. Bridge rs:rewarded if dispatched on document/window so button reference is never lost
-      document.addEventListener('rs:rewarded', function (event) {
+      // 6. Bridge Rocket Sloth lifecycle & rs:rewarded across window, document, and trigger button
+      function handleRewardedEvent(event) {
         clearAdProcessingState();
         if ((event.target === document || event.target === window) && window.__lastRsTrigger) {
           const btn = window.__lastRsTrigger;
           window.__lastRsTrigger = null;
           btn.dispatchEvent(new CustomEvent('rs:rewarded', { bubbles: true, detail: event.detail || {} }));
         }
-      }, true);
+      }
+
+      window.addEventListener('rs:rewarded', handleRewardedEvent, true);
+      document.addEventListener('rs:rewarded', handleRewardedEvent, true);
+
+      ['rs:closed', 'rs:cancel', 'rs:error', 'rs:no-fill'].forEach((evtName) => {
+        window.addEventListener(evtName, clearAdProcessingState, true);
+        document.addEventListener(evtName, clearAdProcessingState, true);
+      });
     })();
   </script>
 
   <!-- Cache-busted module scripts -->
-  <script type="module" src="/js/ads.js?v=9"></script>
-  <script type="module" src="/js/main.js?v=9"></script>
+  <script type="module" src="/js/ads.js?v=10"></script>
+  <script type="module" src="/js/main.js?v=10"></script>
 
 </body>
 </html>
