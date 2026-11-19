@@ -57,18 +57,45 @@ const safeImage = value => {
     return value;
 };
 
-// Helper: attach MP4 or HLS stream and force immediate frame visibility + muted autoplay
-function attachAndAutoplayVideo(slideEl, video, mediaUrl, isActive) {
+// ==========================================
+// SINGLE-VIDEO AUDIO & PLAYBACK ISOLATION
+// ==========================================
+function setSoundButtonState(slideEl, isUnmuted) {
+    const btn = slideEl?.querySelector('.slide-sound-btn');
+    if (!btn) return;
+    btn.textContent = isUnmuted ? '🔊 Sound on' : '🔇 Tap for sound';
+    btn.setAttribute('aria-label', isUnmuted ? 'Mute video' : 'Unmute video');
+    btn.style.borderColor = isUnmuted ? 'rgba(245, 184, 46, 0.8)' : 'rgba(255, 255, 255, 0.28)';
+    btn.style.color = isUnmuted ? '#F5B82E' : '#FFFFFF';
+}
+
+function enforceSingleActiveVideo(activeVideo) {
+    document.querySelectorAll('video').forEach(v => {
+        if (v !== activeVideo) {
+            v.muted = true;
+            v.defaultMuted = true;
+            v.pause();
+            const slide = v.closest('.video-showcase-slide');
+            if (slide) {
+                slide.classList.remove('video-live');
+                setSoundButtonState(slide, false);
+            }
+        }
+    });
+}
+
+function attachSlideVideo(slideEl, video, mediaUrl, isActive) {
     if (!video || !mediaUrl) return;
 
     video.muted = true;
     video.defaultMuted = true;
+    video.volume = 1;
     video.loop = true;
     video.playsInline = true;
-    video.preload = 'auto';
+    video.preload = isActive ? 'auto' : 'metadata';
+    video.removeAttribute('autoplay');
     video.setAttribute('muted', '');
     video.setAttribute('playsinline', '');
-    video.setAttribute('autoplay', '');
 
     if (mediaUrl.includes('.m3u8') && window.Hls && window.Hls.isSupported()) {
         const hls = new window.Hls({ enableWorker: true });
@@ -92,6 +119,69 @@ function attachAndAutoplayVideo(slideEl, video, mediaUrl, isActive) {
         slideEl.classList.add('video-live');
     });
 
+    // Guard against any external script unmuting multiple videos at once
+    video.addEventListener('volumechange', () => {
+        if (!video.muted) {
+            if (!slideEl.classList.contains('active')) {
+                video.muted = true;
+                video.pause();
+                setSoundButtonState(slideEl, false);
+                return;
+            }
+            enforceSingleActiveVideo(video);
+            setSoundButtonState(slideEl, true);
+        } else {
+            setSoundButtonState(slideEl, false);
+        }
+    });
+
+    // Per-video sound button (uses strictly the video's own built-in audio)
+    const soundBtn = document.createElement('button');
+    soundBtn.type = 'button';
+    soundBtn.className = 'slide-sound-btn';
+    soundBtn.style.cssText = 'position:absolute;top:16px;right:16px;z-index:25;padding:8px 14px;border-radius:999px;border:1px solid rgba(255,255,255,0.28);background:rgba(15,15,18,0.82);color:#FFFFFF;font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px;cursor:pointer;backdrop-filter:blur(8px);box-shadow:0 4px 16px rgba(0,0,0,0.6);';
+    slideEl.appendChild(soundBtn);
+    setSoundButtonState(slideEl, false);
+
+    soundBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (video.muted) {
+            enforceSingleActiveVideo(video);
+            video.muted = false;
+            video.defaultMuted = false;
+            video.volume = 1;
+            video.play().then(() => {
+                slideEl.classList.add('video-live');
+                setSoundButtonState(slideEl, true);
+            }).catch(() => {});
+        } else {
+            video.muted = true;
+            video.defaultMuted = true;
+            setSoundButtonState(slideEl, false);
+        }
+    });
+
+    // Automatically pause & mute when scrolled off-screen so sections never clash
+    if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) {
+                    video.muted = true;
+                    video.pause();
+                    setSoundButtonState(slideEl, false);
+                } else if (slideEl.classList.contains('active') && video.paused) {
+                    const anyUnmutedPlaying = [...document.querySelectorAll('video')].some(v => v !== video && !v.muted && !v.paused);
+                    if (!anyUnmutedPlaying) {
+                        video.muted = true;
+                        setSoundButtonState(slideEl, false);
+                        video.play().then(() => slideEl.classList.add('video-live')).catch(() => {});
+                    }
+                }
+            });
+        }, { threshold: 0.35 });
+        observer.observe(slideEl);
+    }
+
     if (isActive) {
         video.play().then(() => slideEl.classList.add('video-live')).catch(() => {});
     }
@@ -109,6 +199,22 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.lucide && window.lucide.createIcons) {
         window.lucide.createIcons();
     }
+
+    // Neutralize any legacy global sound pill from index.html so it delegates to the visible active slide only
+    document.addEventListener('click', (e) => {
+        const legacySoundBtn = e.target.closest('#global-sound-pill, .sound-pill, [data-global-sound]');
+        if (!legacySoundBtn) return;
+        e.stopImmediatePropagation();
+        e.preventDefault();
+
+        const activeSlides = [...document.querySelectorAll('.video-showcase-slide.active')];
+        const visibleSlide = activeSlides.find(el => {
+            const rect = el.getBoundingClientRect();
+            return rect.bottom > 0 && rect.top < window.innerHeight;
+        }) || activeSlides[0];
+
+        visibleSlide?.querySelector('.slide-sound-btn')?.click();
+    }, true);
 
     // --- Header Scroll Effect ---
     window.addEventListener('scroll', () => {
@@ -369,7 +475,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // HOMEPAGE CAROUSELS & CONTENT
     // ==========================================
 
-    // 1. TRENDING VIDEO CAROUSEL (AUTO-VISIBLE & AUTO-PLAYING)
+    // 1. TRENDING VIDEO CAROUSEL
     class TrendingVideoCarousel {
         constructor() {
             this.slides = [];
@@ -411,7 +517,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     : '';
                 
                 slideEl.innerHTML = `
-                    <video ${posterAttr} muted autoplay playsinline loop preload="auto"></video>
+                    <video ${posterAttr} muted playsinline loop preload="${idx === 0 ? 'auto' : 'metadata'}"></video>
                     <div class="video-carousel-overlay"></div>
                     <button class="play-pause-btn" aria-label="Play video"><i data-lucide="play" fill="currentColor"></i></button>
                     <div class="video-carousel-content">
@@ -425,11 +531,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const video = slideEl.querySelector('video');
                 const playBtn = slideEl.querySelector('.play-pause-btn');
 
-                attachAndAutoplayVideo(slideEl, video, mediaUrl, idx === 0);
+                attachSlideVideo(slideEl, video, mediaUrl, idx === 0);
 
                 playBtn.addEventListener('click', () => {
                     if (video.paused) {
-                        this.track.querySelectorAll('video').forEach(v => v.pause());
+                        enforceSingleActiveVideo(video);
                         video.play().then(() => slideEl.classList.add('video-live')).catch(() => {});
                     } else {
                         video.pause();
@@ -450,10 +556,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const slideEls = this.track.querySelectorAll('.video-showcase-slide');
             const dotEls = this.dotsContainer.querySelectorAll('.carousel-dot');
 
-            const currentVideo = slideEls[this.currentIndex]?.querySelector('video');
-            if (currentVideo) currentVideo.pause();
+            const currentSlide = slideEls[this.currentIndex];
+            const currentVideo = currentSlide?.querySelector('video');
+            const keepSoundOn = Boolean(currentVideo && !currentVideo.muted);
 
-            slideEls[this.currentIndex]?.classList.remove('active');
+            if (currentVideo) {
+                currentVideo.pause();
+                currentVideo.muted = true;
+                setSoundButtonState(currentSlide, false);
+            }
+
+            currentSlide?.classList.remove('active');
             dotEls[this.currentIndex]?.classList.remove('active');
 
             this.currentIndex = (idx + this.slides.length) % this.slides.length;
@@ -464,6 +577,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const nextVideo = nextSlide?.querySelector('video');
             if (nextVideo) {
+                enforceSingleActiveVideo(nextVideo);
+                nextVideo.muted = !keepSoundOn;
+                nextVideo.volume = 1;
+                setSoundButtonState(nextSlide, keepSoundOn);
                 nextVideo.play().then(() => nextSlide.classList.add('video-live')).catch(() => {});
             }
         }
@@ -544,7 +661,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 3. ADMIN VIDEO SHOWCASE (FIXED: USES .video-showcase-slide + AUTO-VISIBLE VIDEO)
+    // 3. ADMIN VIDEO SHOWCASE (ANNOUNCEMENTS)
     class AdminVideoCarousel {
         constructor() {
             this.slides = [];
@@ -582,7 +699,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const posterAttr = slide.thumbnailUrl ? `poster="${safeImage(slide.thumbnailUrl)}"` : '';
                 
                 slideEl.innerHTML = `
-                    <video ${posterAttr} muted autoplay playsinline loop preload="auto"></video>
+                    <video ${posterAttr} muted playsinline loop preload="${idx === 0 ? 'auto' : 'metadata'}"></video>
                     <div class="video-carousel-overlay"></div>
                     <button class="play-pause-btn" aria-label="Play video"><i data-lucide="play" fill="currentColor"></i></button>
                     <div class="video-carousel-content">
@@ -596,11 +713,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const video = slideEl.querySelector('video');
                 const playBtn = slideEl.querySelector('.play-pause-btn');
 
-                attachAndAutoplayVideo(slideEl, video, mediaUrl, idx === 0);
+                attachSlideVideo(slideEl, video, mediaUrl, idx === 0);
 
                 playBtn.addEventListener('click', () => {
                     if (video.paused) {
-                        this.track.querySelectorAll('video').forEach(v => v.pause());
+                        enforceSingleActiveVideo(video);
                         video.play().then(() => slideEl.classList.add('video-live')).catch(() => {});
                     } else {
                         video.pause();
@@ -621,10 +738,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const slideEls = this.track.querySelectorAll('.video-showcase-slide');
             const dotEls = this.dotsContainer.querySelectorAll('.carousel-dot');
 
-            const currentVideo = slideEls[this.currentIndex]?.querySelector('video');
-            if (currentVideo) currentVideo.pause();
+            const currentSlide = slideEls[this.currentIndex];
+            const currentVideo = currentSlide?.querySelector('video');
+            const keepSoundOn = Boolean(currentVideo && !currentVideo.muted);
 
-            slideEls[this.currentIndex]?.classList.remove('active');
+            if (currentVideo) {
+                currentVideo.pause();
+                currentVideo.muted = true;
+                setSoundButtonState(currentSlide, false);
+            }
+
+            currentSlide?.classList.remove('active');
             dotEls[this.currentIndex]?.classList.remove('active');
 
             this.currentIndex = (idx + this.slides.length) % this.slides.length;
@@ -635,6 +759,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const nextVideo = nextSlide?.querySelector('video');
             if (nextVideo) {
+                enforceSingleActiveVideo(nextVideo);
+                nextVideo.muted = !keepSoundOn;
+                nextVideo.volume = 1;
+                setSoundButtonState(nextSlide, keepSoundOn);
                 nextVideo.play().then(() => nextSlide.classList.add('video-live')).catch(() => {});
             }
         }
