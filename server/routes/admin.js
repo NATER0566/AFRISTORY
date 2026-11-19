@@ -34,7 +34,6 @@ export default async function adminRoutes(fastify, opts) {
   // 1. DASHBOARD ANALYTICS & STATS
   // =========================================================================
 
-  // Comprehensive aggregate stats for the admin overview
   fastify.get('/dashboard/stats', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -50,7 +49,7 @@ export default async function adminRoutes(fastify, opts) {
       ] = await Promise.all([
         User.countDocuments(),
         Creator.countDocuments({ isVerified: true }),
-        Creator.countDocuments({ isVerified: false }),
+        Creator.countDocuments({ isVerified: false, applicationStatus: { $ne: 'REJECTED' } }),
         Series.countDocuments(),
         Episode.countDocuments(),
         Report.countDocuments({ status: 'PENDING' }),
@@ -58,7 +57,7 @@ export default async function adminRoutes(fastify, opts) {
       ]);
 
       const revenueAggregate = await Transaction.aggregate([
-        { $match: { status: 'COMPLETED', type: {$in: ['COIN_PURCHASE', 'PAYOUT', 'UNLOCK'] } } },
+        { $match: { status: 'COMPLETED', type: { $in: ['COIN_PURCHASE', 'PAYOUT', 'UNLOCK'] } } },
         { $group: { _id: null, totalVolume: { $sum: '$amount' } } }
       ]);
 
@@ -80,7 +79,6 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
-  // Time-series growth metrics (defaults to 30 days)
   fastify.get('/analytics', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -90,7 +88,8 @@ export default async function adminRoutes(fastify, opts) {
 
       if (startDate && endDate) {
         dateFilter = {
-          $gte: new Date(startDate),$lte: new Date(endDate)
+          $gte: new Date(startDate),
+          $lte: new Date(endDate)
         };
       }
 
@@ -118,15 +117,11 @@ export default async function adminRoutes(fastify, opts) {
   });
 
   // =========================================================================
-  // NEW: HOMEPAGE BANNERS & SLIDESHOWS
+  // HOMEPAGE BANNERS & SLIDESHOWS
   // =========================================================================
 
-  // Get active banners based on type (IMAGE or VIDEO)
-  // FIX: This route is now PUBLIC so index.html can fetch the banners without throwing a 401 Unauthorized Error
   fastify.get('/banners', async (request, reply) => {
     try {
-      // Removed verifyAdmin lock here!
-      
       const { type } = request.query; 
       let query = { isActive: true };
       if (type) query.mediaType = type;
@@ -139,7 +134,6 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
-  // Create a new banner/slideshow item
   fastify.post('/banners', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -154,7 +148,6 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
-  // Delete a banner
   fastify.delete('/banners/:id', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -173,7 +166,6 @@ export default async function adminRoutes(fastify, opts) {
   // 2. USER MANAGEMENT
   // =========================================================================
 
-  // Get paginated users with filtering & search
   fastify.get('/users', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -188,8 +180,8 @@ export default async function adminRoutes(fastify, opts) {
 
       if (search) {
         query.$or = [
-          { username: { $regex: search,$options: 'i' } },
-          { email: { $regex: search,$options: 'i' } }
+          { username: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } }
         ];
       }
 
@@ -217,7 +209,6 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
-  // Get detailed profile of a single user (including creator info and wallet)
   fastify.get('/users/:userId', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -242,7 +233,6 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
-  // Suspend user
   fastify.put('/users/:userId/suspend', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -256,7 +246,6 @@ export default async function adminRoutes(fastify, opts) {
       user.isActive = false;
       await user.save();
 
-      // Notify the user of account suspension
       createNotification({
         userId: user._id,
         type: 'ACCOUNT_SUSPENDED',
@@ -273,7 +262,6 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
-  // Unsuspend user
   fastify.put('/users/:userId/unsuspend', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -296,7 +284,6 @@ export default async function adminRoutes(fastify, opts) {
   // 3. CREATOR ONBOARDING & VERIFICATION
   // =========================================================================
 
-  // List creator applications with filter for verification status
   fastify.get('/creators', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -306,7 +293,11 @@ export default async function adminRoutes(fastify, opts) {
 
       let query = {};
       if (verified !== undefined) {
-        query.isVerified = verified === 'true';
+        const isVer = verified === 'true';
+        query.isVerified = isVer;
+        if (!isVer) {
+          query.applicationStatus = { $ne: 'REJECTED' };
+        }
       }
 
       const [creators, total] = await Promise.all([
@@ -343,18 +334,24 @@ export default async function adminRoutes(fastify, opts) {
       if (!creator) return sendError(reply, 'Creator not found', 404);
 
       creator.isVerified = true;
+      creator.applicationStatus = 'APPROVED';
+      creator.rejectionReason = null;
       await creator.save();
 
-      // Ensure base user has CREATOR role access
-      await User.findByIdAndUpdate(creator.userId, { role: 'CREATOR' });
+      // Upgrade USER to CREATOR without demoting an ADMIN
+      const targetUser = await User.findById(creator.userId);
+      if (targetUser && String(targetUser.role).toUpperCase() !== 'ADMIN') {
+        targetUser.role = 'CREATOR';
+        await targetUser.save();
+      }
 
       createNotification({
         userId: creator.userId,
         type: 'CREATOR_VERIFIED',
         title: 'Creator Account Approved! 🌟',
         message: 'Your creator verification has been approved. You can now publish stories and monetize.',
-        targetUrl: '#creator-dashboard',
-        dedupeKey: `creator_verify_${creator._id}`
+        targetUrl: '#creator',
+        dedupeKey: `creator_verify_${creator._id}_${Date.now()}`
       }).catch(err => fastify.log.error('Notification error:', err));
 
       sendSuccess(reply, creator, 'Creator verified successfully');
@@ -364,33 +361,33 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
-  // Revoke or Reject creator status
+  // Reject creator application while preserving rejectionReason for re-application
   fastify.put('/creators/:creatorId/reject', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
 
       const { creatorId } = request.params;
       const { reason } = request.body || {};
+      const rejectionMessage = reason || 'Your creator application requires changes or has been declined.';
 
       const creator = await Creator.findById(creatorId);
       if (!creator) return sendError(reply, 'Creator not found', 404);
 
       creator.isVerified = false;
+      creator.applicationStatus = 'REJECTED';
+      creator.rejectionReason = rejectionMessage;
       await creator.save();
 
       createNotification({
         userId: creator.userId,
         type: 'CREATOR_REJECTED',
         title: 'Creator Application Update',
-        message: reason || 'Your creator application requires changes or has been declined.',
-        targetUrl: '#creator-setup',
+        message: rejectionMessage,
+        targetUrl: '#creator',
         dedupeKey: `creator_reject_${creator._id}_${Date.now()}`
       }).catch(err => fastify.log.error('Notification error:', err));
 
-      // Actually delete the creator from the database entirely so they can re-apply cleanly
-      await Creator.findByIdAndDelete(creatorId);
-
-      sendSuccess(reply, null, 'Creator verification rejected/revoked');
+      sendSuccess(reply, creator, 'Creator application rejected');
     } catch (error) {
       fastify.log.error(error);
       sendError(reply, 'Failed to reject creator', 500, error.message);
@@ -401,7 +398,6 @@ export default async function adminRoutes(fastify, opts) {
   // 4. CONTENT MODERATION (SERIES & EPISODES)
   // =========================================================================
 
-  // Browse all series across the platform
   fastify.get('/series', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -411,11 +407,11 @@ export default async function adminRoutes(fastify, opts) {
 
       let query = {};
       if (published !== undefined) query.isPublished = published === 'true';
-      if (search) query.title = { $regex: search,$options: 'i' };
+      if (search) query.title = { $regex: search, $options: 'i' };
 
       const [seriesList, total] = await Promise.all([
         Series.find(query)
-          .populate('creatorId', 'name penName')
+          .populate('creatorId', 'name penName brandName')
           .skip(skip)
           .limit(l)
           .sort({ createdAt: -1 }),
@@ -437,13 +433,12 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
-  // Takedown or Restore a Series
   fastify.put('/series/:seriesId/status', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
 
       const { seriesId } = request.params;
-      const { isPublished, isFlagged, reason } = request.body || {};
+      const { isPublished, isFlagged } = request.body || {};
 
       const series = await Series.findById(seriesId);
       if (!series) return sendError(reply, 'Series not found', 404);
@@ -459,7 +454,6 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
-  // Delete a specific episode for severe policy violations
   fastify.delete('/episodes/:episodeId', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -468,7 +462,6 @@ export default async function adminRoutes(fastify, opts) {
       const episode = await Episode.findById(episodeId);
       if (!episode) return sendError(reply, 'Episode not found', 404);
 
-      // Decrement episode count on parent series
       await Series.findByIdAndUpdate(episode.seriesId, {
         $inc: { totalEpisodes: -1 }
       });
@@ -483,10 +476,9 @@ export default async function adminRoutes(fastify, opts) {
   });
 
   // =========================================================================
-  // 5. REPORT & DISPUTE RESOLUTION (WITH AUTOMATIC ENFORCEMENT)
+  // 5. REPORT & DISPUTE RESOLUTION
   // =========================================================================
 
-  // Get moderation reports
   fastify.get('/reports', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -519,7 +511,6 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
-  // Resolve moderation report and execute enforcement actions
   fastify.put('/reports/:reportId/resolve', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -534,7 +525,6 @@ export default async function adminRoutes(fastify, opts) {
       const report = await Report.findById(reportId);
       if (!report) return sendError(reply, 'Report not found', 404);
 
-      // Execute automated sanctions based on actionTaken
       if (actionTaken === 'suspend_user' && report.targetUser) {
         await User.findByIdAndUpdate(report.targetUser, { isActive: false });
       } else if (actionTaken === 'remove_content' && report.targetId && report.targetType) {
@@ -563,7 +553,6 @@ export default async function adminRoutes(fastify, opts) {
   // 6. FINANCIALS & CREATOR PAYOUT APPROVALS
   // =========================================================================
 
-  // Get pending creator withdrawal requests
   fastify.get('/payouts', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -597,7 +586,6 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
-  // Approve creator withdrawal
   fastify.put('/payouts/:transactionId/approve', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -620,7 +608,6 @@ export default async function adminRoutes(fastify, opts) {
       tx.processedAt = new Date();
       await tx.save();
 
-      // Notify creator that funds have been disbursed
       createNotification({
         userId: tx.userId,
         type: 'PAYOUT_COMPLETED',
@@ -637,7 +624,6 @@ export default async function adminRoutes(fastify, opts) {
     }
   });
 
-  // Reject creator withdrawal and return balance to wallet
   fastify.put('/payouts/:transactionId/reject', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
@@ -654,13 +640,11 @@ export default async function adminRoutes(fastify, opts) {
         return sendError(reply, `Transaction is already ${tx.status}`, 400);
       }
 
-      // Mark transaction rejected
       tx.status = 'REJECTED';
       tx.adminNotes = reason || 'Declined by administration';
       tx.processedAt = new Date();
       await tx.save();
 
-      // Refund the reserved balance back to the creator's wallet
       await Wallet.findOneAndUpdate(
         { userId: tx.userId },
         { $inc: { balance: tx.amount } }
@@ -686,7 +670,6 @@ export default async function adminRoutes(fastify, opts) {
   // 7. SYSTEM MONITORING & CLIENT ERROR LOGS
   // =========================================================================
 
-  // Lightweight performance and client-side error receiver
   fastify.post('/log-client-error', async (request, reply) => {
     try {
       const { type, message, stack, url, time, userId } = request.body || {};
