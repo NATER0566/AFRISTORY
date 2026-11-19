@@ -22,11 +22,22 @@ const deepSeriesPopulate = {
   }
 };
 
+function extractHookStart(episode, explicitHookStart = undefined) {
+  if (explicitHookStart !== undefined && explicitHookStart !== null && explicitHookStart !== '') {
+    const parsed = Math.max(0, Math.floor(Number(explicitHookStart) || 0));
+    if (parsed > 0) return parsed;
+  }
+  if (episode && Number.isFinite(Number(episode.hookStart)) && Number(episode.hookStart) > 0) {
+    return Math.floor(Number(episode.hookStart));
+  }
+  const rawUrl = episode?.mediaUrl || '';
+  const match = String(rawUrl).match(/#t=(\d+(?:\.\d+)?)/i);
+  return match ? Math.floor(Number(match[1]) || 0) : 0;
+}
+
 export default async function episodeRoutes(fastify, opts) {
   // PHASE 5.1 & 5.2 FIX: AUTHORITATIVE MEDIA BOUNDARY ROUTE
-  // Redirects to full media if authorized, or a restricted 30s preview slice if unauthorized.
-  // Fails closed for non-Cloudinary premium media.
-  // Enforces temporal unlock expiration.
+  // Redirects to full media if authorized, or a restricted preview slice around hookStart if unauthorized.
   fastify.get('/:episodeId/media', async (request, reply) => {
     try {
       const { episodeId } = request.params;
@@ -41,7 +52,6 @@ export default async function episodeRoutes(fastify, opts) {
             if (request.user.subscriptionExpiresAt && new Date(request.user.subscriptionExpiresAt) > new Date()) {
                 hasAccess = true;
             } else {
-                // PHASE 5.2 FIX: Temporal unlock expiration check
                 const unlock = await Unlock.findOne({ 
                   userId: request.user._id, 
                   episodeId, 
@@ -53,13 +63,20 @@ export default async function episodeRoutes(fastify, opts) {
          }
       }
 
+      const cleanUrl = String(episode.mediaUrl || '').split('#')[0];
+
       if (hasAccess) {
-          return reply.redirect(episode.mediaUrl);
+          return reply.redirect(cleanUrl);
       } else {
-          let previewUrl = episode.mediaUrl;
+          let previewUrl = cleanUrl;
           if (previewUrl && previewUrl.includes('cloudinary.com')) {
-              if (!previewUrl.includes('/eo_')) {
-                  previewUrl = previewUrl.replace('/upload/', '/upload/eo_30/');
+              const hookStart = extractHookStart(episode);
+              const sliceTransform = hookStart > 0
+                ? `so_${hookStart},eo_${hookStart + 20}`
+                : 'eo_30';
+
+              if (!previewUrl.includes('/eo_') && !previewUrl.includes('/so_')) {
+                  previewUrl = previewUrl.replace('/upload/', `/upload/${sliceTransform}/`);
               }
               return reply.redirect(previewUrl);
           }
@@ -73,9 +90,8 @@ export default async function episodeRoutes(fastify, opts) {
 
   fastify.get('/feed', async (request, reply) => {
     try {
-      let userIsAuthenticated = false;
       if (request.cookies?.token) {
-         userIsAuthenticated = await verifyAuth(request, reply, false);
+         await verifyAuth(request, reply, false).catch(() => false);
       }
 
       const { genre, culturalCategory, language, sort = 'trending', limit = 12 } = request.query || {};
@@ -99,7 +115,6 @@ export default async function episodeRoutes(fastify, opts) {
 
       if (request.user) {
         const episodeIds = episodes.map(ep => ep._id);
-        // PHASE 5.2 FIX: Temporal unlock expiration check
         const unlocks = await Unlock.find({
           userId: request.user._id,
           episodeId: { $in: episodeIds },
@@ -136,8 +151,9 @@ export default async function episodeRoutes(fastify, opts) {
         const creatorIdStr = episode.seriesId?.creatorId?._id?.toString();
         const isFollowing = followedCreatorIds.includes(creatorIdStr);
         const isLiked = userLikes.includes(episode._id.toString()); 
+        const hookStart = extractHookStart(episode);
 
-        let safeMediaUrl = episode.mediaUrl;
+        let safeMediaUrl = String(episode.mediaUrl || '').split('#')[0];
         if (!hasAccess && safeMediaUrl) {
             safeMediaUrl = `/api/episodes/${episode._id}/media`;
         }
@@ -145,6 +161,7 @@ export default async function episodeRoutes(fastify, opts) {
         return { 
             ...episode,
             mediaUrl: safeMediaUrl,
+            hookStart,
             rating: formatDecimal(episode.rating),
             hasAccess,
             isFollowing,
@@ -164,6 +181,10 @@ export default async function episodeRoutes(fastify, opts) {
       const { episodeId } = request.params;
       const episode = await Episode.findById(episodeId).populate(deepSeriesPopulate).lean(); 
 
+      if (request.cookies?.token) {
+          await verifyAuth(request, reply, false).catch(() => false);
+      }
+
       if (!episode || (!episode.isPublished && !request.user)) {
         return sendError(reply, 'Episode not found', 404);
       }
@@ -171,17 +192,12 @@ export default async function episodeRoutes(fastify, opts) {
       let hasAccess = episode.isFree;
       let isFollowing = false;
       let isLiked = false; 
-
-      if (request.cookies?.token) {
-          await verifyAuth(request, reply);
-      }
       
       const hasActiveSubscription = request.user && request.user.subscriptionExpiresAt && new Date(request.user.subscriptionExpiresAt) > new Date();
       if (hasActiveSubscription) hasAccess = true;
 
       if (request.user) {
         if (!episode.isFree) {
-          // PHASE 5.2 FIX: Temporal unlock expiration check
           const unlock = await Unlock.findOne({
             userId: request.user._id,
             episodeId,
@@ -206,7 +222,8 @@ export default async function episodeRoutes(fastify, opts) {
         creator.profileImage = creator.profileImage || user?.profile?.avatarUrl || user?.profileImage || null;
       }
 
-      let safeMediaUrl = episode.mediaUrl;
+      const hookStart = extractHookStart(episode);
+      let safeMediaUrl = String(episode.mediaUrl || '').split('#')[0];
       if (!hasAccess && safeMediaUrl) {
           safeMediaUrl = `/api/episodes/${episode._id}/media`;
       }
@@ -214,6 +231,7 @@ export default async function episodeRoutes(fastify, opts) {
       sendSuccess(reply, {
         ...episode,
         mediaUrl: safeMediaUrl,
+        hookStart,
         rating: formatDecimal(episode.rating),
         hasAccess,
         isFollowing,
@@ -225,13 +243,13 @@ export default async function episodeRoutes(fastify, opts) {
     }
   });
 
-  // Create episode (unchanged logic)
+  // Create episode
   fastify.post('/series/:seriesId/create', async (request, reply) => {
     try {
       await verifyCreator(request, reply);
       if (!request.user) return sendError(reply, 'Unauthorized', 401);
       const { seriesId } = request.params;
-      const { episodeNumber, title, description, mediaUrl, thumbnailUrl, duration, isFree, coinCost, adUnlockable, isPublished, genre, culturalCategory, language, tags } = request.body || {};
+      const { episodeNumber, title, description, mediaUrl, thumbnailUrl, hookStart, duration, isFree, coinCost, adUnlockable, isPublished, genre, culturalCategory, language, tags } = request.body || {};
 
       if (!title || !mediaUrl || !genre || !culturalCategory || !language) return sendError(reply, 'Title, media URL, genre, cultural category, and language are required', 400);
       if (!EPISODE_GENRES.includes(genre) || !CULTURAL_CATEGORIES.includes(culturalCategory) || !EPISODE_LANGUAGES.includes(language)) return sendError(reply, 'Invalid genre, cultural category, or language', 400);
@@ -243,10 +261,11 @@ export default async function episodeRoutes(fastify, opts) {
       if (!creator || series.creatorId.toString() !== creator._id.toString()) return sendError(reply, 'Forbidden - not series creator', 403);
       if (isFree === true) return sendError(reply, 'Free episodes are no longer supported', 400);
 
+      const resolvedHookStart = extractHookStart({ mediaUrl }, hookStart);
       const nextEpisodeNumber = episodeNumber || ((await Episode.findOne({ seriesId }).sort({ episodeNumber: -1 }))?.episodeNumber || 0) + 1;
       const episode = new Episode({
         seriesId, episodeNumber: nextEpisodeNumber, title, description: description || '',
-        mediaUrl, thumbnailUrl: thumbnailUrl || null, genre, culturalCategory, language,
+        mediaUrl, thumbnailUrl: thumbnailUrl || null, hookStart: resolvedHookStart, genre, culturalCategory, language,
         tags: Array.isArray(tags) ? tags : [], duration: duration || 0, isFree: false,
         coinCost: coinCost || 10, adUnlockable: adUnlockable !== undefined ? adUnlockable : true,
         isPublished: isPublished === true, publishedAt: isPublished === true ? new Date() : null,
@@ -274,13 +293,13 @@ export default async function episodeRoutes(fastify, opts) {
     } catch (error) { fastify.log.error(error); sendError(reply, 'Failed to create episode', 500, error.message); }
   });
 
-  // Update episode (unchanged logic)
+  // Update episode
   fastify.put('/:episodeId/update', async (request, reply) => {
     try {
       await verifyCreator(request, reply);
       if (!request.user) return sendError(reply, 'Unauthorized', 401);
       const { episodeId } = request.params;
-      const { title, description, mediaUrl, thumbnailUrl, duration, isFree, coinCost, adUnlockable, isPublished, genre, culturalCategory, language, tags } = request.body || {};
+      const { title, description, mediaUrl, thumbnailUrl, hookStart, duration, isFree, coinCost, adUnlockable, isPublished, genre, culturalCategory, language, tags } = request.body || {};
 
       const episode = await Episode.findById(episodeId);
       if (!episode) return sendError(reply, 'Episode not found', 404);
@@ -295,6 +314,9 @@ export default async function episodeRoutes(fastify, opts) {
       if (mediaUrl) {
         if (!/^https?:\/\/.+/i.test(mediaUrl)) return sendError(reply, 'Media URL must be a valid secure web link', 400);
         episode.mediaUrl = mediaUrl;
+      }
+      if (hookStart !== undefined || mediaUrl) {
+        episode.hookStart = extractHookStart({ mediaUrl: mediaUrl || episode.mediaUrl }, hookStart);
       }
       if (thumbnailUrl !== undefined) episode.thumbnailUrl = thumbnailUrl;
       if (genre !== undefined) episode.genre = genre;
@@ -331,7 +353,7 @@ export default async function episodeRoutes(fastify, opts) {
     } catch (error) { fastify.log.error(error); sendError(reply, 'Failed to update episode', 500, error.message); }
   });
 
-  // Delete episode (unchanged logic)
+  // Delete episode
   fastify.delete('/:episodeId', async (request, reply) => {
     try {
       await verifyCreator(request, reply);
