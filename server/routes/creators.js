@@ -39,7 +39,7 @@ export default async function creatorRoutes(fastify, opts) {
     }
   });
 
-  // Become a creator (FIXED FOR RE-APPLYING)
+  // Become a creator
   fastify.post('/become-creator', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
@@ -55,38 +55,38 @@ export default async function creatorRoutes(fastify, opts) {
 
       let creator = await Creator.findOne({ userId: request.user._id });
 
-      // If a creator profile already exists, check its status
       if (creator) {
         if (creator.applicationStatus === 'REJECTED') {
-          // If rejected, allow them to re-apply by updating the existing document
           creator.brandName = finalBrandName;
           creator.bio = bio || '';
           if (socialLinks) creator.socialLinks = socialLinks;
-          creator.applicationStatus = 'PENDING'; // Put back in review queue
-          creator.rejectionReason = null; // Clear the old rejection reason
+          creator.applicationStatus = 'PENDING';
+          creator.rejectionReason = null;
           creator.isVerified = false;
           await creator.save();
         } else {
-          // If they are PENDING or APPROVED, block them from applying again
           const statusMsg = creator.applicationStatus === 'PENDING' 
             ? 'Your application is currently under review.' 
             : 'You are already an approved creator.';
           return sendError(reply, statusMsg, 409);
         }
       } else {
-        // If no profile exists at all, create a brand new one
         creator = new Creator({
           userId: request.user._id,
           brandName: finalBrandName,
           bio: bio || '',
           socialLinks: socialLinks || {},
+          applicationStatus: 'PENDING',
+          isVerified: false,
         });
         await creator.save();
       }
 
-      // Ensure user role is updated to CREATOR (so they have access to the studio tab)
-      user.role = 'CREATOR';
-      await user.save();
+      // Preserve ADMIN role if an admin submits a creator application
+      if (String(user.role).toUpperCase() !== 'ADMIN') {
+        user.role = 'CREATOR';
+        await user.save();
+      }
 
       if (fastify.jwt) {
         const token = fastify.jwt.sign({ 
@@ -100,7 +100,7 @@ export default async function creatorRoutes(fastify, opts) {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-          maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+          maxAge: 30 * 24 * 60 * 60 * 1000
         });
       }
 
@@ -151,7 +151,7 @@ export default async function creatorRoutes(fastify, opts) {
       const { page = 1, limit = 10 } = request.query;
       const { skip, limit: l, page: p } = paginate(page, limit);
       let includeDrafts = false;
-      if (request.cookies?.token && await verifyAuth(request, reply)) {
+      if (request.cookies?.token && await verifyAuth(request, reply, false).catch(() => false)) {
         const currentCreator = await Creator.findOne({ userId: request.user._id });
         includeDrafts = currentCreator?._id?.toString() === creatorId;
       }
@@ -218,8 +218,15 @@ export default async function creatorRoutes(fastify, opts) {
         return sendError(reply, 'Creator profile not found', 404);
       }
 
+      // Sync legacy records where isVerified was set to true without updating applicationStatus
+      if (creator.isVerified && creator.applicationStatus !== 'APPROVED') {
+        creator.applicationStatus = 'APPROVED';
+        await creator.save();
+      }
+
       sendSuccess(reply, {
         ...creator.toObject(),
+        applicationStatus: creator.isVerified ? 'APPROVED' : (creator.applicationStatus || 'PENDING'),
         totalViews: formatDecimal(creator.totalViews),
         uniqueViewers: creator.uniqueViewers || 0,
         returningViewers: creator.returningViewers || 0,
