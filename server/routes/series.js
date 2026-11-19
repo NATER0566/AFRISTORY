@@ -2,20 +2,33 @@ import Series from '../models/Series.js';
 import Episode from '../models/Episode.js';
 import Creator from '../models/Creator.js';
 import Unlock from '../models/Unlock.js';
+import Follow from '../models/Follow.js';
+import Like from '../models/Like.js';
 import { verifyAuth, verifyCreator } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { paginate, formatDecimal } from '../utils/helpers.js';
 
+function extractHookStart(episode) {
+  if (episode && Number.isFinite(Number(episode.hookStart)) && Number(episode.hookStart) > 0) {
+    return Math.floor(Number(episode.hookStart));
+  }
+  const rawUrl = episode?.mediaUrl || '';
+  const match = String(rawUrl).match(/#t=(\d+(?:\.\d+)?)/i);
+  return match ? Math.floor(Number(match[1]) || 0) : 0;
+}
+
 export default async function seriesRoutes(fastify, opts) {
   fastify.get('/discover/all', async (request, reply) => {
     try {
-      if (request.cookies?.token && !(await verifyAuth(request, reply))) return;
-      const { page = 1, limit = 10, genre, sort = 'newest' } = request.query;
+      if (request.cookies?.token) {
+        await verifyAuth(request, reply, false).catch(() => false);
+      }
+      const { page = 1, limit = 10, genre, language, sort = 'newest' } = request.query;
       const { skip, limit: l, page: p } = paginate(page, limit);
 
       let query = { isPublished: true, status: { $ne: 'DRAFT' } };
 
-      const hasActiveSubscription = request.user?.subscriptionExpiresAt > new Date();
+      const hasActiveSubscription = request.user?.subscriptionExpiresAt && new Date(request.user.subscriptionExpiresAt) > new Date();
       if (!hasActiveSubscription) query.isPremiumExclusive = { $ne: true };
 
       if (genre) {
@@ -25,12 +38,15 @@ export default async function seriesRoutes(fastify, opts) {
           { genre },
         ];
       }
+      if (language) {
+        query.language = language;
+      }
 
       let sortBy = { createdAt: -1 };
       if (sort === 'trending') {
-        sortBy = { totalViews: -1 };
+        sortBy = { totalViews: -1, createdAt: -1 };
       } else if (sort === 'rating') {
-        sortBy = { rating: -1 };
+        sortBy = { rating: -1, createdAt: -1 };
       }
 
       const series = await Series.find(query)
@@ -61,7 +77,9 @@ export default async function seriesRoutes(fastify, opts) {
 
   fastify.get('/:seriesId', async (request, reply) => {
     try {
-      if (request.cookies?.token && !(await verifyAuth(request, reply))) return;
+      if (request.cookies?.token) {
+        await verifyAuth(request, reply, false).catch(() => false);
+      }
       const { seriesId } = request.params;
 
       const series = await Series.findById(seriesId).populate('creatorId');
@@ -74,7 +92,7 @@ export default async function seriesRoutes(fastify, opts) {
         return sendError(reply, 'Series not found', 404);
       }
 
-      if (series.isPremiumExclusive && (!request.user || request.user.subscriptionExpiresAt <= new Date())) {
+      if (series.isPremiumExclusive && (!request.user || new Date(request.user.subscriptionExpiresAt) <= new Date())) {
         return sendError(reply, 'Premium subscription required', 403);
       }
 
@@ -160,46 +178,84 @@ export default async function seriesRoutes(fastify, opts) {
 
   fastify.get('/:seriesId/episodes', async (request, reply) => {
     try {
-      if (request.cookies?.token && !(await verifyAuth(request, reply))) return;
+      if (request.cookies?.token) {
+        await verifyAuth(request, reply, false).catch(() => false);
+      }
       const { seriesId } = request.params;
-      const { page = 1, limit = 10 } = request.query;
+      const { page = 1, limit = 100 } = request.query;
       const { skip, limit: l, page: p } = paginate(page, limit);
 
-      const episodes = await Episode.find({ seriesId, isPublished: true }).skip(skip).limit(l).sort({ episodeNumber: 1 });
+      const seriesDoc = await Series.findById(seriesId)
+        .populate({
+          path: 'creatorId',
+          select: 'brandName profileImage userId',
+          populate: { path: 'userId', select: 'profile profileImage username' }
+        })
+        .lean();
+
+      if (seriesDoc?.creatorId) {
+        const user = seriesDoc.creatorId.userId;
+        seriesDoc.creatorId.profileImage =
+          seriesDoc.creatorId.profileImage || user?.profile?.avatarUrl || user?.profileImage || null;
+      }
+
+      const episodes = await Episode.find({ seriesId, isPublished: true })
+        .sort({ episodeNumber: 1, createdAt: 1 })
+        .skip(skip)
+        .limit(l)
+        .lean();
+
       const total = await Episode.countDocuments({ seriesId, isPublished: true });
 
       const hasActiveSubscription = request.user && request.user.subscriptionExpiresAt && new Date(request.user.subscriptionExpiresAt) > new Date();
       
       let userUnlocks = [];
+      let userLikes = [];
+      let isFollowingCreator = false;
+
       if (request.user) {
         const episodeIds = episodes.map(ep => ep._id);
-        // PHASE 5.2 FIX: Temporal unlock expiration check
-        const unlocks = await Unlock.find({
-          userId: request.user._id,
-          episodeId: { $in: episodeIds },
-          isActive: true,
-          $or: [{ expiresAt: null }, { expiresAt: {$gt: new Date() } }]
-        }).lean();
+        const [unlocks, likes, followCheck] = await Promise.all([
+          Unlock.find({
+            userId: request.user._id,
+            episodeId: { $in: episodeIds },
+            isActive: true,
+            $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }]
+          }).lean(),
+          Like.find({
+            userId: request.user._id,
+            episodeId: { $in: episodeIds }
+          }).lean(),
+          seriesDoc?.creatorId?._id
+            ? Follow.findOne({ followerId: request.user._id, creatorId: seriesDoc.creatorId._id }).lean()
+            : Promise.resolve(null)
+        ]);
+
         userUnlocks = unlocks.map(u => u.episodeId.toString());
+        userLikes = likes.map(l => l.episodeId.toString());
+        isFollowingCreator = !!followCheck;
       }
 
       sendSuccess(reply, {
-        episodes: episodes.map(e => {
-          const ep = e.toObject();
-          
+        episodes: episodes.map(ep => {
           let hasAccess = ep.isFree;
           if (hasActiveSubscription) hasAccess = true;
           if (request.user && userUnlocks.includes(ep._id.toString())) hasAccess = true;
 
-          let safeMediaUrl = ep.mediaUrl;
+          const hookStart = extractHookStart(ep);
+          let safeMediaUrl = String(ep.mediaUrl || '').split('#')[0];
           if (!hasAccess && safeMediaUrl) {
               safeMediaUrl = `/api/episodes/${ep._id}/media`;
           }
 
           return {
             ...ep,
+            seriesId: seriesDoc || ep.seriesId,
             mediaUrl: safeMediaUrl,
+            hookStart,
             hasAccess,
+            isLiked: userLikes.includes(ep._id.toString()),
+            isFollowing: isFollowingCreator,
             rating: formatDecimal(ep.rating),
           };
         }),
