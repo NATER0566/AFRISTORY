@@ -7,8 +7,12 @@
   <title>AfroStory | Watch something real</title>
   <link rel="icon" href="data:,">
 
+  <!-- Preconnect to Fonts & Rocket Sloth for faster ad initialization -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://rocketsloth.ai" crossorigin>
+  <link rel="dns-prefetch" href="https://rocketsloth.ai">
+
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
 
@@ -24,10 +28,13 @@
 
   <style>
     /* ==============================================================
-       STANDARDIZED Z-INDEX HIERARCHY
-       Sidebar: 400 | Mobile Watch: 450 | Header/Nav: 500 | Desktop Watch: 550
+       1. STANDARDIZED Z-INDEX HIERARCHY
+       Main Content / Ads: 10 | Save Button: 400 | Sidebar: 450
+       Mobile Watch: 460 | Desktop Watch: 520 | Header/Topbar: 560
        Bottom Sheet: 600 | Comments Sheet: 650 | Modals: 700 | Toasts: 9999
     ============================================================== */
+
+    *, *::before, *::after { box-sizing: border-box; }
 
     .discover-filters { display: flex; gap: 12px; margin: 0 0 24px; }
     .discover-filters label { color: #999; display: flex; flex-direction: column; font-size: 11px; gap: 6px; }
@@ -37,11 +44,23 @@
     .history-row { border: 0; color: inherit; cursor: pointer; text-align: left; width: 100%; }
     .notification-unread { border-left: 3px solid #d4a017; }
     .comment-replies { border-left: 1px solid #343434; margin: 12px 0 0 18px; padding-left: 14px; }
-
-    /* Empty States */
     .empty-state { text-align: center; padding: 40px 20px; color: #888; font-size: 14px; border: 1px dashed #333; border-radius: 12px; margin-top: 20px; }
 
-    .toast-region { position: fixed !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important; z-index: 9999 !important; display: flex !important; flex-direction: column !important; align-items: center !important; gap: 16px !important; pointer-events: none !important; width: 100% !important; padding: 20px !important; box-sizing: border-box !important; }
+    /* ==============================================================
+       2. BUTTON SPINNER & TOAST NOTIFICATIONS
+    ============================================================== */
+    .btn-spinner {
+      width: 17px;
+      height: 17px;
+      border: 2.5px solid rgba(17, 17, 17, 0.25);
+      border-top-color: #111;
+      border-radius: 50%;
+      display: inline-block;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    .toast-region { position: fixed !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important; z-index: 9999 !important; display: flex !important; flex-direction: column !important; align-items: center !important; gap: 16px !important; pointer-events: none !important; width: 100% !important; padding: 20px !important; }
     .toast { pointer-events: auto !important; align-items: center; background: linear-gradient(135deg, #242424, #2d2d2d); border: 3px solid #343434; border-radius: 16px; color: #f5f5f5; display: flex; font-size: 19px !important; font-weight: 700; gap: 18px !important; width: 100%; max-width: 480px !important; padding: 28px 36px !important; position: relative; word-wrap: break-word; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.95) !important; animation: popInToast 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important; justify-content: center !important; text-align: center !important; }
     .toast.success { border-color: #76a86b; background: linear-gradient(135deg, #2b3d2b, #1a2a1a); box-shadow: 0 0 40px rgba(118, 168, 107, 0.5), inset 0 0 20px rgba(118, 168, 107, 0.1) !important; animation: popInToast 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), pulseGlow 2s ease-in-out infinite !important; }
     .toast.error { border-color: #e67e22; background: linear-gradient(135deg, #3d2b1b, #2a1b0a); box-shadow: 0 0 40px rgba(230, 126, 34, 0.5), inset 0 0 20px rgba(230, 126, 34, 0.1) !important; }
@@ -53,16 +72,32 @@
     @keyframes popInToast { from { opacity: 0; transform: scale(0.8) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
     @keyframes fadeOutToast { to { opacity: 0; transform: scale(0.9) translateY(-20px); } }
     @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 10px rgba(118, 168, 107, 0.3); } 50% { box-shadow: 0 0 35px rgba(118, 168, 107, 0.7); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    .modal-root { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; background: rgba(0,0,0,0.85) !important; z-index: 700 !important; display: flex !important; align-items: flex-start !important; justify-content: center !important; padding: 90px 20px 130px 20px !important; overflow-y: auto !important; backdrop-filter: blur(5px); }
+    /* ==============================================================
+       3. MODALS
+    ============================================================== */
+    .modal-root { position: fixed !important; inset: 0 !important; background: rgba(0,0,0,0.85) !important; z-index: 700 !important; display: flex !important; align-items: flex-start !important; justify-content: center !important; padding: 90px 20px 130px 20px !important; overflow-y: auto !important; backdrop-filter: blur(5px); }
     .modal-root.hidden { display: none !important; }
     .modal { background: #111 !important; border: 1px solid #333 !important; border-radius: 16px !important; width: 100% !important; max-width: 500px !important; margin: auto !important; flex-shrink: 0 !important; box-shadow: 0 20px 50px rgba(0,0,0,0.5) !important; padding: 24px !important; margin-top: 40px !important; margin-bottom: 80px !important; position: relative !important; z-index: 701 !important; }
     .modal-header h2 { font-size: 22px !important; margin: 0 0 16px !important; }
 
     /* ==============================================================
-       HEADER PROFILE PICTURE & VISIBLE LIVE GREEN DOT
+       4. TOPBAR & MINIMIZED TRANSPARENT HEADER IN WATCH MODE
     ============================================================== */
-    .topbar { display: flex; justify-content: space-between; align-items: center; padding: 0 4vw; height: 80px; background: #111; border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 500 !important; }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 4vw;
+      height: 80px;
+      background: #111;
+      border-bottom: 1px solid #333;
+      position: sticky;
+      top: 0;
+      z-index: 560 !important;
+      transition: height 0.25s ease, background 0.25s ease, padding 0.25s ease;
+    }
     .topbar-actions { display: flex; align-items: center; gap: 16px; }
     .notification-button { align-items: center; background: #242424; border: 1px solid #3b3b3b; border-radius: 50%; display: inline-flex; height: 44px; width: 44px; min-width: 44px; justify-content: center; transition: border-color .2s, transform .2s; position: relative; flex-shrink: 0; }
     .notification-button:hover { border-color: #d4a017; transform: translateY(-1px); }
@@ -98,8 +133,46 @@
     }
     .profile-initial { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
 
+    /* Minimized Transparent Header when Watch Session is Active */
+    body.watch-mode-active .topbar,
+    body:has(#section-watch:not(.hidden)) .topbar {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      height: 54px !important;
+      padding: 0 18px !important;
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.25) 65%, transparent 100%) !important;
+      border-bottom: none !important;
+      box-shadow: none !important;
+      pointer-events: none !important;
+      z-index: 560 !important;
+    }
+    body.watch-mode-active .topbar .brand,
+    body:has(#section-watch:not(.hidden)) .topbar .brand,
+    body.watch-mode-active .topbar .topbar-actions,
+    body:has(#section-watch:not(.hidden)) .topbar .topbar-actions {
+      pointer-events: auto !important;
+    }
+    body.watch-mode-active .topbar .brand,
+    body:has(#section-watch:not(.hidden)) .topbar .brand {
+      transform: scale(0.88);
+      transform-origin: left center;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+    }
+    body.watch-mode-active .topbar .topbar-actions,
+    body:has(#section-watch:not(.hidden)) .topbar .topbar-actions {
+      gap: 10px;
+      transform: scale(0.84);
+      transform-origin: right center;
+    }
+    body.watch-mode-active .discover-filters,
+    body:has(#section-watch:not(.hidden)) .discover-filters {
+      display: none !important;
+    }
+
     /* ==============================================================
-       WATCH SECTION: ZERO OVERLAP (NEVER OVERPOWERS OTHER SECTIONS)
+       5. WATCH SECTION & FULL-BLEED VIDEO STAGE
     ============================================================== */
     #section-watch {
       position: fixed !important;
@@ -116,50 +189,25 @@
       z-index: -999 !important;
     }
 
-    .watch-mobile-logo {
-      position: absolute;
-      top: 18px;
-      left: 16px;
-      z-index: 480;
-      color: #fff;
-      font-weight: 700;
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 18px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      letter-spacing: 0.5px;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.9);
-      pointer-events: none;
-    }
-    .watch-mobile-logo .brand-mark {
-      background: #d4a017;
-      color: #111;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 14px;
-      text-shadow: none;
-    }
-
     .watch-home-btn {
       position: absolute;
-      top: 24px;
-      left: 28px;
+      top: 62px;
+      left: 24px;
       z-index: 570;
-      background: rgba(25, 25, 25, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.25);
+      background: rgba(20, 20, 20, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.22);
       color: #fff;
-      padding: 10px 18px;
+      padding: 8px 16px;
       border-radius: 30px;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 13px;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 8px;
       backdrop-filter: blur(10px);
       box-shadow: 0 4px 16px rgba(0,0,0,0.6);
-      transition: background .2s, border-color .2s;
+      transition: background .2s, border-color .2s, color .2s;
     }
     .watch-home-btn:hover {
       background: #d4a017;
@@ -171,8 +219,8 @@
       bottom: 28px;
       right: 90px;
       z-index: 570;
-      background: #d4a017;
-      border: 1px solid #d4a017;
+      background: linear-gradient(135deg, #f0c44d, #d4a017);
+      border: 1px solid #f0c44d;
       color: #111;
       padding: 11px 22px;
       border-radius: 30px;
@@ -189,18 +237,13 @@
 
     @media(min-width: 801px) {
       .mobile-only { display: none !important; }
-      #section-watch:not(.hidden) {
-        display: block !important;
-      }
+      #section-watch:not(.hidden) { display: block !important; }
       #section-watch {
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        bottom: 0 !important;
+        inset: 0 !important;
         width: 100vw !important;
         height: 100vh !important;
         height: 100dvh !important;
-        z-index: 550 !important;
+        z-index: 520 !important;
         background-color: #000 !important;
       }
       .tiktok-feed {
@@ -232,16 +275,14 @@
     }
 
     @media(max-width: 800px) {
-      #section-watch:not(.hidden) {
-        display: block !important;
-      }
+      #section-watch:not(.hidden) { display: block !important; }
       #section-watch {
         top: 0 !important;
         left: 0 !important;
         width: 100vw !important;
         height: calc(100vh - 80px) !important;
         height: calc(100dvh - 80px) !important;
-        z-index: 450 !important;
+        z-index: 460 !important;
       }
       .tiktok-feed {
         height: 100%;
@@ -262,6 +303,12 @@
         right: 10px !important;
         bottom: 30px !important;
       }
+    }
+
+    /* Lock feed scrolling while a Rewarded Ad is loading so users cannot scroll past or bypass */
+    body.rs-ad-processing .tiktok-feed {
+      overflow: hidden !important;
+      touch-action: none !important;
     }
 
     .feed-video-card {
@@ -336,18 +383,132 @@
     .feed-action-btn:active { transform: scale(0.85); }
     .feed-action-btn span { font-size: 13px; font-weight: 600; }
 
+    /* ==============================================================
+       6. PREMIUM CINEMA UNLOCK OVERLAY & BUTTONS
+    ============================================================== */
     .feed-lock-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(0,0,0,0.85);
-      display: flex;
-      flex-direction: column;
+      position: absolute !important;
+      inset: 0 !important;
+      background: radial-gradient(circle at center, rgba(28, 22, 12, 0.90) 0%, rgba(8, 8, 8, 0.97) 100%) !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      z-index: 120 !important;
+      text-align: center !important;
+      padding: 28px 20px !important;
+      backdrop-filter: blur(18px) saturate(140%) !important;
+      animation: fadeInOverlay 0.28s ease-out forwards;
+    }
+    .feed-lock-overlay.hidden {
+      display: none !important;
+    }
+    @keyframes fadeInOverlay {
+      from { opacity: 0; transform: scale(1.02); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .feed-lock-overlay .lock-icon {
+      width: 68px !important;
+      height: 68px !important;
+      border-radius: 50% !important;
+      background: radial-gradient(circle at 30% 30%, rgba(240, 196, 77, 0.26), rgba(212, 160, 23, 0.06)) !important;
+      border: 1.5px solid rgba(212, 160, 23, 0.55) !important;
+      box-shadow: 0 0 32px rgba(212, 160, 23, 0.3), inset 0 0 14px rgba(212, 160, 23, 0.18) !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-size: 30px !important;
+      color: #f0c44d !important;
+      margin-bottom: 6px !important;
+    }
+
+    .feed-lock-overlay h3 {
+      font-family: 'Space Grotesk', sans-serif !important;
+      font-size: 24px !important;
+      font-weight: 700 !important;
+      letter-spacing: -0.3px !important;
+      color: #ffffff !important;
+      margin: 12px 0 6px !important;
+      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7) !important;
+    }
+
+    .feed-lock-overlay p {
+      color: #bdbdbd !important;
+      font-size: 14px !important;
+      line-height: 1.5 !important;
+      max-width: 310px !important;
+      margin: 0 auto 24px !important;
+    }
+
+    /* Primary Rewarded Ad Unlock Button */
+    .feed-lock-overlay button[data-rs-rewarded],
+    [data-rs-rewarded] {
+      background: linear-gradient(135deg, #f3ca52 0%, #d4a017 55%, #b38309 100%) !important;
+      color: #111111 !important;
+      border: 1px solid rgba(255, 235, 165, 0.55) !important;
+      border-radius: 12px !important;
+      font-family: 'DM Sans', sans-serif !important;
+      font-weight: 700 !important;
+      font-size: 15px !important;
+      letter-spacing: 0.2px !important;
+      padding: 14px 20px !important;
+      box-shadow: 0 10px 28px rgba(212, 160, 23, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.45) !important;
+      cursor: pointer !important;
+      transition: transform 0.18s ease, box-shadow 0.2s ease, filter 0.2s ease !important;
+      position: relative !important;
+      overflow: hidden !important;
+    }
+    .feed-lock-overlay button[data-rs-rewarded]:hover,
+    [data-rs-rewarded]:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: 0 14px 34px rgba(212, 160, 23, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+      filter: brightness(1.05) !important;
+    }
+    .feed-lock-overlay button[data-rs-rewarded]:active,
+    [data-rs-rewarded]:active {
+      transform: scale(0.98) !important;
+    }
+    [data-rs-rewarded][data-rs-loading="true"] {
+      background: linear-gradient(135deg, #e0b642, #c49212) !important;
+      cursor: wait !important;
+      box-shadow: 0 0 0 3px rgba(212, 160, 23, 0.28), 0 10px 26px rgba(212, 160, 23, 0.4) !important;
+    }
+
+    /* Secondary Coin Unlock Button */
+    .feed-lock-overlay button[data-action="unlock-current"] {
+      background: rgba(255, 255, 255, 0.06) !important;
+      border: 1px solid rgba(212, 160, 23, 0.42) !important;
+      color: #f5f5f5 !important;
+      border-radius: 12px !important;
+      font-family: 'DM Sans', sans-serif !important;
+      font-weight: 600 !important;
+      font-size: 14px !important;
+      padding: 13px 20px !important;
+      backdrop-filter: blur(8px) !important;
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.18s ease !important;
+      cursor: pointer !important;
+    }
+    .feed-lock-overlay button[data-action="unlock-current"]:hover {
+      background: rgba(212, 160, 23, 0.15) !important;
+      border-color: #d4a017 !important;
+      color: #ffffff !important;
+      transform: translateY(-1px) !important;
+    }
+
+    /* Status banner shown beneath the button while ad is loading */
+    .rs-processing-note {
+      margin-top: 14px;
+      font-size: 12.5px;
+      color: #f0c44d;
+      background: rgba(212, 160, 23, 0.12);
+      border: 1px solid rgba(212, 160, 23, 0.3);
+      padding: 8px 14px;
+      border-radius: 20px;
+      display: inline-flex;
       align-items: center;
-      justify-content: center;
-      z-index: 120;
-      text-align: center;
-      padding: 20px;
-      backdrop-filter: blur(8px);
+      gap: 8px;
+      animation: fadeInOverlay 0.2s ease;
     }
 
     .feed-loading {
@@ -360,7 +521,7 @@
       margin: 0 !important;
       color: transparent !important;
       position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
+      inset: 0;
       background: #000 !important;
       z-index: 115;
     }
@@ -382,21 +543,40 @@
       letter-spacing: 0.5px;
       margin-top: 16px;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
 
-    .bottom-sheet-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 600; display: flex; align-items: flex-end; opacity: 1; transition: opacity 0.3s; }
+    /* ==============================================================
+       7. MOBILE BOTTOM SHEET & RESPONSIVE SIDEBAR
+    ============================================================== */
+    .bottom-sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 600; display: flex; align-items: flex-end; opacity: 1; transition: opacity 0.3s; }
     .bottom-sheet-overlay.hidden { opacity: 0; pointer-events: none; }
     .bottom-sheet { background: #111; border-top: 1px solid #333; border-radius: 24px 24px 0 0; width: 100%; padding: 16px 24px 40px; transform: translateY(0); transition: transform 0.3s; box-shadow: 0 -10px 40px rgba(0,0,0,0.9); }
     .bottom-sheet-overlay.hidden .bottom-sheet { transform: translateY(100%); }
     .sheet-handle { width: 40px; height: 4px; background: #444; border-radius: 4px; margin: 0 auto 24px; }
     .bottom-sheet h3 { text-align: center; color: #fff; margin: 0 0 24px; font-size: 18px; font-weight: 600; }
     .sheet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .sheet-item { background: #1a1a1a; border: 1px solid #333; border-radius: 14px; padding: 18px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; color: #f5f5f5; cursor: pointer; transition: border-color .2s; border: none; }
+    .sheet-item { background: #1a1a1a; border: none; border-radius: 14px; padding: 18px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; color: #f5f5f5; cursor: pointer; transition: border-color .2s; }
     .sheet-item:active { background: #222; }
     .sheet-item i { font-size: 24px; font-style: normal; color: #d4a017; }
     .sheet-item span { font-size: 13px; font-weight: 500; }
     .sheet-logout { grid-column: 1 / -1; margin-top: 12px; background: rgba(220, 53, 69, 0.1); color: #ff4d4f; border: 1px solid rgba(220, 53, 69, 0.3); flex-direction: row; justify-content: center; gap: 12px; padding: 16px; }
     .sheet-logout i { color: #ff4d4f; font-size: 18px; }
+
+    @media(min-width: 801px) {
+      .sidebar {
+        position: relative;
+        z-index: 450 !important;
+        background: #111;
+        flex-shrink: 0;
+      }
+      .main-content {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        padding-left: 32px !important;
+        padding-right: 32px !important;
+      }
+    }
 
     @media(max-width: 800px) {
       .desktop-only { display: none !important; }
@@ -427,27 +607,34 @@
       .toast { font-size: 16px !important; padding: 22px 24px !important; max-width: calc(100vw - 30px) !important; }
     }
 
+    /* ==============================================================
+       8. PROFILE SECTION STYLES
+    ============================================================== */
     .profile-cover{background:linear-gradient(120deg,#2b2114,#171717 52%,#222);border:1px solid #343434;min-height:230px;padding:28px 32px;position:relative;overflow:hidden}.profile-cover[style]{background-position:center;background-size:cover}.profile-header{align-items:flex-end;display:flex;gap:22px;min-height:174px}.profile-avatar{align-items:center;background:#d4a017;color:#111;display:flex;flex:0 0 104px;font-family:Georgia,serif;font-size:48px;height:104px;justify-content:center;overflow:hidden;border-radius:50%;}.profile-avatar img{height:100%;object-fit:cover;width:100%}.profile-identity{max-width:650px}.profile-identity h1{font-size:clamp(30px,4vw,52px)}.profile-handle{margin:4px 0 10px}.profile-bio{color:#ddd;margin:0}.profile-location{color:#d4a017;font-size:13px;margin-top:10px}.profile-actions{display:flex;gap:10px;margin-left:auto}.profile-tabs{border-bottom:1px solid #343434;display:flex;gap:24px;overflow:auto;padding:0 4px}.profile-tab{background:none;border:0;border-bottom:2px solid transparent;color:#999;padding:16px 4px;white-space:nowrap}.profile-tab.active,.profile-tab:hover{border-color:#d4a017;color:#f5f5f5}.profile-panel{padding-top:30px}.profile-summary-grid{display:grid;gap:30px;grid-template-columns:1fr 1fr}.profile-section-heading{align-items:end;display:flex;justify-content:space-between;margin:28px 0 18px}.profile-section-heading h2{font-size:24px}.profile-list{display:grid;gap:10px}.profile-list-row{align-items:center;background:#1b1b1b;border:1px solid #343434;display:flex;gap:14px;padding:12px}.profile-list-row strong{display:block}.profile-list-row p{color:#999;font-size:13px;margin:2px 0 0}.profile-list-row .progress{background:#343434;height:4px;margin-top:8px;width:180px}.profile-list-row .progress i{background:#d4a017;display:block;height:100%}.profile-story-grid{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-story-grid .series-card{min-width:0}.interest-list{display:flex;flex-wrap:wrap;gap:8px}.interest-chip{background:#242424;border:1px solid #4a4a4a;color:#f5f5f5;padding:7px 11px}.profile-about{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr));max-width:680px}.profile-about div{background:#1b1b1b;border-bottom:1px solid #343434;padding:14px}.profile-about span{color:#999;display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase}.profile-edit-panel{border-top:1px solid #343434;margin-top:30px;padding-top:24px}.profile-edit-grid{display:grid;gap:14px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-form label{color:#bbb;display:grid;font-size:12px;gap:6px}.profile-form input,.profile-form textarea,.profile-form select{background:#111;border:1px solid #444;color:#f5f5f5;padding:11px}.profile-form select[multiple]{min-height:130px}.profile-privacy{display:flex;flex-wrap:wrap;gap:18px;margin:16px 0}.profile-privacy label{display:flex;gap:8px}.profile-empty{border:1px dashed #444;color:#999;padding:24px}.profile-empty button{margin-top:12px}@media(max-width:700px){.profile-cover{padding:22px 18px}.profile-header{align-items:flex-start;flex-wrap:wrap}.profile-avatar{flex-basis:78px;font-size:36px;height:78px}.profile-actions{margin-left:0;width:100%}.profile-actions .button{flex:1}.profile-summary-grid,.profile-about,.profile-edit-grid{grid-template-columns:1fr}.profile-tabs{gap:16px}.profile-story-grid{grid-template-columns:1fr 1fr}}
 
     /* ==============================================================
-       ROCKET SLOTH ADS - SINGLE VISIBLE SLOT (HIDDEN IN WATCH MODE)
+       9. ROCKET SLOTH ADS - CENTERED IN FEED, NEVER TOUCHING SIDEBAR
     ============================================================== */
-    [data-rs-ad] {
-      margin: 36px auto !important;
-      padding: 10px !important;
+    #global-ad-slot,
+    .main-content [data-rs-ad] {
+      margin: 40px auto 24px auto !important;
+      padding: 16px 24px !important;
       display: flex !important;
       justify-content: center !important;
       align-items: center !important;
-      width: 100% !important;
-      max-width: 100% !important;
-      box-sizing: border-box !important;
+      width: calc(100% - 32px) !important;
+      max-width: 900px !important;
       overflow: hidden !important;
-      border-radius: 12px !important;
-      background: rgba(255, 255, 255, 0.02) !important;
+      border-radius: 14px !important;
+      border: 1px solid rgba(212, 160, 23, 0.14) !important;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.01)) !important;
+      position: relative !important;
+      z-index: 10 !important;
       contain: content !important;
     }
 
     [data-rs-ad]:empty,
+    body.watch-mode-active [data-rs-ad],
     body:has(#section-watch:not(.hidden)) [data-rs-ad] {
       display: none !important;
       margin: 0 !important;
@@ -458,14 +645,32 @@
     [data-rs-ad] video,
     [data-rs-ad] embed,
     [data-rs-ad] object,
+    [data-rs-ad] ins,
     [data-rs-ad] div {
       max-width: 100% !important;
-      box-sizing: border-box !important;
+    }
+
+    /* Keep any bottom anchor ad from touching the left sidebar on desktop */
+    @media (min-width: 801px) {
+      #global-ad-slot,
+      .main-content [data-rs-ad] {
+        width: calc(100% - 48px) !important;
+        max-width: 860px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+      }
+      body > div[style*="position: fixed"][style*="bottom"],
+      body > ins.adsbygoogle[data-anchor-status] {
+        left: 260px !important;
+        width: calc(100vw - 260px) !important;
+        max-width: calc(100vw - 260px) !important;
+      }
     }
   </style>
 </head>
 <body class="app-page">
 
+  <!-- TOPBAR HEADER (Auto-minimizes transparently on Watch page) -->
   <header class="topbar">
     <a class="brand" href="#discover" aria-label="AfroStory Home"><span class="brand-mark">A</span><span>AFRO<span>STORY</span></span></a>
     <div class="topbar-actions">
@@ -475,15 +680,16 @@
 
       <button class="header-profile-btn" data-action="profile" aria-label="Open your profile" title="Profile">
         <div class="header-avatar-container">
-            <span id="user-avatar" class="header-avatar-img" aria-hidden="true"><span id="user-initial" class="profile-initial">A</span></span>
-            <div class="header-online-dot"></div>
+          <span id="user-avatar" class="header-avatar-img" aria-hidden="true"><span id="user-initial" class="profile-initial">A</span></span>
+          <div class="header-online-dot"></div>
         </div>
       </button>
     </div>
   </header>
 
   <div class="app-layout">
-    <aside class="sidebar" style="z-index: 400;">
+    <!-- SIDEBAR NAVIGATION -->
+    <aside class="sidebar">
       <nav class="side-nav" aria-label="Main navigation">
         <button class="nav-item active" data-section="discover" aria-label="Discover"><i class="nav-icon" aria-hidden="true">⌂</i><span>Discover</span></button>
         <button class="nav-item" data-section="search" aria-label="Search"><i class="nav-icon" aria-hidden="true">⌕</i><span>Search</span></button>
@@ -506,12 +712,14 @@
       </div>
     </aside>
 
+    <!-- MAIN CONTENT FEED -->
     <main class="main-content">
       <div class="discover-filters">
         <label>Genre<select id="genre-filter"><option value="">All genres</option><option>Action</option><option>Drama</option><option>Comedy</option><option>Romance</option><option>Thriller</option><option>Sci-Fi</option><option>Horror</option><option>Documentary</option><option>Afro-Futurism</option><option>Folklore</option><option>Urban Drama</option><option>Animation</option><option>Historical</option><option>Adventure</option><option>Mystery</option><option>Crime</option><option>Family</option><option>Faith &amp; Inspirational</option><option>Musical</option><option>Biography</option><option>Short Film</option></select></label>
         <label>Sort<select id="sort-filter"><option value="trending">Trending</option><option value="newest">Newest</option><option value="rating">Top rated</option></select></label>
       </div>
 
+      <!-- DISCOVER SECTION -->
       <section id="section-discover" class="app-section">
         <div class="section-heading hero-heading">
           <div><p class="eyebrow">THE HOME OF AFRICAN STORIES</p><h1>Find your next<br><em>favorite world.</em></h1></div>
@@ -524,12 +732,8 @@
         <div id="creator-grid" class="creator-grid"></div>
       </section>
 
-      <!-- LOCKED WATCH SECTION (NO DISPLAY ADS) -->
+      <!-- WATCH SECTION -->
       <section id="section-watch" class="app-section hidden">
-        <div class="watch-mobile-logo mobile-only">
-           <span class="brand-mark">A</span><span>AFRO<span>STORY</span></span>
-        </div>
-
         <button class="watch-home-btn desktop-only" data-section="discover" aria-label="Back to Home" title="Back to Home">
           <span>← Back to Home</span>
         </button>
@@ -538,7 +742,7 @@
         </button>
 
         <div id="tiktok-feed" class="tiktok-feed">
-           <div id="watch-loading" class="feed-loading hidden"></div>
+          <div id="watch-loading" class="feed-loading hidden"></div>
         </div>
 
         <div id="comments-sheet" class="bottom-sheet-overlay hidden" style="z-index: 650;">
@@ -569,7 +773,7 @@
         </div>
         <div class="section-heading compact-heading"><h2>Recent transactions</h2></div>
         <div id="transactions-list" class="data-list">
-           <div class="empty-state hidden" id="empty-transactions"><p>No transactions yet.</p></div>
+          <div class="empty-state hidden" id="empty-transactions"><p>No transactions yet.</p></div>
         </div>
       </section>
 
@@ -588,7 +792,7 @@
         <div id="rewards-history" class="data-list"></div>
       </section>
 
-      <!-- CREATOR DASHBOARD SECTION -->
+      <!-- CREATOR STUDIO SECTION -->
       <section id="section-creator" class="app-section hidden">
         <div id="creator-onboarding" class="hidden" style="text-align:center; max-width:400px; margin:100px auto;">
           <p class="eyebrow">SHARE YOUR VOICE</p><h2>Become a creator</h2><p style="color: #999; margin-bottom: 24px;">Create a home for your stories and upload episodes.</p>
@@ -610,11 +814,13 @@
         </div>
       </section>
 
+      <!-- HISTORY SECTION -->
       <section id="section-history" class="app-section hidden">
         <div class="section-heading"><div><p class="eyebrow">YOUR JOURNEY</p><h1>Watch history</h1></div><button class="button button-quiet" data-section="discover">Discover stories</button></div>
         <div id="history-list" class="data-list"><div class="empty-state hidden" id="empty-history"><p>No watch history yet.</p></div></div>
       </section>
 
+      <!-- PROFILE SECTION -->
       <section id="section-profile" class="app-section hidden">
         <div id="profile-cover" class="profile-cover">
           <div class="profile-header">
@@ -677,27 +883,32 @@
         </div>
       </section>
 
+      <!-- SEARCH SECTION -->
       <section id="section-search" class="app-section hidden">
         <div class="section-heading"><div><p class="eyebrow">EXPLORE THE LIBRARY</p><h1>Search</h1></div></div>
         <form id="library-search-form" class="search-box library-search"><span>⌕</span><input id="library-search-input" type="search" placeholder="Search series and creators" aria-label="Search the library"><button type="submit">Search</button></form>
         <div id="search-results" class="content-grid"></div>
       </section>
 
+      <!-- TRENDING SECTION -->
       <section id="section-trending" class="app-section hidden">
         <div class="section-heading"><div><p class="eyebrow">WHAT PEOPLE ARE WATCHING</p><h1>Trending</h1></div></div>
         <div id="trending-list" class="content-grid"><div class="empty-state hidden" id="empty-trending"><p>No trending stories right now.</p></div></div>
       </section>
 
+      <!-- CONTINUE SECTION -->
       <section id="section-continue" class="app-section hidden">
         <div class="section-heading"><div><p class="eyebrow">PICK UP WHERE YOU LEFT OFF</p><h1>Continue watching</h1></div></div>
         <div id="continue-list" class="data-list"><div class="empty-state hidden" id="empty-continue"><p>No stories to continue.</p></div></div>
       </section>
 
+      <!-- FAVORITES SECTION -->
       <section id="section-favorites" class="app-section hidden">
         <div class="section-heading"><div><p class="eyebrow">YOUR LIBRARY</p><h1>Favorites</h1></div></div>
         <div id="favorites-list" class="content-grid"><div class="empty-state hidden" id="empty-favorites"><p>No saved favorites yet.</p></div></div>
       </section>
 
+      <!-- SETTINGS SECTION -->
       <section id="section-settings" class="app-section hidden">
         <div class="section-heading"><div><p class="eyebrow">PREFERENCES</p><h1>Settings</h1></div></div>
         <form id="settings-form" class="stack-form profile-form">
@@ -707,7 +918,7 @@
         </form>
       </section>
 
-      <!-- Single always-visible Rocket Sloth display slot (hidden when Watch section is open) -->
+      <!-- SINGLE DISPLAY AD SLOT (Contained inside feed, never touches sidebar) -->
       <div id="global-ad-slot" data-rs-ad></div>
     </main>
   </div>
@@ -736,7 +947,7 @@
     </div>
   </div>
 
-  <!-- ALL MODALS -->
+  <!-- MODALS -->
   <div id="upload-modal" class="modal-root hidden">
     <div class="modal">
       <div class="modal-header"><h2>Upload episode</h2><button class="modal-close" data-action="close-upload" aria-label="Close">×</button></div>
@@ -782,9 +993,110 @@
   <div id="modal-root" class="modal-root hidden"></div>
   <div id="toast-region" class="toast-region" aria-live="polite"></div>
 
+  <!-- Instant UI Bridge: Minimized Watch Header + Immediate Rewarded Ad Processing Lock -->
+  <script>
+    (function () {
+      const watchSection = document.getElementById('section-watch');
+
+      // 1. Sync Watch Mode state so header minimizes cleanly across all browsers
+      function syncWatchMode() {
+        const isWatchOpen = watchSection && !watchSection.classList.contains('hidden');
+        document.body.classList.toggle('watch-mode-active', Boolean(isWatchOpen));
+      }
+      syncWatchMode();
+      if (watchSection) {
+        new MutationObserver(syncWatchMode).observe(watchSection, {
+          attributes: true,
+          attributeFilter: ['class']
+        });
+      }
+
+      // 2. Instant "Processing..." state & anti-scroll lock when clicking Watch Ad to Unlock
+      let activeAdTrigger = null;
+      let processingResetTimer = null;
+
+      function clearAdProcessingState() {
+        document.body.classList.remove('rs-ad-processing');
+        clearTimeout(processingResetTimer);
+        if (activeAdTrigger) {
+          delete activeAdTrigger.dataset.rsLoading;
+          if (activeAdTrigger.dataset.originalHtml && !activeAdTrigger.disabled) {
+            activeAdTrigger.innerHTML = activeAdTrigger.dataset.originalHtml;
+          }
+          const note = activeAdTrigger.parentElement?.querySelector('.rs-processing-note');
+          if (note) note.remove();
+          activeAdTrigger = null;
+        }
+      }
+
+      document.addEventListener('click', function (event) {
+        const trigger = event.target.closest('[data-rs-rewarded]');
+        if (!trigger) return;
+
+        // Block duplicate taps while ad is loading, without setting .disabled (so rs.js receives click)
+        if (trigger.dataset.rsLoading === 'true') {
+          event.stopImmediatePropagation();
+          event.preventDefault();
+          return;
+        }
+
+        activeAdTrigger = trigger;
+        window.__lastRsTrigger = trigger;
+        trigger.dataset.rsLoading = 'true';
+
+        if (!trigger.dataset.originalHtml) {
+          trigger.dataset.originalHtml = trigger.innerHTML;
+        }
+
+        trigger.innerHTML = '<span class="btn-spinner"></span><span>Processing...</span>';
+        document.body.classList.add('rs-ad-processing');
+
+        // Show clear feedback beneath the button so user knows to wait for popup
+        const container = trigger.parentElement;
+        if (container && !container.querySelector('.rs-processing-note')) {
+          const note = document.createElement('div');
+          note.className = 'rs-processing-note';
+          note.innerHTML = '<span class="btn-spinner" style="width:12px;height:12px;border-top-color:#f0c44d;border-color:rgba(240,196,77,0.25);"></span><span>Preparing sponsor ad, please wait...</span>';
+          container.appendChild(note);
+        }
+
+        // Safety fallback if network fails to return an ad within 7 seconds
+        clearTimeout(processingResetTimer);
+        processingResetTimer = setTimeout(clearAdProcessingState, 7000);
+      }, true);
+
+      // 3. Detect when Rocket Sloth injects its modal/popup into DOM and release scroll lock
+      new MutationObserver(function (mutations) {
+        if (!document.body.classList.contains('rs-ad-processing')) return;
+        for (const m of mutations) {
+          for (const node of m.addedNodes) {
+            if (node.nodeType === 1 && !node.closest('#toast-region')) {
+              const id = (node.id || '').toLowerCase();
+              const cls = (typeof node.className === 'string' ? node.className : '').toLowerCase();
+              if (id.includes('rs-') || cls.includes('rs-') || node.querySelector?.('iframe')) {
+                clearAdProcessingState();
+                return;
+              }
+            }
+          }
+        }
+      }).observe(document.body, { childList: true });
+
+      // 4. Bridge rs:rewarded if dispatched on document/window so button reference is never lost
+      document.addEventListener('rs:rewarded', function (event) {
+        clearAdProcessingState();
+        if ((event.target === document || event.target === window) && window.__lastRsTrigger) {
+          const btn = window.__lastRsTrigger;
+          window.__lastRsTrigger = null;
+          btn.dispatchEvent(new CustomEvent('rs:rewarded', { bubbles: true, detail: event.detail || {} }));
+        }
+      }, true);
+    })();
+  </script>
+
   <!-- Cache-busted module scripts -->
-  <script type="module" src="/js/ads.js?v=6"></script>
-  <script type="module" src="/js/main.js?v=6"></script>
+  <script type="module" src="/js/ads.js?v=7"></script>
+  <script type="module" src="/js/main.js?v=7"></script>
 
 </body>
 </html>
