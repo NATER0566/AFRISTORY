@@ -1,7 +1,8 @@
 const API = '/api';
 const jsonHeaders = { 'Content-Type': 'application/json' };
 
-const $ = id => document.getElementById(id); const $$ = selector => [...document.querySelectorAll(selector)];
+const $ = id => document.getElementById(id);
+const $$ = selector => [...document.querySelectorAll(selector)];
 
 const emailOk = value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 const codeOk = value => /^\d{6}$/.test(value);
@@ -56,6 +57,46 @@ const safeImage = value => {
     return value;
 };
 
+// Helper: attach MP4 or HLS stream and force immediate frame visibility + muted autoplay
+function attachAndAutoplayVideo(slideEl, video, mediaUrl, isActive) {
+    if (!video || !mediaUrl) return;
+
+    video.muted = true;
+    video.defaultMuted = true;
+    video.loop = true;
+    video.playsInline = true;
+    video.preload = 'auto';
+    video.setAttribute('muted', '');
+    video.setAttribute('playsinline', '');
+    video.setAttribute('autoplay', '');
+
+    if (mediaUrl.includes('.m3u8') && window.Hls && window.Hls.isSupported()) {
+        const hls = new window.Hls({ enableWorker: true });
+        hls.loadSource(mediaUrl);
+        hls.attachMedia(video);
+        hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
+            if (isActive) video.play().catch(() => {});
+        });
+    } else {
+        video.src = mediaUrl;
+    }
+
+    video.addEventListener('loadeddata', () => {
+        slideEl.classList.add('video-live');
+        if (video.currentTime === 0 && Number.isFinite(video.duration) && video.duration > 0.5) {
+            try { video.currentTime = 0.25; } catch (e) {}
+        }
+    }, { once: true });
+
+    video.addEventListener('playing', () => {
+        slideEl.classList.add('video-live');
+    });
+
+    if (isActive) {
+        video.play().then(() => slideEl.classList.add('video-live')).catch(() => {});
+    }
+}
+
 // ==========================================
 // DOM CONTENT LOADED - INITIALIZE ALL
 // ==========================================
@@ -80,15 +121,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Auth Modal Triggers ---
     const authModal = $('auth-modal');
-    document.querySelectorAll('[data-open-auth]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+    document.addEventListener('click', (e) => {
+        const openBtn = e.target.closest('[data-open-auth]');
+        if (openBtn) {
             e.preventDefault();
             if (authModal) {
                 authModal.classList.add('active');
-                document.body.style.overflow = 'hidden'; 
-                show(btn.dataset.openAuth);
+                document.body.style.overflow = 'hidden';
+                show(openBtn.dataset.openAuth || 'register');
             }
-        });
+        }
     });
 
     $('close-modal-btn')?.addEventListener('click', () => {
@@ -327,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // HOMEPAGE CAROUSELS & CONTENT
     // ==========================================
 
-    // 1. TRENDING VIDEO CAROUSEL
+    // 1. TRENDING VIDEO CAROUSEL (AUTO-VISIBLE & AUTO-PLAYING)
     class TrendingVideoCarousel {
         constructor() {
             this.slides = [];
@@ -342,13 +384,11 @@ document.addEventListener('DOMContentLoaded', () => {
         async init() {
             if(!this.track) return;
             try {
-                // Fetch trending episodes
                 const res = await fetch('/api/episodes/feed?sort=trending&limit=5');
                 if (!res.ok) return;
                 const data = await res.json();
                 
                 if (data && data.success && data.data && data.data.episodes) {
-                    // Only keep episodes that actually have a video URL
                     this.slides = data.data.episodes.filter(ep => ep.mediaUrl || ep.hlsUrl || ep.videoUrl);
                     if (this.slides.length > 0) {
                         this.render();
@@ -366,60 +406,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 slideEl.className = `video-showcase-slide ${idx === 0 ? 'active' : ''}`;
                 
                 const mediaUrl = slide.mediaUrl || slide.hlsUrl || slide.videoUrl || '';
+                const posterAttr = (slide.thumbnailUrl || slide.seriesId?.coverImage)
+                    ? `poster="${safeImage(slide.thumbnailUrl || slide.seriesId?.coverImage)}"`
+                    : '';
                 
                 slideEl.innerHTML = `
-                    <video src="${mediaUrl}" poster="${safeImage(slide.thumbnailUrl || slide.seriesId?.coverImage)}" playsinline loop></video>
+                    <video ${posterAttr} muted autoplay playsinline loop preload="auto"></video>
                     <div class="video-carousel-overlay"></div>
                     <button class="play-pause-btn" aria-label="Play video"><i data-lucide="play" fill="currentColor"></i></button>
                     <div class="video-carousel-content">
                         <span class="badge">${slide.genre ? slide.genre.toUpperCase() : 'TRENDING NOW'}</span>
-                        <h3 class="text-white font-display text-2xl font-bold">${slide.title}</h3>
-                        <p class="text-gray-300 text-sm mt-1 max-w-lg">${slide.seriesId?.title || ''}</p>
+                        <h3>${slide.title}</h3>
+                        <p>${slide.seriesId?.title || ''}</p>
                     </div>
                 `;
                 this.track.appendChild(slideEl);
 
-                // Video Play/Pause Logic
                 const video = slideEl.querySelector('video');
                 const playBtn = slideEl.querySelector('.play-pause-btn');
-                const overlay = slideEl.querySelector('.video-carousel-overlay');
 
-                // If HLS, attach it
-                if (mediaUrl.includes('.m3u8') && window.Hls && window.Hls.isSupported()) {
-                    const hls = new window.Hls();
-                    hls.loadSource(mediaUrl);
-                    hls.attachMedia(video);
-                }
+                attachAndAutoplayVideo(slideEl, video, mediaUrl, idx === 0);
 
                 playBtn.addEventListener('click', () => {
                     if (video.paused) {
                         this.track.querySelectorAll('video').forEach(v => v.pause());
-                        this.track.querySelectorAll('.play-pause-btn').forEach(btn => btn.style.opacity = '1');
-                        this.track.querySelectorAll('.video-carousel-overlay').forEach(ov => ov.style.opacity = '1');
-                        
-                        video.play();
-                        playBtn.style.opacity = '0'; 
-                        overlay.style.opacity = '0'; 
+                        video.play().then(() => slideEl.classList.add('video-live')).catch(() => {});
                     } else {
                         video.pause();
-                        playBtn.style.opacity = '1';
-                        overlay.style.opacity = '1';
+                        slideEl.classList.remove('video-live');
                     }
-                });
-
-                video.addEventListener('ended', () => {
-                    playBtn.style.opacity = '1';
-                    overlay.style.opacity = '1';
                 });
 
                 const dot = document.createElement('div');
                 dot.className = `carousel-dot ${idx === 0 ? 'active' : ''}`;
-                dot.onclick = () => {
-                    video.pause(); 
-                    playBtn.style.opacity = '1';
-                    overlay.style.opacity = '1';
-                    this.goToSlide(idx);
-                };
+                dot.onclick = () => this.goToSlide(idx);
                 this.dotsContainer.appendChild(dot);
             });
             if (window.lucide) window.lucide.createIcons();
@@ -431,24 +451,25 @@ document.addEventListener('DOMContentLoaded', () => {
             const dotEls = this.dotsContainer.querySelectorAll('.carousel-dot');
 
             const currentVideo = slideEls[this.currentIndex]?.querySelector('video');
-            if (currentVideo) {
-                currentVideo.pause();
-                slideEls[this.currentIndex].querySelector('.play-pause-btn').style.opacity = '1';
-                slideEls[this.currentIndex].querySelector('.video-carousel-overlay').style.opacity = '1';
-            }
+            if (currentVideo) currentVideo.pause();
 
             slideEls[this.currentIndex]?.classList.remove('active');
             dotEls[this.currentIndex]?.classList.remove('active');
 
             this.currentIndex = (idx + this.slides.length) % this.slides.length;
 
-            slideEls[this.currentIndex]?.classList.add('active');
+            const nextSlide = slideEls[this.currentIndex];
+            nextSlide?.classList.add('active');
             dotEls[this.currentIndex]?.classList.add('active');
+
+            const nextVideo = nextSlide?.querySelector('video');
+            if (nextVideo) {
+                nextVideo.play().then(() => nextSlide.classList.add('video-live')).catch(() => {});
+            }
         }
     }
 
-
-    // 2. ADMIN IMAGE SLIDESHOW (FIXED API CALL)
+    // 2. ADMIN IMAGE SLIDESHOW
     class ImageCarousel {
         constructor() {
             this.slides = [];
@@ -464,7 +485,6 @@ document.addEventListener('DOMContentLoaded', () => {
         async init() {
             if(!this.track) return;
             try {
-                // Fetch using correct endpoint and query format
                 const res = await fetch('/api/admin/banners?type=IMAGE');
                 if (!res.ok) return;
                 const data = await res.json();
@@ -484,14 +504,13 @@ document.addEventListener('DOMContentLoaded', () => {
             this.slides.forEach((slide, idx) => {
                 const slideEl = document.createElement('div');
                 slideEl.className = `carousel-slide ${idx === 0 ? 'active' : ''}`;
-                // Fixed mediaUrl mapping
                 slideEl.style.backgroundImage = `url('${safeImage(slide.mediaUrl)}')`;
                 slideEl.innerHTML = `
                     <div class="carousel-overlay"></div>
                     <div class="carousel-content text-left">
-                        <h2 class="text-3xl md:text-4xl font-bold font-display mb-3 text-white">${slide.title || ''}</h2>
-                        <p class="text-gray-300 mb-6 text-lg max-w-md">${slide.description || ''}</p>
-                        ${slide.targetUrl ? `<a href="${slide.targetUrl}" class="btn-solid inline-block self-start" ${slide.targetUrl.startsWith('/') ? 'data-open-auth="login"' : ''}>${slide.buttonText || 'Learn More'}</a>` : ''}
+                        <h2>${slide.title || ''}</h2>
+                        <p>${slide.description || ''}</p>
+                        ${slide.targetUrl ? `<a href="${slide.targetUrl}" class="btn-solid inline-flex self-start" ${slide.targetUrl.startsWith('/') ? 'data-open-auth="register"' : ''}>${slide.buttonText || 'Learn More'}</a>` : ''}
                     </div>
                 `;
                 this.track.appendChild(slideEl);
@@ -525,7 +544,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 3. ADMIN VIDEO SHOWCASE (FIXED API CALL)
+    // 3. ADMIN VIDEO SHOWCASE (FIXED: USES .video-showcase-slide + AUTO-VISIBLE VIDEO)
     class AdminVideoCarousel {
         constructor() {
             this.slides = [];
@@ -540,7 +559,6 @@ document.addEventListener('DOMContentLoaded', () => {
         async init() {
             if(!this.track) return;
             try {
-                // Fetch using correct endpoint and query format
                 const res = await fetch('/api/admin/banners?type=VIDEO');
                 if (!res.ok) return;
                 const data = await res.json();
@@ -558,57 +576,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
             this.slides.forEach((slide, idx) => {
                 const slideEl = document.createElement('div');
-                slideEl.className = `carousel-slide ${idx === 0 ? 'active' : ''}`;
+                slideEl.className = `video-showcase-slide ${idx === 0 ? 'active' : ''}`;
                 
-                // Fixed mediaUrl mapping
                 const mediaUrl = slide.mediaUrl || '';
+                const posterAttr = slide.thumbnailUrl ? `poster="${safeImage(slide.thumbnailUrl)}"` : '';
                 
                 slideEl.innerHTML = `
-                    <video src="${mediaUrl}" poster="${safeImage(slide.thumbnailUrl)}" playsinline loop></video>
+                    <video ${posterAttr} muted autoplay playsinline loop preload="auto"></video>
                     <div class="video-carousel-overlay"></div>
                     <button class="play-pause-btn" aria-label="Play video"><i data-lucide="play" fill="currentColor"></i></button>
                     <div class="video-carousel-content">
-                        <span class="badge" style="display: inline-block; margin-bottom: 12px; padding: 6px 12px; border-radius: 5px; background: rgba(212,160,23,0.2); color: #D4A017; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;">${slide.badgeText || 'FEATURED'}</span>
-                        <h3 class="text-white font-display text-2xl font-bold">${slide.title || 'Promotional Video'}</h3>
-                        <p class="text-gray-300 text-sm mt-1 max-w-lg">${slide.description || ''}</p>
+                        <span class="badge">${slide.badgeText || 'FEATURED'}</span>
+                        <h3>${slide.title || 'Promotional Video'}</h3>
+                        <p>${slide.description || ''}</p>
                     </div>
                 `;
                 this.track.appendChild(slideEl);
 
-                // Video Play/Pause Logic
                 const video = slideEl.querySelector('video');
                 const playBtn = slideEl.querySelector('.play-pause-btn');
-                const overlay = slideEl.querySelector('.video-carousel-overlay');
+
+                attachAndAutoplayVideo(slideEl, video, mediaUrl, idx === 0);
 
                 playBtn.addEventListener('click', () => {
                     if (video.paused) {
                         this.track.querySelectorAll('video').forEach(v => v.pause());
-                        this.track.querySelectorAll('.play-pause-btn').forEach(btn => btn.style.opacity = '1');
-                        this.track.querySelectorAll('.video-carousel-overlay').forEach(ov => ov.style.opacity = '1');
-                        
-                        video.play();
-                        playBtn.style.opacity = '0'; 
-                        overlay.style.opacity = '0'; 
+                        video.play().then(() => slideEl.classList.add('video-live')).catch(() => {});
                     } else {
                         video.pause();
-                        playBtn.style.opacity = '1';
-                        overlay.style.opacity = '1';
+                        slideEl.classList.remove('video-live');
                     }
-                });
-
-                video.addEventListener('ended', () => {
-                    playBtn.style.opacity = '1';
-                    overlay.style.opacity = '1';
                 });
 
                 const dot = document.createElement('div');
                 dot.className = `carousel-dot ${idx === 0 ? 'active' : ''}`;
-                dot.onclick = () => {
-                    video.pause(); 
-                    playBtn.style.opacity = '1';
-                    overlay.style.opacity = '1';
-                    this.goToSlide(idx);
-                };
+                dot.onclick = () => this.goToSlide(idx);
                 this.dotsContainer.appendChild(dot);
             });
             if (window.lucide) window.lucide.createIcons();
@@ -616,38 +618,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
         goToSlide(idx) {
             if (this.slides.length === 0) return;
-            const slideEls = this.track.querySelectorAll('.carousel-slide');
+            const slideEls = this.track.querySelectorAll('.video-showcase-slide');
             const dotEls = this.dotsContainer.querySelectorAll('.carousel-dot');
 
             const currentVideo = slideEls[this.currentIndex]?.querySelector('video');
-            if (currentVideo) {
-                currentVideo.pause();
-                slideEls[this.currentIndex].querySelector('.play-pause-btn').style.opacity = '1';
-                slideEls[this.currentIndex].querySelector('.video-carousel-overlay').style.opacity = '1';
-            }
+            if (currentVideo) currentVideo.pause();
 
             slideEls[this.currentIndex]?.classList.remove('active');
             dotEls[this.currentIndex]?.classList.remove('active');
 
             this.currentIndex = (idx + this.slides.length) % this.slides.length;
 
-            slideEls[this.currentIndex]?.classList.add('active');
+            const nextSlide = slideEls[this.currentIndex];
+            nextSlide?.classList.add('active');
             dotEls[this.currentIndex]?.classList.add('active');
+
+            const nextVideo = nextSlide?.querySelector('video');
+            if (nextVideo) {
+                nextVideo.play().then(() => nextSlide.classList.add('video-live')).catch(() => {});
+            }
         }
     }
 
-    // 4. TRENDING CONTENT GRID (OVERLAY DESIGN FIXED)
+    // 4. TRENDING CONTENT GRID
     const renderContentCard = (ep) => {
         const seriesTitle = ep.seriesId?.title || 'Story';
         return `
-          <button class="content-card text-left" data-open-auth="login" onclick="document.getElementById('auth-modal').classList.add('active'); show('login');">
+          <button class="content-card text-left" data-open-auth="register">
             <img src="${safeImage(ep.thumbnailUrl || ep.seriesId?.coverImage)}" alt="${ep.title}">
             <div class="card-play-btn"><i data-lucide="play" fill="currentColor"></i></div>
             <div class="card-overlay">
-                <span style="color: #D4A017; font-size: 11px; font-weight: 800; letter-spacing: 1px; margin-bottom: 8px; display: block; text-transform: uppercase;">${ep.genre || 'TRENDING'}</span>
+                <span style="color: #F5B82E; font-size: 11px; font-weight: 900; letter-spacing: 1px; margin-bottom: 8px; display: block; text-transform: uppercase;">${ep.genre || 'TRENDING'}</span>
                 <h3 class="card-title">${ep.title}</h3>
                 <div class="card-meta">
                     <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%;">${seriesTitle}</span>
+                    <span class="text-accent font-extrabold">Watch →</span>
                 </div>
             </div>
           </button>
