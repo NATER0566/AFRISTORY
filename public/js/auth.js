@@ -58,118 +58,34 @@ const safeImage = value => {
 };
 
 // ==========================================
-// STRICT SINGLE-VIDEO & MANUAL-PLAY ISOLATION
+// SINGLE-VIDEO AUDIO & PLAYBACK ISOLATION
 // ==========================================
 function setSoundButtonState(slideEl, isUnmuted) {
-    if (!slideEl) return;
-    const btn = slideEl.querySelector('.slide-sound-btn');
-    if (btn) {
-        btn.textContent = isUnmuted ? '🔊 Sound On' : '🔇 Tap for sound';
-        btn.setAttribute('aria-label', isUnmuted ? 'Mute video' : 'Unmute video');
-        btn.style.borderColor = isUnmuted ? 'rgba(245, 184, 46, 0.85)' : 'rgba(255, 255, 255, 0.28)';
-        btn.style.color = isUnmuted ? '#F5B82E' : '#FFFFFF';
-    }
-    // Sync any external sound pill inside this slide
-    slideEl.querySelectorAll('button').forEach(b => {
-        if (b !== btn && /sound/i.test(b.textContent || '')) {
-            b.style.display = 'none';
-        }
-    });
-}
-
-function isManualOnlyVideo(video) {
-    if (!video) return false;
-    return video.dataset.manualOnly === 'true' || Boolean(video.closest('#video-slides-track'));
-}
-
-function wasDirectlyActivated(video) {
-    return Boolean(video && video._userActivatedAt && (Date.now() - video._userActivatedAt) < 1500);
-}
-
-function markVideoUserActivated(video) {
-    if (video) video._userActivatedAt = Date.now();
+    const btn = slideEl?.querySelector('.slide-sound-btn');
+    if (!btn) return;
+    btn.textContent = isUnmuted ? '🔊 Sound on' : '🔇 Tap for sound';
+    btn.setAttribute('aria-label', isUnmuted ? 'Mute video' : 'Unmute video');
+    btn.style.borderColor = isUnmuted ? 'rgba(245, 184, 46, 0.8)' : 'rgba(255, 255, 255, 0.28)';
+    btn.style.color = isUnmuted ? '#F5B82E' : '#FFFFFF';
 }
 
 function enforceSingleActiveVideo(activeVideo) {
     document.querySelectorAll('video').forEach(v => {
         if (v !== activeVideo) {
+            v._userAllowedPlay = false;
             v.muted = true;
             v.defaultMuted = true;
-            if (!v.paused) v.pause();
+            v.pause();
             const slide = v.closest('.video-showcase-slide');
             if (slide) {
-                slide.classList.remove('is-playing');
                 setSoundButtonState(slide, false);
             }
         }
     });
 }
 
-// Intercept .play() globally so no inline script can auto-start Featured Announcements or play two videos at once
-(function installGlobalMediaGuards() {
-    if (window.__afroMediaGuardsInstalled) return;
-    window.__afroMediaGuardsInstalled = true;
-
-    const nativePlay = HTMLMediaElement.prototype.play;
-    HTMLMediaElement.prototype.play = function(...args) {
-        if (this.tagName === 'VIDEO') {
-            const parentSlide = this.closest('.video-showcase-slide');
-
-            // 1. Block inactive/hidden slides from ever playing
-            if (parentSlide && !parentSlide.classList.contains('active')) {
-                this.muted = true;
-                this.pause();
-                return Promise.resolve();
-            }
-
-            // 2. Block Featured Announcements videos unless user directly clicked them
-            if (isManualOnlyVideo(this) && !wasDirectlyActivated(this)) {
-                this.muted = true;
-                this.pause();
-                if (parentSlide) setSoundButtonState(parentSlide, false);
-                return Promise.resolve();
-            }
-
-            // 3. Pause & mute every other video on the page
-            enforceSingleActiveVideo(this);
-        }
-        return nativePlay.apply(this, args);
-    };
-
-    // Block any global script from unmuting Featured Announcements or inactive videos
-    document.addEventListener('volumechange', (e) => {
-        const v = e.target;
-        if (!v || v.tagName !== 'VIDEO') return;
-        const parentSlide = v.closest('.video-showcase-slide');
-
-        if (!v.muted) {
-            if (parentSlide && !parentSlide.classList.contains('active')) {
-                v.muted = true;
-                v.pause();
-                setSoundButtonState(parentSlide, false);
-                return;
-            }
-            if (isManualOnlyVideo(v) && !wasDirectlyActivated(v) && v.paused) {
-                v.muted = true;
-                v.pause();
-                if (parentSlide) setSoundButtonState(parentSlide, false);
-                return;
-            }
-            enforceSingleActiveVideo(v);
-            if (parentSlide) setSoundButtonState(parentSlide, true);
-        } else if (parentSlide) {
-            setSoundButtonState(parentSlide, false);
-        }
-    }, true);
-
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) enforceSingleActiveVideo(null);
-    });
-})();
-
-function attachSlideVideo(slideEl, video, mediaUrl, options = {}) {
+function attachSlideVideo(slideEl, video, mediaUrl, isActive, manualOnly = false) {
     if (!video || !mediaUrl) return;
-    const { isActive = false, autoPlay = true, manualOnly = false } = options;
 
     video.muted = true;
     video.defaultMuted = true;
@@ -177,64 +93,91 @@ function attachSlideVideo(slideEl, video, mediaUrl, options = {}) {
     video.loop = true;
     video.playsInline = true;
     video.preload = isActive ? 'auto' : 'metadata';
+    video.dataset.manualOnly = manualOnly ? 'true' : 'false';
+    video._userAllowedPlay = false;
     video.removeAttribute('autoplay');
     video.setAttribute('muted', '');
     video.setAttribute('playsinline', '');
-
-    if (manualOnly) {
-        video.dataset.manualOnly = 'true';
-    }
 
     if (mediaUrl.includes('.m3u8') && window.Hls && window.Hls.isSupported()) {
         const hls = new window.Hls({ enableWorker: true });
         hls.loadSource(mediaUrl);
         hls.attachMedia(video);
         hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
-            if (isActive && autoPlay && !manualOnly) {
-                video.play().catch(() => {});
-            }
+            slideEl.classList.add('video-live');
+            if (isActive && !manualOnly) video.play().catch(() => {});
         });
     } else {
         video.src = mediaUrl;
+        video.load();
     }
 
-    // Show first frame cleanly while paused so the video is visible without playing
-    video.addEventListener('loadeddata', () => {
+    const revealFrame = () => {
         slideEl.classList.add('video-live');
         if (video.currentTime === 0 && Number.isFinite(video.duration) && video.duration > 0.5) {
             try { video.currentTime = 0.25; } catch (e) {}
         }
-        setSoundButtonState(slideEl, !video.muted && !video.paused);
-    }, { once: true });
+    };
+
+    video.addEventListener('loadedmetadata', revealFrame, { once: true });
+    video.addEventListener('loadeddata', revealFrame, { once: true });
+
+    video.addEventListener('play', () => {
+        if (!slideEl.classList.contains('active') || (manualOnly && !video._userAllowedPlay)) {
+            video.pause();
+            video.muted = true;
+            setSoundButtonState(slideEl, false);
+            return;
+        }
+        enforceSingleActiveVideo(video);
+        slideEl.classList.add('video-live');
+    });
 
     video.addEventListener('playing', () => {
-        slideEl.classList.add('video-live', 'is-playing');
+        if (!slideEl.classList.contains('active') || (manualOnly && !video._userAllowedPlay)) {
+            video.pause();
+            video.muted = true;
+            setSoundButtonState(slideEl, false);
+            return;
+        }
+        enforceSingleActiveVideo(video);
+        slideEl.classList.add('video-live');
     });
 
-    video.addEventListener('pause', () => {
-        slideEl.classList.remove('is-playing');
-        setSoundButtonState(slideEl, false);
+    // Guard against any external script unmuting multiple videos or auto-starting Announcements
+    video.addEventListener('volumechange', () => {
+        if (!video.muted) {
+            if (!slideEl.classList.contains('active') || (manualOnly && !video._userAllowedPlay)) {
+                video.muted = true;
+                video.pause();
+                setSoundButtonState(slideEl, false);
+                return;
+            }
+            enforceSingleActiveVideo(video);
+            setSoundButtonState(slideEl, true);
+        } else {
+            setSoundButtonState(slideEl, false);
+        }
     });
 
-    // Single per-video sound button (plays strictly this video's built-in audio)
+    // Per-video sound button (uses strictly the video's own built-in audio)
     const soundBtn = document.createElement('button');
     soundBtn.type = 'button';
     soundBtn.className = 'slide-sound-btn';
-    soundBtn.style.cssText = 'position:absolute;top:16px;right:16px;z-index:25;padding:8px 14px;border-radius:999px;border:1px solid rgba(255,255,255,0.28);background:rgba(15,15,18,0.85);color:#FFFFFF;font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px;cursor:pointer;backdrop-filter:blur(8px);box-shadow:0 4px 16px rgba(0,0,0,0.6);';
+    soundBtn.style.cssText = 'position:absolute;top:16px;right:16px;z-index:25;padding:8px 14px;border-radius:999px;border:1px solid rgba(255,255,255,0.28);background:rgba(15,15,18,0.82);color:#FFFFFF;font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px;cursor:pointer;backdrop-filter:blur(8px);box-shadow:0 4px 16px rgba(0,0,0,0.6);';
     slideEl.appendChild(soundBtn);
     setSoundButtonState(slideEl, false);
 
     soundBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        markVideoUserActivated(video);
-
         if (video.muted || video.paused) {
+            video._userAllowedPlay = true;
             enforceSingleActiveVideo(video);
             video.muted = false;
             video.defaultMuted = false;
             video.volume = 1;
             video.play().then(() => {
-                slideEl.classList.add('video-live', 'is-playing');
+                slideEl.classList.add('video-live');
                 setSoundButtonState(slideEl, true);
             }).catch(() => {});
         } else {
@@ -244,20 +187,21 @@ function attachSlideVideo(slideEl, video, mediaUrl, options = {}) {
         }
     });
 
-    // Pause & mute immediately when scrolled off-screen; NEVER auto-start manualOnly videos on scroll
+    // Automatically pause & mute when scrolled off-screen; never auto-play manualOnly videos
     if ('IntersectionObserver' in window) {
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (!entry.isIntersecting) {
+                    video._userAllowedPlay = false;
                     video.muted = true;
                     video.pause();
                     setSoundButtonState(slideEl, false);
-                } else if (!manualOnly && autoPlay && slideEl.classList.contains('active') && video.paused) {
-                    const anyUnmutedPlaying = [...document.querySelectorAll('video')].some(v => v !== video && !v.muted && !v.paused);
-                    if (!anyUnmutedPlaying) {
+                } else if (!manualOnly && slideEl.classList.contains('active') && video.paused) {
+                    const anyOtherPlaying = [...document.querySelectorAll('video')].some(v => v !== video && !v.paused);
+                    if (!anyOtherPlaying) {
                         video.muted = true;
                         setSoundButtonState(slideEl, false);
-                        video.play().catch(() => {});
+                        video.play().then(() => slideEl.classList.add('video-live')).catch(() => {});
                     }
                 }
             });
@@ -265,8 +209,9 @@ function attachSlideVideo(slideEl, video, mediaUrl, options = {}) {
         observer.observe(slideEl);
     }
 
-    if (isActive && autoPlay && !manualOnly) {
-        video.play().catch(() => {});
+    if (isActive && !manualOnly) {
+        enforceSingleActiveVideo(video);
+        video.play().then(() => slideEl.classList.add('video-live')).catch(() => {});
     }
 }
 
@@ -283,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.lucide.createIcons();
     }
 
-    // Intercept any inline sound pill from index.html so it ONLY affects the visible top slideshow and NEVER triggers Featured Announcements
+    // Intercept any global sound pill from index.html so it ONLY controls the top Watch Now slideshow
     document.addEventListener('click', (e) => {
         const legacySoundBtn = e.target.closest('#global-sound-pill, .sound-pill, [data-global-sound]');
         if (!legacySoundBtn) return;
@@ -553,7 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // HOMEPAGE CAROUSELS & CONTENT
     // ==========================================
 
-    // 1. TRENDING VIDEO CAROUSEL (TOP SLIDESHOW)
+    // 1. TRENDING VIDEO CAROUSEL
     class TrendingVideoCarousel {
         constructor() {
             this.slides = [];
@@ -609,18 +554,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const video = slideEl.querySelector('video');
                 const playBtn = slideEl.querySelector('.play-pause-btn');
 
-                attachSlideVideo(slideEl, video, mediaUrl, {
-                    isActive: idx === 0,
-                    autoPlay: true,
-                    manualOnly: false
-                });
+                attachSlideVideo(slideEl, video, mediaUrl, idx === 0, false);
 
-                playBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    markVideoUserActivated(video);
+                playBtn.addEventListener('click', () => {
                     if (video.paused) {
                         enforceSingleActiveVideo(video);
-                        video.play().catch(() => {});
+                        video.play().then(() => slideEl.classList.add('video-live')).catch(() => {});
                     } else {
                         video.pause();
                     }
@@ -664,7 +603,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 nextVideo.muted = !keepSoundOn;
                 nextVideo.volume = 1;
                 setSoundButtonState(nextSlide, keepSoundOn);
-                nextVideo.play().catch(() => {});
+                nextVideo.play().then(() => nextSlide.classList.add('video-live')).catch(() => {});
             }
         }
     }
@@ -744,7 +683,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 3. FEATURED ANNOUNCEMENTS (STRICT MANUAL-PLAY ONLY — NEVER AUTOPLAYS)
+    // 3. ADMIN VIDEO SHOWCASE (ANNOUNCEMENTS — VISIBLE FRAME, MANUAL PLAY ONLY)
     class AdminVideoCarousel {
         constructor() {
             this.slides = [];
@@ -784,7 +723,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 slideEl.innerHTML = `
                     <video ${posterAttr} muted playsinline loop preload="${idx === 0 ? 'auto' : 'metadata'}"></video>
                     <div class="video-carousel-overlay"></div>
-                    <button class="play-pause-btn" aria-label="Play announcement video"><i data-lucide="play" fill="currentColor"></i></button>
+                    <button class="play-pause-btn" aria-label="Play video"><i data-lucide="play" fill="currentColor"></i></button>
                     <div class="video-carousel-content">
                         <span class="badge">${slide.badgeText || 'FEATURED'}</span>
                         <h3>${slide.title || 'Promotional Video'}</h3>
@@ -796,38 +735,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 const video = slideEl.querySelector('video');
                 const playBtn = slideEl.querySelector('.play-pause-btn');
 
-                attachSlideVideo(slideEl, video, mediaUrl, {
-                    isActive: idx === 0,
-                    autoPlay: false,
-                    manualOnly: true
-                });
+                attachSlideVideo(slideEl, video, mediaUrl, idx === 0, true);
 
-                const handleManualToggle = (e) => {
+                const toggleAnnouncementPlay = (e) => {
                     e.stopPropagation();
-                    markVideoUserActivated(video);
-
                     if (video.paused) {
+                        video._userAllowedPlay = true;
                         enforceSingleActiveVideo(video);
                         video.muted = false;
                         video.defaultMuted = false;
                         video.volume = 1;
                         video.play().then(() => {
-                            slideEl.classList.add('video-live', 'is-playing');
+                            slideEl.classList.add('video-live');
                             setSoundButtonState(slideEl, true);
                         }).catch(() => {
-                            // Fallback if browser requires muted start first
                             video.muted = true;
                             video.play().catch(() => {});
                         });
                     } else {
+                        video._userAllowedPlay = false;
                         video.pause();
                         video.muted = true;
                         setSoundButtonState(slideEl, false);
                     }
                 };
 
-                playBtn.addEventListener('click', handleManualToggle);
-                video.addEventListener('click', handleManualToggle);
+                playBtn.addEventListener('click', toggleAnnouncementPlay);
+                video.addEventListener('click', toggleAnnouncementPlay);
 
                 const dot = document.createElement('div');
                 dot.className = `carousel-dot ${idx === 0 ? 'active' : ''}`;
@@ -846,12 +780,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentVideo = currentSlide?.querySelector('video');
 
             if (currentVideo) {
+                currentVideo._userAllowedPlay = false;
                 currentVideo.pause();
                 currentVideo.muted = true;
                 setSoundButtonState(currentSlide, false);
             }
 
-            currentSlide?.classList.remove('active', 'is-playing');
+            currentSlide?.classList.remove('active');
             dotEls[this.currentIndex]?.classList.remove('active');
 
             this.currentIndex = (idx + this.slides.length) % this.slides.length;
@@ -860,9 +795,9 @@ document.addEventListener('DOMContentLoaded', () => {
             nextSlide?.classList.add('active');
             dotEls[this.currentIndex]?.classList.add('active');
 
-            // Keep the new announcement slide visible & paused until the user clicks Play
             const nextVideo = nextSlide?.querySelector('video');
             if (nextVideo) {
+                nextVideo._userAllowedPlay = false;
                 nextVideo.pause();
                 nextVideo.muted = true;
                 setSoundButtonState(nextSlide, false);
