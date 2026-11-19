@@ -58,7 +58,7 @@ await fastify.register(fastifyMultipart, {
 
 // Rocket Sloth ads.txt redirect - must be before static
 fastify.get('/ads.txt', async (request, reply) => {
-  return reply.redirect(301, 'https://srv.adstxtmanager.com/19390/naterlearninghub.me');
+  return reply.redirect(301, 'https://srv.adstxtmanager.com/19390/afristory.live');
 });
 
 // Serve static files from /public
