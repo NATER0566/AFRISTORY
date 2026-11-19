@@ -20,8 +20,6 @@ export const OPTIONAL_ENV = [
   'APPLE_TEAM_ID',
   'APPLE_KEY_ID',
   'APPLE_PRIVATE_KEY',
-  'ONESIGNAL_APP_ID',
-  'ONESIGNAL_API_KEY',
   'ADSCOD_PUBLISHER_KEY',
   'ADSCOD_API_URL',
 ];
@@ -45,8 +43,6 @@ const validators = {
   APPLE_TEAM_ID: value => Boolean(value && value.trim()),
   APPLE_KEY_ID: value => Boolean(value && value.trim()),
   APPLE_PRIVATE_KEY: value => Boolean(value && value.trim()),
-  ONESIGNAL_APP_ID: value => Boolean(value && value.trim()),
-  ONESIGNAL_API_KEY: value => Boolean(value && value.trim()),
   ADSCOD_PUBLISHER_KEY: value => Boolean(value && value.trim()),
   ADSCOD_API_URL: value => Boolean(value && value.trim()),
 };

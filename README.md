@@ -14,7 +14,6 @@ A production-ready digital storytelling and video streaming platform built with 
 *   **Watch History:** Track watch progress and completion
 *   **Comments & Engagement:** Series and episode discussions
 *   **Admin Dashboard:** Moderation, analytics, and user management
-*   **Push Notifications:** OneSignal integration for real-time updates
 
 ## 🛠️ Technology Stack
 
@@ -23,7 +22,6 @@ A production-ready digital storytelling and video streaming platform built with 
 *   **Authentication:** JWT, bcryptjs
 *   **Payments:** Paystack API
 *   **Media:** Cloudinary (HLS video streaming)
-*   **Notifications:** OneSignal
 *   **Frontend:** Vanilla JavaScript, HTML5, CSS3 (Tailwind)
 
 ## 📋 Prerequisites
@@ -32,7 +30,6 @@ A production-ready digital storytelling and video streaming platform built with 
 *   MongoDB Atlas account and cluster
 *   Paystack account (for payments)
 *   Cloudinary account (for video/image hosting)
-*   OneSignal account (for push notifications)
 *   Adscod account (for platform advertising)
 
 ## ⚙️ Environment Setup

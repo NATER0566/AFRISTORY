@@ -441,15 +441,6 @@ async function openEpisode(id) {
                             Watch Ad to Unlock
                         </button>
 
-                        <!-- ADBNK FALLBACK CONTAINER -->
-                        <div id="adbnk-slot-${episode._id}" style="display:none; width:100%;">
-                            <ins class="adsbyadbnk"
-                                 data-zone-id="zone_f3fcad23db83"
-                                 data-reward-user-id="${state.user?._id || ''}"
-                                 data-reward-custom-data="${episode._id}">
-                            </ins>
-                        </div>
-                        
                         <!-- EXISTING COIN UNLOCK BUTTON -->
                         <button type="button" class="button" data-action="unlock-current" style="width:100%; background:transparent; border:1px solid #555; color:#fff; font-weight:600; font-size:14px; padding:12px; border-radius:8px;">
                             Use ${episode.coinCost || 10} Coins
@@ -1434,30 +1425,6 @@ document.addEventListener('click', async event => {
         
         if (event.target.closest('[data-action="view-followers"]')) loadFollowersList();          
 
-        /* --- WATERFALL AD UNLOCK DISPATCHER --- */
-        const waterfallBtn = event.target.closest('[data-action="waterfall-ad-unlock"]');
-        if (waterfallBtn && !waterfallBtn.disabled) {
-            event.preventDefault();
-            const epId = waterfallBtn.dataset.episodeId;
-
-            // Notify user and switch buttons
-            toast('Primary ad network unavailable. Please use the alternative button.', 'info');
-            
-            waterfallBtn.style.display = 'none'; // Hide RS button
-            
-            const adbnkContainer = document.getElementById(`adbnk-slot-${epId}`);
-            if (adbnkContainer) {
-                adbnkContainer.style.display = 'block'; // Show ADBNK wrapper
-                
-                // Force ADBNK to re-parse the tags in case they were added dynamically
-                if (window.adbnk && typeof window.adbnk.push === 'function') {
-                    window.adbnk.push({});
-                }
-            }
-            return;
-        }
-        /* -------------------------------------- */
-
         const likeBtn = event.target.closest('[data-action="toggle-like"]');
         if (likeBtn && !likeBtn.disabled) {
             event.preventDefault();
@@ -1770,66 +1737,6 @@ document.addEventListener('rs:rewarded', async (event) => {
             btn.textContent = originalText; 
         }
     }
-});
-
-/* ============================================================================ */
-/* ADBNK REWARD COMPLETION LISTENER */
-/* ============================================================================ */
-async function handleAdbnkUnlock(rewardData) {
-    const episodeId = rewardData.customData || rewardData.custom_data || state.currentEpisode?._id;
-    const txId = rewardData.transactionId || rewardData.transaction_id;
-
-    if (!episodeId) return;
-
-    toast('Ad completed! Waiting for secure server verification...', 'info');
-
-    let attempts = 0;
-    
-    const checkInterval = setInterval(async () => {
-        attempts++;
-        try {
-            const res = await api(`/ads/check-unlock/${episodeId}?userId=${state.user?._id || ''}`, { method: 'GET' });
-            
-            if (res && res.unlocked) {
-                clearInterval(checkInterval);
-                toast('Episode unlocked securely!', 'success');
-                
-                // 1. Update frontend state
-                const epData = state.feedEpisodes.find(e => e._id === episodeId);
-                if (epData) epData.hasAccess = true;
-                if (state.currentEpisode && state.currentEpisode._id === episodeId) {
-                    state.currentEpisode.hasAccess = true;
-                }
-
-                // 2. Hide lock overlay and resume video playback
-                const lockUI = document.getElementById(`lock-${episodeId}`);
-                if (lockUI) {
-                    lockUI.classList.add('hidden');
-                    const card = lockUI.closest('.feed-video-card');
-                    const videoEl = card ? card.querySelector('video') : null;
-                    if (videoEl) {
-                        videoEl.setAttribute('controls', 'true');
-                        videoEl.play().catch(e => console.warn('Autoplay blocked:', e));
-                    }
-                }
-            } else if (attempts >= 5) {
-                clearInterval(checkInterval);
-                toast('Verification delayed. Please check your network and refresh.', 'error');
-            }
-        } catch (err) {
-            console.error("Status check failed", err);
-        }
-    }, 2000);
-}
-
-// Global handler (ADBNK SDK primary trigger)
-window.onAdbnkReward = function(reward) {
-    handleAdbnkUnlock(reward || {});
-};
-
-// Event listener (ADBNK SDK secondary trigger)
-document.addEventListener('adbnk:reward', (event) => {
-    handleAdbnkUnlock(event.detail || {});
 });
 
 const uploadForm = $('#upload-form');

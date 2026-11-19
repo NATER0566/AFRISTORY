@@ -8,7 +8,6 @@
 *   ✅ 14 API route modules with full CRUD operations
 *   ✅ Cloudinary integration for video/image hosting with authoritative media boundary proxy
 *   ✅ Paystack payment gateway integration
-*   ✅ OneSignal push notification setup
 *   ✅ Utility helpers and consistent response formatting
 ---
 ### Database Models (11 Total)
@@ -87,7 +86,6 @@
 | **MongoDB Atlas** | Ready | `server/config/db.js` | `MONGO_URI` |
 | **Paystack** | Ready | `server/config/paystack.js` | `PAYSTACK_SECRET_KEY`, `PAYSTACK_PUBLIC_KEY` |
 | **Cloudinary** | Ready | `server/config/cloudinary.js` | `CLOUDINARY_CLOUD_NAME`, `API_KEY`, `API_SECRET` |
-| **OneSignal** | Ready | `server/config/onesignal.js` | `ONESIGNAL_APP_ID`, `API_KEY` |
 | **Adscod** | Ready | `server/routes/ads.js` | `ADSCOD_PUBLISHER_KEY`, `ADSCOD_API_URL` |
 | **JWT** | Ready | `server/middleware/auth.js` | `JWT_SECRET` |
 

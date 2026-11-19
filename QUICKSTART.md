@@ -27,9 +27,6 @@ CLOUDINARY_API_SECRET=get_from_cloudinary_dashboard
 PAYSTACK_SECRET_KEY=sk_live_from_paystack
 PAYSTACK_PUBLIC_KEY=pk_live_from_paystack
 
-# OneSignal (push notifications)
-ONESIGNAL_APP_ID=from_onesignal
-ONESIGNAL_API_KEY=from_onesignal
 ```
 
 ### Step 3: Start Server
@@ -205,7 +202,6 @@ curl "http://localhost:3000/api/search/global?q=drama&type=series"
 | `JWT_SECRET` | Token signing key | Generate: `openssl rand -base64 32` |
 | `CLOUDINARY_*` | Video hosting | [Cloudinary](https://cloudinary.com) |
 | `PAYSTACK_SECRET_KEY` | Payment processing | [Paystack](https://dashboard.paystack.com) |
-| `ONESIGNAL_*` | Push notifications | [OneSignal](https://onesignal.com) |
 
 ## 🐛 Troubleshooting
 
