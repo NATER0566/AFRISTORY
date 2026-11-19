@@ -68,7 +68,9 @@ window.addEventListener('error', (event) => {
 });
 
 window.addEventListener('unhandledrejection', (event) => {
-    logFrontendError('unhandled_promise', event.reason ? (event.reason.message || String(event.reason)) : 'Unknown', event.reason ? event.reason.stack : '');
+    const msg = event.reason ? (event.reason.message || String(event.reason)) : 'Unknown';
+    if (event.reason?.name === 'AbortError' || msg.includes('interrupted by a call to pause')) return;
+    logFrontendError('unhandled_promise', msg, event.reason ? event.reason.stack : '');
 });
 
 /* ============================================================================ */
@@ -197,9 +199,11 @@ function setupLazyLoading() {
     }
 }
 
+let discoverLoaded = false;
+
 function setSection(name) {
     if (name !== 'watch' && state.currentEpisode) {
-        const activeVideo = document.querySelector('.feed-video-card video');
+        const activeVideo = currentlyPlaying || document.querySelector('.feed-video-card video');
         if (activeVideo) {
             saveProgressFeed(state.currentEpisode, activeVideo);
             activeVideo.pause();
@@ -216,6 +220,7 @@ function setSection(name) {
     
     location.hash = name;
 
+    if (name === 'discover' && !discoverLoaded) loadDiscover();
     if (name === 'watch' && !state.currentEpisode) openDefaultFeed();
     if (name === 'wallet') loadWallet();
     if (name === 'rewards') loadRewards();
@@ -258,6 +263,7 @@ function episodeCard(episode) {
 
 async function loadDiscover() {
     try {
+        discoverLoaded = true;
         $$('#section-discover .section-heading').forEach(el => el.classList.remove('hidden'));
         const creatorGrid = $('#creator-grid');
         if (creatorGrid) creatorGrid.classList.remove('hidden');
@@ -303,6 +309,40 @@ async function loadDiscover() {
 /* ============================================================================ */
 /* TIKTOK STYLE FEED & ROCKET SLOTH ADS */
 /* ============================================================================ */
+function safePlay(videoEl) {
+    if (!videoEl) return;
+    const playPromise = videoEl.play();
+    if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+            if (err.name !== 'AbortError') {
+                console.log('Autoplay blocked. User must interact first.');
+            }
+        });
+    }
+}
+
+function attachVideoSource(videoEl) {
+    if (!videoEl || videoEl.dataset.loaded === 'true') return;
+    const actualMediaUrl = videoEl.dataset.mediaUrl || '';
+    if (!actualMediaUrl) return;
+    videoEl.dataset.loaded = 'true';
+
+    if (actualMediaUrl.includes('.m3u8')) {
+        if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+            videoEl.src = actualMediaUrl;
+        } else if (window.Hls && window.Hls.isSupported()) {
+            const hls = new window.Hls();
+            hls.loadSource(actualMediaUrl);
+            hls.attachMedia(videoEl);
+            videoEl._hls = hls;
+        } else {
+            videoEl.src = actualMediaUrl;
+        }
+    } else {
+        videoEl.src = actualMediaUrl;
+    }
+}
+
 let currentlyPlaying = null;
 const feedObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
@@ -313,8 +353,15 @@ const feedObserver = new IntersectionObserver((entries) => {
             if (currentlyPlaying && currentlyPlaying !== video) {
                 currentlyPlaying.pause();
             }
-            video.play().catch(e => console.log('Autoplay blocked. User must interact first.'));
+            attachVideoSource(video);
+            safePlay(video);
             currentlyPlaying = video;
+
+            // Preload only the immediate next video to avoid network congestion
+            const nextCard = entry.target.nextElementSibling;
+            if (nextCard) {
+                attachVideoSource(nextCard.querySelector('video'));
+            }
             
             const epId = entry.target.dataset.episodeId;
             const epData = state.feedEpisodes.find(e => e._id === epId) || {};
@@ -336,7 +383,7 @@ async function openDefaultFeed() {
         const feedData = await api('/episodes/feed?sort=trending&limit=15') || {};
         const feedContainer = $('#tiktok-feed');
         if (feedData.episodes && feedData.episodes.length > 0) {
-            openEpisode(feedData.episodes[0]._id);
+            await openEpisode(feedData.episodes[0]._id, feedData.episodes);
         } else if (feedContainer) {
             feedContainer.innerHTML = '<p style="text-align:center; margin-top:50px;">No stories available right now.</p>';
         }
@@ -397,7 +444,7 @@ async function openSeries(id) {
     }
 }
 
-async function openEpisode(id) {
+async function openEpisode(id, preloadedEpisodes = null) {
     try {
         state.currentEpisode = { _id: id }; 
         setSection('watch');
@@ -408,8 +455,7 @@ async function openEpisode(id) {
         feedContainer.innerHTML = '<div style="text-align:center; margin-top:50px;"></div>'; 
 
         const currentEp = await api(`/episodes/${id}`) || {}; 
-        const feedData = await api('/episodes/feed?sort=trending&limit=15') || {}; 
-        let episodes = feedData.episodes || []; 
+        let episodes = preloadedEpisodes || ((await api('/episodes/feed?sort=trending&limit=15') || {}).episodes || []);
         episodes = episodes.filter(ep => ep._id !== id); 
         if (currentEp._id) episodes.unshift(currentEp); 
         
@@ -417,7 +463,7 @@ async function openEpisode(id) {
         feedObserver.disconnect();
         feedContainer.innerHTML = ''; 
 
-        episodes.forEach(episode => { 
+        episodes.forEach((episode, index) => { 
             const actualMediaUrl = episode.mediaUrl || episode.videoUrl || episode.hlsUrl || ''; 
             
             const card = document.createElement('div'); 
@@ -436,7 +482,7 @@ async function openEpisode(id) {
                     <div style="display:flex; flex-direction:column; gap:12px; width: 85%; max-width: 300px;">
                         
                         <!-- ROCKET SLOTH REWARDED BUTTON -->
-                        <button type="button" id="waterfall-ad-btn-${episode._id}" data-action="waterfall-ad-unlock" data-episode-id="${episode._id}" class="button button-accent" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:bold; font-size:15px; padding:12px; border-radius:8px;">
+                        <button type="button" id="waterfall-ad-btn-${episode._id}" data-rs-rewarded data-action="waterfall-ad-unlock" data-episode-id="${episode._id}" class="button button-accent" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:bold; font-size:15px; padding:12px; border-radius:8px;">
                             <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> 
                             Watch Ad to Unlock
                         </button>
@@ -464,7 +510,7 @@ async function openEpisode(id) {
                 : `<div class="follow-badge-icon" style="position: absolute; bottom: 0; right: 0; background: #d4a017; color: #111; width: 14px; height: 14px; border-radius: 50%; font-size: 14px; line-height: 14px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid #111;">+</div>`;
 
             card.innerHTML = `
-                <video poster="${image(episode.thumbnailUrl || episode.seriesId?.coverImage)}" loop playsinline ${episode.hasAccess ? 'controls' : ''}></video> 
+                <video poster="${image(episode.thumbnailUrl || episode.seriesId?.coverImage)}" preload="${index <= 1 ? 'auto' : 'none'}" loop playsinline ${episode.hasAccess ? 'controls' : ''}></video> 
                 ${lockScreen} 
                 <div class="feed-overlay"> 
                     <h3 style="margin:0; font-size:18px; font-weight:700;">${esc(episode.title)}</h3> 
@@ -499,19 +545,11 @@ async function openEpisode(id) {
                 </div>`; 
             
             const videoEl = card.querySelector('video'); 
-            
-            if (actualMediaUrl.includes('.m3u8')) {
-                if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
-                    videoEl.src = actualMediaUrl; 
-                } else if (window.Hls && window.Hls.isSupported()) {
-                    const hls = new window.Hls();
-                    hls.loadSource(actualMediaUrl);
-                    hls.attachMedia(videoEl);
-                } else {
-                    videoEl.src = actualMediaUrl; 
-                }
-            } else {
-                videoEl.src = actualMediaUrl;
+            videoEl.dataset.mediaUrl = actualMediaUrl;
+
+            // Only initialize streams for the first two cards immediately
+            if (index <= 1) {
+                attachVideoSource(videoEl);
             }
 
             let hasTrackedView = false;
@@ -628,14 +666,17 @@ async function unlockEpisode() {
             const videoEl = lockScreen.parentElement.querySelector('video'); 
             if (videoEl) { 
                 videoEl.setAttribute('controls', 'true'); 
-                videoEl.play().catch(e => console.error("Playback blocked:", e)); 
+                safePlay(videoEl); 
             } 
         } 
         toast('✨ Episode unlocked! Enjoy the story!', 'success'); 
     } catch (error) { toast(error.message, 'error'); }
 }
 
-async function loadComments(id) { 
+let lastCommentsEpisodeId = null;
+async function loadComments(id, force = false) { 
+    if (!id || (!force && lastCommentsEpisodeId === id)) return;
+    lastCommentsEpisodeId = id;
     try { 
         const result = await api(`/comments/episode/${id}?limit=50`) || {}; 
         const render = comment => `<article class="comment"><span class="comment-meta">${esc(comment.userId?.username || 'Story lover')}</span><p>${esc(comment.text)}</p><button class="text-button" data-reply-comment="${esc(comment._id)}">Reply</button>${comment.replies?.length ? `<div class="comment-replies">${comment.replies.map(render).join('')}</div>` : ''}</article>`; 
@@ -649,7 +690,10 @@ async function loadComments(id) {
             input.disabled = false; 
             submit.disabled = false; 
         }
-    } catch (error) { toast(error.message, 'error'); } 
+    } catch (error) { 
+        lastCommentsEpisodeId = null;
+        toast(error.message, 'error'); 
+    } 
 } 
 
 async function loadWallet() { 
@@ -798,7 +842,7 @@ async function handleCreatorSubmit(event) {
         });                                       
         
         toast('Application submitted for review!', 'success'); 
-        await loadCreator(); // Reload UI to show Pending state
+        await loadCreator();
     } catch (error) { 
         toast(error.message, 'error'); 
     } finally { 
@@ -817,10 +861,8 @@ async function loadCreator() {
         
         if (!dashboard || !onboarding || !pending) return;
 
-        // Fetch the creator profile
         const creator = await api('/creators/me/profile'); 
         
-        // 1. REJECTED STATE
         if (creator && creator.applicationStatus === 'REJECTED') {
             dashboard.classList.add('hidden');
             pending.classList.add('hidden');
@@ -830,7 +872,6 @@ async function loadCreator() {
             return;
         }
 
-        // 2. PENDING STATE
         if (creator && creator.applicationStatus === 'PENDING') {
             dashboard.classList.add('hidden');
             onboarding.classList.add('hidden');
@@ -838,13 +879,11 @@ async function loadCreator() {
             return; 
         }
 
-        // 3. APPROVED STATE
         if (creator && (creator.applicationStatus === 'APPROVED' || creator.isVerified === true)) {
             onboarding.classList.add('hidden');
             pending.classList.add('hidden');
             dashboard.classList.remove('hidden');
 
-            // Beautiful Welcome Message Overlay
             if (!sessionStorage.getItem('creatorWelcomeSeen')) {
                 let welcomeScreen = $('#creator-welcome-screen');
                 if (!welcomeScreen) {
@@ -886,7 +925,6 @@ async function loadCreator() {
             }
         }
     } catch (error) { 
-        // 4. NEW USER STATE (Throws 404 because no creator profile exists yet)
         const dashboard = $('#creator-dashboard');
         const onboarding = $('#creator-onboarding');
         const pending = $('#creator-pending');
@@ -1641,8 +1679,8 @@ document.addEventListener('click', async event => {
 
         const tab = event.target.closest('[data-profile-tab]');
         if (tab) { 
-            $$('.profile-tab').forEach(item => item.classList.toggle('active', item === tab));$$
-('.profile-panel').forEach(panel => panel.classList.toggle('hidden', panel.id !== `profile-panel-${tab.dataset.profileTab}`)); 
+            $$('.profile-tab').forEach(item => item.classList.toggle('active', item === tab));
+            $$('.profile-panel').forEach(panel => panel.classList.toggle('hidden', panel.id !== `profile-panel-${tab.dataset.profileTab}`)); 
         }
 
         const packageButton = event.target.closest('[data-package]');
@@ -1705,7 +1743,7 @@ document.addEventListener('rs:rewarded', async (event) => {
                 const videoEl = lockUI.parentElement?.querySelector('video');
                 if (videoEl) {
                     videoEl.setAttribute('controls', 'true');
-                    videoEl.play().catch(e => console.log("Autoplay blocked:", e));
+                    safePlay(videoEl);
                 }
             }
         } catch (error) {
@@ -1786,7 +1824,7 @@ if (commentForm) {
         try { 
             await api('/comments/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ episodeId: state.currentEpisode._id, text: input.value.trim() }) }); 
             input.value = ''; 
-            await loadComments(state.currentEpisode._id); 
+            await loadComments(state.currentEpisode._id, true); 
             toast('Comment posted', 'success'); 
         } catch (error) { 
             toast(error.message, 'error'); 
@@ -1856,7 +1894,10 @@ async function boot() {
         }
 
         ensureClassificationControls(); 
-        await loadDiscover().catch(e => console.warn(e)); 
+        const initialSection = location.hash.slice(1) || 'discover';
+        if (initialSection === 'discover') {
+            await loadDiscover().catch(e => console.warn(e)); 
+        }
         refreshNotificationBadge().catch(e => console.warn(e)); 
         setupLazyLoading(); 
         return true; 
