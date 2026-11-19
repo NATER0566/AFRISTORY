@@ -5,19 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#111111">
   <title>AfroStory | Watch something real</title>
-  
+  <link rel="icon" href="data:,">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>you
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
-  
+
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script src="https://rocketsloth.ai/rs.js" data-rs-key="pk_9ab422697b631ca0acdede0e36213ee1"></script>
 
-
-
-<script src="https://rocketsloth.ai/rs.js" data-rs-key="pk_9ab422697b631ca0acdede0e36213ee1"></script>
-  <!-- Webpushr tracking code --> 
+  <!-- Webpushr tracking code -->
   <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js"; fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk')); webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4GZnLNpMUBg35mzdNgBSOcMQ4YlZaZ0SY' });</script>
 
   <!-- Google AdSense -->
@@ -37,10 +36,10 @@
     .history-row { border: 0; color: inherit; cursor: pointer; text-align: left; width: 100%; }
     .notification-unread { border-left: 3px solid #d4a017; }
     .comment-replies { border-left: 1px solid #343434; margin: 12px 0 0 18px; padding-left: 14px; }
-    
+
     /* Empty States */
     .empty-state { text-align: center; padding: 40px 20px; color: #888; font-size: 14px; border: 1px dashed #333; border-radius: 12px; margin-top: 20px; }
-    
+
     .toast-region { position: fixed !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important; z-index: 800 !important; display: flex !important; flex-direction: column !important; align-items: center !important; gap: 16px !important; pointer-events: none !important; width: 100% !important; padding: 20px !important; box-sizing: border-box !important; }
     .toast { pointer-events: auto !important; align-items: center; background: linear-gradient(135deg, #242424, #2d2d2d); border: 3px solid #343434; border-radius: 16px; color: #f5f5f5; display: flex; font-size: 19px !important; font-weight: 700; gap: 18px !important; width: 100%; max-width: 480px !important; padding: 28px 36px !important; position: relative; word-wrap: break-word; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.95) !important; animation: popInToast 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important; justify-content: center !important; text-align: center !important; }
     .toast.success { border-color: #76a86b; background: linear-gradient(135deg, #2b3d2b, #1a2a1a); box-shadow: 0 0 40px rgba(118, 168, 107, 0.5), inset 0 0 20px rgba(118, 168, 107, 0.1) !important; animation: popInToast 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), pulseGlow 2s ease-in-out infinite !important; }
@@ -49,16 +48,16 @@
     .toast.success .toast-icon::before { content: '✓'; color: #76a86b; font-size: 28px !important; }
     .toast.error .toast-icon::before { content: '✕'; color: #e67e22; font-size: 28px !important; }
     .toast-message { flex: 1; letter-spacing: 0.3px; line-height: 1.4; }
-    
+
     @keyframes popInToast { from { opacity: 0; transform: scale(0.8) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
     @keyframes fadeOutToast { to { opacity: 0; transform: scale(0.9) translateY(-20px); } }
     @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 10px rgba(118, 168, 107, 0.3); } 50% { box-shadow: 0 0 35px rgba(118, 168, 107, 0.7); } }
-    
+
     .modal-root { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; background: rgba(0,0,0,0.85) !important; z-index: 700 !important; display: flex !important; align-items: flex-start !important; justify-content: center !important; padding: 90px 20px 130px 20px !important; overflow-y: auto !important; backdrop-filter: blur(5px); }
     .modal-root.hidden { display: none !important; }
     .modal { background: #111 !important; border: 1px solid #333 !important; border-radius: 16px !important; width: 100% !important; max-width: 500px !important; margin: auto !important; flex-shrink: 0 !important; box-shadow: 0 20px 50px rgba(0,0,0,0.5) !important; padding: 24px !important; margin-top: 40px !important; margin-bottom: 80px !important; position: relative !important; z-index: 701 !important; }
     .modal-header h2 { font-size: 22px !important; margin: 0 0 16px !important; }
-    
+
     /* ==============================================================
        HEADER PROFILE PICTURE & VISIBLE LIVE GREEN DOT
     ============================================================== */
@@ -68,36 +67,33 @@
     .notification-button:hover { border-color: #d4a017; transform: translateY(-1px); }
     .header-icon { font-size: 19px; line-height: 1; }
     .notification-button .notification-badge { position: absolute; right: -4px; top: -3px; background: #d4a017; color: #111; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: bold; }
-    
-    /* Proper size button without overflow cutting off dot */
-    .header-profile-btn { 
-      display: flex !important; align-items: center !important; justify-content: center !important; background: transparent !important; 
-      border: none !important; padding: 0 !important; margin: 0 !important; cursor: pointer !important; 
-      width: 50px !important; height: 50px !important; min-width: 50px !important; min-height: 50px !important; 
+
+    .header-profile-btn {
+      display: flex !important; align-items: center !important; justify-content: center !important; background: transparent !important;
+      border: none !important; padding: 0 !important; margin: 0 !important; cursor: pointer !important;
+      width: 50px !important; height: 50px !important; min-width: 50px !important; min-height: 50px !important;
       max-width: 50px !important; max-height: 50px !important; flex-shrink: 0 !important; position: relative !important;
       transition: transform .2s ease !important;
     }
     .header-profile-btn:hover { transform: translateY(-2px) scale(1.02); }
-    
+
     .header-avatar-container { position: relative !important; width: 46px !important; height: 46px !important; display: flex !important; align-items: center !important; justify-content: center !important; border-radius: 50% !important; }
     .header-avatar-container::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, #d4a017, #76a86b, #d4a017, transparent 60%); animation: spinAvatarBorder 3s linear infinite; z-index: 1; }
     .header-avatar-container::after { content: ''; position: absolute; inset: 2px; background: #111; border-radius: 50%; z-index: 2; }
     @keyframes spinAvatarBorder { 100% { transform: rotate(360deg); } }
-    
-    /* Image containment: image cannot blow up outside circular boundary */
-    .header-avatar-img, #user-avatar { 
-      width: 40px !important; height: 40px !important; max-width: 40px !important; max-height: 40px !important; 
-      border-radius: 50% !important; background: #d4a017 !important; color: #111 !important; font-family: Georgia, serif !important; 
-      font-weight: 700 !important; font-size: 19px !important; display: flex !important; align-items: center !important; 
-      justify-content: center !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; 
-      border: none !important; position: relative !important; z-index: 3 !important; 
+
+    .header-avatar-img, #user-avatar {
+      width: 40px !important; height: 40px !important; max-width: 40px !important; max-height: 40px !important;
+      border-radius: 50% !important; background: #d4a017 !important; color: #111 !important; font-family: Georgia, serif !important;
+      font-weight: 700 !important; font-size: 19px !important; display: flex !important; align-items: center !important;
+      justify-content: center !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important;
+      border: none !important; position: relative !important; z-index: 3 !important;
     }
     .header-avatar-img img, #user-avatar img { width: 100% !important; height: 100% !important; max-width: 100% !important; max-height: 100% !important; object-fit: cover !important; border-radius: 50% !important; display: block !important; }
-    
-    /* Cleanly placed green online indicator outside cropped image circle */
-    .header-online-dot { 
-      position: absolute !important; bottom: 0px !important; right: 0px !important; width: 13px !important; height: 13px !important; 
-      background-color: #2ecc71 !important; border: 2.5px solid #111 !important; border-radius: 50% !important; z-index: 10 !important; display: block !important; 
+
+    .header-online-dot {
+      position: absolute !important; bottom: 0px !important; right: 0px !important; width: 13px !important; height: 13px !important;
+      background-color: #2ecc71 !important; border: 2.5px solid #111 !important; border-radius: 50% !important; z-index: 10 !important; display: block !important;
     }
     .profile-initial { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
 
@@ -105,13 +101,12 @@
        WATCH SECTION: ZERO OVERLAP (NEVER OVERPOWERS OTHER SECTIONS)
     ============================================================== */
     #section-watch {
-      position: fixed !important; 
+      position: fixed !important;
       background-color: #000;
       padding: 0 !important;
       margin: 0 !important;
     }
 
-    /* Ironclad isolation: when watch has .hidden, it is 100% removed and cannot cover anything */
     #section-watch.hidden,
     .app-section.hidden {
       display: none !important;
@@ -120,7 +115,6 @@
       z-index: -999 !important;
     }
 
-    /* Floating Watch Logo on Mobile */
     .watch-mobile-logo {
       position: absolute;
       top: 18px;
@@ -146,7 +140,6 @@
       text-shadow: none;
     }
 
-    /* Floating Desktop Controls */
     .watch-home-btn {
       position: absolute;
       top: 24px;
@@ -193,9 +186,6 @@
     }
     .watch-next-btn:active { transform: scale(0.95); }
 
-    /* ==============================================================
-       DESKTOP FULL-SCREEN WATCH VIEW (NO TINY CARDS, NO CROPPING)
-    ============================================================== */
     @media(min-width: 801px) {
       #section-watch:not(.hidden) {
         display: block !important;
@@ -239,15 +229,12 @@
       }
     }
 
-    /* ==============================================================
-       MOBILE WATCH VIEW: EXACT FIT, NO SIDES CUT OFF
-    ============================================================== */
     @media(max-width: 800px) {
       #section-watch:not(.hidden) {
         display: block !important;
       }
       #section-watch {
-        top: 0 !important; 
+        top: 0 !important;
         left: 0 !important;
         width: 100vw !important;
         height: calc(100vh - 80px) !important;
@@ -275,11 +262,10 @@
       }
     }
 
-    /* VIDEO ENGINE: CONTAIN GUARANTEES ABSOLUTELY NO PART IS CROPPED */
     .feed-video-card {
       height: 100%;
       width: 100%;
-      scroll-snap-align: start; 
+      scroll-snap-align: start;
       position: relative;
       display: flex;
       justify-content: center;
@@ -291,8 +277,7 @@
     .feed-video-card video {
       width: 100%;
       height: 100%;
-      /* Exact behavior: no clipping top, bottom, left or right regardless of video aspect */
-      object-fit: contain !important; 
+      object-fit: contain !important;
       background-color: #000;
       outline: none;
       display: block;
@@ -371,7 +356,7 @@
       height: 100% !important;
       width: 100% !important;
       margin: 0 !important;
-      color: transparent !important; 
+      color: transparent !important;
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
       background: #000 !important;
@@ -423,12 +408,12 @@
       .nav-item.active { color: #d4a017; }
       .nav-item.active .nav-icon { transform: translateY(-2px); text-shadow: 0 0 15px rgba(212,160,23,0.8); }
       .sidebar-bottom { display: none; }
-      
-      .main-content { padding-bottom: 130px !important; } 
+
+      .main-content { padding-bottom: 130px !important; }
       .app-section:not(#section-watch) { padding-bottom: 130px !important; }
       .profile-panel { padding-bottom: 130px !important; }
       .bottom-sheet { padding-bottom: 100px !important; }
-      
+
       .rewards-hero { align-items: flex-start; display: block; padding: 22px; }
       .rewards-balance { border-left: 0; border-top: 1px solid #6b5122; margin-top: 22px; padding: 16px 0 0; }
       .rewards-grid { grid-template-columns: 1fr; }
@@ -439,14 +424,14 @@
       .discover-filters label { flex: 1; min-width: 130px; }
       .toast { font-size: 16px !important; padding: 22px 24px !important; max-width: calc(100vw - 30px) !important; }
     }
-    
-    .profile-cover{background:linear-gradient(120deg,#2b2114,#171717 52%,#222);border:1px solid #343434;min-height:230px;padding:28px 32px;position:relative;overflow:hidden}.profile-cover[style]{background-position:center;background-size:cover}.profile-header{align-items:flex-end;display:flex;gap:22px;min-height:174px}.profile-avatar{align-items:center;background:#d4a017;color:#111;display:flex;flex:0 0 104px;font-family:Georgia,serif;font-size:48px;height:104px;justify-content:center;overflow:hidden;border-radius:50%;}.profile-avatar img{height:100%;object-fit:cover;width:100%}.profile-identity{max-width:650px}.profile-identity h1{font-size:clamp(30px,4vw,52px)}.profile-handle{margin:4px 0 10px}.profile-bio{color:#ddd;margin:0}.profile-location{color:#d4a017;font-size:13px;margin-top:10px}.profile-actions{display:flex;gap:10px;margin-left:auto}.profile-tabs{border-bottom:1px solid #343434;display:flex;gap:24px;overflow:auto;padding:0 4px}.profile-tab{background:none;border:0;border-bottom:2px solid transparent;color:#999;padding:16px 4px;white-space:nowrap}.profile-tab.active,.profile-tab:hover{border-color:#d4a017;color:#f5f5f5}.profile-panel{padding-top:30px}.profile-summary-grid{display:grid;gap:30px;grid-template-columns:1fr 1fr}.profile-section-heading{align-items:end;display:flex;justify-content:space-between;margin:28px 0 18px}.profile-section-heading h2{font-size:24px}.profile-list{display:grid;gap:10px}.profile-list-row{align-items:center;background:#1b1b1b;border:1px solid #343434;display:flex;gap:14px;padding:12px}.profile-list-row strong{display:block}.profile-list-row p{color:#999;font-size:13px;margin:2px 0 0}.profile-list-row .progress{background:#343434;height:4px;margin-top:8px;width:180px}.profile-list-row .progress i{background:#d4a017;display:block;height:100%}.profile-story-grid{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-story-grid .series-card{min-width:0}.interest-list{display:flex;flex-wrap:wrap;gap:8px}.interest-chip{background:#242424;border:1px solid #4a4a4a;color:#f5f5f5;padding:7px 11px}.profile-about{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr));max-width:680px}.profile-about div{background:#1b1b1b;border-bottom:1px solid #343434;padding:14px}.profile-about span{color:#999;display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase}.profile-edit-panel{border-top:1px solid #343434;margin-top:30px;padding-top:24px}.profile-edit-grid{display:grid;gap:14px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-form label{color:#bbb;display:grid;font-size:12px;gap:6px}.profile-form input,.profile-form textarea,.profile-form select{background:#111;border:1px solid #444;color:#f5f5f5;padding:11px}.profile-form select[multiple]{min-height:130px}.profile-privacy{display:flex;flex-wrap:wrap;gap:18px;margin:16px 0}.profile-privacy label{display:flex;display:flex;gap:8px}.profile-empty{border:1px dashed #444;color:#999;padding:24px}.profile-empty button{margin-top:12px}@media(max-width:700px){.profile-cover{padding:22px 18px}.profile-header{align-items:flex-start;flex-wrap:wrap}.profile-avatar{flex-basis:78px;font-size:36px;height:78px}.profile-actions{margin-left:0;width:100%}.profile-actions .button{flex:1}.profile-summary-grid,.profile-about,.profile-edit-grid{grid-template-columns:1fr}.profile-tabs{gap:16px}.profile-story-grid{grid-template-columns:1fr 1fr}}
-    
+
+    .profile-cover{background:linear-gradient(120deg,#2b2114,#171717 52%,#222);border:1px solid #343434;min-height:230px;padding:28px 32px;position:relative;overflow:hidden}.profile-cover[style]{background-position:center;background-size:cover}.profile-header{align-items:flex-end;display:flex;gap:22px;min-height:174px}.profile-avatar{align-items:center;background:#d4a017;color:#111;display:flex;flex:0 0 104px;font-family:Georgia,serif;font-size:48px;height:104px;justify-content:center;overflow:hidden;border-radius:50%;}.profile-avatar img{height:100%;object-fit:cover;width:100%}.profile-identity{max-width:650px}.profile-identity h1{font-size:clamp(30px,4vw,52px)}.profile-handle{margin:4px 0 10px}.profile-bio{color:#ddd;margin:0}.profile-location{color:#d4a017;font-size:13px;margin-top:10px}.profile-actions{display:flex;gap:10px;margin-left:auto}.profile-tabs{border-bottom:1px solid #343434;display:flex;gap:24px;overflow:auto;padding:0 4px}.profile-tab{background:none;border:0;border-bottom:2px solid transparent;color:#999;padding:16px 4px;white-space:nowrap}.profile-tab.active,.profile-tab:hover{border-color:#d4a017;color:#f5f5f5}.profile-panel{padding-top:30px}.profile-summary-grid{display:grid;gap:30px;grid-template-columns:1fr 1fr}.profile-section-heading{align-items:end;display:flex;justify-content:space-between;margin:28px 0 18px}.profile-section-heading h2{font-size:24px}.profile-list{display:grid;gap:10px}.profile-list-row{align-items:center;background:#1b1b1b;border:1px solid #343434;display:flex;gap:14px;padding:12px}.profile-list-row strong{display:block}.profile-list-row p{color:#999;font-size:13px;margin:2px 0 0}.profile-list-row .progress{background:#343434;height:4px;margin-top:8px;width:180px}.profile-list-row .progress i{background:#d4a017;display:block;height:100%}.profile-story-grid{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-story-grid .series-card{min-width:0}.interest-list{display:flex;flex-wrap:wrap;gap:8px}.interest-chip{background:#242424;border:1px solid #4a4a4a;color:#f5f5f5;padding:7px 11px}.profile-about{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr));max-width:680px}.profile-about div{background:#1b1b1b;border-bottom:1px solid #343434;padding:14px}.profile-about span{color:#999;display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase}.profile-edit-panel{border-top:1px solid #343434;margin-top:30px;padding-top:24px}.profile-edit-grid{display:grid;gap:14px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-form label{color:#bbb;display:grid;font-size:12px;gap:6px}.profile-form input,.profile-form textarea,.profile-form select{background:#111;border:1px solid #444;color:#f5f5f5;padding:11px}.profile-form select[multiple]{min-height:130px}.profile-privacy{display:flex;flex-wrap:wrap;gap:18px;margin:16px 0}.profile-privacy label{display:flex;gap:8px}.profile-empty{border:1px dashed #444;color:#999;padding:24px}.profile-empty button{margin-top:12px}@media(max-width:700px){.profile-cover{padding:22px 18px}.profile-header{align-items:flex-start;flex-wrap:wrap}.profile-avatar{flex-basis:78px;font-size:36px;height:78px}.profile-actions{margin-left:0;width:100%}.profile-actions .button{flex:1}.profile-summary-grid,.profile-about,.profile-edit-grid{grid-template-columns:1fr}.profile-tabs{gap:16px}.profile-story-grid{grid-template-columns:1fr 1fr}}
+
     /* ==============================================================
-       ROCKET SLOTH ADS - STRICT CONTAINMENT FIX
+       ROCKET SLOTH ADS - SECTION-SCOPED CONTAINMENT
     ============================================================== */
     [data-rs-ad] {
-      margin: 40px auto !important;
+      margin: 36px auto !important;
       padding: 10px !important;
       display: flex !important;
       justify-content: center !important;
@@ -457,10 +442,15 @@
       overflow: hidden !important;
       border-radius: 12px !important;
       background: rgba(255, 255, 255, 0.02) !important;
-      contain: content !important; /* Stops the ad from breaking the layout */
+      contain: content !important;
     }
-    
-    /* Forces third-party iframes/videos to shrink and stay inside the box */
+
+    [data-rs-ad]:empty {
+      display: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
     [data-rs-ad] iframe,
     [data-rs-ad] video,
     [data-rs-ad] embed,
@@ -479,7 +469,7 @@
       <button class="icon-button notification-button" data-action="notifications" aria-label="Open notifications" title="Notifications">
         <span class="header-icon">&#128276;</span><i id="notification-badge" class="notification-badge hidden">0</i>
       </button>
-      
+
       <button class="header-profile-btn" data-action="profile" aria-label="Open your profile" title="Profile">
         <div class="header-avatar-container">
             <span id="user-avatar" class="header-avatar-img" aria-hidden="true"><span id="user-initial" class="profile-initial">A</span></span>
@@ -498,13 +488,13 @@
         <button class="nav-item" data-section="wallet" aria-label="Wallet"><i class="nav-icon" aria-hidden="true">◈</i><span>Wallet</span></button>
         <button class="nav-item" data-section="creator" aria-label="Creator Studio"><i class="nav-icon" aria-hidden="true">✦</i><span>Studio</span></button>
         <button class="nav-item mobile-only" id="mobile-more-btn" type="button" aria-label="More Menu"><i class="nav-icon" aria-hidden="true">⋯</i><span>More</span></button>
-        
+
         <button class="nav-item desktop-only" data-section="trending" aria-label="Trending"><i class="nav-icon" aria-hidden="true">↗</i><span>Trending</span></button>
         <button class="nav-item desktop-only" data-section="continue" aria-label="Continue Watching"><i class="nav-icon" aria-hidden="true">◷</i><span>Continue</span></button>
         <button class="nav-item desktop-only" data-section="favorites" aria-label="Favorites"><i class="nav-icon" aria-hidden="true">♡</i><span>Favorites</span></button>
         <button class="nav-item desktop-only" data-section="history" aria-label="Watch History"><i class="nav-icon" aria-hidden="true">◴</i><span>History</span></button>
         <button class="nav-item desktop-only" data-section="rewards" aria-label="Rewards"><i class="nav-icon" aria-hidden="true">✧</i><span>Rewards</span></button>
-        
+
         <button id="desktop-admin-btn" class="nav-item desktop-only" style="display: none;" onclick="window.location.href='/admin.html'" aria-label="Admin Panel"><i class="nav-icon" aria-hidden="true">▦</i><span>Admin</span></button>
       </nav>
       <div class="sidebar-bottom">
@@ -529,17 +519,15 @@
         <div id="series-grid" class="content-grid"></div>
         <div class="section-heading compact-heading"><div><p class="eyebrow">VOICES TO KNOW</p><h2>Top creators</h2></div></div>
         <div id="creator-grid" class="creator-grid"></div>
+        <div data-rs-ad></div>
       </section>
-      
-      <!-- LOCKED WATCH SECTION -->
+
+      <!-- LOCKED WATCH SECTION (NO DISPLAY ADS) -->
       <section id="section-watch" class="app-section hidden">
-        
-        <!-- Minimal Floating Logo for Watch view -->
         <div class="watch-mobile-logo mobile-only">
            <span class="brand-mark">A</span><span>AFRO<span>STORY</span></span>
         </div>
 
-        <!-- Floating Home & Next Navigation on Desktop -->
         <button class="watch-home-btn desktop-only" data-section="discover" aria-label="Back to Home" title="Back to Home">
           <span>← Back to Home</span>
         </button>
@@ -581,6 +569,7 @@
         <div id="transactions-list" class="data-list">
            <div class="empty-state hidden" id="empty-transactions"><p>No transactions yet.</p></div>
         </div>
+        <div data-rs-ad></div>
       </section>
 
       <!-- REWARDS SECTION -->
@@ -596,8 +585,9 @@
         <div id="rewards-grid" class="rewards-grid"></div>
         <div class="section-heading compact-heading"><div><p class="eyebrow">REWARD HISTORY</p><h2>Recent activity</h2></div></div>
         <div id="rewards-history" class="data-list"></div>
+        <div data-rs-ad></div>
       </section>
-      
+
       <!-- CREATOR DASHBOARD SECTION -->
       <section id="section-creator" class="app-section hidden">
         <div id="creator-onboarding" class="hidden" style="text-align:center; max-width:400px; margin:100px auto;">
@@ -618,11 +608,13 @@
           <div class="section-heading compact-heading"><h2>Your series</h2><button class="button button-accent" data-action="open-upload">Upload episode</button></div>
           <div id="my-series-grid" class="content-grid"></div>
         </div>
+        <div data-rs-ad></div>
       </section>
 
       <section id="section-history" class="app-section hidden">
         <div class="section-heading"><div><p class="eyebrow">YOUR JOURNEY</p><h1>Watch history</h1></div><button class="button button-quiet" data-section="discover">Discover stories</button></div>
         <div id="history-list" class="data-list"><div class="empty-state hidden" id="empty-history"><p>No watch history yet.</p></div></div>
+        <div data-rs-ad></div>
       </section>
 
       <section id="section-profile" class="app-section hidden">
@@ -685,27 +677,32 @@
             <button class="button button-primary" type="submit">Save profile</button>
           </form>
         </div>
+        <div data-rs-ad></div>
       </section>
 
       <section id="section-search" class="app-section hidden">
         <div class="section-heading"><div><p class="eyebrow">EXPLORE THE LIBRARY</p><h1>Search</h1></div></div>
         <form id="library-search-form" class="search-box library-search"><span>⌕</span><input id="library-search-input" type="search" placeholder="Search series and creators" aria-label="Search the library"><button type="submit">Search</button></form>
         <div id="search-results" class="content-grid"></div>
+        <div data-rs-ad></div>
       </section>
 
       <section id="section-trending" class="app-section hidden">
         <div class="section-heading"><div><p class="eyebrow">WHAT PEOPLE ARE WATCHING</p><h1>Trending</h1></div></div>
         <div id="trending-list" class="content-grid"><div class="empty-state hidden" id="empty-trending"><p>No trending stories right now.</p></div></div>
+        <div data-rs-ad></div>
       </section>
 
       <section id="section-continue" class="app-section hidden">
         <div class="section-heading"><div><p class="eyebrow">PICK UP WHERE YOU LEFT OFF</p><h1>Continue watching</h1></div></div>
         <div id="continue-list" class="data-list"><div class="empty-state hidden" id="empty-continue"><p>No stories to continue.</p></div></div>
+        <div data-rs-ad></div>
       </section>
 
       <section id="section-favorites" class="app-section hidden">
         <div class="section-heading"><div><p class="eyebrow">YOUR LIBRARY</p><h1>Favorites</h1></div></div>
         <div id="favorites-list" class="content-grid"><div class="empty-state hidden" id="empty-favorites"><p>No saved favorites yet.</p></div></div>
+        <div data-rs-ad></div>
       </section>
 
       <section id="section-settings" class="app-section hidden">
@@ -715,16 +712,14 @@
           <label class="checkbox-label"><input id="settings-notifications" name="notifications" type="checkbox" checked> Receive notifications</label>
           <button class="button button-primary" type="submit">Save settings</button>
         </form>
+        <div data-rs-ad></div>
       </section>
-
-      <!-- GLOBAL NEAT AD CONTAINER -->
-      <div data-rs-ad></div>
     </main>
   </div>
-  
+
   <button id="save-current" class="button button-accent save-current hidden" data-action="save-current" type="button">Save to favorites</button>
-  
-  <!-- THE NEW MOBILE "MORE" BOTTOM SHEET -->
+
+  <!-- MOBILE "MORE" BOTTOM SHEET -->
   <div id="mobile-more-sheet" class="bottom-sheet-overlay hidden">
     <div class="bottom-sheet">
       <div class="sheet-handle"></div>
@@ -736,7 +731,7 @@
         <button class="sheet-item" data-section="favorites" aria-label="Favorites"><i>♡</i><span>Favorite</span></button>
         <button class="sheet-item" data-section="history" aria-label="History"><i>◴</i><span>History</span></button>
         <button class="sheet-item" data-section="settings" aria-label="Settings"><i>⚙</i><span>Settings</span></button>
-        
+
         <button id="mobile-admin-btn" class="sheet-item" style="display: none; grid-column: 1 / -1; border: 1px solid #d4a017; background: rgba(212, 160, 23, 0.05); margin-top: 5px;" onclick="window.location.href='/admin.html'" aria-label="Admin Panel">
           <i style="color: #d4a017;">▦</i><span style="font-weight: 700; color: #d4a017;">Admin Panel</span>
         </button>
@@ -791,10 +786,10 @@
 
   <div id="modal-root" class="modal-root hidden"></div>
   <div id="toast-region" class="toast-region" aria-live="polite"></div>
-  
+
   <!-- Add version parameters to break browser cache -->
-  <script type="module" src="/js/ads.js?v=4"></script>
-  <script type="module" src="/js/main.js?v=4"></script>
-     
+  <script type="module" src="/js/ads.js?v=5"></script>
+  <script type="module" src="/js/main.js?v=5"></script>
+
 </body>
 </html>
