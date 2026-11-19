@@ -28,11 +28,15 @@
 
   <style>
     /* ==============================================================
-       1. STANDARDIZED Z-INDEX HIERARCHY
+       1. STANDARDIZED Z-INDEX HIERARCHY & CSS VARIABLES
        Main Content / Ads: 10 | Save Button: 400 | Sidebar: 450
        Mobile Watch: 460 | Desktop Watch: 520 | Header/Topbar: 560
        Bottom Sheet: 600 | Comments Sheet: 650 | Modals: 700 | Toasts: 9999
     ============================================================== */
+
+    :root {
+      --sidebar-safe-left: 264px;
+    }
 
     *, *::before, *::after { box-sizing: border-box; }
 
@@ -172,7 +176,7 @@
     }
 
     /* ==============================================================
-       5. WATCH SECTION & FULL-BLEED VIDEO STAGE
+       5. WATCH SECTION & AUTO-PLAY VIDEO HOOK STAGE (NO COVER IMAGES)
     ============================================================== */
     #section-watch {
       position: fixed !important;
@@ -323,6 +327,7 @@
       overflow: hidden;
     }
 
+    /* Ensure live video renders directly without static cover images blocking the frame */
     .feed-video-card video {
       width: 100%;
       height: 100%;
@@ -330,6 +335,10 @@
       background-color: #000;
       outline: none;
       display: block;
+    }
+    .feed-video-card > img.feed-cover,
+    .feed-video-card > img.episode-poster {
+      display: none !important;
     }
 
     .feed-video-card::after {
@@ -496,7 +505,6 @@
       transform: translateY(-1px) !important;
     }
 
-    /* Status banner shown beneath the button while ad is loading */
     .rs-processing-note {
       margin-top: 14px;
       font-size: 12.5px;
@@ -573,8 +581,7 @@
         min-width: 0 !important;
         max-width: 100% !important;
         overflow-x: hidden !important;
-        padding-left: 32px !important;
-        padding-right: 32px !important;
+        padding: 28px 36px 140px 36px !important;
       }
     }
 
@@ -613,17 +620,17 @@
     .profile-cover{background:linear-gradient(120deg,#2b2114,#171717 52%,#222);border:1px solid #343434;min-height:230px;padding:28px 32px;position:relative;overflow:hidden}.profile-cover[style]{background-position:center;background-size:cover}.profile-header{align-items:flex-end;display:flex;gap:22px;min-height:174px}.profile-avatar{align-items:center;background:#d4a017;color:#111;display:flex;flex:0 0 104px;font-family:Georgia,serif;font-size:48px;height:104px;justify-content:center;overflow:hidden;border-radius:50%;}.profile-avatar img{height:100%;object-fit:cover;width:100%}.profile-identity{max-width:650px}.profile-identity h1{font-size:clamp(30px,4vw,52px)}.profile-handle{margin:4px 0 10px}.profile-bio{color:#ddd;margin:0}.profile-location{color:#d4a017;font-size:13px;margin-top:10px}.profile-actions{display:flex;gap:10px;margin-left:auto}.profile-tabs{border-bottom:1px solid #343434;display:flex;gap:24px;overflow:auto;padding:0 4px}.profile-tab{background:none;border:0;border-bottom:2px solid transparent;color:#999;padding:16px 4px;white-space:nowrap}.profile-tab.active,.profile-tab:hover{border-color:#d4a017;color:#f5f5f5}.profile-panel{padding-top:30px}.profile-summary-grid{display:grid;gap:30px;grid-template-columns:1fr 1fr}.profile-section-heading{align-items:end;display:flex;justify-content:space-between;margin:28px 0 18px}.profile-section-heading h2{font-size:24px}.profile-list{display:grid;gap:10px}.profile-list-row{align-items:center;background:#1b1b1b;border:1px solid #343434;display:flex;gap:14px;padding:12px}.profile-list-row strong{display:block}.profile-list-row p{color:#999;font-size:13px;margin:2px 0 0}.profile-list-row .progress{background:#343434;height:4px;margin-top:8px;width:180px}.profile-list-row .progress i{background:#d4a017;display:block;height:100%}.profile-story-grid{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-story-grid .series-card{min-width:0}.interest-list{display:flex;flex-wrap:wrap;gap:8px}.interest-chip{background:#242424;border:1px solid #4a4a4a;color:#f5f5f5;padding:7px 11px}.profile-about{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr));max-width:680px}.profile-about div{background:#1b1b1b;border-bottom:1px solid #343434;padding:14px}.profile-about span{color:#999;display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase}.profile-edit-panel{border-top:1px solid #343434;margin-top:30px;padding-top:24px}.profile-edit-grid{display:grid;gap:14px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-form label{color:#bbb;display:grid;font-size:12px;gap:6px}.profile-form input,.profile-form textarea,.profile-form select{background:#111;border:1px solid #444;color:#f5f5f5;padding:11px}.profile-form select[multiple]{min-height:130px}.profile-privacy{display:flex;flex-wrap:wrap;gap:18px;margin:16px 0}.profile-privacy label{display:flex;gap:8px}.profile-empty{border:1px dashed #444;color:#999;padding:24px}.profile-empty button{margin-top:12px}@media(max-width:700px){.profile-cover{padding:22px 18px}.profile-header{align-items:flex-start;flex-wrap:wrap}.profile-avatar{flex-basis:78px;font-size:36px;height:78px}.profile-actions{margin-left:0;width:100%}.profile-actions .button{flex:1}.profile-summary-grid,.profile-about,.profile-edit-grid{grid-template-columns:1fr}.profile-tabs{gap:16px}.profile-story-grid{grid-template-columns:1fr 1fr}}
 
     /* ==============================================================
-       9. ROCKET SLOTH ADS - CENTERED IN FEED, NEVER TOUCHING SIDEBAR
+       9. DESKTOP AD ISOLATION - NEVER TOUCHES SIDEBAR LINE
     ============================================================== */
     #global-ad-slot,
     .main-content [data-rs-ad] {
       margin: 40px auto 24px auto !important;
-      padding: 16px 24px !important;
+      padding: 16px 20px !important;
       display: flex !important;
       justify-content: center !important;
       align-items: center !important;
-      width: calc(100% - 32px) !important;
-      max-width: 900px !important;
+      width: 100% !important;
+      max-width: 820px !important;
       overflow: hidden !important;
       border-radius: 14px !important;
       border: 1px solid rgba(212, 160, 23, 0.14) !important;
@@ -650,20 +657,22 @@
       max-width: 100% !important;
     }
 
-    /* Keep any bottom anchor ad from touching the left sidebar on desktop */
+    /* Offset ANY fixed/sticky bottom ad player (Rocket Sloth, Open.Video, AdSense) away from the sidebar on desktop */
     @media (min-width: 801px) {
-      #global-ad-slot,
-      .main-content [data-rs-ad] {
-        width: calc(100% - 48px) !important;
-        max-width: 860px !important;
+      body > div[style*="fixed"],
+      body > iframe[style*="fixed"],
+      body > ins.adsbygoogle[data-anchor-status],
+      body > [id*="rs-"],
+      body > [class*="rs-"],
+      body > [id*="open-video"],
+      body > [class*="open-video"],
+      [data-rs-ad] > div[style*="fixed"] {
+        left: var(--sidebar-safe-left) !important;
+        right: 24px !important;
+        width: auto !important;
+        max-width: calc(100vw - var(--sidebar-safe-left) - 24px) !important;
         margin-left: auto !important;
         margin-right: auto !important;
-      }
-      body > div[style*="position: fixed"][style*="bottom"],
-      body > ins.adsbygoogle[data-anchor-status] {
-        left: 260px !important;
-        width: calc(100vw - 260px) !important;
-        max-width: calc(100vw - 260px) !important;
       }
     }
   </style>
@@ -957,8 +966,8 @@
         <label>Description<textarea name="description" maxlength="2000"></textarea></label>
         <label>Access<select name="access" required><option value="Ad">Ad-supported</option><option value="Premium">Premium</option></select></label>
         <label>Coin cost<input name="coinCost" type="number" min="1" value="10" required></label>
-        <label>Video<input name="video" type="file" accept="video/*" required></label>
-        <label>Thumbnail<input name="thumbnail" type="file" accept="image/*"></label>
+        <label>Video (auto-plays best scene as feed preview)<input name="video" type="file" accept="video/*" required></label>
+        <label>Hook preview start (seconds, optional)<input name="hookStart" type="number" min="0" value="0" placeholder="e.g. 12 — jumps straight to the most exciting scene"></label>
         <label class="checkbox-label"><input name="publish" type="checkbox" checked> Publish episode now</label>
         <button class="button button-primary" type="submit">Upload episode</button>
       </form>
@@ -993,12 +1002,56 @@
   <div id="modal-root" class="modal-root hidden"></div>
   <div id="toast-region" class="toast-region" aria-live="polite"></div>
 
-  <!-- Instant UI Bridge: Minimized Watch Header + Immediate Rewarded Ad Processing Lock -->
+  <!-- Instant UI Bridge: Sidebar Ad Boundary Guard + Minimized Watch Header + Rewarded Ad Lock -->
   <script>
     (function () {
       const watchSection = document.getElementById('section-watch');
+      const sidebarEl = document.querySelector('.sidebar');
 
-      // 1. Sync Watch Mode state so header minimizes cleanly across all browsers
+      // 1. Desktop Sidebar Boundary Guard: keeps ANY bottom/floating ad strictly away from the sidebar line
+      function enforceSidebarAdBoundary() {
+        if (window.innerWidth <= 800 || !sidebarEl) return;
+        const sidebarRect = sidebarEl.getBoundingClientRect();
+        if (!sidebarRect.width) return;
+
+        const safeLeft = Math.ceil(sidebarRect.right + 24);
+        const maxSafeWidth = Math.max(300, window.innerWidth - safeLeft - 24);
+        document.documentElement.style.setProperty('--sidebar-safe-left', safeLeft + 'px');
+
+        // Inspect any direct body children or ad containers positioned fixed/sticky at the bottom
+        document.querySelectorAll('body > div, body > iframe, body > ins, [data-rs-ad] div').forEach((el) => {
+          if (
+            el.classList.contains('topbar') ||
+            el.classList.contains('app-layout') ||
+            el.classList.contains('modal-root') ||
+            el.classList.contains('toast-region') ||
+            el.classList.contains('bottom-sheet-overlay') ||
+            el.id === 'save-current'
+          ) {
+            return;
+          }
+          const style = window.getComputedStyle(el);
+          if (style.position === 'fixed' || style.position === 'sticky') {
+            const rect = el.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0 && rect.left < safeLeft) {
+              el.style.setProperty('left', safeLeft + 'px', 'important');
+              el.style.setProperty('right', '24px', 'important');
+              el.style.setProperty('width', 'auto', 'important');
+              el.style.setProperty('max-width', maxSafeWidth + 'px', 'important');
+              el.style.setProperty('margin-left', 'auto', 'important');
+              el.style.setProperty('margin-right', 'auto', 'important');
+            }
+          }
+        });
+      }
+
+      enforceSidebarAdBoundary();
+      window.addEventListener('resize', enforceSidebarAdBoundary);
+      if (sidebarEl && typeof ResizeObserver !== 'undefined') {
+        new ResizeObserver(enforceSidebarAdBoundary).observe(sidebarEl);
+      }
+
+      // 2. Sync Watch Mode state so header minimizes cleanly across all browsers
       function syncWatchMode() {
         const isWatchOpen = watchSection && !watchSection.classList.contains('hidden');
         document.body.classList.toggle('watch-mode-active', Boolean(isWatchOpen));
@@ -1011,7 +1064,18 @@
         });
       }
 
-      // 2. Instant "Processing..." state & anti-scroll lock when clicking Watch Ad to Unlock
+      // 3. Auto-strip static posters on Watch feed videos so live video plays immediately
+      const feedEl = document.getElementById('tiktok-feed');
+      if (feedEl) {
+        new MutationObserver(function () {
+          feedEl.querySelectorAll('video[poster]').forEach((video) => {
+            video.removeAttribute('poster');
+            video.setAttribute('preload', 'auto');
+          });
+        }).observe(feedEl, { childList: true, subtree: true });
+      }
+
+      // 4. Instant "Processing..." state & anti-scroll lock when clicking Watch Ad to Unlock
       let activeAdTrigger = null;
       let processingResetTimer = null;
 
@@ -1033,7 +1097,6 @@
         const trigger = event.target.closest('[data-rs-rewarded]');
         if (!trigger) return;
 
-        // Block duplicate taps while ad is loading, without setting .disabled (so rs.js receives click)
         if (trigger.dataset.rsLoading === 'true') {
           event.stopImmediatePropagation();
           event.preventDefault();
@@ -1051,7 +1114,6 @@
         trigger.innerHTML = '<span class="btn-spinner"></span><span>Processing...</span>';
         document.body.classList.add('rs-ad-processing');
 
-        // Show clear feedback beneath the button so user knows to wait for popup
         const container = trigger.parentElement;
         if (container && !container.querySelector('.rs-processing-note')) {
           const note = document.createElement('div');
@@ -1060,13 +1122,13 @@
           container.appendChild(note);
         }
 
-        // Safety fallback if network fails to return an ad within 7 seconds
         clearTimeout(processingResetTimer);
         processingResetTimer = setTimeout(clearAdProcessingState, 7000);
       }, true);
 
-      // 3. Detect when Rocket Sloth injects its modal/popup into DOM and release scroll lock
+      // 5. Detect Rocket Sloth popups (release scroll lock) & re-check sidebar boundary on any injected ad node
       new MutationObserver(function (mutations) {
+        enforceSidebarAdBoundary();
         if (!document.body.classList.contains('rs-ad-processing')) return;
         for (const m of mutations) {
           for (const node of m.addedNodes) {
@@ -1080,9 +1142,9 @@
             }
           }
         }
-      }).observe(document.body, { childList: true });
+      }).observe(document.body, { childList: true, subtree: true });
 
-      // 4. Bridge rs:rewarded if dispatched on document/window so button reference is never lost
+      // 6. Bridge rs:rewarded if dispatched on document/window so button reference is never lost
       document.addEventListener('rs:rewarded', function (event) {
         clearAdProcessingState();
         if ((event.target === document || event.target === window) && window.__lastRsTrigger) {
@@ -1095,8 +1157,8 @@
   </script>
 
   <!-- Cache-busted module scripts -->
-  <script type="module" src="/js/ads.js?v=7"></script>
-  <script type="module" src="/js/main.js?v=7"></script>
+  <script type="module" src="/js/ads.js?v=8"></script>
+  <script type="module" src="/js/main.js?v=8"></script>
 
 </body>
 </html>
