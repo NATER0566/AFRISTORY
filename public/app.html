@@ -12,8 +12,8 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
 
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <script src="https://rocketsloth.ai/rs.js" data-rs-key="pk_9ab422697b631ca0acdede0e36213ee1"></script>
 
   <!-- Webpushr tracking code -->
@@ -25,7 +25,8 @@
   <style>
     /* ==============================================================
        STANDARDIZED Z-INDEX HIERARCHY
-       Watch Feed: 100 | Sidebar: 400 | Header/Nav: 500 | Bottom Sheet: 600 | Modals: 700 | Toasts: 800
+       Sidebar: 400 | Mobile Watch: 450 | Header/Nav: 500 | Desktop Watch: 550
+       Bottom Sheet: 600 | Comments Sheet: 650 | Modals: 700 | Toasts: 9999
     ============================================================== */
 
     .discover-filters { display: flex; gap: 12px; margin: 0 0 24px; }
@@ -40,7 +41,7 @@
     /* Empty States */
     .empty-state { text-align: center; padding: 40px 20px; color: #888; font-size: 14px; border: 1px dashed #333; border-radius: 12px; margin-top: 20px; }
 
-    .toast-region { position: fixed !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important; z-index: 800 !important; display: flex !important; flex-direction: column !important; align-items: center !important; gap: 16px !important; pointer-events: none !important; width: 100% !important; padding: 20px !important; box-sizing: border-box !important; }
+    .toast-region { position: fixed !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important; z-index: 9999 !important; display: flex !important; flex-direction: column !important; align-items: center !important; gap: 16px !important; pointer-events: none !important; width: 100% !important; padding: 20px !important; box-sizing: border-box !important; }
     .toast { pointer-events: auto !important; align-items: center; background: linear-gradient(135deg, #242424, #2d2d2d); border: 3px solid #343434; border-radius: 16px; color: #f5f5f5; display: flex; font-size: 19px !important; font-weight: 700; gap: 18px !important; width: 100%; max-width: 480px !important; padding: 28px 36px !important; position: relative; word-wrap: break-word; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.95) !important; animation: popInToast 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important; justify-content: center !important; text-align: center !important; }
     .toast.success { border-color: #76a86b; background: linear-gradient(135deg, #2b3d2b, #1a2a1a); box-shadow: 0 0 40px rgba(118, 168, 107, 0.5), inset 0 0 20px rgba(118, 168, 107, 0.1) !important; animation: popInToast 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), pulseGlow 2s ease-in-out infinite !important; }
     .toast.error { border-color: #e67e22; background: linear-gradient(135deg, #3d2b1b, #2a1b0a); box-shadow: 0 0 40px rgba(230, 126, 34, 0.5), inset 0 0 20px rgba(230, 126, 34, 0.1) !important; }
@@ -119,7 +120,7 @@
       position: absolute;
       top: 18px;
       left: 16px;
-      z-index: 610;
+      z-index: 480;
       color: #fff;
       font-weight: 700;
       font-family: 'Space Grotesk', sans-serif;
@@ -144,7 +145,7 @@
       position: absolute;
       top: 24px;
       left: 28px;
-      z-index: 920;
+      z-index: 570;
       background: rgba(25, 25, 25, 0.85);
       border: 1px solid rgba(255, 255, 255, 0.25);
       color: #fff;
@@ -169,7 +170,7 @@
       position: absolute;
       bottom: 28px;
       right: 90px;
-      z-index: 920;
+      z-index: 570;
       background: #d4a017;
       border: 1px solid #d4a017;
       color: #111;
@@ -187,6 +188,7 @@
     .watch-next-btn:active { transform: scale(0.95); }
 
     @media(min-width: 801px) {
+      .mobile-only { display: none !important; }
       #section-watch:not(.hidden) {
         display: block !important;
       }
@@ -198,7 +200,7 @@
         width: 100vw !important;
         height: 100vh !important;
         height: 100dvh !important;
-        z-index: 900 !important;
+        z-index: 550 !important;
         background-color: #000 !important;
       }
       .tiktok-feed {
@@ -239,7 +241,7 @@
         width: 100vw !important;
         height: calc(100vh - 80px) !important;
         height: calc(100dvh - 80px) !important;
-        z-index: 550 !important;
+        z-index: 450 !important;
       }
       .tiktok-feed {
         height: 100%;
@@ -428,7 +430,7 @@
     .profile-cover{background:linear-gradient(120deg,#2b2114,#171717 52%,#222);border:1px solid #343434;min-height:230px;padding:28px 32px;position:relative;overflow:hidden}.profile-cover[style]{background-position:center;background-size:cover}.profile-header{align-items:flex-end;display:flex;gap:22px;min-height:174px}.profile-avatar{align-items:center;background:#d4a017;color:#111;display:flex;flex:0 0 104px;font-family:Georgia,serif;font-size:48px;height:104px;justify-content:center;overflow:hidden;border-radius:50%;}.profile-avatar img{height:100%;object-fit:cover;width:100%}.profile-identity{max-width:650px}.profile-identity h1{font-size:clamp(30px,4vw,52px)}.profile-handle{margin:4px 0 10px}.profile-bio{color:#ddd;margin:0}.profile-location{color:#d4a017;font-size:13px;margin-top:10px}.profile-actions{display:flex;gap:10px;margin-left:auto}.profile-tabs{border-bottom:1px solid #343434;display:flex;gap:24px;overflow:auto;padding:0 4px}.profile-tab{background:none;border:0;border-bottom:2px solid transparent;color:#999;padding:16px 4px;white-space:nowrap}.profile-tab.active,.profile-tab:hover{border-color:#d4a017;color:#f5f5f5}.profile-panel{padding-top:30px}.profile-summary-grid{display:grid;gap:30px;grid-template-columns:1fr 1fr}.profile-section-heading{align-items:end;display:flex;justify-content:space-between;margin:28px 0 18px}.profile-section-heading h2{font-size:24px}.profile-list{display:grid;gap:10px}.profile-list-row{align-items:center;background:#1b1b1b;border:1px solid #343434;display:flex;gap:14px;padding:12px}.profile-list-row strong{display:block}.profile-list-row p{color:#999;font-size:13px;margin:2px 0 0}.profile-list-row .progress{background:#343434;height:4px;margin-top:8px;width:180px}.profile-list-row .progress i{background:#d4a017;display:block;height:100%}.profile-story-grid{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-story-grid .series-card{min-width:0}.interest-list{display:flex;flex-wrap:wrap;gap:8px}.interest-chip{background:#242424;border:1px solid #4a4a4a;color:#f5f5f5;padding:7px 11px}.profile-about{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr));max-width:680px}.profile-about div{background:#1b1b1b;border-bottom:1px solid #343434;padding:14px}.profile-about span{color:#999;display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase}.profile-edit-panel{border-top:1px solid #343434;margin-top:30px;padding-top:24px}.profile-edit-grid{display:grid;gap:14px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-form label{color:#bbb;display:grid;font-size:12px;gap:6px}.profile-form input,.profile-form textarea,.profile-form select{background:#111;border:1px solid #444;color:#f5f5f5;padding:11px}.profile-form select[multiple]{min-height:130px}.profile-privacy{display:flex;flex-wrap:wrap;gap:18px;margin:16px 0}.profile-privacy label{display:flex;gap:8px}.profile-empty{border:1px dashed #444;color:#999;padding:24px}.profile-empty button{margin-top:12px}@media(max-width:700px){.profile-cover{padding:22px 18px}.profile-header{align-items:flex-start;flex-wrap:wrap}.profile-avatar{flex-basis:78px;font-size:36px;height:78px}.profile-actions{margin-left:0;width:100%}.profile-actions .button{flex:1}.profile-summary-grid,.profile-about,.profile-edit-grid{grid-template-columns:1fr}.profile-tabs{gap:16px}.profile-story-grid{grid-template-columns:1fr 1fr}}
 
     /* ==============================================================
-       ROCKET SLOTH ADS - SECTION-SCOPED CONTAINMENT
+       ROCKET SLOTH ADS - SINGLE VISIBLE SLOT (HIDDEN IN WATCH MODE)
     ============================================================== */
     [data-rs-ad] {
       margin: 36px auto !important;
@@ -445,7 +447,8 @@
       contain: content !important;
     }
 
-    [data-rs-ad]:empty {
+    [data-rs-ad]:empty,
+    body:has(#section-watch:not(.hidden)) [data-rs-ad] {
       display: none !important;
       margin: 0 !important;
       padding: 0 !important;
@@ -519,7 +522,6 @@
         <div id="series-grid" class="content-grid"></div>
         <div class="section-heading compact-heading"><div><p class="eyebrow">VOICES TO KNOW</p><h2>Top creators</h2></div></div>
         <div id="creator-grid" class="creator-grid"></div>
-        <div data-rs-ad></div>
       </section>
 
       <!-- LOCKED WATCH SECTION (NO DISPLAY ADS) -->
@@ -539,7 +541,7 @@
            <div id="watch-loading" class="feed-loading hidden"></div>
         </div>
 
-        <div id="comments-sheet" class="bottom-sheet-overlay hidden" style="z-index: 950;">
+        <div id="comments-sheet" class="bottom-sheet-overlay hidden" style="z-index: 650;">
           <div class="bottom-sheet" style="height: 65vh; overflow-y: auto; position: relative; padding-bottom: 80px;">
             <div class="sheet-handle"></div>
             <button class="modal-close" aria-label="Close comments" style="position:absolute; right:20px; top:15px; background:none; border:none; color:#fff; font-size:24px; cursor:pointer;" onclick="document.getElementById('comments-sheet').classList.add('hidden')">×</button>
@@ -569,7 +571,6 @@
         <div id="transactions-list" class="data-list">
            <div class="empty-state hidden" id="empty-transactions"><p>No transactions yet.</p></div>
         </div>
-        <div data-rs-ad></div>
       </section>
 
       <!-- REWARDS SECTION -->
@@ -585,7 +586,6 @@
         <div id="rewards-grid" class="rewards-grid"></div>
         <div class="section-heading compact-heading"><div><p class="eyebrow">REWARD HISTORY</p><h2>Recent activity</h2></div></div>
         <div id="rewards-history" class="data-list"></div>
-        <div data-rs-ad></div>
       </section>
 
       <!-- CREATOR DASHBOARD SECTION -->
@@ -608,13 +608,11 @@
           <div class="section-heading compact-heading"><h2>Your series</h2><button class="button button-accent" data-action="open-upload">Upload episode</button></div>
           <div id="my-series-grid" class="content-grid"></div>
         </div>
-        <div data-rs-ad></div>
       </section>
 
       <section id="section-history" class="app-section hidden">
         <div class="section-heading"><div><p class="eyebrow">YOUR JOURNEY</p><h1>Watch history</h1></div><button class="button button-quiet" data-section="discover">Discover stories</button></div>
         <div id="history-list" class="data-list"><div class="empty-state hidden" id="empty-history"><p>No watch history yet.</p></div></div>
-        <div data-rs-ad></div>
       </section>
 
       <section id="section-profile" class="app-section hidden">
@@ -677,32 +675,27 @@
             <button class="button button-primary" type="submit">Save profile</button>
           </form>
         </div>
-        <div data-rs-ad></div>
       </section>
 
       <section id="section-search" class="app-section hidden">
         <div class="section-heading"><div><p class="eyebrow">EXPLORE THE LIBRARY</p><h1>Search</h1></div></div>
         <form id="library-search-form" class="search-box library-search"><span>⌕</span><input id="library-search-input" type="search" placeholder="Search series and creators" aria-label="Search the library"><button type="submit">Search</button></form>
         <div id="search-results" class="content-grid"></div>
-        <div data-rs-ad></div>
       </section>
 
       <section id="section-trending" class="app-section hidden">
         <div class="section-heading"><div><p class="eyebrow">WHAT PEOPLE ARE WATCHING</p><h1>Trending</h1></div></div>
         <div id="trending-list" class="content-grid"><div class="empty-state hidden" id="empty-trending"><p>No trending stories right now.</p></div></div>
-        <div data-rs-ad></div>
       </section>
 
       <section id="section-continue" class="app-section hidden">
         <div class="section-heading"><div><p class="eyebrow">PICK UP WHERE YOU LEFT OFF</p><h1>Continue watching</h1></div></div>
         <div id="continue-list" class="data-list"><div class="empty-state hidden" id="empty-continue"><p>No stories to continue.</p></div></div>
-        <div data-rs-ad></div>
       </section>
 
       <section id="section-favorites" class="app-section hidden">
         <div class="section-heading"><div><p class="eyebrow">YOUR LIBRARY</p><h1>Favorites</h1></div></div>
         <div id="favorites-list" class="content-grid"><div class="empty-state hidden" id="empty-favorites"><p>No saved favorites yet.</p></div></div>
-        <div data-rs-ad></div>
       </section>
 
       <section id="section-settings" class="app-section hidden">
@@ -712,8 +705,10 @@
           <label class="checkbox-label"><input id="settings-notifications" name="notifications" type="checkbox" checked> Receive notifications</label>
           <button class="button button-primary" type="submit">Save settings</button>
         </form>
-        <div data-rs-ad></div>
       </section>
+
+      <!-- Single always-visible Rocket Sloth display slot (hidden when Watch section is open) -->
+      <div id="global-ad-slot" data-rs-ad></div>
     </main>
   </div>
 
@@ -787,9 +782,9 @@
   <div id="modal-root" class="modal-root hidden"></div>
   <div id="toast-region" class="toast-region" aria-live="polite"></div>
 
-  <!-- Add version parameters to break browser cache -->
-  <script type="module" src="/js/ads.js?v=5"></script>
-  <script type="module" src="/js/main.js?v=5"></script>
+  <!-- Cache-busted module scripts -->
+  <script type="module" src="/js/ads.js?v=6"></script>
+  <script type="module" src="/js/main.js?v=6"></script>
 
 </body>
 </html>
