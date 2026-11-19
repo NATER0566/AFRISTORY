@@ -41,13 +41,19 @@ const __dirname = dirname(__filename);
 // Initialize Fastify
 const fastify = Fastify({
   logger: true,
+  trustProxy: true,
   bodyLimit: 104857600, // 100MB for uploads
 });
+
+// Support single or comma-separated origins in FRONTEND_URL
+const allowedOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(',').map((origin) => origin.trim())
+  : ['http://localhost:3000', 'https://afristory.live', 'https://www.afristory.live'];
 
 // Register plugins
 await fastify.register(fastifyCookie);
 await fastify.register(fastifyCors, {
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: allowedOrigins,
   credentials: true,
 });
 await fastify.register(fastifyMultipart, {
@@ -58,7 +64,7 @@ await fastify.register(fastifyMultipart, {
 
 // Rocket Sloth ads.txt redirect - must be before static
 fastify.get('/ads.txt', async (request, reply) => {
-  return reply.redirect(301, 'https://srv.adstxtmanager.com/19390/afristory.live');
+  return reply.code(301).redirect('https://srv.adstxtmanager.com/19390/afristory.live');
 });
 
 // Serve static files from /public
