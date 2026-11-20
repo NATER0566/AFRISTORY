@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>About AfriStory | Authentic African Digital Storytelling</title>
+    <meta
+        name="description"
+        content="Learn about AfriStory, the digital streaming platform dedicated to authentic African series, films, folklore, and documentaries created by storytellers across the continent."
+    >
+    <link rel="canonical" href="https://afristory.live/about.html">
+    <meta property="og:title" content="About AfriStory | Authentic African Digital Storytelling">
+    <meta property="og:description" content="Discover how AfriStory connects global audiences with original African dramas, documentaries, and independent filmmakers.">
+    <meta property="og:url" content="https://afristory.live/about.html">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #111111;
+            color: #f5f5f5;
+            line-height: 1.75;
+        }
+
+        a {
+            color: #D4A017;
+            text-decoration: none;
+            transition: 0.2s ease;
+        }
+
+        a:hover {
+            color: #e3b52b;
+        }
+
+        /* =========================
+           HEADER
+        ========================= */
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: rgba(17, 17, 17, 0.96);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .header-inner {
+            width: min(1100px, 92%);
+            min-height: 70px;
+            margin: auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .logo {
+            font-family: 'Space Grotesk', sans-serif;
+            color: #D4A017;
+            font-size: 23px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .logo:hover {
+            color: #e3b52b;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 9px 16px;
+            color: #ffffff;
+            border: 1px solid rgba(212, 160, 23, 0.4);
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .back-btn:hover {
+            background: rgba(212, 160, 23, 0.1);
+            border-color: rgba(212, 160, 23, 0.7);
+            color: #ffffff;
+        }
+
+        /* =========================
+           HERO
+        ========================= */
+
+        .hero {
+            width: min(1100px, 92%);
+            margin: 58px auto 45px;
+        }
+
+        .hero-label {
+            display: inline-block;
+            margin-bottom: 12px;
+            color: #D4A017;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1.7px;
+            text-transform: uppercase;
+        }
+
+        .hero h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(36px, 6vw, 55px);
+            line-height: 1.08;
+            letter-spacing: -1.5px;
+            margin-bottom: 17px;
+        }
+
+        .hero p {
+            max-width: 780px;
+            color: #b5b5b5;
+            font-size: 17px;
+        }
+
+        /* =========================
+           MAIN & CARDS
+        ========================= */
+
+        main {
+            width: min(1100px, 92%);
+            margin: 0 auto 75px;
+        }
+
+        .about-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 22px;
+        }
+
+        .about-card {
+            padding: 28px;
+            background: #1B1B1B;
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 15px;
+            transition: border-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .about-card:hover {
+            border-color: rgba(212, 160, 23, 0.28);
+            transform: translateY(-2px);
+        }
+
+        .about-card h2 {
+            margin-bottom: 12px;
+            color: #ffffff;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 22px;
+        }
+
+        .about-card p {
+            color: #b0b0b0;
+            font-size: 15px;
+            margin-bottom: 12px;
+        }
+
+        .about-card p:last-child {
+            margin-bottom: 0;
+        }
+
+        .about-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .about-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            color: #c2c2c2;
+            font-size: 14px;
+        }
+
+        .about-list li::before {
+            content: "◆";
+            color: #D4A017;
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        .about-card.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .cta-banner {
+            margin-top: 26px;
+            padding: 28px;
+            background: rgba(212, 160, 23, 0.08);
+            border: 1px solid rgba(212, 160, 23, 0.25);
+            border-radius: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .cta-banner h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 21px;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+
+        .cta-banner p {
+            color: #b5b5b5;
+            font-size: 14px;
+        }
+
+        .cta-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 22px;
+            background: #D4A017;
+            color: #111111;
+            font-weight: 700;
+            font-size: 14px;
+            border-radius: 9px;
+        }
+
+        .cta-btn:hover {
+            background: #e5b324;
+            color: #111111;
+        }
+
+        /* =========================
+           FOOTER LINKS & FOOTER
+        ========================= */
+
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            margin-top: 32px;
+            padding-top: 22px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .footer-links a {
+            color: #777777;
+            font-size: 13px;
+        }
+
+        .footer-links a:hover {
+            color: #D4A017;
+        }
+
+        footer {
+            padding: 30px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.07);
+            color: #666666;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        footer p {
+            margin-bottom: 9px;
+        }
+
+        footer a {
+            margin: 0 7px;
+            color: #777777;
+        }
+
+        footer a:hover {
+            color: #D4A017;
+        }
+
+        @media (max-width: 750px) {
+            .about-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .about-card.full-width {
+                grid-column: auto;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .header-inner {
+                min-height: 62px;
+            }
+
+            .logo {
+                font-size: 20px;
+            }
+
+            .back-btn {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+
+            .hero {
+                margin-top: 42px;
+            }
+
+            .hero h1 {
+                font-size: 35px;
+                letter-spacing: -1px;
+            }
+
+            .about-card {
+                padding: 22px;
+            }
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <header>
+        <div class="header-inner">
+            <a href="/" class="logo">AfriStory</a>
+            <a href="/" class="back-btn">← Back to AfriStory</a>
+        </div>
+    </header>
+
+    <section class="hero">
+        <span class="hero-label">About Our Platform</span>
+        <h1>Your Story, Your Platform</h1>
+        <p>
+            AfriStory is a digital streaming platform dedicated to authentic African narratives—connecting
+            audiences worldwide with original serialized dramas, cultural epics, short films, and
+            documentaries created by African storytellers.
+        </p>
+    </section>
+
+    <main>
+
+        <div class="about-grid">
+
+            <section class="about-card">
+                <h2>Our Mission</h2>
+                <p>
+                    African cinema and storytelling carry centuries of rich oral history, contemporary
+                    urban energy, and diverse cultural perspectives. AfriStory exists to give these stories
+                    a dedicated global stage without creative compromise.
+                </p>
+                <p>
+                    We champion productions across indigenous and Pan-African languages—including Tiv,
+                    Yoruba, Igbo, Hausa, Swahili, and English—so viewers can experience stories told in
+                    their authentic voices.
+                </p>
+            </section>
+
+            <section class="about-card">
+                <h2>What You Can Watch</h2>
+                <p>
+                    Our catalog is built for serialized binge-watching and discovery across multiple genres
+                    and formats:
+                </p>
+                <ul class="about-list">
+                    <li>Serialized original dramas and episodic cliffhangers</li>
+                    <li>Traditional folklore, historical epics, and cultural heritage films</li>
+                    <li>Independent African short films and emerging director showcases</li>
+                    <li>Documentaries exploring music, history, and modern African life</li>
+                </ul>
+            </section>
+
+            <section class="about-card">
+                <h2>Empowering African Creators</h2>
+                <p>
+                    Through the AfriStory Creator Studio, independent filmmakers, writers, and production
+                    teams can publish series directly to a dedicated streaming audience.
+                </p>
+                <p>
+                    Creators retain ownership of their creative vision while accessing audience analytics,
+                    community engagement tools, and transparent monetization opportunities tied to viewership.
+                </p>
+            </section>
+
+            <section class="about-card">
+                <h2>Accessible Viewing &amp; Rewards</h2>
+                <p>
+                    Anyone can register for a free AfriStory account to explore previews, track watch
+                    history, and follow favorite creators.
+                </p>
+                <p>
+                    Viewers can earn free daily Story Coins through check-ins and ad-supported rewards to
+                    unlock episodes, or choose VIP access for uninterrupted streaming across devices.
+                </p>
+            </section>
+
+            <section class="about-card full-width">
+                <h2>Platform Ownership &amp; Editorial Contact</h2>
+                <p>
+                    AfriStory operates officially at <a href="https://afristory.live/">https://afristory.live</a>.
+                    We review creator submissions for originality, copyright compliance, and community safety
+                    standards in accordance with our <a href="/terms.html">Terms of Service</a> and
+                    <a href="/dmca.html">DMCA Policy</a>.
+                </p>
+                <p>
+                    For partnership inquiries, press requests, creator onboarding, or viewer support, contact
+                    our team directly at <a href="mailto:support@afristory.live">support@afristory.live</a> or
+                    visit our <a href="/contact.html">Contact Us</a> page.
+                </p>
+            </section>
+
+        </div>
+
+        <div class="cta-banner">
+            <div>
+                <h3>Ready to explore original African stories?</h3>
+                <p>Create your free account in seconds and start watching on AfriStory.</p>
+            </div>
+            <a href="/" class="cta-btn">Explore AfriStory →</a>
+        </div>
+
+        <div class="footer-links">
+            <a href="/">Home</a>
+            <a href="/help.html">Help Center</a>
+            <a href="/faq.html">FAQ</a>
+            <a href="/contact.html">Contact Us</a>
+            <a href="/sitemap.html">Sitemap</a>
+            <a href="/terms.html">Terms of Service</a>
+            <a href="/privacy.html">Privacy Policy</a>
+            <a href="/cookie.html">Cookie Policy</a>
+            <a href="/dmca.html">DMCA</a>
+            <a href="/disclaimer.html">Disclaimer</a>
+        </div>
+
+    </main>
+
+    <footer>
+        <p>&copy; 2026 AfriStory. All rights reserved.</p>
+        <p>
+            <a href="mailto:support@afristory.live">support@afristory.live</a>
+        </p>
+        <div>
+            <a href="/">Home</a>
+            <a href="/privacy.html">Privacy</a>
+            <a href="/terms.html">Terms</a>
+            <a href="/cookie.html">Cookies</a>
+            <a href="/dmca.html">DMCA</a>
+            <a href="/disclaimer.html">Disclaimer</a>
+        </div>
+    </footer>
+
+</body>
+
+</html>
