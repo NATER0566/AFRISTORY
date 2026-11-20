@@ -1,11 +1,20 @@
- <!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#111111">
-  <title>AfroStory | Watch something real</title>
-  <link rel="icon" href="data:,">
+  <title>AfriStory | Watch something real</title>
+  <meta
+    name="description"
+    content="AfriStory is the home of African stories. Watch original series, short films, and creator episodes, earn rewards, and support African storytellers."
+  >
+  <link rel="canonical" href="https://afristory.live/">
+  <link
+    rel="icon"
+    type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23111111'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia,serif' font-weight='700' font-size='38' fill='%23D4A017'%3EA%3C/text%3E%3C/svg%3E"
+  >
 
   <!-- Preconnect to Fonts & Rocket Sloth for faster ad initialization -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -727,13 +736,47 @@
         margin-right: auto !important;
       }
     }
+
+    /* ==============================================================
+       10. LEGAL & SUPPORT FOOTER (CRAWLER & USER ACCESSIBLE)
+    ============================================================== */
+    .app-footer {
+      margin-top: 56px;
+      padding: 26px 16px 16px;
+      border-top: 1px solid #262626;
+      text-align: center;
+      color: #888888;
+      font-size: 13px;
+    }
+    .app-footer p {
+      margin: 0 0 10px;
+    }
+    .app-footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px 18px;
+    }
+    .app-footer a {
+      color: #a9a9a9;
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+    .app-footer a:hover {
+      color: #d4a017;
+      text-decoration: underline;
+    }
+    body.watch-mode-active .app-footer,
+    body:has(#section-watch:not(.hidden)) .app-footer {
+      display: none !important;
+    }
   </style>
 </head>
 <body class="app-page">
 
   <!-- TOPBAR HEADER (Auto-minimizes transparently on Watch page) -->
   <header class="topbar">
-    <a class="brand" href="#discover" aria-label="AfroStory Home"><span class="brand-mark">A</span><span>AFRO<span>STORY</span></span></a>
+    <a class="brand" href="#discover" data-section="discover" aria-label="AfriStory Home"><span class="brand-mark">A</span><span>AFRI<span>STORY</span></span></a>
     <div class="topbar-actions">
       <button class="icon-button notification-button" data-action="notifications" aria-label="Open notifications" title="Notifications">
         <span class="header-icon">&#128276;</span><i id="notification-badge" class="notification-badge hidden">0</i>
@@ -846,12 +889,12 @@
       <!-- REWARDS SECTION -->
       <section id="section-rewards" class="app-section hidden">
         <div class="rewards-hero">
-          <div><p class="eyebrow">AFROSTORY REWARDS</p><h1>Return. Discover. Earn.</h1><p class="muted">Complete activities on AfroStory and earn coins.</p></div>
+          <div><p class="eyebrow">AFRISTORY REWARDS</p><h1>Return. Discover. Earn.</h1><p class="muted">Complete activities on AfriStory and earn coins.</p></div>
           <div class="rewards-balance"><span class="eyebrow">CURRENT BALANCE</span><strong style="display: inline-flex; align-items: center; gap: 6px;"><span style="color: #d4a017; font-size: 0.9em;">◈</span><span id="rewards-balance">0</span></strong><span>story coins</span><div class="reward-streak"><b id="reward-current-streak">0</b> day streak <small>Best <span id="reward-best-streak">0</span></small></div></div>
         </div>
         <div id="daily-reward-card" class="daily-reward-card"></div>
         <div id="rewarded-ad-card" class="daily-reward-card hidden"></div>
-        <div class="section-heading compact-heading"><div><p class="eyebrow">SOCIAL MEDIA REWARDS</p><h2>Support AfroStory</h2><p class="muted">Support AfroStory on social media and earn bonus coins.</p></div></div>
+        <div class="section-heading compact-heading"><div><p class="eyebrow">SOCIAL MEDIA REWARDS</p><h2>Support AfriStory</h2><p class="muted">Support AfriStory on social media and earn bonus coins.</p></div></div>
         <div id="social-rewards-grid" class="rewards-grid"></div>
         <div class="section-heading compact-heading"><div><p class="eyebrow">EARN COINS</p><h2>Available missions</h2></div></div>
         <div id="rewards-grid" class="rewards-grid"></div>
@@ -929,7 +972,7 @@
           <div id="profile-library" class="profile-list"></div>
         </div>
         <div id="profile-panel-about" class="profile-panel hidden">
-          <div class="profile-section-heading"><div><p class="eyebrow">ACCOUNT DETAILS</p><h2>About your AfroStory account</h2></div></div>
+          <div class="profile-section-heading"><div><p class="eyebrow">ACCOUNT DETAILS</p><h2>About your AfriStory account</h2></div></div>
           <div id="profile-about" class="profile-about"></div>
         </div>
         <div id="profile-edit-panel" class="profile-edit-panel hidden">
@@ -991,6 +1034,25 @@
 
       <!-- SINGLE DISPLAY AD SLOT (Contained inside feed, never touches sidebar) -->
       <div id="global-ad-slot" data-rs-ad></div>
+
+      <!-- LEGAL & SUPPORT FOOTER -->
+      <footer class="app-footer">
+        <p>
+          &copy; 2026 AfriStory. All rights reserved.
+          &bull;
+          <a href="mailto:support@afristory.live">support@afristory.live</a>
+        </p>
+        <div class="app-footer-links">
+          <a href="/privacy.html">Privacy Policy</a>
+          <a href="/terms.html">Terms of Service</a>
+          <a href="/cookie.html">Cookie Policy</a>
+          <a href="/dmca.html">DMCA</a>
+          <a href="/disclaimer.html">Disclaimer</a>
+          <a href="/help.html">Help Center</a>
+          <a href="/faq.html">FAQ</a>
+          <a href="/contact.html">Contact Us</a>
+        </div>
+      </footer>
     </main>
   </div>
 
@@ -1088,6 +1150,7 @@
             el.classList.contains('modal-root') ||
             el.classList.contains('toast-region') ||
             el.classList.contains('bottom-sheet-overlay') ||
+            el.classList.contains('swal2-container') ||
             el.id === 'save-current'
           ) {
             return;
@@ -1245,4 +1308,4 @@
   <script type="module" src="/js/main.js?v=10"></script>
 
 </body>
-</html>   
+</html>
