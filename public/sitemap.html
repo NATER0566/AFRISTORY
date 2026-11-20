@@ -16,6 +16,7 @@
         name="description"
         content="Explore the AfriStory sitemap and quickly find platform pages, content sections, creator features, support resources, and legal information."
     >
+    <link rel="canonical" href="https://afristory.live/sitemap.html">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
 
@@ -44,19 +45,14 @@
 
         body {
             font-family: 'Inter', sans-serif;
-
             background: #111111;
-
             color: #f5f5f5;
-
             line-height: 1.7;
         }
 
         a {
             color: #D4A017;
-
             text-decoration: none;
-
             transition: 0.2s ease;
         }
 
@@ -64,54 +60,35 @@
             color: #e3b52b;
         }
 
-
         /* =========================
            HEADER
         ========================= */
 
         header {
             position: sticky;
-
             top: 0;
-
             z-index: 1000;
-
-            background:
-                rgba(17, 17, 17, 0.96);
-
+            background: rgba(17, 17, 17, 0.96);
             backdrop-filter: blur(16px);
-
             -webkit-backdrop-filter: blur(16px);
-
-            border-bottom:
-                1px solid rgba(255, 255, 255, 0.08);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         .header-inner {
             width: min(1100px, 92%);
-
             min-height: 70px;
-
             margin: auto;
-
             display: flex;
-
             align-items: center;
-
             justify-content: space-between;
-
             gap: 20px;
         }
 
         .logo {
             font-family: 'Space Grotesk', sans-serif;
-
             color: #D4A017;
-
             font-size: 23px;
-
             font-weight: 700;
-
             letter-spacing: -0.5px;
         }
 
@@ -121,35 +98,21 @@
 
         .back-btn {
             display: inline-flex;
-
             align-items: center;
-
             justify-content: center;
-
             padding: 9px 16px;
-
             color: #ffffff;
-
-            border:
-                1px solid rgba(212, 160, 23, 0.4);
-
+            border: 1px solid rgba(212, 160, 23, 0.4);
             border-radius: 8px;
-
             font-size: 14px;
-
             font-weight: 500;
         }
 
         .back-btn:hover {
-            background:
-                rgba(212, 160, 23, 0.1);
-
-            border-color:
-                rgba(212, 160, 23, 0.7);
-
+            background: rgba(212, 160, 23, 0.1);
+            border-color: rgba(212, 160, 23, 0.7);
             color: #ffffff;
         }
-
 
         /* =========================
            HERO
@@ -157,46 +120,32 @@
 
         .hero {
             width: min(1100px, 92%);
-
             margin: 58px auto 45px;
         }
 
         .hero-label {
             display: inline-block;
-
             margin-bottom: 12px;
-
             color: #D4A017;
-
             font-size: 13px;
-
             font-weight: 700;
-
             letter-spacing: 1.7px;
-
             text-transform: uppercase;
         }
 
         .hero h1 {
             font-family: 'Space Grotesk', sans-serif;
-
             font-size: clamp(36px, 6vw, 55px);
-
             line-height: 1.08;
-
             letter-spacing: -1.5px;
-
             margin-bottom: 17px;
         }
 
         .hero p {
             max-width: 760px;
-
             color: #a9a9a9;
-
             font-size: 16px;
         }
-
 
         /* =========================
            MAIN
@@ -204,10 +153,8 @@
 
         main {
             width: min(1100px, 92%);
-
             margin: 0 auto 75px;
         }
-
 
         /* =========================
            SITEMAP GRID
@@ -215,13 +162,9 @@
 
         .sitemap-grid {
             display: grid;
-
-            grid-template-columns:
-                repeat(2, minmax(0, 1fr));
-
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 20px;
         }
-
 
         /* =========================
            SITEMAP CARD
@@ -229,46 +172,30 @@
 
         .sitemap-card {
             padding: 26px;
-
             background: #1B1B1B;
-
-            border:
-                1px solid rgba(255, 255, 255, 0.07);
-
+            border: 1px solid rgba(255, 255, 255, 0.07);
             border-radius: 15px;
-
-            transition:
-                border-color 0.2s ease,
-                transform 0.2s ease;
+            transition: border-color 0.2s ease, transform 0.2s ease;
         }
 
         .sitemap-card:hover {
-            border-color:
-                rgba(212, 160, 23, 0.25);
-
+            border-color: rgba(212, 160, 23, 0.25);
             transform: translateY(-2px);
         }
 
         .sitemap-card h2 {
             margin-bottom: 7px;
-
             color: #ffffff;
-
             font-family: 'Space Grotesk', sans-serif;
-
             font-size: 21px;
         }
 
         .sitemap-card > p {
             margin-bottom: 18px;
-
             color: #858585;
-
             font-size: 13px;
-
             line-height: 1.65;
         }
-
 
         /* =========================
            LINKS
@@ -276,54 +203,35 @@
 
         .sitemap-links {
             display: flex;
-
             flex-direction: column;
-
             gap: 7px;
         }
 
         .sitemap-links a {
             display: flex;
-
             align-items: center;
-
             gap: 10px;
-
             padding: 10px 12px;
-
             background: #151515;
-
-            border:
-                1px solid rgba(255, 255, 255, 0.05);
-
+            border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 8px;
-
             color: #a9a9a9;
-
             font-size: 14px;
-
             transition: 0.2s ease;
         }
 
         .sitemap-links a::before {
             content: "→";
-
             color: #D4A017;
-
             font-weight: 700;
         }
 
         .sitemap-links a:hover {
             color: #D4A017;
-
             background: #181818;
-
-            border-color:
-                rgba(212, 160, 23, 0.2);
-
+            border-color: rgba(212, 160, 23, 0.2);
             padding-left: 16px;
         }
-
 
         /* =========================
            FULL WIDTH CARD
@@ -333,26 +241,17 @@
             grid-column: 1 / -1;
         }
 
-
         /* =========================
            NOTE
         ========================= */
 
         .sitemap-note {
             margin-top: 22px;
-
             padding: 22px 25px;
-
-            background:
-                rgba(212, 160, 23, 0.06);
-
-            border:
-                1px solid rgba(212, 160, 23, 0.18);
-
+            background: rgba(212, 160, 23, 0.06);
+            border: 1px solid rgba(212, 160, 23, 0.18);
             border-radius: 12px;
-
             color: #999999;
-
             font-size: 13px;
         }
 
@@ -360,29 +259,21 @@
             color: #D4A017;
         }
 
-
         /* =========================
            FOOTER LINKS
         ========================= */
 
         .footer-links {
             display: flex;
-
             flex-wrap: wrap;
-
             gap: 18px;
-
             margin-top: 32px;
-
             padding-top: 22px;
-
-            border-top:
-                1px solid rgba(255, 255, 255, 0.06);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
         }
 
         .footer-links a {
             color: #777777;
-
             font-size: 13px;
         }
 
@@ -390,21 +281,15 @@
             color: #D4A017;
         }
 
-
         /* =========================
            FOOTER
         ========================= */
 
         footer {
             padding: 30px 20px;
-
-            border-top:
-                1px solid rgba(255, 255, 255, 0.07);
-
+            border-top: 1px solid rgba(255, 255, 255, 0.07);
             color: #666666;
-
             text-align: center;
-
             font-size: 13px;
         }
 
@@ -414,7 +299,6 @@
 
         footer a {
             margin: 0 7px;
-
             color: #777777;
         }
 
@@ -422,13 +306,11 @@
             color: #D4A017;
         }
 
-
         /* =========================
            MOBILE
         ========================= */
 
         @media (max-width: 750px) {
-
             .sitemap-grid {
                 grid-template-columns: 1fr;
             }
@@ -436,12 +318,9 @@
             .sitemap-card.full-width {
                 grid-column: auto;
             }
-
         }
 
-
         @media (max-width: 600px) {
-
             .header-inner {
                 min-height: 62px;
             }
@@ -452,7 +331,6 @@
 
             .back-btn {
                 padding: 8px 12px;
-
                 font-size: 13px;
             }
 
@@ -462,7 +340,6 @@
 
             .hero h1 {
                 font-size: 35px;
-
                 letter-spacing: -1px;
             }
 
@@ -473,12 +350,9 @@
             .sitemap-card {
                 padding: 21px;
             }
-
         }
 
-
         @media (max-width: 430px) {
-
             .hero h1 {
                 font-size: 32px;
             }
@@ -486,16 +360,13 @@
             .footer-links {
                 gap: 13px;
             }
-
         }
 
     </style>
 
 </head>
 
-
 <body>
-
 
     <!-- =========================
          HEADER
@@ -509,14 +380,13 @@
                 AfriStory
             </a>
 
-            <a href="index.html" class="back-btn">
+            <a href="/" class="back-btn">
                 ← Back to AfriStory
             </a>
 
         </div>
 
     </header>
-
 
     <!-- =========================
          HERO
@@ -540,16 +410,13 @@
 
     </section>
 
-
     <!-- =========================
          MAIN
     ========================= -->
 
     <main>
 
-
         <div class="sitemap-grid">
-
 
             <!-- =========================
                  MAIN PLATFORM
@@ -568,34 +435,33 @@
 
                 <div class="sitemap-links">
 
-                    <a href="index.html">
+                    <a href="/">
                         AfriStory Home
                     </a>
 
-                    <a href="app.html">
+                    <a href="/app.html">
                         Open AfriStory App
                     </a>
 
-                    <a href="app.html">
+                    <a href="/app.html">
                         Discover
                     </a>
 
-                    <a href="app.html">
+                    <a href="/app.html">
                         Watch
                     </a>
 
-                    <a href="app.html">
+                    <a href="/app.html">
                         Trending
                     </a>
 
-                    <a href="app.html">
+                    <a href="/app.html">
                         Search
                     </a>
 
                 </div>
 
             </section>
-
 
             <!-- =========================
                  USER FEATURES
@@ -614,38 +480,37 @@
 
                 <div class="sitemap-links">
 
-                    <a href="app.html">
+                    <a href="/app.html">
                         My Account
                     </a>
 
-                    <a href="app.html">
+                    <a href="/app.html">
                         Watch History
                     </a>
 
-                    <a href="app.html">
+                    <a href="/app.html">
                         Continue Watching
                     </a>
 
-                    <a href="app.html">
+                    <a href="/app.html">
                         Favorites
                     </a>
 
-                    <a href="app.html">
+                    <a href="/app.html">
                         Rewards
                     </a>
 
-                    <a href="app.html">
+                    <a href="/app.html">
                         Wallet
                     </a>
 
-                    <a href="app.html">
+                    <a href="/app.html">
                         Settings
                     </a>
 
                 </div>
 
             </section>
-
 
             <!-- =========================
                  CREATOR
@@ -664,11 +529,11 @@
 
                 <div class="sitemap-links">
 
-                    <a href="app.html">
+                    <a href="/app.html">
                         Creator Studio
                     </a>
 
-                    <a href="app.html">
+                    <a href="/app.html">
                         Upload Content
                     </a>
 
@@ -676,18 +541,17 @@
                         Creator Dashboard
                     </a>
 
-                    <a href="help.html">
+                    <a href="/help.html">
                         Creator Help
                     </a>
 
-                    <a href="contact.html">
+                    <a href="/contact.html">
                         Creator Support
                     </a>
 
                 </div>
 
             </section>
-
 
             <!-- =========================
                  SUPPORT
@@ -705,22 +569,21 @@
 
                 <div class="sitemap-links">
 
-                    <a href="help.html">
+                    <a href="/help.html">
                         Help Center
                     </a>
 
-                    <a href="faq.html">
+                    <a href="/faq.html">
                         Frequently Asked Questions
                     </a>
 
-                    <a href="contact.html">
+                    <a href="/contact.html">
                         Contact Us
                     </a>
 
                 </div>
 
             </section>
-
 
             <!-- =========================
                  LEGAL
@@ -738,30 +601,29 @@
 
                 <div class="sitemap-links">
 
-                    <a href="terms.html">
+                    <a href="/terms.html">
                         Terms of Service
                     </a>
 
-                    <a href="privacy.html">
+                    <a href="/privacy.html">
                         Privacy Policy
                     </a>
 
-                    <a href="cookie.html">
+                    <a href="/cookie.html">
                         Cookie Policy
                     </a>
 
-                    <a href="dmca.html">
-                        DMCA & Copyright
+                    <a href="/dmca.html">
+                        DMCA &amp; Copyright
                     </a>
 
-                    <a href="disclaimer.html">
+                    <a href="/disclaimer.html">
                         Disclaimer
                     </a>
 
                 </div>
 
             </section>
-
 
             <!-- =========================
                  REPORTS
@@ -770,7 +632,7 @@
             <section class="sitemap-card">
 
                 <h2>
-                    Reports & Copyright
+                    Reports &amp; Copyright
                 </h2>
 
                 <p>
@@ -780,22 +642,21 @@
 
                 <div class="sitemap-links">
 
-                    <a href="dmca.html">
+                    <a href="/dmca.html">
                         Copyright / DMCA
                     </a>
 
-                    <a href="contact.html">
+                    <a href="/contact.html">
                         Report an Issue
                     </a>
 
-                    <a href="contact.html">
+                    <a href="/contact.html">
                         Report Content
                     </a>
 
                 </div>
 
             </section>
-
 
             <!-- =========================
                  ACCOUNT
@@ -813,22 +674,21 @@
 
                 <div class="sitemap-links">
 
-                    <a href="app.html">
+                    <a href="/app.html">
                         Sign In
                     </a>
 
-                    <a href="app.html">
+                    <a href="/app.html">
                         Create Account
                     </a>
 
-                    <a href="app.html">
+                    <a href="/app.html">
                         Profile
                     </a>
 
                 </div>
 
             </section>
-
 
             <!-- =========================
                  INFORMATION
@@ -847,26 +707,26 @@
 
                 <div class="sitemap-links">
 
-                    <a href="about.html">
+                    <!-- Ensure public/about.html exists; if not, change href to "/" -->
+                    <a href="/about.html">
                         About AfriStory
                     </a>
 
-                    <a href="help.html">
+                    <a href="/help.html">
                         How AfriStory Works
                     </a>
 
-                    <a href="faq.html">
+                    <a href="/faq.html">
                         FAQ
                     </a>
 
-                    <a href="contact.html">
+                    <a href="/contact.html">
                         Contact AfriStory
                     </a>
 
                 </div>
 
             </section>
-
 
             <!-- =========================
                  NOTE
@@ -886,53 +746,51 @@
 
         </div>
 
-
         <!-- =========================
              FOOTER LINKS
         ========================= -->
 
         <div class="footer-links">
 
-            <a href="index.html">
+            <a href="/">
                 Home
             </a>
 
-            <a href="help.html">
+            <a href="/help.html">
                 Help Center
             </a>
 
-            <a href="faq.html">
+            <a href="/faq.html">
                 FAQ
             </a>
 
-            <a href="contact.html">
+            <a href="/contact.html">
                 Contact Us
             </a>
 
-            <a href="terms.html">
+            <a href="/terms.html">
                 Terms of Service
             </a>
 
-            <a href="privacy.html">
+            <a href="/privacy.html">
                 Privacy Policy
             </a>
 
-            <a href="cookie.html">
+            <a href="/cookie.html">
                 Cookie Policy
             </a>
 
-            <a href="dmca.html">
+            <a href="/dmca.html">
                 DMCA
             </a>
 
-            <a href="disclaimer.html">
+            <a href="/disclaimer.html">
                 Disclaimer
             </a>
 
         </div>
 
     </main>
-
 
     <!-- =========================
          FOOTER
@@ -946,35 +804,35 @@
 
         <p>
 
-            <a href="mailto:nmbashau@gmail.com">
-                nmbashau@gmail.com
+            <a href="mailto:support@afristory.live">
+                support@afristory.live
             </a>
 
         </p>
 
         <div>
 
-            <a href="index.html">
+            <a href="/">
                 Home
             </a>
 
-            <a href="privacy.html">
+            <a href="/privacy.html">
                 Privacy
             </a>
 
-            <a href="terms.html">
+            <a href="/terms.html">
                 Terms
             </a>
 
-            <a href="cookie.html">
+            <a href="/cookie.html">
                 Cookies
             </a>
 
-            <a href="dmca.html">
+            <a href="/dmca.html">
                 DMCA
             </a>
 
-            <a href="disclaimer.html">
+            <a href="/disclaimer.html">
                 Disclaimer
             </a>
 
