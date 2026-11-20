@@ -1,15 +1,10 @@
 <!doctype html>
 <html lang="en">
 <head>
-
-  <script src="https://rocketsloth.ai/rs.js" data-rs-key="pk_9ab422697b631ca0acdede0e36213ee1"></script>
   <!-- WebPushr Tracking Code --> 
   <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js";
   fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));
   webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4GZnLNpMUBg35mzdNgBSOcMQ4YlZaZ0SY' });</script>
-
-  <!-- Google AdSense Placeholder -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4661775522120249" crossorigin="anonymous"></script>
 
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -17,9 +12,10 @@
   <!-- SEO & META TAGS -->
   <title>AfroStory | Premium African Digital Storytelling</title>
   <meta name="description" content="AfroStory is the premier digital streaming platform dedicated to authentic African narratives. Watch premium original series, short films, and documentaries made directly by African creators.">
-  <link rel="canonical" href="https://afristory.naterlearninghub.me/">
+  <link rel="canonical" href="https://afristory.live/">
   <meta property="og:title" content="AfroStory | Premium African Digital Storytelling">
   <meta property="og:description" content="Watch premium original series, short films, and documentaries made by African creators.">
+  <meta property="og:url" content="https://afristory.live/">
   <meta property="og:image" content="/images/og-image.jpg">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0B0B0D">
@@ -358,7 +354,7 @@
       .carousel-content { padding: 28px 24px; }
     }
 
-    /* ================= FEATURED VIDEO SHOWCASE (AUTO-VISIBLE + BOLD TEXT) ================= */
+    /* ================= FEATURED VIDEO SHOWCASE (SEPARATED SECTIONS & SINGLE STATIC MUTE ICON) ================= */
     .video-showcase-section { padding: 64px 4vw; background: var(--bg-base); }
     .video-showcase-heading {
       width: 100%; max-width: 1240px; margin: 0 auto 24px;
@@ -392,7 +388,7 @@
     .video-showcase-track { position: relative; width: 100%; height: 100%; }
     .video-showcase-slide {
       position: absolute; inset: 0; opacity: 0; visibility: hidden;
-      transition: opacity 0.55s ease, visibility 0.55s ease;
+      transition: opacity 0.45s ease, visibility 0.45s ease;
       background: #0B0B0D;
     }
     .video-showcase-slide.active { opacity: 1; visibility: visible; z-index: 2; }
@@ -419,12 +415,11 @@
       pointer-events: none;
     }
 
-    /* Hide center blocking play button when autoplaying video is active */
-    .video-showcase-slide.video-live .play-pause-btn,
-    .video-showcase-slide.video-live .video-play-btn {
+    /* Hide center blocking play button when video is actively playing */
+    .video-showcase-slide.video-playing .play-pause-btn,
+    .video-showcase-slide.video-playing .video-play-btn {
       opacity: 0 !important;
       pointer-events: none !important;
-      transform: translate(-50%, -50%) scale(0.8);
     }
 
     .play-pause-btn,
@@ -435,36 +430,46 @@
       display: flex; align-items: center; justify-content: center;
       border: 3px solid rgba(255,255,255,0.65);
       box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
-      transition: all 0.25s ease;
+      transition: background-color 0.2s ease, opacity 0.2s ease;
     }
     .play-pause-btn:hover,
-    .video-play-btn:hover { transform: translate(-50%, -50%) scale(1.1); background: #FFFFFF; }
+    .video-play-btn:hover { background: #FFFFFF; }
 
-    /* Top-right Sound Toggle Pill on Video Slides */
-    .video-sound-pill {
+    /* Single, Small, Stationary Top-Right Mute/Unmute Icon (No Shaking / No Text Shift) */
+    .slide-sound-btn {
       position: absolute;
-      top: 18px;
-      right: 18px;
+      top: 16px;
+      right: 16px;
       z-index: 25;
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      min-height: 36px;
+      padding: 0;
+      margin: 0;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(11, 11, 13, 0.8);
+      color: #FFFFFF;
       display: inline-flex;
       align-items: center;
-      gap: 7px;
-      padding: 9px 15px;
-      border-radius: 999px;
-      background: rgba(11, 11, 13, 0.78);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1.5px solid rgba(245, 184, 46, 0.55);
-      color: #FFFFFF;
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.03em;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-      transition: all 0.2s ease;
+      justify-content: center;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
+      transform: none !important;
+      animation: none !important;
+      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
     }
-    .video-sound-pill:hover {
-      background: var(--gold);
-      color: #0B0B0D;
+    .slide-sound-btn:hover,
+    .slide-sound-btn:active,
+    .slide-sound-btn:focus {
+      transform: none !important;
+      animation: none !important;
+      outline: none;
+    }
+    .slide-sound-btn.is-unmuted {
+      border-color: var(--gold);
+      color: var(--gold);
+      background: rgba(18, 16, 10, 0.9);
     }
 
     /* High-Clarity Bold Typography for BOTH .video-carousel-content & .video-showcase-content */
@@ -759,6 +764,9 @@
       .footer-links-box { flex-direction: column; }
     }
   </style>
+
+  <!-- Rocket Sloth Head Tag (Placed immediately before </head> as required) -->
+  <script src="https://rocketsloth.ai/rs.js" data-rs-key="pk_9ab422697b631ca0acdede0e36213ee1"></script>
 </head>
 <body>
 
@@ -832,7 +840,7 @@
     </div>
   </section>
 
-  <!-- ================= 1. TOP TRENDING VIDEOS (AUTO-VISIBLE ON LOAD) ================= -->
+  <!-- ================= 1. WATCH NOW (INDEPENDENT TRENDING VIDEO SLIDESHOW) ================= -->
   <section class="video-showcase-section" id="top-trending-videos">
     <div class="video-showcase-heading">
       <div>
@@ -894,7 +902,7 @@
     </div>
   </section>
 
-  <!-- ================= 3. PROMOTIONAL VIDEO SLIDESHOW (AUTO-VISIBLE ON LOAD) ================= -->
+  <!-- ================= 3. FEATURED ANNOUNCEMENTS (INDEPENDENT MANUAL VIDEO SLIDESHOW) ================= -->
   <section class="video-showcase-section" style="padding-top: 28px; border-top: 1px solid rgba(255,255,255,0.08);" id="featured-announcements">
     <div class="video-showcase-heading">
       <div>
@@ -931,7 +939,7 @@
     </div>
   </section>
 
-  <!-- ================= ADSENSE 1 (Rocket Sloth) ================= -->
+  <!-- ================= ROCKET SLOTH AD UNIT 1 ================= -->
   <div class="ad-container">
     <div data-rs-ad></div>
   </div>
@@ -1042,7 +1050,7 @@
     </div>
   </section>
 
-  <!-- ================= ADSENSE 2 (Rocket Sloth) ================= -->
+  <!-- ================= ROCKET SLOTH AD UNIT 2 ================= -->
   <div class="ad-container mb-10">
     <div data-rs-ad></div>
   </div>
@@ -1108,7 +1116,7 @@
 
     <div class="footer-bottom">
       <p>&copy; 2026 AfroStory. All rights reserved.</p>
-      <p>support@afristory.naterlearninghub.me</p>
+      <p>support@afristory.live</p>
     </div>
   </footer>
 
@@ -1237,95 +1245,9 @@
   <!-- LOAD SEPARATE JS LOGIC -->
   <script src="/js/auth.js"></script>
 
-  <!-- ================= MODERN VIDEO AUTO-VISIBILITY, SWIPE & CONVERSION TELEMETRY ================= -->
+  <!-- ================= SWIPE & CONVERSION TELEMETRY ================= -->
   <script>
     (function () {
-      let globalMuted = true;
-
-      function syncSlideVideoPlayback(trackEl) {
-        if (!trackEl) return;
-        const slides = Array.from(trackEl.querySelectorAll('.video-showcase-slide'));
-        slides.forEach((slide) => {
-          const video = slide.querySelector('video');
-          if (!video) return;
-
-          video.muted = globalMuted;
-          video.defaultMuted = true;
-          video.loop = true;
-          video.playsInline = true;
-          video.setAttribute('muted', '');
-          video.setAttribute('playsinline', '');
-          video.setAttribute('autoplay', '');
-          if (!video.getAttribute('preload')) video.setAttribute('preload', 'auto');
-
-          if (!video.dataset.framePrimed) {
-            video.dataset.framePrimed = 'true';
-            video.addEventListener('loadedmetadata', () => {
-              slide.classList.add('video-live');
-              if (video.currentTime === 0 && Number.isFinite(video.duration) && video.duration > 1) {
-                try { video.currentTime = 0.25; } catch (e) {}
-              }
-              if (slide.classList.contains('active')) {
-                video.play().catch(() => {});
-              }
-            }, { once: true });
-
-            video.addEventListener('playing', () => {
-              slide.classList.add('video-live');
-            });
-          }
-
-          if (!slide.querySelector('.video-sound-pill')) {
-            const soundBtn = document.createElement('button');
-            soundBtn.type = 'button';
-            soundBtn.className = 'video-sound-pill';
-            soundBtn.innerHTML = globalMuted ? '🔇 Tap for Sound' : '🔊 Sound On';
-            soundBtn.addEventListener('click', (e) => {
-              e.stopPropagation();
-              globalMuted = !globalMuted;
-              document.querySelectorAll('.video-showcase-slide video').forEach((v) => {
-                v.muted = globalMuted;
-              });
-              document.querySelectorAll('.video-sound-pill').forEach((pill) => {
-                pill.innerHTML = globalMuted ? '🔇 Tap for Sound' : '🔊 Sound On';
-              });
-              if (slide.classList.contains('active')) {
-                video.play().catch(() => {});
-              }
-            });
-            slide.appendChild(soundBtn);
-          }
-
-          if (slide.classList.contains('active')) {
-            if (video.readyState === 0) {
-              try { video.load(); } catch (e) {}
-            }
-            const p = video.play();
-            if (p && typeof p.then === 'function') {
-              p.then(() => slide.classList.add('video-live')).catch(() => {
-                video.muted = true;
-                video.play().then(() => slide.classList.add('video-live')).catch(() => {});
-              });
-            }
-          } else if (!video.paused) {
-            video.pause();
-          }
-        });
-      }
-
-      function observeVideoTrack(trackId) {
-        const track = document.getElementById(trackId);
-        if (!track) return;
-        syncSlideVideoPlayback(track);
-        const observer = new MutationObserver(() => syncSlideVideoPlayback(track));
-        observer.observe(track, {
-          childList: true,
-          subtree: true,
-          attributes: true,
-          attributeFilter: ['class', 'src']
-        });
-      }
-
       function attachTouchSwipe(wrapperId, prevBtnId, nextBtnId) {
         const wrapper = document.getElementById(wrapperId);
         const prevBtn = document.getElementById(prevBtnId);
@@ -1373,8 +1295,6 @@
       }
 
       document.addEventListener('DOMContentLoaded', () => {
-        observeVideoTrack('trending-video-track');
-        observeVideoTrack('video-slides-track');
         attachTouchSwipe('trending-video-slideshow', 'trend-vid-prev', 'trend-vid-next');
         attachTouchSwipe('promo-image-slideshow', 'img-slide-prev', 'img-slide-next');
         attachTouchSwipe('promo-video-slideshow', 'vid-slide-prev', 'vid-slide-next');
