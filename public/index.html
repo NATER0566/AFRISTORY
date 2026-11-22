@@ -1179,14 +1179,14 @@
         <form id="register-form" class="auth-form hidden space-y-4" novalidate>
           <h2 class="text-2xl font-display font-black text-white">Create your free account</h2>
           <p class="text-slate-300 text-sm font-medium">Unlock full episodes &amp; join Africa's storytelling community.</p>
-          <input class="field mt-4" id="reg-username" type="text" autocomplete="username" placeholder="Username" required>
+          <input class="field mt-4" id="reg-username" type="text" minlength="5" maxlength="30" autocomplete="username" placeholder="Username (min. 5 characters, letters/numbers/_)" required>
           <input class="field mt-4" id="reg-email" type="email" autocomplete="email" placeholder="Email address" required>
           <div class="password-field mt-4">
-            <input class="field" id="reg-password" type="password" autocomplete="new-password" placeholder="Password" required>
+            <input class="field" id="reg-password" type="password" minlength="8" autocomplete="new-password" placeholder="Password (8+ chars, uppercase, lowercase &amp; number)" required>
             <button class="password-toggle" type="button" data-password-toggle="#reg-password" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
           </div>
           <div class="flex gap-1 mt-2"><i id="str-bar-1" class="bar"></i><i id="str-bar-2" class="bar"></i><i id="str-bar-3" class="bar"></i><i id="str-bar-4" class="bar"></i></div>
-          <p id="password-feedback" class="text-xs text-slate-400 mt-1"></p>
+          <p id="password-feedback" class="text-xs text-slate-400 mt-1">Use at least 8 characters with an uppercase letter, lowercase letter, and a number.</p>
           <div class="password-field mt-4">
             <input class="field" id="reg-confirm" type="password" autocomplete="new-password" placeholder="Confirm password" required>
             <button class="password-toggle" type="button" data-password-toggle="#reg-confirm" aria-label="Show password"><i data-lucide="eye" width="18" height="18"></i></button>
@@ -1194,7 +1194,7 @@
           <div class="bg-black/40 border border-gray-800 p-3 rounded-lg mt-4">
             <label class="text-sm text-slate-300 flex items-center gap-2 cursor-pointer">
               <input id="reg-terms" type="checkbox" required> 
-              <span>I agree to the <a href="/terms.html" class="text-accent hover:underline font-bold" target="_blank">Terms of Service</a>.</span>
+              <span>I agree to the <a href="/terms.html" class="text-accent hover:underline font-bold" target="_blank">Terms of Service</a> and <a href="/privacy.html" class="text-accent hover:underline font-bold" target="_blank">Privacy Policy</a>.</span>
             </label>
           </div>
           <button class="primary mt-4" type="submit">Create free account &amp; watch</button>
