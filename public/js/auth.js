@@ -6,6 +6,8 @@ const $$ = selector => [...document.querySelectorAll(selector)];
 
 const emailOk = value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 const codeOk = value => /^\d{6}$/.test(value);
+const usernameOk = value => /^[a-zA-Z0-9_]{5,30}$/.test(value);
+const passwordOk = value => value.length >= 8 && /[A-Z]/.test(value) && /[a-z]/.test(value) && /[0-9]/.test(value);
 
 let currentAuthEmail = '';
 
@@ -394,20 +396,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const ssoBtn = event.target.closest('[data-sso]');
-        if (ssoBtn) window.location.assign('/api/auth/' + ssoBtn.dataset.sso);
+        if (ssoBtn) {
+            const provider = ssoBtn.dataset.sso;
+            const label = provider === 'google' ? 'Google' : provider === 'github' ? 'GitHub' : provider;
+            ssoBtn.disabled = true;
+            ssoBtn.textContent = `Connecting to ${label}...`;
+            alertMessage('info', `Redirecting to ${label} sign-in...`);
+            window.location.assign('/api/auth/' + provider);
+        }
     });
 
     // --- Form Submissions ---
     $('reg-password')?.addEventListener('input', event => {
+        const value = event.target.value;
+        const fb = $('password-feedback');
         if (!window.zxcvbn) return;
-        const result = zxcvbn(event.target.value);
+        const result = zxcvbn(value);
         const colors = ['#E74C3C','#E74C3C','#D4A017','#2ECC71','#2ECC71'];
         for(let index=0; index<4; index++) {
             const bar = $(`str-bar-${index+1}`);
-            if(bar) bar.style.background = index < result.score+1 ? colors[result.score] : '#444';
+            if(bar) bar.style.background = value && index < result.score+1 ? colors[result.score] : '#333';
         }
-        const fb = $('password-feedback');
-        if(fb) fb.textContent = result.feedback.warning || result.feedback.suggestions[0] || '';
+        if (fb) {
+            if (!value) {
+                fb.textContent = 'Use at least 8 characters with an uppercase letter, lowercase letter, and a number.';
+            } else if (!passwordOk(value)) {
+                fb.textContent = 'Include 8+ characters, 1 uppercase letter, 1 lowercase letter, and 1 number.';
+            } else {
+                fb.textContent = result.feedback.warning || 'Strong password ready.';
+            }
+        }
     });
 
     $('login-form')?.addEventListener('submit', async event => {
@@ -454,16 +472,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const password = $('reg-password').value;
         const confirmPw = $('reg-confirm')?.value;
         const termsChecked = $('reg-terms')?.checked;
-        const score = window.zxcvbn ? zxcvbn(password).score : 3;
 
-        if (
-            !/^[a-zA-Z0-9_.\s]{3,30}$/.test(username) || 
-            !emailOk(email) || 
-            password !== confirmPw || 
-            !termsChecked || 
-            score < 2
-        ) {
-            return alertMessage('error', 'Please check your registration details and try again.');
+        if (!usernameOk(username)) {
+            return alertMessage('error', 'Username must be 5–30 characters using only letters, numbers, or underscores.');
+        }
+        if (!emailOk(email)) {
+            return alertMessage('error', 'Please enter a valid email address.');
+        }
+        if (!passwordOk(password)) {
+            return alertMessage('error', 'Password must be at least 8 characters and include an uppercase letter, a lowercase letter, and a number.');
+        }
+        if (password !== confirmPw) {
+            return alertMessage('error', 'Passwords do not match.');
+        }
+        if (!termsChecked) {
+            return alertMessage('error', 'Please agree to the Terms of Service and Privacy Policy.');
         }
         
         currentAuthEmail = email;
@@ -472,7 +495,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(btn) { btn.disabled = true; btn.innerHTML = 'Creating account...'; }
 
         try {
-            const { response, data } = await request('/auth/register', { username, email, password }, 'POST');
+            const { response, data } = await request('/auth/register', { username, email, password, acceptPolicies: Boolean(termsChecked) }, 'POST');
             
             if (response.ok) {
                 show('verify');
@@ -518,7 +541,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const code = $('reset-code').value.trim();
         const newPassword = $('reset-password').value;
         
-        if (!codeOk(code) || newPassword.length < 6) return alertMessage('error', 'Enter a valid code and password');
+        if (!codeOk(code)) return alertMessage('error', 'Enter the six-digit reset code.');
+        if (!passwordOk(newPassword)) return alertMessage('error', 'New password must be at least 8 characters with an uppercase letter, lowercase letter, and a number.');
         
         const btn = event.target.querySelector('button[type="submit"]');
         const originalText = btn ? btn.innerHTML : 'Update password';
@@ -586,6 +610,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const authError = new URLSearchParams(window.location.search).get('authError'); 
     if (authError) { 
         window.history.replaceState({}, '', '/'); 
+        if (authModal) {
+            authModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            show('login');
+        }
         alertMessage('error', authError); 
     }
 
