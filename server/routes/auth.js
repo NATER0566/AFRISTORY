@@ -11,6 +11,7 @@ import { sendVerificationCodeEmail, sendPasswordResetEmail, isResendReady } from
 
 const generateCode = () => String(Math.floor(100000 + Math.random() * 900000));
 const codeExpiry = (minutes) => new Date(Date.now() + minutes * 60 * 1000);
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 function getDynamicCallbackUrl(request, provider) {
   const protocol = request.headers['x-forwarded-proto'] || (process.env.NODE_ENV === 'production' ? 'https' : 'http');
@@ -82,21 +83,33 @@ function getRegisteredProviders(user) {
   return providers;
 }
 
+function isUserBlockedOrDeleted(user) {
+  if (!user) return false;
+  return (
+    user.isActive === false ||
+    user.isDeleted === true ||
+    Boolean(user.deletedAt) ||
+    user.status === 'deleted' ||
+    user.status === 'suspended' ||
+    user.status === 'banned'
+  );
+}
+
 function validatePasswordFormat(password) {
   if (typeof password !== 'string' || password.length === 0) {
     return 'Password is missing. Please enter a password.';
   }
   if (password.length < 8) {
-    return 'Password is too short. Use at least 8 characters (including uppercase, lowercase, and a number).';
+    return 'Password is too short. Please enter at least 8 characters including an uppercase letter, a lowercase letter, and a number.';
   }
   if (!/[A-Z]/.test(password)) {
-    return 'Password must include at least one uppercase letter (A-Z).';
+    return 'Password format invalid: please include at least one uppercase letter (A-Z).';
   }
   if (!/[a-z]/.test(password)) {
-    return 'Password must include at least one lowercase letter (a-z).';
+    return 'Password format invalid: please include at least one lowercase letter (a-z).';
   }
   if (!/[0-9]/.test(password)) {
-    return 'Password must include at least one number (0-9).';
+    return 'Password format invalid: please include at least one number (0-9).';
   }
   return null;
 }
@@ -110,21 +123,19 @@ async function findOrCreateSocialUser(provider, profile) {
     user = await User.findOne({ email: profile.email.toLowerCase() });
   }
 
-  // Block deleted, banned, or deactivated accounts from logging back in via OAuth
-  if (user) {
-    if (user.isDeleted === true || user.deletedAt || user.status === 'deleted' || user.isActive === false) {
-      throw new Error('This account has been removed or deactivated and no longer has access to AfriStory.');
-    }
+  // Strictly block deleted, banned, or deactivated users from logging in via Google/GitHub/Apple
+  if (isUserBlockedOrDeleted(user)) {
+    throw new Error('This account has been deleted or deactivated and no longer has access to AfriStory.');
   }
 
   if (!user && !profile.email) throw new Error('The provider did not return an email address');
 
   if (!user) {
     const rawBase = (profile.name || profile.email.split('@')[0]).replace(/[^a-zA-Z0-9_]/g, '');
-    const baseUsername = (rawBase.length >= 5 ? rawBase : `${rawBase}user`).slice(0, 24);
+    const baseUsername = (rawBase.length >= 5 ? rawBase : `${rawBase}story`).slice(0, 24);
     let username = baseUsername;
     let suffix = 1;
-    while (await User.exists({ username })) {
+    while (await User.exists({ username: { $regex: new RegExp(`^${escapeRegex(username)}$`, 'i') } })) {
       username = `${baseUsername.slice(0, 28 - String(suffix).length)}${suffix++}`;
     }
 
@@ -140,12 +151,20 @@ async function findOrCreateSocialUser(provider, profile) {
       lastLogin: new Date(),
     });
     await user.save();
-    await Wallet.create({ userId: user._id });
+    await Wallet.findOneAndUpdate(
+      { userId: user._id },
+      { $setOnInsert: { userId: user._id } },
+      { upsert: true, new: true }
+    );
   } else {
+    // Keep existing active user synchronized with latest provider metadata
     user.authProviders = { ...(user.authProviders?.toObject?.() || user.authProviders || {}), [field]: profile.providerId };
     user.isVerified = true;
     user.lastLogin = new Date();
     if (profile.picture && !user.profileImage) user.profileImage = profile.picture;
+    if (profile.name && (!user.profile || !user.profile.displayName)) {
+      user.profile = { ...(user.profile?.toObject?.() || user.profile || {}), displayName: profile.name };
+    }
     await user.save();
   }
   return user;
@@ -173,77 +192,83 @@ export default async function authRoutes(fastify, opts) {
       const password = typeof body.password === 'string' ? body.password : '';
       const confirmPassword = body.confirmPassword;
 
-      // Support common frontend policy-checkbox field names if passed
-      const policyFieldProvided =
-        body.acceptPolicies !== undefined ||
-        body.agreeTerms !== undefined ||
-        body.termsAccepted !== undefined ||
-        body.acceptedTerms !== undefined;
-      const acceptedPolicies = Boolean(
-        body.acceptPolicies ?? body.agreeTerms ?? body.termsAccepted ?? body.acceptedTerms
-      );
+      const policyKeys = ['acceptPolicies', 'agreeTerms', 'termsAccepted', 'acceptedTerms', 'policiesAccepted', 'agree', 'terms'];
+      const presentPolicyKey = policyKeys.find((key) => body[key] !== undefined);
+      const acceptedPolicies = presentPolicyKey ? Boolean(body[presentPolicyKey]) : true;
 
-      // 1. Validate EVERY field BEFORE touching the database
+      // 1. Validate all inputs completely BEFORE saving anything to MongoDB
       if (!cleanUsername) {
-        return sendError(reply, 'Username is missing. Please enter a username (at least 5 characters).', 400);
+        fastify.log.warn('[REGISTER_VALIDATION_ERROR] Missing username');
+        return sendError(reply, 'Username is missing. Please type a username with at least 5 characters.', 400);
       }
       if (cleanUsername.length < 5) {
-        return sendError(reply, 'Username must be at least 5 characters long (letters, numbers, or underscores).', 400);
+        fastify.log.warn(`[REGISTER_VALIDATION_ERROR] Username too short: ${cleanUsername}`);
+        return sendError(reply, 'Username is too short. Please type a username with at least 5 characters (letters, numbers, or underscores).', 400);
       }
       if (cleanUsername.length > 30) {
-        return sendError(reply, 'Username cannot exceed 30 characters.', 400);
+        fastify.log.warn(`[REGISTER_VALIDATION_ERROR] Username too long: ${cleanUsername}`);
+        return sendError(reply, 'Username is too long. Please keep your username within 30 characters.', 400);
       }
       if (!isValidUsername(cleanUsername)) {
-        return sendError(reply, 'Username can only use letters, numbers, and underscores (no spaces or special symbols).', 400);
+        fastify.log.warn(`[REGISTER_VALIDATION_ERROR] Invalid username format: ${cleanUsername}`);
+        return sendError(reply, 'Invalid username format. Use at least 5 characters with only letters, numbers, and underscores (no spaces or special symbols).', 400);
       }
 
       if (!normalizedEmail) {
-        return sendError(reply, 'Email address is missing. Please enter your email address.', 400);
+        fastify.log.warn('[REGISTER_VALIDATION_ERROR] Missing email');
+        return sendError(reply, 'Email address is missing. Please type your email address.', 400);
       }
       if (!isValidEmail(normalizedEmail)) {
-        return sendError(reply, 'Invalid email format. Please enter a valid email (e.g., name@example.com).', 400);
+        fastify.log.warn(`[REGISTER_VALIDATION_ERROR] Invalid email format: ${normalizedEmail}`);
+        return sendError(reply, 'Invalid email format. Please enter a valid email address (for example, name@example.com).', 400);
       }
 
       const passwordError = validatePasswordFormat(password);
       if (passwordError) {
+        fastify.log.warn(`[REGISTER_VALIDATION_ERROR] Password validation failed for ${normalizedEmail}`);
         return sendError(reply, passwordError, 400);
       }
 
       if (confirmPassword !== undefined && password !== confirmPassword) {
-        return sendError(reply, 'Passwords do not match. Please enter the exact same password in both fields.', 400);
+        fastify.log.warn(`[REGISTER_VALIDATION_ERROR] Passwords do not match for ${normalizedEmail}`);
+        return sendError(reply, 'Passwords do not match. Please type the exact same password in both fields.', 400);
       }
 
-      if (policyFieldProvided && !acceptedPolicies) {
-        return sendError(reply, 'Please tick the box to accept the Terms of Service and Privacy Policy before registering.', 400);
+      if (!acceptedPolicies) {
+        fastify.log.warn(`[REGISTER_VALIDATION_ERROR] Policies not accepted for ${normalizedEmail}`);
+        return sendError(reply, 'Please accept the Terms of Service and Privacy Policy before registering.', 400);
       }
 
       if (!isResendReady()) {
         fastify.log.error(`[REGISTER_CONFIG_ERROR] Resend is not configured for ${normalizedEmail}`);
-        return sendError(reply, 'Email service is temporarily unavailable. Please try again shortly.', 503);
+        return sendError(reply, 'Email delivery is temporarily unavailable. Please try again shortly.', 503);
       }
 
-      // 2. Check existing user & tell them exact login method if registered via Google/GitHub/Apple
+      // 2. Check existing accounts & give direct instructions for Google/GitHub users
       const existingByEmail = await User.findOne({ email: normalizedEmail });
       if (existingByEmail) {
-        if (existingByEmail.isDeleted === true || existingByEmail.deletedAt || existingByEmail.isActive === false) {
-          return sendError(reply, 'This account has been deactivated or removed. Contact support@afristory.live for help.', 403);
+        if (isUserBlockedOrDeleted(existingByEmail)) {
+          return sendError(reply, 'This account has been deleted or deactivated and cannot be registered again.', 403);
         }
 
         const socialProviders = getRegisteredProviders(existingByEmail);
         if (socialProviders.length > 0 && !existingByEmail.passwordHash) {
+          const methodText = socialProviders.join(' or ');
           return sendError(
             reply,
-            `You already registered with ${socialProviders.join(' or ')}. Please go to Login and continue with ${socialProviders.join(' or ')}.`,
+            `You have already registered using ${methodText}. Please go and log in using ${methodText}.`,
             409
           );
         }
 
-        return sendError(reply, 'This email is already registered. Please log in instead.', 409);
+        return sendError(reply, 'You have already been registered with this email. Please log in instead.', 409);
       }
 
-      const existingByUsername = await User.findOne({ username: cleanUsername });
+      const existingByUsername = await User.findOne({
+        username: { $regex: new RegExp(`^${escapeRegex(cleanUsername)}$`, 'i') },
+      });
       if (existingByUsername) {
-        return sendError(reply, 'That username is already taken. Please choose a different username.', 409);
+        return sendError(reply, 'This username is already taken. Please choose another username.', 409);
       }
 
       // 3. Create account & roll back immediately if verification email fails to send
@@ -263,22 +288,34 @@ export default async function authRoutes(fastify, opts) {
 
       try {
         await sendVerificationCodeEmail({ email: newUser.email, code: verificationCode });
-        await Wallet.create({ userId: newUser._id });
+        fastify.log.info(`[REGISTER_EMAIL_SENT] Verification code sent to ${newUser.email}`);
       } catch (emailError) {
-        // Prevent partial/unusable account from blocking retry
         await User.deleteOne({ _id: newUser._id }).catch(() => {});
-        fastify.log.error(`[REGISTER_EMAIL_ROLLBACK] Rolled back ${normalizedEmail} after email error: ${emailError.message}`);
-        return sendError(reply, 'Could not send the verification email right now. Please try again in a moment.', 503);
+        fastify.log.error(`[REGISTER_EMAIL_ERROR] Rolled back ${normalizedEmail} after email error: ${emailError.message}`);
+        return sendError(reply, 'Failed to send verification email. Your account was not created—please try again.', 503);
       }
 
-      fastify.log.info(`[REGISTER_SUCCESS] User created: ${newUser.email}`);
+      await Wallet.findOneAndUpdate(
+        { userId: newUser._id },
+        { $setOnInsert: { userId: newUser._id } },
+        { upsert: true, new: true }
+      );
+
+      fastify.log.info(`[REGISTER_SUCCESS] User created successfully, awaiting verification: ${newUser.email}`);
       return sendSuccess(
         reply,
         { userId: newUser._id, username: newUser.username, email: newUser.email, role: newUser.role },
-        'Registration successful! Check your email for your 6-digit verification code.',
+        'Registration successful! A 6-digit verification code has been sent to your email.',
         201
       );
     } catch (error) {
+      if (error?.code === 11000) {
+        const duplicateField = Object.keys(error.keyPattern || {})[0];
+        if (duplicateField === 'email') {
+          return sendError(reply, 'You have already been registered with this email. Please log in instead.', 409);
+        }
+        return sendError(reply, 'This username is already taken. Please choose another username.', 409);
+      }
       fastify.log.error(`[REGISTER_CRITICAL_ERROR] Details: ${error.message}\nStack: ${error.stack}`);
       return sendError(reply, 'Registration failed due to a server error. Please try again.', 500, error.message);
     }
@@ -294,28 +331,33 @@ export default async function authRoutes(fastify, opts) {
 
       const user = await User.findOne({ email: normalizedEmail });
       if (!user) {
+        fastify.log.warn(`[LOGIN_EMAIL_NOT_FOUND] Non-existent email: ${normalizedEmail}`);
         return sendError(reply, 'No account found with this email address. Please register first.', 404);
       }
 
-      if (user.isDeleted === true || user.deletedAt || !user.isActive) {
-        return sendError(reply, 'This account has been removed or deactivated. Please contact support@afristory.live.', 403);
+      if (isUserBlockedOrDeleted(user)) {
+        fastify.log.warn(`[LOGIN_BLOCKED] Deleted/deactivated account attempted login: ${normalizedEmail}`);
+        return sendError(reply, 'This account has been deleted or deactivated. Please contact support@afristory.live.', 403);
       }
 
       const socialProviders = getRegisteredProviders(user);
       if (!user.passwordHash && socialProviders.length > 0) {
+        const methodText = socialProviders.join(' or ');
         return sendError(
           reply,
-          `This account was registered using ${socialProviders.join(' or ')}. Please click "Continue with ${socialProviders[0]}" to log in.`,
+          `You registered using ${methodText}. Please log in using ${methodText}.`,
           400
         );
       }
 
       const passwordMatch = await user.comparePassword(password);
       if (!passwordMatch) {
-        return sendError(reply, 'Incorrect password. Please check your password and try again.', 401);
+        fastify.log.warn(`[LOGIN_INVALID_PASSWORD] Wrong password for: ${normalizedEmail}`);
+        return sendError(reply, 'Incorrect password. Please try again.', 401);
       }
 
       if (!user.isVerified) {
+        fastify.log.warn(`[LOGIN_UNVERIFIED] Unverified user logged in: ${normalizedEmail}. Routing to OTP.`);
         if (!isResendReady()) {
           return sendError(reply, 'Email delivery is not configured on the server.', 503);
         }
@@ -341,6 +383,7 @@ export default async function authRoutes(fastify, opts) {
       const token = generateToken(user._id);
       reply.setCookie('token', token, authCookieOptions);
 
+      fastify.log.info(`[LOGIN_SUCCESS] User logged in securely: ${user.email}`);
       return sendSuccess(reply, { userId: user._id, username: user.username, email: user.email, role: user.role }, 'Login successful! Welcome back.');
     } catch (error) {
       fastify.log.error(`[LOGIN_CRITICAL_ERROR] Details: ${error.message}\nStack: ${error.stack}`);
@@ -350,6 +393,7 @@ export default async function authRoutes(fastify, opts) {
 
   fastify.post('/logout', async (request, reply) => {
     reply.clearCookie('token', { path: '/' });
+    fastify.log.info('[LOGOUT_SUCCESS] User logged out and cookie cleared.');
     return sendSuccess(reply, null, 'Logout successful');
   });
 
@@ -364,6 +408,10 @@ export default async function authRoutes(fastify, opts) {
       const user = await User.findOne({ email: normalizedEmail });
       if (!user) {
         return sendError(reply, 'Invalid request. This email is not registered.', 400);
+      }
+
+      if (isUserBlockedOrDeleted(user)) {
+        return sendError(reply, 'This account has been deleted or deactivated.', 403);
       }
 
       if (user.isVerified) {
@@ -382,6 +430,7 @@ export default async function authRoutes(fastify, opts) {
       const token = generateToken(user._id);
       reply.setCookie('token', token, authCookieOptions);
 
+      fastify.log.info(`[VERIFY_SUCCESS] User ${normalizedEmail} verified their email.`);
       return sendSuccess(reply, null, 'Email verified successfully! Welcome to AfriStory.');
     } catch (error) {
       fastify.log.error(`[VERIFY_CRITICAL_ERROR] Details: ${error.message}\nStack: ${error.stack}`);
@@ -399,6 +448,9 @@ export default async function authRoutes(fastify, opts) {
       const user = await User.findOne({ email: normalizedEmail });
       if (!user) {
         return sendError(reply, 'This email is not registered in our system.', 404);
+      }
+      if (isUserBlockedOrDeleted(user)) {
+        return sendError(reply, 'This account has been deleted or deactivated.', 403);
       }
       if (user.isVerified) {
         return sendError(reply, 'Your account is already verified. You can log in.', 400);
@@ -434,11 +486,16 @@ export default async function authRoutes(fastify, opts) {
         return sendError(reply, 'This email is not registered in our system.', 404);
       }
 
+      if (isUserBlockedOrDeleted(user)) {
+        return sendError(reply, 'This account has been deleted or deactivated.', 403);
+      }
+
       const socialProviders = getRegisteredProviders(user);
       if (!user.passwordHash && socialProviders.length > 0) {
+        const methodText = socialProviders.join(' or ');
         return sendError(
           reply,
-          `This account uses ${socialProviders.join(' or ')} login and does not have a password. Please sign in with ${socialProviders[0]}.`,
+          `You registered using ${methodText} and do not have a password. Please log in using ${methodText}.`,
           400
         );
       }
@@ -480,6 +537,10 @@ export default async function authRoutes(fastify, opts) {
         return sendError(reply, 'Invalid or expired reset code. Please request a new password reset OTP.', 400);
       }
 
+      if (isUserBlockedOrDeleted(user)) {
+        return sendError(reply, 'This account has been deleted or deactivated.', 403);
+      }
+
       user.passwordHash = newPassword;
       user.resetPasswordCode = null;
       user.resetPasswordExpires = null;
@@ -496,6 +557,11 @@ export default async function authRoutes(fastify, opts) {
     try {
       await verifyAuth(request, reply);
       if (!request.user) return sendError(reply, 'Unauthorized', 401);
+
+      if (isUserBlockedOrDeleted(request.user)) {
+        reply.clearCookie('token', { path: '/' });
+        return sendError(reply, 'This account has been deleted or deactivated.', 403);
+      }
 
       return sendSuccess(reply, {
         userId: request.user._id,
@@ -518,16 +584,24 @@ export default async function authRoutes(fastify, opts) {
         const existingToken = request.cookies?.token;
         if (existingToken && process.env.JWT_SECRET) {
           const decoded = jwt.verify(existingToken, process.env.JWT_SECRET);
-          const currentUser = await User.findById(decoded.userId || decoded.id).select('isActive isDeleted deletedAt');
-          if (currentUser && currentUser.isActive !== false && !currentUser.isDeleted && !currentUser.deletedAt) {
-            return reply.redirect('/app.html');
+          const tokenUserId = decoded.userId || decoded.id || decoded._id || decoded.sub;
+          if (tokenUserId) {
+            const currentUser = await User.findById(tokenUserId);
+            if (currentUser && !isUserBlockedOrDeleted(currentUser)) {
+              fastify.log.info(`[OAUTH_INTERCEPTED] User clicked ${provider} with an active valid account. Bypassing redirect.`);
+              return reply.redirect('/app.html');
+            }
           }
+          // Clear stale cookie if the user was deleted or deactivated
           reply.clearCookie('token', { path: '/' });
         }
-      } catch (err) {}
+      } catch (err) {
+        reply.clearCookie('token', { path: '/' });
+      }
 
       const config = providerConfig(provider);
       if (!config?.clientId || !config.clientSecret) {
+        fastify.log.error(`[OAUTH_SETUP_ERROR] Provider ${provider} is missing client ID or secret.`);
         return oauthError(reply, `${provider.charAt(0).toUpperCase() + provider.slice(1)} login is not configured properly.`);
       }
 
@@ -568,6 +642,7 @@ export default async function authRoutes(fastify, opts) {
           const providerName = provider.charAt(0).toUpperCase() + provider.slice(1);
 
           if (error) {
+            fastify.log.warn(`[OAUTH_CANCELLED] Provider: ${provider} returned error: ${error}`);
             return oauthError(reply, 'Authentication was cancelled or denied by the user.');
           }
 
@@ -575,6 +650,7 @@ export default async function authRoutes(fastify, opts) {
           const savedState = request.cookies[`oauth_${provider}_state`];
 
           if (!config?.clientId || !code || !verifier || state !== savedState) {
+            fastify.log.error(`[OAUTH_SECURITY_MISMATCH] Provider: ${provider}. Expected State: ${savedState}, Received State: ${state}`);
             return oauthError(reply, `${providerName} login session mismatch or expired. Please try logging in again.`);
           }
 
@@ -617,12 +693,17 @@ export default async function authRoutes(fastify, opts) {
             };
           }
 
+          if (!profile) {
+            throw new Error(`${providerName} authentication is not configured on this callback.`);
+          }
+
           const user = await findOrCreateSocialUser(provider, profile);
 
           fastify.log.info(`[OAUTH_SUCCESS] User logged in via ${provider}: ${user.email}`);
           reply.setCookie('token', generateToken(user._id), authCookieOptions);
           return reply.redirect('/app.html');
         } catch (error) {
+          reply.clearCookie('token', { path: '/' });
           fastify.log.error(`[OAUTH_CRITICAL_ERROR] Provider: ${provider}. Details: ${error.message}\nStack: ${error.stack}`);
           return oauthError(reply, error.message || 'Social login failed.');
         }
