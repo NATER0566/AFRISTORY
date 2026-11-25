@@ -24,10 +24,13 @@ const unlockSchema = new mongoose.Schema(
     },
     provider: {
       type: String,
+      trim: true,
+      uppercase: true,
       default: null,
     },
     transactionId: {
       type: String,
+      trim: true,
       default: null,
     },
     unlockedAt: {
@@ -51,4 +54,13 @@ unlockSchema.index({ userId: 1, episodeId: 1 }, { unique: true });
 unlockSchema.index({ userId: 1, isActive: 1 });
 unlockSchema.index({ episodeId: 1, isActive: 1 });
 
-export default mongoose.model('Unlock', unlockSchema);
+// Prevent duplicate/replayed Robins Ads reward IDs while ignoring null on COIN/VIP unlocks
+unlockSchema.index(
+  { transactionId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { transactionId: { $type: 'string' } },
+  }
+);
+
+export default mongoose.models.Unlock || mongoose.model('Unlock', unlockSchema);
