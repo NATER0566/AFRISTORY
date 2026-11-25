@@ -8,6 +8,7 @@ import Series from '../models/Series.js';
 import { verifyAuth } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { generateReference, formatDecimal, paginate } from '../utils/helpers.js';
+import { verifyAndConsumeRobinAdsReward } from '../services/robinAdsService.js';
 import mongoose from 'mongoose';
 
 export default async function walletRoutes(fastify, opts) {
@@ -30,7 +31,7 @@ export default async function walletRoutes(fastify, opts) {
         storyCoins: formatDecimal(wallet.storyCoins),
         lockedEarnings: formatDecimal(wallet.lockedEarnings),
         totalWithdrawn: formatDecimal(wallet.totalWithdrawn),
-        totalEarned: formatDecimal(wallet.totalEarned)
+        totalEarned: formatDecimal(wallet.totalEarned),
       });
     } catch (error) {
       fastify.log.error(error);
@@ -64,7 +65,7 @@ export default async function walletRoutes(fastify, opts) {
       const total = await Transaction.countDocuments({ walletId: wallet._id });
 
       sendSuccess(reply, {
-        transactions: transactions.map(t => ({
+        transactions: transactions.map((t) => ({
           ...t.toObject(),
           amount: formatDecimal(t.amount),
         })),
@@ -81,7 +82,7 @@ export default async function walletRoutes(fastify, opts) {
     }
   });
 
-  // Unlock episode with coins OR ads
+  // Unlock episode with coins OR Robins Ads
   fastify.post('/unlock-episode', async (request, reply) => {
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -94,8 +95,13 @@ export default async function walletRoutes(fastify, opts) {
         return sendError(reply, 'Unauthorized', 401);
       }
 
-      const { episodeId, method = 'COIN', provider = 'ROCKET_SLOTH', receipt, transactionId } = request.body || {};
-      const safeReceipt = (receipt && typeof receipt === 'object') ? receipt : {};
+      const {
+        episodeId,
+        method = 'COIN',
+        provider = 'ROBINADS',
+        rewardId,
+        transactionId,
+      } = request.body || {};
 
       if (!episodeId) {
         await session.abortTransaction();
@@ -135,30 +141,42 @@ export default async function walletRoutes(fastify, opts) {
       }
 
       // ============================================
-      // LOGIC 1: UNLOCK USING AN AD
+      // LOGIC 1: UNLOCK USING ROBINS ADS (SERVER-VERIFIED)
       // ============================================
       if (String(method).toUpperCase() === 'AD') {
-        const rawStatus = safeReceipt.status || '';
-        const status = typeof rawStatus === 'string' ? rawStatus.toLowerCase().trim() : '';
-        const rewardGranted = safeReceipt.reward === true || safeReceipt.reward === 'true' || safeReceipt.reward === 1;
-        const isSuccess = status === 'granted' && rewardGranted;
-
-        if (!isSuccess) {
-          fastify.log.warn(`[AD_REJECTED] User ${request.user._id} attempted to unlock episode ${episodeId} without completing the ad.`);
+        if (episode.adUnlockable === false) {
           await session.abortTransaction();
-          return sendError(reply, 'You must watch the full ad to unlock this episode.', 403);
+          return sendError(reply, 'This episode requires Story Coins or VIP pass.', 403);
         }
 
-        const resolvedTxId = transactionId || safeReceipt.transactionId || safeReceipt.id || `rs_${Date.now()}`;
+        if (String(provider).toUpperCase() !== 'ROBINADS') {
+          await session.abortTransaction();
+          return sendError(reply, 'Unsupported ad provider. Expected ROBINADS.', 400);
+        }
 
-        // Ad is verified. Create permanent unlock record in MongoDB.
+        const resolvedRewardId = String(rewardId || transactionId || '').trim();
+        if (!resolvedRewardId) {
+          await session.abortTransaction();
+          return sendError(reply, 'Missing Robins Ads reward session ID.', 400);
+        }
+
+        // Verify directly against Robins Ads Reward API & mark session CONSUMED atomically
+        const verifiedAd = await verifyAndConsumeRobinAdsReward({
+          userId: request.user._id,
+          rewardId: resolvedRewardId,
+          purpose: 'EPISODE_UNLOCK',
+          targetId: String(episode._id),
+          session,
+        });
+
+        // Create permanent unlock record in MongoDB
         const unlock = new Unlock({
           userId: request.user._id,
           episodeId,
           seriesId: episode.seriesId,
           method: 'AD',
-          provider: provider,
-          transactionId: resolvedTxId
+          provider: 'ROBINADS',
+          transactionId: verifiedAd.rewardId,
         });
         await unlock.save({ session });
 
@@ -167,8 +185,14 @@ export default async function walletRoutes(fastify, opts) {
         await episode.save({ session });
 
         await session.commitTransaction();
-        fastify.log.info(`[AD_UNLOCKED] User ${request.user._id} successfully unlocked episode ${episodeId} via Ad (${provider}).`);
-        return sendSuccess(reply, { unlocked: true, method: 'AD' }, 'Episode unlocked successfully with Ad');
+        fastify.log.info(
+          `[AD_UNLOCKED] User ${request.user._id} unlocked episode ${episodeId} via Robins Ads (${verifiedAd.rewardId}).`
+        );
+        return sendSuccess(
+          reply,
+          { unlocked: true, method: 'AD', provider: 'ROBINADS', rewardId: verifiedAd.rewardId },
+          'Episode unlocked successfully with Ad'
+        );
       }
 
       // ============================================
@@ -211,8 +235,12 @@ export default async function walletRoutes(fastify, opts) {
         await session.abortTransaction();
         return sendError(reply, 'Creator wallet not found', 404);
       }
-      creatorWallet.lockedEarnings = mongoose.Types.Decimal128.fromString((Number(creatorWallet.lockedEarnings.toString()) + creatorReward).toFixed(2));
-      creatorWallet.totalEarned = mongoose.Types.Decimal128.fromString((Number(creatorWallet.totalEarned.toString()) + creatorReward).toFixed(2));
+      creatorWallet.lockedEarnings = mongoose.Types.Decimal128.fromString(
+        (Number(creatorWallet.lockedEarnings.toString()) + creatorReward).toFixed(2)
+      );
+      creatorWallet.totalEarned = mongoose.Types.Decimal128.fromString(
+        (Number(creatorWallet.totalEarned.toString()) + creatorReward).toFixed(2)
+      );
       await creatorWallet.save({ session });
 
       // Create unlock record
@@ -234,6 +262,7 @@ export default async function walletRoutes(fastify, opts) {
         walletId: userWallet._id,
         userId: request.user._id,
         type: 'SPEND',
+        provider: 'WALLET',
         amount: mongoose.Types.Decimal128.fromString(coinCost.toFixed(2)),
         reference,
         description: `Unlocked episode: ${episode.title}`,
@@ -247,7 +276,7 @@ export default async function walletRoutes(fastify, opts) {
     } catch (error) {
       await session.abortTransaction();
       fastify.log.error(error);
-      sendError(reply, 'Failed to unlock episode', 500, error.message);
+      sendError(reply, error.message || 'Failed to unlock episode', error.statusCode || 500);
     } finally {
       session.endSession();
     }
