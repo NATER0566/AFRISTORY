@@ -20,8 +20,9 @@ export const OPTIONAL_ENV = [
   'APPLE_TEAM_ID',
   'APPLE_KEY_ID',
   'APPLE_PRIVATE_KEY',
-  'ADSCOD_PUBLISHER_KEY',
-  'ADSCOD_API_URL',
+  'ROBINADS_API_KEY',
+  'ROBINADS_API_URL',
+  'ROBINS_ADS_WEBSITE_ID',
 ];
 
 const validators = {
@@ -43,8 +44,9 @@ const validators = {
   APPLE_TEAM_ID: value => Boolean(value && value.trim()),
   APPLE_KEY_ID: value => Boolean(value && value.trim()),
   APPLE_PRIVATE_KEY: value => Boolean(value && value.trim()),
-  ADSCOD_PUBLISHER_KEY: value => Boolean(value && value.trim()),
-  ADSCOD_API_URL: value => Boolean(value && value.trim()),
+  ROBINADS_API_KEY: value => Boolean(value && value.trim()),
+  ROBINADS_API_URL: value => Boolean(value && value.trim()),
+  ROBINS_ADS_WEBSITE_ID: value => Boolean(value && value.trim()),
 };
 
 export function getEnvironmentStatus() {
@@ -78,5 +80,17 @@ export function isResendConfigured() {
   return Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL);
 }
 
+export function isRobinAdsConfigured() {
+  return Boolean(process.env.ROBINADS_API_KEY && process.env.ROBINADS_API_KEY.trim());
+}
+
 export const REQUIRED_ENV = STARTUP_REQUIRED_ENV;
-export default { STARTUP_REQUIRED_ENV, OPTIONAL_ENV, REQUIRED_ENV, getEnvironmentStatus, assertRequiredEnv, isResendConfigured };
+export default {
+  STARTUP_REQUIRED_ENV,
+  OPTIONAL_ENV,
+  REQUIRED_ENV,
+  getEnvironmentStatus,
+  assertRequiredEnv,
+  isResendConfigured,
+  isRobinAdsConfigured,
+};
