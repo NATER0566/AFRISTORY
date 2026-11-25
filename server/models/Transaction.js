@@ -17,6 +17,11 @@ const transactionSchema = new mongoose.Schema(
       enum: ['FUND', 'SPEND', 'AD_REWARD', 'BONUS', 'PAYOUT', 'REFUND'],
       required: true,
     },
+    provider: {
+      type: String,
+      enum: ['WALLET', 'PAYSTACK', 'ROBINADS', 'SYSTEM'],
+      default: 'WALLET',
+    },
     amount: {
       type: mongoose.Decimal128,
       required: true,
@@ -25,6 +30,11 @@ const transactionSchema = new mongoose.Schema(
       type: String,
       unique: true,
       required: true,
+    },
+    externalReference: {
+      type: String,
+      unique: true,
+      sparse: true,
     },
     description: {
       type: String,
@@ -53,6 +63,6 @@ const transactionSchema = new mongoose.Schema(
 
 // Index for better query performance
 transactionSchema.index({ userId: 1, createdAt: -1 });
-transactionSchema.index({ type: 1 });
+transactionSchema.index({ type: 1, status: 1, createdAt: -1 });
 
-export default mongoose.model('Transaction', transactionSchema);
+export default mongoose.models.Transaction || mongoose.model('Transaction', transactionSchema);
