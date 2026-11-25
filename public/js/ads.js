@@ -1,7 +1,42 @@
-const Ads = (() => {
-  // PHASE 5: Adscod Advertising enabled. This is strictly for display.
-  // It DOES NOT grant premium unlocks.
+const ROBINS_WEBSITE_ID = '6b06e5d10354f7305a5bc51b';
+const ROBINS_ZONE_ID = '9824292';
+const ROBINS_SCRIPT_URL = 'https://robinsads.com/ads.js';
+
+export const Ads = (() => {
   const ADS_ENABLED = true;
+
+  function ensureRobinsScript() {
+    if (document.querySelector(`script[src*="robinsads.com/ads.js"]`)) {
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = ROBINS_SCRIPT_URL;
+    script.async = true;
+    script.dataset.websiteId = ROBINS_WEBSITE_ID;
+    script.dataset.zoneId = ROBINS_ZONE_ID;
+    (document.head || document.body || document.documentElement).appendChild(script);
+  }
+
+  function mountRobinsSlot(container, zoneId = ROBINS_ZONE_ID) {
+    if (!container || !ADS_ENABLED) return;
+    ensureRobinsScript();
+
+    container.dataset.robinsWebsiteId = ROBINS_WEBSITE_ID;
+    container.dataset.robinsZoneId = String(zoneId);
+
+    if (!container.querySelector('[data-robins-zone]')) {
+      const slot = document.createElement('div');
+      slot.dataset.robinsZone = String(zoneId);
+      slot.dataset.websiteId = ROBINS_WEBSITE_ID;
+      container.appendChild(slot);
+    }
+
+    if (window.RobinsAds && typeof window.RobinsAds.refresh === 'function') {
+      try {
+        window.RobinsAds.refresh(container);
+      } catch (_) {}
+    }
+  }
 
   const api = async (path, options = {}) => {
     const controller = new AbortController();
@@ -25,16 +60,101 @@ const Ads = (() => {
     }
   };
 
-  // Kept for backward compatibility to prevent console errors from old code
   async function refresh() {
+    if (!ADS_ENABLED) return false;
+    ensureRobinsScript();
+
+    document.querySelectorAll('[data-robins-ad]').forEach((el) => {
+      mountRobinsSlot(el, el.dataset.robinsZoneId || ROBINS_ZONE_ID);
+    });
+
+    if (window.RobinsAds && typeof window.RobinsAds.refresh === 'function') {
+      try {
+        window.RobinsAds.refresh();
+      } catch (_) {}
+    }
+
     return true;
   }
 
-  // Fetches and displays a sponsored message safely.
+  function showRewardedAd(options = {}) {
+    return new Promise((resolve) => {
+      if (!ADS_ENABLED) {
+        resolve({ completed: false, reason: 'disabled' });
+        return;
+      }
+
+      ensureRobinsScript();
+      const zoneId = String(options.zoneId || ROBINS_ZONE_ID);
+      let settled = false;
+
+      const cleanup = () => {
+        window.removeEventListener('robins:rewarded', onRewarded, true);
+        document.removeEventListener('robins:rewarded', onRewarded, true);
+        ['robins:closed', 'robins:cancel', 'robins:error', 'robins:no-fill'].forEach((evtName) => {
+          window.removeEventListener(evtName, onDismiss, true);
+          document.removeEventListener(evtName, onDismiss, true);
+        });
+        clearTimeout(timer);
+      };
+
+      const finish = (payload) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        resolve(payload);
+      };
+
+      const onRewarded = (event) => {
+        finish({
+          completed: true,
+          zoneId,
+          detail: event?.detail || {}
+        });
+      };
+
+      const onDismiss = (event) => {
+        finish({
+          completed: false,
+          zoneId,
+          reason: event?.type || 'dismissed'
+        });
+      };
+
+      window.addEventListener('robins:rewarded', onRewarded, true);
+      document.addEventListener('robins:rewarded', onRewarded, true);
+      ['robins:closed', 'robins:cancel', 'robins:error', 'robins:no-fill'].forEach((evtName) => {
+        window.addEventListener(evtName, onDismiss, true);
+        document.addEventListener(evtName, onDismiss, true);
+      });
+
+      const timer = setTimeout(() => {
+        finish({ completed: false, zoneId, reason: 'timeout' });
+      }, 25000);
+
+      if (window.RobinsAds && typeof window.RobinsAds.showRewarded === 'function') {
+        Promise.resolve()
+          .then(() => window.RobinsAds.showRewarded({ websiteId: ROBINS_WEBSITE_ID, zoneId }))
+          .then((result) => {
+            if (result && result.rewarded === true) {
+              finish({ completed: true, zoneId, detail: result });
+            } else if (result && result.rewarded === false) {
+              finish({ completed: false, zoneId, reason: result.reason || 'not_rewarded' });
+            }
+          })
+          .catch((err) => {
+            finish({ completed: false, zoneId, reason: err?.message || 'error' });
+          });
+      }
+    });
+  }
+
   async function showSponsoredMessage() {
     if (!ADS_ENABLED) {
       throw new Error('Sponsored messages are currently unavailable.');
     }
+
+    ensureRobinsScript();
 
     try {
       const res = await api('/ads/serve');
@@ -50,7 +170,6 @@ const Ads = (() => {
     }
   }
 
-  // PHASE 5.1/5.2: RIGOROUS SAFE RENDERING IMPLEMENTATION
   function renderAdModal(adData) {
     const existing = document.getElementById('afrostory-ad-modal');
     if (existing) existing.remove();
@@ -77,7 +196,6 @@ const Ads = (() => {
     modalContent.className = 'modal';
     modalContent.style.cssText = 'padding:0; overflow:hidden; background:#111; border:1px solid #333;';
 
-    // Header
     const header = document.createElement('div');
     header.style.cssText = 'padding:10px 15px; background:#222; display:flex; justify-content:space-between; align-items:center;';
     header.innerHTML = '<span style="color:#999; font-size:12px; font-weight:bold; letter-spacing:1px; text-transform:uppercase;">Sponsored Message</span>';
@@ -102,7 +220,6 @@ const Ads = (() => {
       }
     }
 
-    // Media (Strict HTTPS Validation)
     if (adData.videoUrl && isValidHttpsUrl(adData.videoUrl)) {
       const video = document.createElement('video');
       video.src = adData.videoUrl;
@@ -174,7 +291,6 @@ const Ads = (() => {
       modalContent.appendChild(contentDiv);
     }
 
-    // Body & Text (Safe textContent)
     const body = document.createElement('div');
     body.style.padding = '20px';
 
@@ -188,7 +304,6 @@ const Ads = (() => {
     desc.textContent = adData.description || '';
     body.appendChild(desc);
 
-    // Click URL (Strict Parsing Validation & Tabnabbing Fix)
     if (isValidHttpsUrl(adData.clickUrl)) {
       const link = document.createElement('a');
       link.href = adData.clickUrl;
@@ -206,11 +321,19 @@ const Ads = (() => {
   }
 
   return {
+    websiteId: ROBINS_WEBSITE_ID,
+    zoneId: ROBINS_ZONE_ID,
+    ensureRobinsScript,
+    mountRobinsSlot,
     refresh,
+    showRewardedAd,
     showSponsoredMessage,
     get isEnabled() { return ADS_ENABLED; }
   };
 })();
 
 window.AfroStoryAds = Ads;
+window.RobinsAds = window.RobinsAds || Ads;
 window.Ads = Ads;
+
+export default Ads;
