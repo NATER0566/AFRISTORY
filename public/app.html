@@ -21,18 +21,18 @@
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23111111'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia,serif' font-weight='700' font-size='38' fill='%23D4A017'%3EA%3C/text%3E%3C/svg%3E"
   >
 
-  <!-- Preconnect to Fonts & Rocket Sloth for faster ad initialization -->
+  <!-- Preconnect to Fonts & Robins Ads for faster ad initialization -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://rocketsloth.ai" crossorigin>
-  <link rel="dns-prefetch" href="https://rocketsloth.ai">
+  <link rel="preconnect" href="https://robinsads.com" crossorigin>
+  <link rel="dns-prefetch" href="https://robinsads.com">
 
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
 
   <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-  <script src="https://rocketsloth.ai/rs.js" data-rs-key="pk_9ab422697b631ca0acdede0e36213ee1"></script>
+  <script src="https://robinsads.com/ads.js" data-website-id="6b06e5d10354f7305a5bc51b"></script>
 
   <!-- Webpushr tracking code -->
   <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js"; fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk')); webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4GZnLNpMUBg35mzdNgBSOcMQ4YlZaZ0SY' });</script>
@@ -375,7 +375,7 @@
       }
     }
 
-    body.rs-ad-processing .tiktok-feed {
+    body.robins-ad-processing .tiktok-feed {
       overflow: hidden !important;
       touch-action: none !important;
     }
@@ -514,8 +514,8 @@
       margin: 0 auto 24px !important;
     }
 
-    .feed-lock-overlay button[data-rs-rewarded],
-    [data-rs-rewarded] {
+    .feed-lock-overlay button[data-robins-rewarded],
+    [data-robins-rewarded] {
       background: linear-gradient(135deg, #f3ca52 0%, #d4a017 55%, #b38309 100%) !important;
       color: #111111 !important;
       border: 1px solid rgba(255, 235, 165, 0.55) !important;
@@ -531,17 +531,17 @@
       position: relative !important;
       overflow: hidden !important;
     }
-    .feed-lock-overlay button[data-rs-rewarded]:hover,
-    [data-rs-rewarded]:hover {
+    .feed-lock-overlay button[data-robins-rewarded]:hover,
+    [data-robins-rewarded]:hover {
       transform: translateY(-2px) !important;
       box-shadow: 0 14px 34px rgba(212, 160, 23, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
       filter: brightness(1.05) !important;
     }
-    .feed-lock-overlay button[data-rs-rewarded]:active,
-    [data-rs-rewarded]:active {
+    .feed-lock-overlay button[data-robins-rewarded]:active,
+    [data-robins-rewarded]:active {
       transform: scale(0.98) !important;
     }
-    [data-rs-rewarded][data-rs-loading="true"] {
+    [data-robins-rewarded][data-robins-loading="true"] {
       background: linear-gradient(135deg, #e0b642, #c49212) !important;
       cursor: wait !important;
       box-shadow: 0 0 0 3px rgba(212, 160, 23, 0.28), 0 10px 26px rgba(212, 160, 23, 0.4) !important;
@@ -567,7 +567,7 @@
       transform: translateY(-1px) !important;
     }
 
-    .rs-processing-note {
+    .robins-processing-note {
       margin-top: 14px;
       font-size: 12.5px;
       color: #f0c44d;
@@ -686,7 +686,7 @@
        9. DESKTOP AD ISOLATION - STRICTLY AWAY FROM SIDEBAR LINE
     ============================================================== */
     #global-ad-slot,
-    .main-content [data-rs-ad] {
+    .main-content [data-robins-ad] {
       margin: 40px auto 24px auto !important;
       padding: 16px 24px !important;
       display: flex !important;
@@ -703,35 +703,35 @@
       contain: content !important;
     }
 
-    [data-rs-ad]:empty,
-    body.watch-mode-active [data-rs-ad],
-    body:has(#section-watch:not(.hidden)) [data-rs-ad] {
+    [data-robins-ad]:empty,
+    body.watch-mode-active [data-robins-ad],
+    body:has(#section-watch:not(.hidden)) [data-robins-ad] {
       display: none !important;
       margin: 0 !important;
       padding: 0 !important;
     }
 
-    [data-rs-ad] iframe,
-    [data-rs-ad] video,
-    [data-rs-ad] embed,
-    [data-rs-ad] object,
-    [data-rs-ad] ins,
-    [data-rs-ad] div {
+    [data-robins-ad] iframe,
+    [data-robins-ad] video,
+    [data-robins-ad] embed,
+    [data-robins-ad] object,
+    [data-robins-ad] ins,
+    [data-robins-ad] div {
       max-width: 100% !important;
     }
 
-    /* Keep ALL fixed/floating bottom ad containers (Rocket Sloth, Open.Video, AdSense) strictly to the right of the sidebar */
+    /* Keep ALL fixed/floating bottom ad containers (Robins Ads, Open.Video, AdSense) strictly to the right of the sidebar */
     @media (min-width: 801px) {
       body > div[style*="fixed"],
       body > iframe[style*="fixed"],
       body > ins.adsbygoogle[data-anchor-status],
-      body > [id*="rs-"],
-      body > [class*="rs-"],
+      body > [id*="robins"],
+      body > [class*="robins"],
       body > [id*="open-video"],
       body > [class*="open-video"],
       body > [id*="openvideo"],
       body > [class*="openvideo"],
-      [data-rs-ad] > div[style*="fixed"] {
+      [data-robins-ad] > div[style*="fixed"] {
         left: var(--sidebar-safe-left) !important;
         right: 28px !important;
         transform: none !important;
@@ -1038,7 +1038,7 @@
       </section>
 
       <!-- SINGLE DISPLAY AD SLOT (Contained inside feed, never touches sidebar) -->
-      <div id="global-ad-slot" data-rs-ad></div>
+      <div id="global-ad-slot" data-robins-ad></div>
 
       <!-- LEGAL & SUPPORT FOOTER -->
       <footer class="app-footer">
@@ -1132,7 +1132,7 @@
   <div id="modal-root" class="modal-root hidden"></div>
   <div id="toast-region" class="toast-region" aria-live="polite"></div>
 
-  <!-- Instant UI Bridge: Sidebar Ad Boundary Guard + Minimized Watch Header + Rewarded Ad Lock -->
+  <!-- Instant UI Bridge: Sidebar Ad Boundary Guard + Minimized Watch Header + Robins Rewarded Ad Lock -->
   <script>
     (function () {
       const watchSection = document.getElementById('section-watch');
@@ -1148,7 +1148,7 @@
         const maxSafeWidth = Math.max(300, window.innerWidth - safeLeft - 28);
         document.documentElement.style.setProperty('--sidebar-safe-left', safeLeft + 'px');
 
-        document.querySelectorAll('body > div, body > iframe, body > ins, [data-rs-ad] div').forEach((el) => {
+        document.querySelectorAll('body > div, body > iframe, body > ins, [data-robins-ad] div').forEach((el) => {
           if (
             el.classList.contains('topbar') ||
             el.classList.contains('app-layout') ||
@@ -1224,44 +1224,44 @@
       let processingResetTimer = null;
 
       function clearAdProcessingState() {
-        document.body.classList.remove('rs-ad-processing');
+        document.body.classList.remove('robins-ad-processing');
         clearTimeout(processingResetTimer);
         if (activeAdTrigger) {
-          delete activeAdTrigger.dataset.rsLoading;
+          delete activeAdTrigger.dataset.robinsLoading;
           if (activeAdTrigger.dataset.originalHtml && !activeAdTrigger.disabled) {
             activeAdTrigger.innerHTML = activeAdTrigger.dataset.originalHtml;
           }
-          const note = activeAdTrigger.parentElement?.querySelector('.rs-processing-note');
+          const note = activeAdTrigger.parentElement?.querySelector('.robins-processing-note');
           if (note) note.remove();
           activeAdTrigger = null;
         }
       }
 
       document.addEventListener('click', function (event) {
-        const trigger = event.target.closest('[data-rs-rewarded]');
+        const trigger = event.target.closest('[data-robins-rewarded]');
         if (!trigger) return;
 
-        if (trigger.dataset.rsLoading === 'true') {
+        if (trigger.dataset.robinsLoading === 'true') {
           event.stopImmediatePropagation();
           event.preventDefault();
           return;
         }
 
         activeAdTrigger = trigger;
-        window.__lastRsTrigger = trigger;
-        trigger.dataset.rsLoading = 'true';
+        window.__lastRobinsTrigger = trigger;
+        trigger.dataset.robinsLoading = 'true';
 
         if (!trigger.dataset.originalHtml) {
           trigger.dataset.originalHtml = trigger.innerHTML;
         }
 
         trigger.innerHTML = '<span class="btn-spinner"></span><span>Processing...</span>';
-        document.body.classList.add('rs-ad-processing');
+        document.body.classList.add('robins-ad-processing');
 
         const container = trigger.parentElement;
-        if (container && !container.querySelector('.rs-processing-note')) {
+        if (container && !container.querySelector('.robins-processing-note')) {
           const note = document.createElement('div');
-          note.className = 'rs-processing-note';
+          note.className = 'robins-processing-note';
           note.innerHTML = '<span class="btn-spinner" style="width:12px;height:12px;border-top-color:#f0c44d;border-color:rgba(240,196,77,0.25);"></span><span>Preparing sponsor ad, please wait...</span>';
           container.appendChild(note);
         }
@@ -1270,16 +1270,16 @@
         processingResetTimer = setTimeout(clearAdProcessingState, 8000);
       }, true);
 
-      // 5. Detect Rocket Sloth popups & re-check sidebar boundary on any injected ad node
+      // 5. Detect Robins Ads popups & re-check sidebar boundary on any injected ad node
       new MutationObserver(function (mutations) {
         enforceSidebarAdBoundary();
-        if (!document.body.classList.contains('rs-ad-processing')) return;
+        if (!document.body.classList.contains('robins-ad-processing')) return;
         for (const m of mutations) {
           for (const node of m.addedNodes) {
             if (node.nodeType === 1 && !node.closest('#toast-region')) {
               const id = (node.id || '').toLowerCase();
               const cls = (typeof node.className === 'string' ? node.className : '').toLowerCase();
-              if (id.includes('rs-') || cls.includes('rs-') || node.querySelector?.('iframe')) {
+              if (id.includes('robins') || cls.includes('robins') || node.querySelector?.('iframe')) {
                 clearAdProcessingState();
                 return;
               }
@@ -1288,20 +1288,20 @@
         }
       }).observe(document.body, { childList: true, subtree: true });
 
-      // 6. Bridge Rocket Sloth lifecycle & rs:rewarded across window, document, and trigger button
+      // 6. Bridge Robins Ads lifecycle & robins:rewarded across window, document, and trigger button
       function handleRewardedEvent(event) {
         clearAdProcessingState();
-        if ((event.target === document || event.target === window) && window.__lastRsTrigger) {
-          const btn = window.__lastRsTrigger;
-          window.__lastRsTrigger = null;
-          btn.dispatchEvent(new CustomEvent('rs:rewarded', { bubbles: true, detail: event.detail || {} }));
+        if ((event.target === document || event.target === window) && window.__lastRobinsTrigger) {
+          const btn = window.__lastRobinsTrigger;
+          window.__lastRobinsTrigger = null;
+          btn.dispatchEvent(new CustomEvent('robins:rewarded', { bubbles: true, detail: event.detail || {} }));
         }
       }
 
-      window.addEventListener('rs:rewarded', handleRewardedEvent, true);
-      document.addEventListener('rs:rewarded', handleRewardedEvent, true);
+      window.addEventListener('robins:rewarded', handleRewardedEvent, true);
+      document.addEventListener('robins:rewarded', handleRewardedEvent, true);
 
-      ['rs:closed', 'rs:cancel', 'rs:error', 'rs:no-fill'].forEach((evtName) => {
+      ['robins:closed', 'robins:cancel', 'robins:error', 'robins:no-fill'].forEach((evtName) => {
         window.addEventListener(evtName, clearAdProcessingState, true);
         document.addEventListener(evtName, clearAdProcessingState, true);
       });
@@ -1309,8 +1309,8 @@
   </script>
 
   <!-- Cache-busted module scripts -->
-  <script type="module" src="/js/ads.js?v=10"></script>
-  <script type="module" src="/js/main.js?v=10"></script>
+  <script type="module" src="/js/ads.js?v=11"></script>
+  <script type="module" src="/js/main.js?v=11"></script>
 
 </body>
 </html>
