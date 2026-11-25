@@ -62,11 +62,6 @@ await fastify.register(fastifyMultipart, {
   },
 });
 
-// Rocket Sloth ads.txt redirect - must be before static
-fastify.get('/ads.txt', async (request, reply) => {
-  return reply.code(301).redirect('https://srv.adstxtmanager.com/19390/afristory.live');
-});
-
 // Serve static files from /public
 await fastify.register(fastifyStatic, {
   root: join(__dirname, '..', 'public'),
