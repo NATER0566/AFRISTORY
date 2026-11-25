@@ -6,6 +6,8 @@ import Series from '../models/Series.js';
 import Episode from '../models/Episode.js';
 import Wallet from '../models/Wallet.js';
 import Transaction from '../models/Transaction.js';
+import Unlock from '../models/Unlock.js';
+import AdRewardSession from '../models/AdRewardSession.js';
 import { verifyAdmin } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { paginate, formatDecimal } from '../utils/helpers.js';
@@ -24,12 +26,11 @@ const bannerSchema = new mongoose.Schema({
   badgeText: { type: String },
   category: { type: String, enum: ['PROMO_IMAGE', 'PROMO_VIDEO', 'TRENDING'], required: true },
   isActive: { type: Boolean, default: true },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
 });
 const Banner = mongoose.models.Banner || mongoose.model('Banner', bannerSchema);
 
 export default async function adminRoutes(fastify, opts) {
-
   // =========================================================================
   // 1. DASHBOARD ANALYTICS & STATS
   // =========================================================================
@@ -45,7 +46,7 @@ export default async function adminRoutes(fastify, opts) {
         totalSeries,
         totalEpisodes,
         pendingReports,
-        pendingPayouts
+        pendingPayouts,
       ] = await Promise.all([
         User.countDocuments(),
         Creator.countDocuments({ isVerified: true }),
@@ -53,12 +54,12 @@ export default async function adminRoutes(fastify, opts) {
         Series.countDocuments(),
         Episode.countDocuments(),
         Report.countDocuments({ status: 'PENDING' }),
-        Transaction.countDocuments({ type: 'WITHDRAWAL', status: 'PENDING' })
+        Transaction.countDocuments({ type: 'WITHDRAWAL', status: 'PENDING' }),
       ]);
 
       const revenueAggregate = await Transaction.aggregate([
         { $match: { status: 'COMPLETED', type: { $in: ['COIN_PURCHASE', 'PAYOUT', 'UNLOCK'] } } },
-        { $group: { _id: null, totalVolume: { $sum: '$amount' } } }
+        { $group: { _id: null, totalVolume: { $sum: '$amount' } } },
       ]);
 
       const totalVolume = revenueAggregate[0]?.totalVolume || 0;
@@ -71,7 +72,7 @@ export default async function adminRoutes(fastify, opts) {
         totalEpisodes,
         pendingReports,
         pendingPayouts,
-        totalVolume: formatDecimal(totalVolume)
+        totalVolume: formatDecimal(totalVolume),
       });
     } catch (error) {
       fastify.log.error(error);
@@ -89,7 +90,7 @@ export default async function adminRoutes(fastify, opts) {
       if (startDate && endDate) {
         dateFilter = {
           $gte: new Date(startDate),
-          $lte: new Date(endDate)
+          $lte: new Date(endDate),
         };
       }
 
@@ -97,22 +98,66 @@ export default async function adminRoutes(fastify, opts) {
         User.countDocuments({ createdAt: dateFilter }),
         Series.countDocuments({ createdAt: dateFilter }),
         Episode.countDocuments({ createdAt: dateFilter }),
-        Transaction.countDocuments({ createdAt: dateFilter, status: 'COMPLETED' })
+        Transaction.countDocuments({ createdAt: dateFilter, status: 'COMPLETED' }),
       ]);
 
       sendSuccess(reply, {
         period: {
           start: startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          end: endDate || new Date().toISOString()
+          end: endDate || new Date().toISOString(),
         },
         newUsers,
         newSeries,
         newEpisodes,
-        newTransactions
+        newTransactions,
       });
     } catch (error) {
       fastify.log.error(error);
       sendError(reply, 'Failed to fetch analytics', 500, error.message);
+    }
+  });
+
+  // Robins Ads telemetry & verification stats
+  fastify.get('/ads/stats', async (request, reply) => {
+    try {
+      if (!(await verifyAdmin(request, reply))) return;
+
+      const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+      const [
+        totalSessions,
+        verifiedSessions,
+        consumedSessions,
+        expiredSessions,
+        sessions24h,
+        robinsUnlocks,
+        recentSessions,
+      ] = await Promise.all([
+        AdRewardSession.countDocuments({ provider: 'ROBINADS' }),
+        AdRewardSession.countDocuments({ provider: 'ROBINADS', status: { $in: ['VERIFIED', 'CONSUMED'] } }),
+        AdRewardSession.countDocuments({ provider: 'ROBINADS', status: 'CONSUMED' }),
+        AdRewardSession.countDocuments({ provider: 'ROBINADS', status: 'EXPIRED' }),
+        AdRewardSession.countDocuments({ provider: 'ROBINADS', createdAt: { $gte: last24h } }),
+        Unlock.countDocuments({ method: 'AD', provider: 'ROBINADS', isActive: true }),
+        AdRewardSession.find({ provider: 'ROBINADS' })
+          .populate('userId', 'username email')
+          .sort({ createdAt: -1 })
+          .limit(20),
+      ]);
+
+      sendSuccess(reply, {
+        provider: 'ROBINADS',
+        totalSessions,
+        verifiedSessions,
+        consumedSessions,
+        expiredSessions,
+        sessions24h,
+        robinsUnlocks,
+        recentSessions,
+      });
+    } catch (error) {
+      fastify.log.error(error);
+      sendError(reply, 'Failed to fetch Robins Ads stats', 500, error.message);
     }
   });
 
@@ -122,7 +167,7 @@ export default async function adminRoutes(fastify, opts) {
 
   fastify.get('/banners', async (request, reply) => {
     try {
-      const { type } = request.query; 
+      const { type } = request.query;
       let query = { isActive: true };
       if (type) query.mediaType = type;
 
@@ -137,10 +182,10 @@ export default async function adminRoutes(fastify, opts) {
   fastify.post('/banners', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
-      
+
       const newBanner = new Banner(request.body);
       await newBanner.save();
-      
+
       sendSuccess(reply, newBanner, 'Banner created successfully');
     } catch (error) {
       fastify.log.error(error);
@@ -151,10 +196,10 @@ export default async function adminRoutes(fastify, opts) {
   fastify.delete('/banners/:id', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
-      
+
       const { id } = request.params;
       await Banner.findByIdAndDelete(id);
-      
+
       sendSuccess(reply, null, 'Banner deleted successfully');
     } catch (error) {
       fastify.log.error(error);
@@ -181,7 +226,7 @@ export default async function adminRoutes(fastify, opts) {
       if (search) {
         query.$or = [
           { username: { $regex: search, $options: 'i' } },
-          { email: { $regex: search, $options: 'i' } }
+          { email: { $regex: search, $options: 'i' } },
         ];
       }
 
@@ -191,7 +236,7 @@ export default async function adminRoutes(fastify, opts) {
           .skip(skip)
           .limit(l)
           .sort({ createdAt: -1 }),
-        User.countDocuments(query)
+        User.countDocuments(query),
       ]);
 
       sendSuccess(reply, {
@@ -200,8 +245,8 @@ export default async function adminRoutes(fastify, opts) {
           page: p,
           limit: l,
           total,
-          pages: Math.ceil(total / l)
-        }
+          pages: Math.ceil(total / l),
+        },
       });
     } catch (error) {
       fastify.log.error(error);
@@ -219,13 +264,13 @@ export default async function adminRoutes(fastify, opts) {
 
       const [creatorProfile, wallet] = await Promise.all([
         Creator.findOne({ userId }),
-        Wallet.findOne({ userId })
+        Wallet.findOne({ userId }),
       ]);
 
       sendSuccess(reply, {
         user,
         creatorProfile: creatorProfile || null,
-        wallet: wallet || null
+        wallet: wallet || null,
       });
     } catch (error) {
       fastify.log.error(error);
@@ -252,8 +297,8 @@ export default async function adminRoutes(fastify, opts) {
         title: 'Account Suspended',
         message: reason || 'Your account has been suspended for violating terms of service.',
         targetUrl: '#support',
-        dedupeKey: `user_suspend_${user._id}_${Date.now()}`
-      }).catch(err => fastify.log.error('Notification error:', err));
+        dedupeKey: `user_suspend_${user._id}_${Date.now()}`,
+      }).catch((err) => fastify.log.error('Notification error:', err));
 
       sendSuccess(reply, null, 'User suspended successfully');
     } catch (error) {
@@ -306,7 +351,7 @@ export default async function adminRoutes(fastify, opts) {
           .skip(skip)
           .limit(l)
           .sort({ createdAt: -1 }),
-        Creator.countDocuments(query)
+        Creator.countDocuments(query),
       ]);
 
       sendSuccess(reply, {
@@ -315,8 +360,8 @@ export default async function adminRoutes(fastify, opts) {
           page: p,
           limit: l,
           total,
-          pages: Math.ceil(total / l)
-        }
+          pages: Math.ceil(total / l),
+        },
       });
     } catch (error) {
       fastify.log.error(error);
@@ -351,8 +396,8 @@ export default async function adminRoutes(fastify, opts) {
         title: 'Creator Account Approved! 🌟',
         message: 'Your creator verification has been approved. You can now publish stories and monetize.',
         targetUrl: '#creator',
-        dedupeKey: `creator_verify_${creator._id}_${Date.now()}`
-      }).catch(err => fastify.log.error('Notification error:', err));
+        dedupeKey: `creator_verify_${creator._id}_${Date.now()}`,
+      }).catch((err) => fastify.log.error('Notification error:', err));
 
       sendSuccess(reply, creator, 'Creator verified successfully');
     } catch (error) {
@@ -384,8 +429,8 @@ export default async function adminRoutes(fastify, opts) {
         title: 'Creator Application Update',
         message: rejectionMessage,
         targetUrl: '#creator',
-        dedupeKey: `creator_reject_${creator._id}_${Date.now()}`
-      }).catch(err => fastify.log.error('Notification error:', err));
+        dedupeKey: `creator_reject_${creator._id}_${Date.now()}`,
+      }).catch((err) => fastify.log.error('Notification error:', err));
 
       sendSuccess(reply, creator, 'Creator application rejected');
     } catch (error) {
@@ -415,7 +460,7 @@ export default async function adminRoutes(fastify, opts) {
           .skip(skip)
           .limit(l)
           .sort({ createdAt: -1 }),
-        Series.countDocuments(query)
+        Series.countDocuments(query),
       ]);
 
       sendSuccess(reply, {
@@ -424,8 +469,8 @@ export default async function adminRoutes(fastify, opts) {
           page: p,
           limit: l,
           total,
-          pages: Math.ceil(total / l)
-        }
+          pages: Math.ceil(total / l),
+        },
       });
     } catch (error) {
       fastify.log.error(error);
@@ -463,7 +508,7 @@ export default async function adminRoutes(fastify, opts) {
       if (!episode) return sendError(reply, 'Episode not found', 404);
 
       await Series.findByIdAndUpdate(episode.seriesId, {
-        $inc: { totalEpisodes: -1 }
+        $inc: { totalEpisodes: -1 },
       });
 
       await Episode.findByIdAndDelete(episodeId);
@@ -493,7 +538,7 @@ export default async function adminRoutes(fastify, opts) {
           .skip(skip)
           .limit(l)
           .sort({ createdAt: -1 }),
-        Report.countDocuments({ status })
+        Report.countDocuments({ status }),
       ]);
 
       sendSuccess(reply, {
@@ -502,8 +547,8 @@ export default async function adminRoutes(fastify, opts) {
           page: p,
           limit: l,
           total,
-          pages: Math.ceil(total / l)
-        }
+          pages: Math.ceil(total / l),
+        },
       });
     } catch (error) {
       fastify.log.error(error);
@@ -568,7 +613,7 @@ export default async function adminRoutes(fastify, opts) {
           .skip(skip)
           .limit(l)
           .sort({ createdAt: -1 }),
-        Transaction.countDocuments(query)
+        Transaction.countDocuments(query),
       ]);
 
       sendSuccess(reply, {
@@ -577,8 +622,8 @@ export default async function adminRoutes(fastify, opts) {
           page: p,
           limit: l,
           total,
-          pages: Math.ceil(total / l)
-        }
+          pages: Math.ceil(total / l),
+        },
       });
     } catch (error) {
       fastify.log.error(error);
@@ -614,8 +659,8 @@ export default async function adminRoutes(fastify, opts) {
         title: 'Withdrawal Processed 💰',
         message: `Your withdrawal of ${tx.amount} has been processed successfully.`,
         targetUrl: '#wallet',
-        dedupeKey: `tx_payout_${tx._id}`
-      }).catch(err => fastify.log.error('Notification error:', err));
+        dedupeKey: `tx_payout_${tx._id}`,
+      }).catch((err) => fastify.log.error('Notification error:', err));
 
       sendSuccess(reply, tx, 'Payout approved successfully');
     } catch (error) {
@@ -645,19 +690,18 @@ export default async function adminRoutes(fastify, opts) {
       tx.processedAt = new Date();
       await tx.save();
 
-      await Wallet.findOneAndUpdate(
-        { userId: tx.userId },
-        { $inc: { balance: tx.amount } }
-      );
+      await Wallet.findOneAndUpdate({ userId: tx.userId }, { $inc: { balance: tx.amount } });
 
       createNotification({
         userId: tx.userId,
         type: 'PAYOUT_REJECTED',
         title: 'Withdrawal Request Declined',
-        message: reason ? `Your withdrawal was rejected: ${reason}` : 'Your withdrawal could not be processed. Funds returned to wallet.',
+        message: reason
+          ? `Your withdrawal was rejected: ${reason}`
+          : 'Your withdrawal could not be processed. Funds returned to wallet.',
         targetUrl: '#wallet',
-        dedupeKey: `tx_reject_${tx._id}`
-      }).catch(err => fastify.log.error('Notification error:', err));
+        dedupeKey: `tx_reject_${tx._id}`,
+      }).catch((err) => fastify.log.error('Notification error:', err));
 
       sendSuccess(reply, tx, 'Payout rejected and balance refunded to user wallet');
     } catch (error) {
@@ -681,7 +725,7 @@ export default async function adminRoutes(fastify, opts) {
         message: message || 'No message',
         stack: stack || 'No stack',
         url: url || 'Unknown URL',
-        clientTime: time || new Date().toISOString()
+        clientTime: time || new Date().toISOString(),
       });
 
       return sendSuccess(reply, { logged: true });
