@@ -80,7 +80,10 @@ export async function createRobinAdsRewardSession({
       payload?.error ||
       payload?.message ||
       `Robins Ads API rejected reward creation (HTTP ${response.status}).`;
-    throw createHttpError(reason, response.status >= 400 && response.status < 500 ? response.status : 502);
+    throw createHttpError(
+      reason,
+      response.status >= 400 && response.status < 500 ? response.status : 502
+    );
   }
 
   const expiresAt = payload.expires_at
@@ -184,7 +187,10 @@ export async function checkAndFulfillRobinAdsReward({ userId, rewardId }) {
       reward?.error ||
       reward?.message ||
       `Robins Ads status check failed (HTTP ${response.status}).`;
-    throw createHttpError(reason, response.status >= 400 && response.status < 500 ? response.status : 502);
+    throw createHttpError(
+      reason,
+      response.status >= 400 && response.status < 500 ? response.status : 502
+    );
   }
 
   const remoteStatus = String(reward.status || 'pending').toLowerCase();
@@ -243,7 +249,13 @@ export async function checkAndFulfillRobinAdsReward({ userId, rewardId }) {
  * Fallback verification for Section 2a / Section 4 in-app RobinAds.showInterstitial()
  * (used when browser blocks window.open or inside Telegram WebApp).
  */
-async function verifyInterstitialCallbackToken({ impressionId, token, userId, purpose, targetId }) {
+async function verifyInterstitialCallbackToken({
+  impressionId,
+  token,
+  userId,
+  purpose,
+  targetId,
+}) {
   const cleanImpressionId = String(impressionId || '').trim();
   const cleanToken = String(token || '').trim();
   if (!cleanImpressionId || !cleanToken) {
@@ -299,14 +311,21 @@ async function verifyInterstitialCallbackToken({ impressionId, token, userId, pu
  * Called by wallet.js and rewards.js right before unlocking an episode or crediting coins.
  * Guarantees server-side Robins Ads verification and single-use replay protection.
  */
-export async function verifyRobinAdsReward({
-  rewardId,
-  transactionId,
-  token,
-  userId,
-  purpose = 'REWARD',
-  targetId = null,
-}) {
+export async function verifyAndConsumeRobinAdsReward(arg1, arg2, arg3) {
+  const params =
+    typeof arg1 === 'object' && arg1 !== null
+      ? arg1
+      : { rewardId: arg1, userId: arg2, ...(typeof arg3 === 'object' && arg3 !== null ? arg3 : {}) };
+
+  const {
+    rewardId,
+    transactionId,
+    token,
+    userId,
+    purpose = 'REWARD',
+    targetId = null,
+  } = params;
+
   const cleanId = String(rewardId || transactionId || '').trim();
   if (!cleanId) {
     throw createHttpError('Missing Robins Ads rewardId.', 400);
@@ -378,3 +397,6 @@ export async function verifyRobinAdsReward({
     transactionId: cleanId,
   };
 }
+
+// Export alias for compatibility across all routes
+export const verifyRobinAdsReward = verifyAndConsumeRobinAdsReward;
