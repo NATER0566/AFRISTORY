@@ -12,7 +12,7 @@ import { verifyAuth, verifyAdmin } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { generateReference, formatDecimal } from '../utils/helpers.js';
 import { createNotification } from '../utils/notificationService.js';
-import { verifyAndConsumeRobinAdsReward } from '../services/robinAdsService.js';
+import { verifyAndConsumeRobinAdsReward } from '../utils/robinAdsService.js';
 
 const timezone = process.env.REWARD_TIMEZONE || 'Africa/Lagos';
 const periodKey = (date = new Date(), type = 'once') => {
@@ -424,6 +424,7 @@ export default async function rewardRoutes(fastify) {
         provider = 'ROBINADS',
         rewardId: robinsRewardId,
         transactionId,
+        receipt,
       } = request.body || {};
 
       const reward = await Reward.findOne({
@@ -443,12 +444,21 @@ export default async function rewardRoutes(fastify) {
       let adVerification = null;
 
       if (requiresAd) {
-        if (String(provider).toUpperCase() !== 'ROBINADS') {
+        const normalizedProvider = String(provider).toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (!['ROBINADS', 'ROBINSADS'].includes(normalizedProvider)) {
           await session.abortTransaction();
           return sendError(reply, 'Unsupported ad provider. Expected ROBINADS.', 400);
         }
 
-        const resolvedRobinsId = String(robinsRewardId || transactionId || '').trim();
+        const resolvedRobinsId = String(
+          robinsRewardId ||
+            transactionId ||
+            receipt?.rewardId ||
+            receipt?.transactionId ||
+            receipt?.id ||
+            ''
+        ).trim();
+
         if (!resolvedRobinsId) {
           await session.abortTransaction();
           return sendError(reply, 'You must watch the full ad to claim this reward.', 403);
