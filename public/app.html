@@ -21,7 +21,7 @@
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23111111'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia,serif' font-weight='700' font-size='38' fill='%23D4A017'%3EA%3C/text%3E%3C/svg%3E"
   >
 
-  <!-- Preconnect to Fonts & Robins Ads for faster ad initialization -->
+  <!-- Preconnect to Fonts & Robins Ads -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://robinsads.com" crossorigin>
@@ -32,7 +32,9 @@
 
   <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-  <script src="https://robinsads.com/ads.js" data-website-id="6b06e5d10354f7305a5bc51b"></script>
+
+  <!-- Robins Ads Official Script (Section 1) -->
+  <script src="https://robinsads.com/ads.js" data-website-id="6b06e5d10354f7305a5bc51b" async></script>
 
   <!-- Webpushr tracking code -->
   <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js"; fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk')); webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4GZnLNpMUBg35mzdNgBSOcMQ4YlZaZ0SY' });</script>
@@ -683,16 +685,16 @@
     .profile-cover{background:linear-gradient(120deg,#2b2114,#171717 52%,#222);border:1px solid #343434;min-height:230px;padding:28px 32px;position:relative;overflow:hidden}.profile-cover[style]{background-position:center;background-size:cover}.profile-header{align-items:flex-end;display:flex;gap:22px;min-height:174px}.profile-avatar{align-items:center;background:#d4a017;color:#111;display:flex;flex:0 0 104px;font-family:Georgia,serif;font-size:48px;height:104px;justify-content:center;overflow:hidden;border-radius:50%;}.profile-avatar img{height:100%;object-fit:cover;width:100%}.profile-identity{max-width:650px}.profile-identity h1{font-size:clamp(30px,4vw,52px)}.profile-handle{margin:4px 0 10px}.profile-bio{color:#ddd;margin:0}.profile-location{color:#d4a017;font-size:13px;margin-top:10px}.profile-actions{display:flex;gap:10px;margin-left:auto}.profile-tabs{border-bottom:1px solid #343434;display:flex;gap:24px;overflow:auto;padding:0 4px}.profile-tab{background:none;border:0;border-bottom:2px solid transparent;color:#999;padding:16px 4px;white-space:nowrap}.profile-tab.active,.profile-tab:hover{border-color:#d4a017;color:#f5f5f5}.profile-panel{padding-top:30px}.profile-summary-grid{display:grid;gap:30px;grid-template-columns:1fr 1fr}.profile-section-heading{align-items:end;display:flex;justify-content:space-between;margin:28px 0 18px}.profile-section-heading h2{font-size:24px}.profile-list{display:grid;gap:10px}.profile-list-row{align-items:center;background:#1b1b1b;border:1px solid #343434;display:flex;gap:14px;padding:12px}.profile-list-row strong{display:block}.profile-list-row p{color:#999;font-size:13px;margin:2px 0 0}.profile-list-row .progress{background:#343434;height:4px;margin-top:8px;width:180px}.profile-list-row .progress i{background:#d4a017;display:block;height:100%}.profile-story-grid{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-story-grid .series-card{min-width:0}.interest-list{display:flex;flex-wrap:wrap;gap:8px}.interest-chip{background:#242424;border:1px solid #4a4a4a;color:#f5f5f5;padding:7px 11px}.profile-about{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr));max-width:680px}.profile-about div{background:#1b1b1b;border-bottom:1px solid #343434;padding:14px}.profile-about span{color:#999;display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase}.profile-edit-panel{border-top:1px solid #343434;margin-top:30px;padding-top:24px}.profile-edit-grid{display:grid;gap:14px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-form label{color:#bbb;display:grid;font-size:12px;gap:6px}.profile-form input,.profile-form textarea,.profile-form select{background:#111;border:1px solid #444;color:#f5f5f5;padding:11px}.profile-form select[multiple]{min-height:130px}.profile-privacy{display:flex;flex-wrap:wrap;gap:18px;margin:16px 0}.profile-privacy label{display:flex;gap:8px}.profile-empty{border:1px dashed #444;color:#999;padding:24px}.profile-empty button{margin-top:12px}@media(max-width:700px){.profile-cover{padding:22px 18px}.profile-header{align-items:flex-start;flex-wrap:wrap}.profile-avatar{flex-basis:78px;font-size:36px;height:78px}.profile-actions{margin-left:0;width:100%}.profile-actions .button{flex:1}.profile-summary-grid,.profile-about,.profile-edit-grid{grid-template-columns:1fr}.profile-tabs{gap:16px}.profile-story-grid{grid-template-columns:1fr 1fr}}
 
     /* ==============================================================
-       9. DESKTOP AD ISOLATION - STRICTLY AWAY FROM SIDEBAR LINE
+       9. ROBINS ADS DISPLAY PLACEMENTS (BANNER / RECTANGLE / NATIVE)
+       Uncovered, isolated from sidebar, auto-collapses if unfilled
     ============================================================== */
-    #global-ad-slot,
-    .main-content [data-robins-ad] {
-      margin: 40px auto 24px auto !important;
-      padding: 16px 24px !important;
+    .robins-ad-slot {
+      margin: 32px auto 20px auto !important;
+      padding: 12px 16px !important;
       display: flex !important;
       justify-content: center !important;
       align-items: center !important;
-      width: calc(100% - 40px) !important;
+      width: calc(100% - 32px) !important;
       max-width: 780px !important;
       overflow: hidden !important;
       border-radius: 14px !important;
@@ -700,38 +702,37 @@
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.01)) !important;
       position: relative !important;
       z-index: 10 !important;
-      contain: content !important;
     }
 
-    [data-robins-ad]:empty,
-    body.watch-mode-active [data-robins-ad],
-    body:has(#section-watch:not(.hidden)) [data-robins-ad] {
+    .robins-ad-slot [data-ad-type] {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+    }
+
+    .robins-ad-slot:has([data-ad-type]:empty),
+    body.watch-mode-active .robins-ad-slot,
+    body:has(#section-watch:not(.hidden)) .robins-ad-slot {
       display: none !important;
       margin: 0 !important;
       padding: 0 !important;
     }
 
-    [data-robins-ad] iframe,
-    [data-robins-ad] video,
-    [data-robins-ad] embed,
-    [data-robins-ad] object,
-    [data-robins-ad] ins,
-    [data-robins-ad] div {
+    .robins-ad-slot iframe,
+    .robins-ad-slot video,
+    .robins-ad-slot img,
+    .robins-ad-slot div {
       max-width: 100% !important;
     }
 
-    /* Keep ALL fixed/floating bottom ad containers (Robins Ads, Open.Video, AdSense) strictly to the right of the sidebar */
+    /* Keep ALL fixed/floating bottom ad containers strictly to the right of the sidebar */
     @media (min-width: 801px) {
       body > div[style*="fixed"],
       body > iframe[style*="fixed"],
       body > ins.adsbygoogle[data-anchor-status],
       body > [id*="robins"],
-      body > [class*="robins"],
-      body > [id*="open-video"],
-      body > [class*="open-video"],
-      body > [id*="openvideo"],
-      body > [class*="openvideo"],
-      [data-robins-ad] > div[style*="fixed"] {
+      body > [class*="robins"] {
         left: var(--sidebar-safe-left) !important;
         right: 28px !important;
         transform: none !important;
@@ -838,6 +839,12 @@
         <div id="featured-series" class="featured-strip"></div>
         <div class="section-heading"><div><p class="eyebrow">CURATED FOR YOU</p><h2>Trending now</h2></div><button class="text-button" data-action="refresh-discover">View all ↗</button></div>
         <div id="series-grid" class="content-grid"></div>
+
+        <!-- IN-FEED ROBINS NATIVE / RECTANGLE PLACEMENT (Section 1 Option B) -->
+        <div class="robins-ad-slot">
+          <div class="adsense-ad" data-website-id="6b06e5d10354f7305a5bc51b" data-ad-type="native"></div>
+        </div>
+
         <div class="section-heading compact-heading"><div><p class="eyebrow">VOICES TO KNOW</p><h2>Top creators</h2></div></div>
         <div id="creator-grid" class="creator-grid"></div>
       </section>
@@ -1037,8 +1044,10 @@
         </form>
       </section>
 
-      <!-- SINGLE DISPLAY AD SLOT (Contained inside feed, never touches sidebar) -->
-      <div id="global-ad-slot" data-robins-ad data-website-id="6b06e5d10354f7305a5bc51b" data-zone-id="9824292"></div>
+      <!-- BOTTOM FEED ROBINS DISPLAY BANNER (Section 1 Option B) -->
+      <div id="global-ad-slot" class="robins-ad-slot">
+        <div class="adsense-ad" data-website-id="6b06e5d10354f7305a5bc51b" data-ad-type="banner"></div>
+      </div>
 
       <!-- LEGAL & SUPPORT FOOTER -->
       <footer class="app-footer">
@@ -1132,7 +1141,7 @@
   <div id="modal-root" class="modal-root hidden"></div>
   <div id="toast-region" class="toast-region" aria-live="polite"></div>
 
-  <!-- Instant UI Bridge: Sidebar Ad Boundary Guard + Minimized Watch Header + Robins Rewarded Ad Lock -->
+  <!-- Instant UI Bridge: Sidebar Ad Boundary Guard + Minimized Watch Header -->
   <script>
     (function () {
       const watchSection = document.getElementById('section-watch');
@@ -1148,7 +1157,7 @@
         const maxSafeWidth = Math.max(300, window.innerWidth - safeLeft - 28);
         document.documentElement.style.setProperty('--sidebar-safe-left', safeLeft + 'px');
 
-        document.querySelectorAll('body > div, body > iframe, body > ins, [data-robins-ad] div').forEach((el) => {
+        document.querySelectorAll('body > div, body > iframe, body > ins').forEach((el) => {
           if (
             el.classList.contains('topbar') ||
             el.classList.contains('app-layout') ||
@@ -1219,115 +1228,24 @@
         }).observe(feedEl, { childList: true, subtree: true });
       }
 
-      // 4. Instant "Processing..." state & anti-scroll lock when clicking Watch Ad to Unlock / Earn
-      let activeAdTrigger = null;
-      let processingResetTimer = null;
-
-      function clearAdProcessingState() {
-        document.body.classList.remove('robins-ad-processing');
-        clearTimeout(processingResetTimer);
-        if (activeAdTrigger) {
-          delete activeAdTrigger.dataset.robinsLoading;
-          if (activeAdTrigger.dataset.originalHtml && !activeAdTrigger.disabled) {
-            activeAdTrigger.innerHTML = activeAdTrigger.dataset.originalHtml;
-          }
-          const note = activeAdTrigger.parentElement?.querySelector('.robins-processing-note');
-          if (note) note.remove();
-          activeAdTrigger = null;
-        }
-      }
-
+      // 4. Record last clicked [data-robins-rewarded] button so ads.js dispatches robins:rewarded back to it
       document.addEventListener('click', function (event) {
         const trigger = event.target.closest('[data-robins-rewarded]');
-        if (!trigger) return;
-
-        if (trigger.dataset.robinsLoading === 'true') {
-          event.stopImmediatePropagation();
-          event.preventDefault();
-          return;
+        if (trigger) {
+          window.__lastRobinsTrigger = trigger;
         }
-
-        activeAdTrigger = trigger;
-        window.__lastRobinsTrigger = trigger;
-        trigger.dataset.robinsLoading = 'true';
-
-        if (!trigger.dataset.originalHtml) {
-          trigger.dataset.originalHtml = trigger.innerHTML;
-        }
-
-        trigger.innerHTML = '<span class="btn-spinner"></span><span>Processing...</span>';
-        document.body.classList.add('robins-ad-processing');
-
-        const container = trigger.parentElement;
-        if (container && !container.querySelector('.robins-processing-note')) {
-          const note = document.createElement('div');
-          note.className = 'robins-processing-note';
-          note.innerHTML = '<span class="btn-spinner" style="width:12px;height:12px;border-top-color:#f0c44d;border-color:rgba(240,196,77,0.25);"></span><span>Preparing sponsor ad, please wait...</span>';
-          container.appendChild(note);
-        }
-
-        clearTimeout(processingResetTimer);
-        processingResetTimer = setTimeout(clearAdProcessingState, 8000);
       }, true);
 
-      // 5. Detect Robins Ads popups & re-check sidebar boundary on any injected ad node
-      new MutationObserver(function (mutations) {
-        enforceSidebarAdBoundary();
-        if (!document.body.classList.contains('robins-ad-processing')) return;
-        for (const m of mutations) {
-          for (const node of m.addedNodes) {
-            if (node.nodeType === 1 && !node.closest('#toast-region')) {
-              const id = (node.id || '').toLowerCase();
-              const cls = (typeof node.className === 'string' ? node.className : '').toLowerCase();
-              if (id.includes('robins') || cls.includes('robins') || node.querySelector?.('iframe')) {
-                clearAdProcessingState();
-                return;
-              }
-            }
-          }
-        }
-      }).observe(document.body, { childList: true, subtree: true });
-
-      // 6. Bridge Robins Ads lifecycle & robins:rewarded across window, document, and trigger button
-      function handleRewardedEvent(event) {
-        clearAdProcessingState();
-        if ((event.target === document || event.target === window) && window.__lastRobinsTrigger) {
-          const btn = window.__lastRobinsTrigger;
-          window.__lastRobinsTrigger = null;
-          const rawDetail = event.detail || {};
-          const fallbackId =
-            rawDetail.rewardId ||
-            rawDetail.transactionId ||
-            `robins_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-          btn.dispatchEvent(
-            new CustomEvent('robins:rewarded', {
-              bubbles: true,
-              detail: {
-                provider: 'ROBINADS',
-                websiteId: '6b06e5d10354f7305a5bc51b',
-                zoneId: '9824292',
-                ...rawDetail,
-                rewardId: fallbackId,
-                transactionId: fallbackId
-              }
-            })
-          );
-        }
-      }
-
-      window.addEventListener('robins:rewarded', handleRewardedEvent, true);
-      document.addEventListener('robins:rewarded', handleRewardedEvent, true);
-
-      ['robins:closed', 'robins:cancel', 'robins:error', 'robins:no-fill'].forEach((evtName) => {
-        window.addEventListener(evtName, clearAdProcessingState, true);
-        document.addEventListener(evtName, clearAdProcessingState, true);
+      new MutationObserver(enforceSidebarAdBoundary).observe(document.body, {
+        childList: true,
+        subtree: true
       });
     })();
   </script>
 
   <!-- Cache-busted module scripts -->
-  <script type="module" src="/js/ads.js?v=12"></script>
-  <script type="module" src="/js/main.js?v=12"></script>
+  <script type="module" src="/js/ads.js?v=13"></script>
+  <script type="module" src="/js/main.js?v=13"></script>
 
 </body>
 </html>
