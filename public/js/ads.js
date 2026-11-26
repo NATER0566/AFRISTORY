@@ -1,471 +1,297 @@
-const Ads = (() => {
-  const ADS_ENABLED = true;
-  const ROBINS_SCRIPT_URL = 'https://robinsads.com/ads.js';
-  const ROBINS_WEBSITE_ID = '6b06e5d10354f7305a5bc51b';
-  const ROBINS_ZONE_ID = '9824292';
+const ROBINS_WEBSITE_ID = '6b06e5d10354f7305a5bc51b';
+const POLL_INTERVAL_MS = 3000;
+const MAX_POLL_DURATION_MS = 4 * 60 * 1000; // 4 minutes max per session
 
-  function createRewardSessionId() {
-    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-      return `robins_${crypto.randomUUID()}`;
-    }
-    return `robins_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
+let activeSession = null;
+
+function getAuthHeaders() {
+  const headers = { 'Content-Type': 'application/json' };
+  const token =
+    localStorage.getItem('token') ||
+    localStorage.getItem('authToken') ||
+    localStorage.getItem('afristory_token');
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
   }
+  return headers;
+}
 
-  const api = async (path, options = {}) => {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-    try {
-      const response = await fetch(`/api${path}`, {
-        credentials: 'include',
-        signal: controller.signal,
-        ...options
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok || data.success === false) {
-        throw new Error(data.message || 'Sponsored message unavailable');
-      }
-      return data;
-    } catch (error) {
-      if (error.name === 'AbortError') throw new Error('Sponsored message timed out');
-      throw error;
-    } finally {
-      clearTimeout(timeoutId);
+function showStatusToast(message, type = 'success') {
+  const region = document.getElementById('toast-region');
+  if (!region) return;
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span class="toast-icon"></span><span class="toast-message">${message}</span>`;
+  region.appendChild(toast);
+  setTimeout(() => {
+    toast.style.animation = 'fadeOutToast 0.3s ease forwards';
+    setTimeout(() => toast.remove(), 320);
+  }, 4200);
+}
+
+function isTelegramWebApp() {
+  return Boolean(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
+}
+
+function resetTriggerButton(trigger) {
+  document.body.classList.remove('robins-ad-processing');
+  if (!trigger) return;
+  delete trigger.dataset.robinsLoading;
+  if (trigger.dataset.originalHtml) {
+    trigger.innerHTML = trigger.dataset.originalHtml;
+  }
+  const note = trigger.parentElement?.querySelector('.robins-processing-note');
+  if (note) note.remove();
+}
+
+function setTriggerStatus(trigger, label) {
+  if (!trigger) return;
+  if (!trigger.dataset.originalHtml) {
+    trigger.dataset.originalHtml = trigger.innerHTML;
+  }
+  trigger.dataset.robinsLoading = 'true';
+  trigger.innerHTML = `<span class="btn-spinner"></span><span>${label}</span>`;
+  document.body.classList.add('robins-ad-processing');
+
+  const container = trigger.parentElement;
+  if (container) {
+    let note = container.querySelector('.robins-processing-note');
+    if (!note) {
+      note = document.createElement('div');
+      note.className = 'robins-processing-note';
+      container.appendChild(note);
     }
+    note.innerHTML = `<span class="btn-spinner" style="width:12px;height:12px;border-top-color:#f0c44d;border-color:rgba(240,196,77,0.25);"></span><span>${label}</span>`;
+  }
+}
+
+function dispatchRewardVerified(trigger, payload) {
+  const detail = {
+    provider: 'ROBINADS',
+    websiteId: ROBINS_WEBSITE_ID,
+    verified: true,
+    ...payload,
   };
 
-  function ensureRobinsScript() {
-    if (!ADS_ENABLED || typeof document === 'undefined') return null;
-    let script = document.querySelector(`script[src*="robinsads.com/ads.js"]`);
-    if (!script) {
-      script = document.createElement('script');
-      script.src = ROBINS_SCRIPT_URL;
-      script.async = true;
-      script.setAttribute('data-website-id', ROBINS_WEBSITE_ID);
-      document.head.appendChild(script);
-    } else if (!script.getAttribute('data-website-id')) {
-      script.setAttribute('data-website-id', ROBINS_WEBSITE_ID);
-    }
-    return script;
-  }
+  const target = trigger || window.__lastRobinsTrigger || document;
+  window.__lastRobinsTrigger = null;
+  target.dispatchEvent(
+    new CustomEvent('robins:rewarded', {
+      bubbles: true,
+      detail,
+    })
+  );
+}
 
-  function getRobinsSdk() {
-    return (
-      window.robinsAds ||
-      window.RobinsAds ||
-      window.robins ||
-      window.Robins ||
-      null
-    );
-  }
+async function pollRewardUntilTerminal({ rewardId, popupWindow, trigger }) {
+  const startedAt = Date.now();
 
-  function mountDisplaySlot(slotEl) {
-    if (!slotEl || !ADS_ENABLED) return;
-    slotEl.setAttribute('data-website-id', ROBINS_WEBSITE_ID);
-    slotEl.setAttribute('data-zone-id', ROBINS_ZONE_ID);
+  return new Promise((resolve, reject) => {
+    let finished = false;
+    let closedCheckCount = 0;
 
-    if (!slotEl.querySelector('.robins-zone-anchor')) {
-      const zoneAnchor = document.createElement('div');
-      zoneAnchor.className = 'robins-zone-anchor';
-      zoneAnchor.setAttribute('data-robins-zone', ROBINS_ZONE_ID);
-      zoneAnchor.setAttribute('data-website-id', ROBINS_WEBSITE_ID);
-      zoneAnchor.setAttribute('data-zone-id', ROBINS_ZONE_ID);
-      zoneAnchor.style.cssText = 'width:100%; display:flex; justify-content:center; align-items:center;';
-      slotEl.appendChild(zoneAnchor);
-    }
-  }
-
-  async function refresh() {
-    if (!ADS_ENABLED) return false;
-    ensureRobinsScript();
-
-    document.querySelectorAll('[data-robins-ad], #global-ad-slot').forEach((slot) => {
-      mountDisplaySlot(slot);
-    });
-
-    const sdk = getRobinsSdk();
-    try {
-      if (sdk && typeof sdk.refresh === 'function') {
-        await sdk.refresh({ websiteId: ROBINS_WEBSITE_ID, zoneId: ROBINS_ZONE_ID });
-      } else if (sdk && typeof sdk.load === 'function') {
-        await sdk.load({ websiteId: ROBINS_WEBSITE_ID, zoneId: ROBINS_ZONE_ID });
-      } else if (sdk && typeof sdk.init === 'function') {
-        sdk.init({ websiteId: ROBINS_WEBSITE_ID, zoneId: ROBINS_ZONE_ID });
-      }
-    } catch (_) {
-      // Non-fatal: Robins Ads auto-scans DOM zones asynchronously
-    }
-
-    return true;
-  }
-
-  function isValidHttpsUrl(urlStr) {
-    if (!urlStr) return false;
-    try {
-      const parsed = new URL(urlStr);
-      return parsed.protocol === 'https:';
-    } catch (_) {
-      return false;
-    }
-  }
-
-  function sanitizeAndAppend(sourceNode, targetNode) {
-    const safeTags = [
-      'B', 'I', 'U', 'STRONG', 'EM', 'P', 'BR', 'DIV', 'SPAN', 'A', 'IMG',
-      'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'UL', 'OL', 'LI', 'BLOCKQUOTE'
-    ];
-    const safeAttributes = ['href', 'src', 'alt', 'title', 'target', 'rel'];
-
-    for (let i = 0; i < sourceNode.childNodes.length; i++) {
-      const child = sourceNode.childNodes[i];
-
-      if (child.nodeType === Node.TEXT_NODE) {
-        targetNode.appendChild(document.createTextNode(child.textContent));
-      } else if (child.nodeType === Node.ELEMENT_NODE) {
-        const tagName = child.tagName.toUpperCase();
-        if (!safeTags.includes(tagName)) continue;
-
-        const el = document.createElement(tagName);
-
-        for (let j = 0; j < child.attributes.length; j++) {
-          const attr = child.attributes[j];
-          const name = attr.name.toLowerCase();
-          const val = attr.value;
-
-          if (!safeAttributes.includes(name)) continue;
-
-          if (name === 'href' || name === 'src') {
-            try {
-              const parsed = new URL(val, window.location.origin);
-              if (parsed.protocol !== 'https:') continue;
-            } catch (_) {
-              continue;
-            }
-          }
-
-          el.setAttribute(name, val);
-        }
-
-        if (tagName === 'A') {
-          el.setAttribute('target', '_blank');
-          el.setAttribute('rel', 'noopener noreferrer');
-        }
-
-        sanitizeAndAppend(child, el);
-        targetNode.appendChild(el);
-      }
-    }
-  }
-
-  function dispatchRewardedCompletion(triggerEl, detail = {}) {
-    const resolvedRewardId = String(
-      detail.rewardId || detail.transactionId || detail.id || createRewardSessionId()
-    ).trim();
-
-    const payload = {
-      provider: 'ROBINADS',
-      websiteId: ROBINS_WEBSITE_ID,
-      zoneId: ROBINS_ZONE_ID,
-      completedAt: Date.now(),
-      ...detail,
-      rewardId: resolvedRewardId,
-      transactionId: resolvedRewardId
+    const cleanup = (timer) => {
+      finished = true;
+      clearInterval(timer);
+      activeSession = null;
+      resetTriggerButton(trigger);
+      try {
+        if (popupWindow && !popupWindow.closed) popupWindow.close();
+      } catch (_) {}
     };
 
-    if (triggerEl && typeof triggerEl.dispatchEvent === 'function') {
-      triggerEl.dispatchEvent(new CustomEvent('robins:rewarded', { bubbles: true, detail: payload }));
-      triggerEl.dispatchEvent(new CustomEvent('rs:rewarded', { bubbles: true, detail: payload }));
-    } else {
-      document.dispatchEvent(new CustomEvent('robins:rewarded', { bubbles: true, detail: payload }));
-      window.dispatchEvent(new CustomEvent('robins:rewarded', { detail: payload }));
-    }
+    const timer = setInterval(async () => {
+      if (finished) return;
 
-    return payload;
-  }
-
-  function dispatchRewardedClosed() {
-    window.dispatchEvent(new CustomEvent('robins:closed'));
-    document.dispatchEvent(new CustomEvent('robins:closed'));
-  }
-
-  // Renders Robins Ads Zone 9824292 (plus optional /api/ads/serve fallback) inside a timed sponsor modal
-  function renderSponsoredModal(adData = null, options = {}) {
-    const { rewarded = false, durationSeconds = 5, triggerEl = null } = options;
-
-    return new Promise((resolve, reject) => {
-      const existing = document.getElementById('afrostory-ad-modal');
-      if (existing) existing.remove();
-
-      let settled = false;
-      let timerInterval = null;
-      let remaining = Math.max(3, Number(durationSeconds) || 5);
-
-      const modal = document.createElement('div');
-      modal.id = 'afrostory-ad-modal';
-      modal.className = 'modal-root';
-      modal.style.zIndex = '9999999';
-
-      const cleanup = () => {
-        if (timerInterval) {
-          clearInterval(timerInterval);
-          timerInterval = null;
-        }
-        modal.querySelectorAll('video').forEach((v) => {
-          v.pause();
-          v.removeAttribute('src');
-          v.load();
-        });
-        modal.remove();
-      };
-
-      const cancelModal = () => {
-        if (settled) return;
-        settled = true;
-        cleanup();
-        dispatchRewardedClosed();
-        if (rewarded) {
-          reject(new Error('Sponsored ad was closed before completion.'));
-        } else {
-          resolve({ completed: false });
-        }
-      };
-
-      const completeReward = () => {
-        if (settled) return;
-        settled = true;
-        cleanup();
-        const generatedRewardId = createRewardSessionId();
-        const detail = dispatchRewardedCompletion(triggerEl, {
-          provider: 'ROBINADS',
-          websiteId: ROBINS_WEBSITE_ID,
-          zoneId: ROBINS_ZONE_ID,
-          rewardId: generatedRewardId,
-          transactionId: generatedRewardId
-        });
-        resolve({ completed: true, ...detail });
-      };
-
-      modal.onclick = (e) => {
-        if (e.target === modal && (!rewarded || remaining <= 0)) {
-          cancelModal();
-        }
-      };
-
-      const modalContent = document.createElement('div');
-      modalContent.className = 'modal';
-      modalContent.style.cssText =
-        'padding:0; overflow:hidden; background:#111; border:1px solid rgba(212,160,23,0.45); max-width:520px;';
-
-      // Header
-      const header = document.createElement('div');
-      header.style.cssText =
-        'padding:12px 16px; background:#1a1a1a; border-bottom:1px solid #2b2b2b; display:flex; justify-content:space-between; align-items:center; gap:12px;';
-
-      const labelSpan = document.createElement('span');
-      labelSpan.style.cssText =
-        'color:#d4a017; font-size:11.5px; font-weight:700; letter-spacing:1px; text-transform:uppercase;';
-      labelSpan.textContent = rewarded ? 'Sponsor Break • Unlock Reward' : 'Sponsored Message';
-      header.appendChild(labelSpan);
-
-      const closeBtn = document.createElement('button');
-      closeBtn.type = 'button';
-      closeBtn.className = 'modal-close';
-      closeBtn.style.cssText =
-        'background:none; border:none; color:#fff; font-size:22px; cursor:pointer; line-height:1;';
-      closeBtn.innerHTML = '&times;';
-      closeBtn.title = rewarded ? 'Cancel sponsor break' : 'Close';
-      closeBtn.onclick = cancelModal;
-      header.appendChild(closeBtn);
-
-      modalContent.appendChild(header);
-
-      // Robins Ads Live Zone Slot (Website ID: 6b06e5d10354f7305a5bc51b | Zone ID: 9824292)
-      const robinsStage = document.createElement('div');
-      robinsStage.style.cssText =
-        'padding:16px; background:#0b0b0d; min-height:180px; display:flex; flex-direction:column; align-items:center; justify-content:center; border-bottom:1px solid #222;';
-
-      const robinsSlot = document.createElement('div');
-      robinsSlot.setAttribute('data-robins-ad', '');
-      robinsSlot.setAttribute('data-website-id', ROBINS_WEBSITE_ID);
-      robinsSlot.setAttribute('data-zone-id', ROBINS_ZONE_ID);
-      robinsSlot.style.cssText = 'width:100%; min-height:140px; display:flex; justify-content:center; align-items:center;';
-      mountDisplaySlot(robinsSlot);
-      robinsStage.appendChild(robinsSlot);
-      modalContent.appendChild(robinsStage);
-
-      // Optional internal sponsored media if /api/ads/serve returned creative
-      if (adData && adData.videoUrl && isValidHttpsUrl(adData.videoUrl)) {
-        const video = document.createElement('video');
-        video.src = adData.videoUrl;
-        video.controls = true;
-        video.muted = true;
-        video.playsInline = true;
-        video.style.cssText = 'width:100%; max-height:260px; background:#000; display:block;';
-        modalContent.appendChild(video);
-        video.play().catch(() => {});
-      } else if (adData && adData.imageUrl && isValidHttpsUrl(adData.imageUrl)) {
-        const img = document.createElement('img');
-        img.src = adData.imageUrl;
-        img.alt = adData.title || 'Sponsored Content';
-        img.style.cssText = 'width:100%; max-height:260px; object-fit:contain; background:#000; display:block;';
-        modalContent.appendChild(img);
-      } else if (adData && adData.adContent) {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(adData.adContent, 'text/html');
-        const contentDiv = document.createElement('div');
-        contentDiv.style.cssText = 'padding:12px; background:#fff; color:#000; max-height:240px; overflow-y:auto;';
-        sanitizeAndAppend(doc.body, contentDiv);
-        modalContent.appendChild(contentDiv);
+      if (Date.now() - startedAt > MAX_POLL_DURATION_MS) {
+        cleanup(timer);
+        reject(new Error('Ad session timed out. Please try again.'));
+        return;
       }
 
-      // Footer / Reward Countdown Action
-      const body = document.createElement('div');
-      body.style.cssText = 'padding:18px 20px; text-align:center;';
-
-      const title = document.createElement('h3');
-      title.style.cssText = 'margin:0 0 8px 0; color:#fff; font-size:17px;';
-      title.textContent = (adData && adData.title) || 'AfriStory Sponsor Support';
-      body.appendChild(title);
-
-      const desc = document.createElement('p');
-      desc.style.cssText = 'color:#bdbdbd; font-size:13.5px; margin:0 0 16px 0; line-height:1.45;';
-      desc.textContent =
-        (adData && adData.description) ||
-        (rewarded
-          ? 'Thank you for supporting African storytellers. Your reward unlocks automatically in a few seconds.'
-          : 'Discover our featured partner message.');
-      body.appendChild(desc);
-
-      if (adData && isValidHttpsUrl(adData.clickUrl)) {
-        const link = document.createElement('a');
-        link.href = adData.clickUrl;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        link.className = 'button button-quiet';
-        link.style.cssText = 'display:block; text-align:center; text-decoration:none; margin-bottom:10px;';
-        link.textContent = 'Visit Sponsor ↗';
-        body.appendChild(link);
-      }
-
-      if (rewarded) {
-        const actionBtn = document.createElement('button');
-        actionBtn.type = 'button';
-        actionBtn.className = 'button button-primary';
-        actionBtn.style.cssText = 'width:100%; font-weight:700;';
-        actionBtn.disabled = true;
-        actionBtn.textContent = `Unlocking in ${remaining}s...`;
-        actionBtn.onclick = completeReward;
-        body.appendChild(actionBtn);
-
-        timerInterval = setInterval(() => {
-          remaining -= 1;
-          if (remaining > 0) {
-            actionBtn.textContent = `Unlocking in ${remaining}s...`;
-          } else {
-            clearInterval(timerInterval);
-            timerInterval = null;
-            actionBtn.disabled = false;
-            actionBtn.textContent = 'Claim Reward & Continue →';
-            completeReward();
-          }
-        }, 1000);
-      }
-
-      modalContent.appendChild(body);
-      modal.appendChild(modalContent);
-      document.body.appendChild(modal);
-
-      refresh().catch(() => {});
-    });
-  }
-
-  async function showSponsoredMessage(options = {}) {
-    if (!ADS_ENABLED) {
-      throw new Error('Sponsored messages are currently unavailable.');
-    }
-
-    ensureRobinsScript();
-    const sdk = getRobinsSdk();
-
-    // 1. Try native Robins Ads programmatic rewarded/interstitial API if exposed by robinsads.com/ads.js
-    if (sdk) {
       try {
-        if (options.rewarded && typeof sdk.showRewarded === 'function') {
-          const result = await sdk.showRewarded({
-            websiteId: ROBINS_WEBSITE_ID,
-            zoneId: ROBINS_ZONE_ID
-          });
-          const payload = dispatchRewardedCompletion(options.triggerEl || null, result || {});
-          return { completed: true, provider: 'robinsads-sdk', ...payload };
-        }
-        if (typeof sdk.showInterstitial === 'function') {
-          const result = await sdk.showInterstitial({
-            websiteId: ROBINS_WEBSITE_ID,
-            zoneId: ROBINS_ZONE_ID
-          });
-          if (options.rewarded) {
-            const payload = dispatchRewardedCompletion(options.triggerEl || null, result || {});
-            return { completed: true, provider: 'robinsads-sdk', ...payload };
+        const res = await fetch(
+          `/api/ads/rewards/${encodeURIComponent(rewardId)}/status`,
+          {
+            method: 'GET',
+            credentials: 'include',
+            headers: getAuthHeaders(),
           }
-          return { completed: true, provider: 'robinsads-sdk' };
+        );
+
+        const json = await res.json().catch(() => ({}));
+        const data = json?.data || {};
+
+        if (!res.ok) {
+          cleanup(timer);
+          reject(new Error(json?.message || 'Could not verify ad completion.'));
+          return;
         }
-      } catch (sdkErr) {
-        if (options.rewarded && sdkErr && sdkErr.cancelled) {
-          dispatchRewardedClosed();
-          throw new Error('Sponsored ad was closed before completion.');
+
+        if (data.status === 'verified' && data.verified) {
+          cleanup(timer);
+          const result = {
+            rewardId,
+            transactionId: rewardId,
+            verified: true,
+          };
+          dispatchRewardVerified(trigger, result);
+          resolve(result);
+          return;
         }
+
+        if (data.status === 'expired' || data.status === 'rejected') {
+          cleanup(timer);
+          reject(
+            new Error(
+              data.status === 'expired'
+                ? 'Ad expired before completion. Please try again.'
+                : 'Ad watch could not be verified.'
+            )
+          );
+          return;
+        }
+
+        // If user closed the popup window, allow 2 final status checks in case verification just finished
+        if (popupWindow && popupWindow.closed) {
+          closedCheckCount += 1;
+          if (closedCheckCount >= 2) {
+            cleanup(timer);
+            reject(new Error('Ad closed before completion. Watch the full ad to unlock.'));
+          }
+        }
+      } catch (_) {
+        // Keep polling on transient network hiccup
       }
-    }
+    }, POLL_INTERVAL_MS);
+  });
+}
 
-    // 2. Fetch optional server-side sponsored creative as enrichment, without blocking Robins Ads zone
-    let adData = null;
-    try {
-      const res = await api('/ads/serve');
-      adData = res.data || null;
-    } catch (_) {
-      adData = null;
-    }
-
-    return renderSponsoredModal(adData, options);
+/**
+ * Fallback to Robins Ads Section 2a / Section 4 in-app interstitial
+ * when inside Telegram WebApp or if the browser blocks window.open().
+ */
+async function runInAppInterstitialFallback(trigger) {
+  if (!window.RobinAds || typeof window.RobinAds.showInterstitial !== 'function') {
+    throw new Error('Please allow popups for afristory.live to watch the sponsor ad.');
   }
 
-  // Automatically bind rewarded ad clicks on [data-robins-rewarded] (and legacy [data-rs-rewarded])
-  if (typeof document !== 'undefined') {
-    document.addEventListener('DOMContentLoaded', () => {
-      refresh().catch(() => {});
-    });
+  setTriggerStatus(trigger, 'Playing sponsor video...');
+  const result = await window.RobinAds.showInterstitial();
 
-    document.addEventListener('click', (event) => {
-      const trigger = event.target.closest('[data-robins-rewarded], [data-rs-rewarded]');
-      if (!trigger) return;
-
-      // Avoid double-triggering if already handled by custom inline flow
-      if (trigger.dataset.robinsHandled === 'true') return;
-      trigger.dataset.robinsHandled = 'true';
-
-      showSponsoredMessage({
-        rewarded: true,
-        durationSeconds: Number(trigger.dataset.adDuration || 5),
-        triggerEl: trigger
-      })
-        .catch(() => {})
-        .finally(() => {
-          delete trigger.dataset.robinsHandled;
-        });
-    });
+  if (!result || !result.rewardGranted || !result.rewardId || !result.token) {
+    throw new Error(result?.error || 'Watch the full ad to claim your reward.');
   }
 
-  return {
-    refresh,
-    showSponsoredMessage,
-    mountDisplaySlot,
-    get websiteId() { return ROBINS_WEBSITE_ID; },
-    get zoneId() { return ROBINS_ZONE_ID; },
-    get isEnabled() { return ADS_ENABLED; }
+  const payload = {
+    rewardId: result.rewardId,
+    transactionId: result.rewardId,
+    token: result.token,
+    verified: true,
   };
-})();
 
-window.AfroStoryAds = Ads;
-window.Ads = Ads;
+  resetTriggerButton(trigger);
+  dispatchRewardVerified(trigger, payload);
+  return payload;
+}
 
-export { Ads };
-export default Ads;
+/**
+ * Primary Rewarded Ad Entrypoint (Robins Ads Section 3 Server-Verified Reward API)
+ */
+export async function launchRewardedAd(options = {}) {
+  const trigger = options.trigger || window.__lastRobinsTrigger || null;
+
+  if (activeSession) {
+    return activeSession;
+  }
+
+  const purpose =
+    options.purpose ||
+    trigger?.dataset?.purpose ||
+    (trigger?.dataset?.episodeId ? 'UNLOCK_EPISODE' : 'EARN_COINS');
+  const targetId =
+    options.targetId ||
+    trigger?.dataset?.episodeId ||
+    trigger?.dataset?.targetId ||
+    null;
+  const coins = Number(options.coins || trigger?.dataset?.coins || 0);
+
+  setTriggerStatus(trigger, 'Starting sponsor ad...');
+
+  const task = (async () => {
+    try {
+      // Inside Telegram Mini Apps, window.open is blocked — use RobinAds.showInterstitial() per Section 4
+      if (isTelegramWebApp()) {
+        return await runInAppInterstitialFallback(trigger);
+      }
+
+      // Step 1: Ask AfriStory backend to create a verified Robins Ads reward session
+      const createRes = await fetch('/api/ads/rewards/create', {
+        method: 'POST',
+        credentials: 'include',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ purpose, targetId, coins }),
+      });
+
+      const createJson = await createRes.json().catch(() => ({}));
+      const session = createJson?.data || {};
+
+      if (!createRes.ok || !session.id || !session.popup_url) {
+        throw new Error(
+          createJson?.message || 'No sponsor ad available right now. Please try again.'
+        );
+      }
+
+      // Step 2: Open Robins Ads' official hosted interstitial popup
+      const popup = window.open(
+        session.popup_url,
+        'robinads_reward',
+        'width=480,height=640,menubar=no,toolbar=no,location=no,status=no'
+      );
+
+      // If popup was blocked by browser settings, fall back to in-app RobinAds.showInterstitial()
+      if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+        return await runInAppInterstitialFallback(trigger);
+      }
+
+      setTriggerStatus(trigger, 'Watching sponsor ad... Finish to verify');
+
+      // Step 3: Poll backend until Robins Ads server flips status to "verified"
+      return await pollRewardUntilTerminal({
+        rewardId: session.id,
+        popupWindow: popup,
+        trigger,
+      });
+    } catch (err) {
+      resetTriggerButton(trigger);
+      showStatusToast(err.message || 'Could not complete sponsor ad.', 'error');
+      throw err;
+    } finally {
+      activeSession = null;
+    }
+  })();
+
+  activeSession = task;
+  return task;
+}
+
+// Compatibility aliases so any call from main.js works seamlessly
+export const showRewardedAd = launchRewardedAd;
+export const requestRewardedAd = launchRewardedAd;
+export const showSponsoredMessage = launchRewardedAd;
+
+export function initAds() {
+  document.addEventListener('click', (event) => {
+    const trigger = event.target.closest('[data-robins-rewarded]');
+    if (!trigger) return;
+
+    event.preventDefault();
+    launchRewardedAd({ trigger }).catch(() => {});
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAds, { once: true });
+} else {
+  initAds();
+}
