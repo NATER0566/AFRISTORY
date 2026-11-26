@@ -16,12 +16,8 @@ export const OPTIONAL_ENV = [
   'GOOGLE_CLIENT_SECRET',
   'GITHUB_CLIENT_ID',
   'GITHUB_CLIENT_SECRET',
-  'APPLE_CLIENT_ID',
-  'APPLE_TEAM_ID',
-  'APPLE_KEY_ID',
-  'APPLE_PRIVATE_KEY',
-  'ROBINADS_API_KEY',
-  'ROBINADS_API_URL',
+  'ROBINS_ADS_API_KEY',
+  'ROBINS_ADS_API_URL',
   'ROBINS_ADS_WEBSITE_ID',
 ];
 
@@ -40,18 +36,16 @@ const validators = {
   GOOGLE_CLIENT_SECRET: value => Boolean(value && value.trim()),
   GITHUB_CLIENT_ID: value => Boolean(value && value.trim()),
   GITHUB_CLIENT_SECRET: value => Boolean(value && value.trim()),
-  APPLE_CLIENT_ID: value => Boolean(value && value.trim()),
-  APPLE_TEAM_ID: value => Boolean(value && value.trim()),
-  APPLE_KEY_ID: value => Boolean(value && value.trim()),
-  APPLE_PRIVATE_KEY: value => Boolean(value && value.trim()),
-  ROBINADS_API_KEY: value => Boolean(value && value.trim()),
-  ROBINADS_API_URL: value => Boolean(value && value.trim()),
+  ROBINS_ADS_API_KEY: value => Boolean(value && value.trim()),
+  ROBINS_ADS_API_URL: value => Boolean(value && value.trim()),
   ROBINS_ADS_WEBSITE_ID: value => Boolean(value && value.trim()),
 };
 
 export function getEnvironmentStatus() {
   const all = [...STARTUP_REQUIRED_ENV, ...OPTIONAL_ENV];
-  return Object.fromEntries(all.map(name => [name, process.env[name] ? 'PRESENT' : 'MISSING']));
+  return Object.fromEntries(
+    all.map(name => [name, process.env[name] && process.env[name].trim() ? 'PRESENT' : 'MISSING'])
+  );
 }
 
 export function assertRequiredEnv() {
@@ -70,7 +64,8 @@ export function assertRequiredEnv() {
 
   console.log('ENV CHECK:');
   for (const name of [...STARTUP_REQUIRED_ENV, ...OPTIONAL_ENV]) {
-    console.log(`${name}: ${process.env[name] ? 'PRESENT' : 'MISSING'}`);
+    const isPresent = Boolean(process.env[name] && process.env[name].trim());
+    console.log(`${name}: ${isPresent ? 'PRESENT' : 'MISSING'}`);
   }
 
   return getEnvironmentStatus();
@@ -81,7 +76,8 @@ export function isResendConfigured() {
 }
 
 export function isRobinAdsConfigured() {
-  return Boolean(process.env.ROBINADS_API_KEY && process.env.ROBINADS_API_KEY.trim());
+  const key = process.env.ROBINS_ADS_API_KEY || process.env.ROBINADS_API_KEY;
+  return Boolean(key && key.trim());
 }
 
 export const REQUIRED_ENV = STARTUP_REQUIRED_ENV;
