@@ -32,7 +32,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
-  <!-- Robins Ads Official Script (Automatic + Fixed Display Placements) -->
+  <!-- Robins Ads Official Automatic Script -->
   <script src="https://robinsads.com/ads.js" data-website-id="6b06e5d10354f7305a5bc51b" data-automatic="true" async></script>
 
   <!-- Webpushr tracking code -->
@@ -1021,67 +1021,15 @@
     }
 
     /* ==============================================================
-       12. ROBINS ADS DISPLAY PLACEMENTS (BANNER / RECTANGLE / NATIVE)
-       Visible containers so ads.js fills reliably; auto-collapses if unfilled
+       12. AUTOMATIC ADS DESKTOP SIDEBAR GUARD & WATCH-MODE HIDE
     ============================================================== */
-    .robins-ad-slot {
-      margin: 28px auto 18px auto !important;
-      padding: 10px 14px 14px !important;
-      display: flex !important;
-      flex-direction: column !important;
-      justify-content: center !important;
-      align-items: center !important;
-      width: calc(100% - 24px) !important;
-      max-width: 760px !important;
-      min-height: 108px !important;
-      overflow: hidden !important;
-      border-radius: 14px !important;
-      border: 1px solid rgba(212, 160, 23, 0.16) !important;
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.01)) !important;
-      position: relative !important;
-      z-index: 10 !important;
-    }
-    .robins-ad-slot.robins-ad-rect {
-      min-height: 268px !important;
-    }
-    .robins-ad-label {
-      font-size: 9.5px;
-      letter-spacing: 1.2px;
-      text-transform: uppercase;
-      color: #666;
-      margin-bottom: 6px;
-      align-self: flex-end;
-      user-select: none;
-    }
-
-    .robins-ad-slot [data-ad-type] {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      width: 100%;
-      min-height: 90px;
-    }
-    .robins-ad-slot.robins-ad-rect [data-ad-type] {
-      min-height: 250px;
-    }
-
-    .robins-ad-slot.robins-ad-collapsed,
-    body.watch-mode-active .robins-ad-slot,
-    body:has(#section-watch:not(.hidden)) .robins-ad-slot {
+    body.watch-mode-active > [id*="robins"],
+    body.watch-mode-active > [class*="robins"],
+    body:has(#section-watch:not(.hidden)) > [id*="robins"],
+    body:has(#section-watch:not(.hidden)) > [class*="robins"] {
       display: none !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      min-height: 0 !important;
     }
 
-    .robins-ad-slot iframe,
-    .robins-ad-slot video,
-    .robins-ad-slot img,
-    .robins-ad-slot div {
-      max-width: 100% !important;
-    }
-
-    /* Keep ALL fixed/floating bottom ad containers strictly to the right of the sidebar */
     @media (min-width: 801px) {
       body > div[style*="fixed"],
       body > iframe[style*="fixed"],
@@ -1194,13 +1142,6 @@
         <div id="featured-series" class="featured-strip"></div>
         <div class="section-heading"><div><p class="eyebrow">CURATED FOR YOU</p><h2>Trending now</h2></div><button class="text-button" data-action="refresh-discover">View all ↗</button></div>
         <div id="series-grid" class="content-grid"></div>
-
-        <!-- IN-FEED ROBINS NATIVE PLACEMENT -->
-        <div class="robins-ad-slot robins-ad-rect" data-robins-slot>
-          <span class="robins-ad-label">Sponsored</span>
-          <div class="adsense-ad" data-website-id="6b06e5d10354f7305a5bc51b" data-ad-type="native"></div>
-        </div>
-
         <div class="section-heading compact-heading"><div><p class="eyebrow">VOICES TO KNOW</p><h2>Top creators</h2></div></div>
         <div id="creator-grid" class="creator-grid"></div>
       </section>
@@ -1266,20 +1207,13 @@
         <div id="social-rewards-grid" class="rewards-grid"></div>
         <div class="section-heading compact-heading"><div><p class="eyebrow">EARN COINS</p><h2>Available missions</h2></div></div>
         <div id="rewards-grid" class="rewards-grid"></div>
-
-        <!-- REWARDS SECTION DISPLAY BANNER -->
-        <div class="robins-ad-slot" data-robins-slot>
-          <span class="robins-ad-label">Sponsored</span>
-          <div class="adsense-ad" data-website-id="6b06e5d10354f7305a5bc51b" data-ad-type="banner"></div>
-        </div>
-
         <div class="section-heading compact-heading"><div><p class="eyebrow">REWARD HISTORY</p><h2>Recent activity</h2></div></div>
         <div id="rewards-history" class="data-list"></div>
       </section>
 
       <!-- CREATOR STUDIO SECTION -->
       <section id="section-creator" class="app-section hidden">
-        <!-- Portable Onboarding Card (No wasted top/bottom space) -->
+        <!-- Portable Onboarding Card -->
         <div id="creator-onboarding" class="creator-portable-card hidden">
           <p class="eyebrow">SHARE YOUR VOICE</p>
           <h2>Become a creator</h2>
@@ -1305,7 +1239,7 @@
 
         <!-- Approved Creator Dashboard -->
         <div id="creator-dashboard" class="hidden">
-          <!-- One-Time Portable Approval Congratulations Card (Auto-hides forever once seen/used) -->
+          <!-- One-Time Portable Approval Congratulations Card -->
           <div id="creator-welcome-banner" class="creator-welcome-banner hidden">
             <div class="creator-welcome-left">
               <div class="creator-welcome-badge" aria-hidden="true">✦</div>
@@ -1422,12 +1356,6 @@
       <section id="section-trending" class="app-section hidden">
         <div class="section-heading"><div><p class="eyebrow">WHAT PEOPLE ARE WATCHING</p><h1>Trending</h1></div></div>
         <div id="trending-list" class="content-grid"><div class="empty-state hidden" id="empty-trending"><p>No trending stories right now.</p></div></div>
-
-        <!-- TRENDING RECTANGLE PLACEMENT -->
-        <div class="robins-ad-slot robins-ad-rect" data-robins-slot>
-          <span class="robins-ad-label">Sponsored</span>
-          <div class="adsense-ad" data-website-id="6b06e5d10354f7305a5bc51b" data-ad-type="rectangle"></div>
-        </div>
       </section>
 
       <!-- CONTINUE SECTION -->
@@ -1451,12 +1379,6 @@
           <button class="button button-primary" type="submit">Save settings</button>
         </form>
       </section>
-
-      <!-- BOTTOM FEED ROBINS DISPLAY BANNER -->
-      <div id="global-ad-slot" class="robins-ad-slot" data-robins-slot>
-        <span class="robins-ad-label">Sponsored</span>
-        <div class="adsense-ad" data-website-id="6b06e5d10354f7305a5bc51b" data-ad-type="banner"></div>
-      </div>
 
       <!-- LEGAL & SUPPORT FOOTER -->
       <footer class="app-footer">
@@ -1599,14 +1521,14 @@
   <div id="modal-root" class="modal-root hidden"></div>
   <div id="toast-region" class="toast-region" aria-live="polite"></div>
 
-  <!-- Instant UI Bridge: Ads Refresh, One-Time Creator Welcome, Circular Background Upload, & Notification Delete -->
+  <!-- Instant UI Bridge: Sidebar Boundary Guard, One-Time Creator Welcome, Circular Upload, & Notification Delete -->
   <script>
     (function () {
       const watchSection = document.getElementById('section-watch');
       const sidebarEl = document.querySelector('.sidebar');
 
       // ==============================================================
-      // A. DESKTOP SIDEBAR AD BOUNDARY & DISPLAY AD SLOT REFRESH
+      // A. DESKTOP SIDEBAR AD BOUNDARY GUARD
       // ==============================================================
       function enforceSidebarAdBoundary() {
         if (window.innerWidth <= 800 || !sidebarEl) return;
@@ -1646,27 +1568,7 @@
         });
       }
 
-      let adCollapseTimer = null;
-      function refreshDisplayAdSlots() {
-        document.querySelectorAll('[data-robins-slot]').forEach((slot) => {
-          slot.classList.remove('robins-ad-collapsed');
-        });
-        if (window.RobinAds && typeof window.RobinAds.init === 'function') {
-          try { window.RobinAds.init(); } catch (_) {}
-        }
-        clearTimeout(adCollapseTimer);
-        adCollapseTimer = setTimeout(() => {
-          document.querySelectorAll('[data-robins-slot]').forEach((slot) => {
-            const inner = slot.querySelector('[data-ad-type]');
-            if (inner && inner.children.length === 0 && inner.textContent.trim() === '') {
-              slot.classList.add('robins-ad-collapsed');
-            }
-          });
-        }, 8500);
-      }
-
       enforceSidebarAdBoundary();
-      refreshDisplayAdSlots();
       window.addEventListener('resize', enforceSidebarAdBoundary);
       if (sidebarEl && typeof ResizeObserver !== 'undefined') {
         new ResizeObserver(enforceSidebarAdBoundary).observe(sidebarEl);
@@ -1756,7 +1658,6 @@
         if (!creatorSessionViewed) {
           creatorSessionViewed = true;
           creatorWelcomeBanner.classList.remove('hidden');
-          // Mark seen so on any subsequent visit to Creator Studio, user gets direct unobstructed access
           try { localStorage.setItem(CREATOR_WELCOME_KEY, '1'); } catch (_) {}
         }
       }
@@ -1840,7 +1741,6 @@
         }
       }
 
-      // When user clicks "Upload episode" button to open modal
       document.addEventListener('click', (e) => {
         if (e.target.closest('[data-action="open-upload"]')) {
           markCreatorWelcomeSeen();
@@ -1881,7 +1781,6 @@
         document.querySelector('[data-section="creator"]')?.click();
       });
 
-      // Replace any "Uploading to cloud" toast text automatically
       const toastRegion = document.getElementById('toast-region');
       if (toastRegion) {
         new MutationObserver(() => {
@@ -1893,7 +1792,6 @@
         }).observe(toastRegion, { childList: true, subtree: true, characterData: true });
       }
 
-      // Transparently upgrade FormData video fetch uploads to XHR so round progress bar tracks real bytes
       const nativeFetch = window.fetch.bind(window);
       window.fetch = function (input, init) {
         const url = typeof input === 'string' ? input : (input && input.url) || '';
@@ -1933,7 +1831,6 @@
             let processingTimer = null;
             xhr.upload.onprogress = function (evt) {
               if (!evt.lengthComputable) return;
-              // Map raw upload transfer to 0% -> 88%, leaving 89% -> 99% for server video processing
               const uploadPct = Math.min(88, Math.round((evt.loaded / evt.total) * 88));
               setUploadProgressUI(
                 uploadPct,
@@ -2155,15 +2052,12 @@
       });
 
       // ==============================================================
-      // F. RECORD REWARDED AD TRIGGER & REFRESH DISPLAY ADS ON TAB CHANGE
+      // F. RECORD REWARDED AD TRIGGER
       // ==============================================================
       document.addEventListener('click', function (event) {
         const trigger = event.target.closest('[data-robins-rewarded]');
         if (trigger) {
           window.__lastRobinsTrigger = trigger;
-        }
-        if (event.target.closest('[data-section]')) {
-          setTimeout(refreshDisplayAdSlots, 250);
         }
       }, true);
 
@@ -2175,8 +2069,8 @@
   </script>
 
   <!-- Cache-busted module scripts -->
-  <script type="module" src="/js/ads.js?v=14"></script>
-  <script type="module" src="/js/main.js?v=14"></script>
+  <script type="module" src="/js/ads.js?v=15"></script>
+  <script type="module" src="/js/main.js?v=15"></script>
 
 </body>
 </html>
