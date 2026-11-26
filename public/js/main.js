@@ -1621,10 +1621,8 @@ document.addEventListener('change', event => {
 
 document.addEventListener('click', async event => {     
     try {         
-        const rewardedTrigger = event.target.closest('[data-robins-rewarded], [data-rs-rewarded]');
-        if (rewardedTrigger && !window.AfroStoryAds) {
-            event.preventDefault();
-            toast('Sponsored ads are blocked or unavailable. Please disable ad blockers and try again.', 'error');
+        // Rewarded ad clicks are handled directly by public/js/ads.js
+        if (event.target.closest('[data-robins-rewarded], [data-rs-rewarded]')) {
             return;
         }
 
