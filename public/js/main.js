@@ -267,6 +267,8 @@ function setSection(name) {
     if (name === 'favorites') loadFavorites();
     if (name === 'trending') loadTrending();
     if (name === 'settings') loadSettings();
+
+    window.AfroStoryAds?.refresh?.().catch?.(() => {});
 }
 
 const episodeGenres = ['Action', 'Drama', 'Comedy', 'Romance', 'Thriller', 'Horror', 'Adventure', 'Family', 'Historical', 'Traditional', 'Documentary', 'Educational', 'Faith', 'Mystery', 'Other'];
@@ -661,7 +663,7 @@ async function openEpisode(id, preloadedEpisodes = null) {
                     <p>You've reached the end of the free preview. Unlock now to watch the full episode from the beginning.</p> 
                     
                     <div style="display:flex; flex-direction:column; gap:12px; width: 85%; max-width: 300px;">
-                        <button type="button" id="waterfall-ad-btn-${episode._id}" data-rs-rewarded data-action="waterfall-ad-unlock" data-episode-id="${episode._id}" class="button button-accent" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px;">
+                        <button type="button" id="waterfall-ad-btn-${episode._id}" data-robins-rewarded data-action="waterfall-ad-unlock" data-episode-id="${episode._id}" class="button button-accent" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px;">
                             <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> 
                             <span>Watch Ad to Unlock</span>
                         </button>
@@ -901,7 +903,7 @@ function renderRewardCard(reward) {
     else if (stateVal === 'PENDING_VERIFICATION') { action = '<p>Processing...</p>'; } 
     else if (stateVal === 'LOCKED') { action = `<span class="reward-locked">🔒 ${esc(eligibility.reason)}</span>`; } 
     else if (stateVal === 'EXPIRED') { action = '<p>Expired</p>'; } 
-    else { action = `${socialUrl ? `<a href="${esc(socialUrl)}" target="_blank" class="button button-quiet">Visit ${esc(reward.metadata?.platform || 'official account')}</a>` : ''}<button class="button button-accent reward-action" data-reward-id="${esc(reward._id)}" data-rs-rewarded>Claim reward</button>`; }
+    else { action = `${socialUrl ? `<a href="${esc(socialUrl)}" target="_blank" class="button button-quiet">Visit ${esc(reward.metadata?.platform || 'official account')}</a>` : ''}<button class="button button-accent reward-action" data-reward-id="${esc(reward._id)}" data-robins-rewarded>Claim reward</button>`; }
     
     return `<article class="reward-card reward-state-${stateVal.toLowerCase()}"><p class="eyebrow">${esc(reward.category || 'MISSION')}</p><h3>${esc(reward.name)}</h3><p class="muted">${esc(reward.description || '')}</p><div class="reward-meta">+${Number(reward.rewardAmount).toLocaleString()} Coins</div><div class="reward-state-label">${isSocial ? (stateVal === 'CLAIMED' ? 'COMPLETED' : 'AVAILABLE') : esc(stateVal.replaceAll('_', ' '))}</div>${action}</article>`;
 }
@@ -925,7 +927,7 @@ async function loadRewards() {
         
         const dailyCard = $('#daily-reward-card');
         if (dailyCard) {
-            dailyCard.innerHTML = daily ? `<p class="eyebrow">DAILY CHECK-IN</p><h2>${daily.claimed ? 'Check-in complete' : 'Your daily reward is ready'}</h2><p class="muted">${esc(daily.description || 'Return each day to keep your streak alive.')}</p><div class="reward-meta">+${Number(daily.rewardAmount).toLocaleString()} coins</div>${daily.claimed ? '<div class="reward-state">Come back after the next calendar day.</div>' : `<button class="button button-accent reward-action" data-reward-id="${esc(daily._id)}" data-rs-rewarded>Claim today</button>`}` : '<p>Daily check-in is not available right now.</p>';
+            dailyCard.innerHTML = daily ? `<p class="eyebrow">DAILY CHECK-IN</p><h2>${daily.claimed ? 'Check-in complete' : 'Your daily reward is ready'}</h2><p class="muted">${esc(daily.description || 'Return each day to keep your streak alive.')}</p><div class="reward-meta">+${Number(daily.rewardAmount).toLocaleString()} coins</div>${daily.claimed ? '<div class="reward-state">Come back after the next calendar day.</div>' : `<button class="button button-accent reward-action" data-reward-id="${esc(daily._id)}" data-robins-rewarded>Claim today</button>`}` : '<p>Daily check-in is not available right now.</p>';
         }
 
         const social = rewards.filter(reward => reward.type === 'SOCIAL' || reward.category === 'social');
@@ -1619,6 +1621,13 @@ document.addEventListener('change', event => {
 
 document.addEventListener('click', async event => {     
     try {         
+        const rewardedTrigger = event.target.closest('[data-robins-rewarded], [data-rs-rewarded]');
+        if (rewardedTrigger && !window.AfroStoryAds) {
+            event.preventDefault();
+            toast('Sponsored ads are blocked or unavailable. Please disable ad blockers and try again.', 'error');
+            return;
+        }
+
         if (event.target.closest('#mobile-more-btn')) {
             event.preventDefault();
             applyAdminVisibility();
@@ -1887,89 +1896,106 @@ document.addEventListener('click', async event => {
 });
 
 /* ============================================================================ */
-/* ROCKET SLOTH AD INTERCEPTOR */
+/* ROBINS ADS REWARDED INTERCEPTOR */
 /* ============================================================================ */
-document.addEventListener('rs:rewarded', async (event) => {
+async function handleRewardedAdComplete(event) {
     const rawTarget = event.target;
     const btn = (rawTarget && typeof rawTarget.closest === 'function')
-        ? (rawTarget.closest('[data-rs-rewarded]') || rawTarget)
+        ? (rawTarget.closest('[data-robins-rewarded], [data-rs-rewarded]') || rawTarget)
         : rawTarget;
     if (!btn) return;
 
-    const receipt = event.detail || {};
+    // Guard against duplicate event dispatches (robins:rewarded + legacy rs:rewarded)
+    if (btn.dataset?.robinsVerifying === 'true') return;
+    if (btn.dataset) btn.dataset.robinsVerifying = 'true';
 
-    // 1. Episode Unlock Logic
-    if (btn.dataset?.action === 'waterfall-ad-unlock' || (btn.id && btn.id.startsWith('waterfall-ad-btn-'))) {
-        const episodeId = btn.dataset.episodeId || state.currentEpisode?._id;
-        if (!episodeId) return;
+    const receipt = {
+        provider: 'robinsads',
+        websiteId: '6b06e5d10354f7305a5bc51b',
+        zoneId: '9824292',
+        ...(event.detail || {})
+    };
 
-        const originalHtml = btn.dataset.originalHtml || btn.innerHTML;
-        btn.dataset.originalHtml = originalHtml;
+    try {
+        // 1. Episode Unlock Logic
+        if (btn.dataset?.action === 'waterfall-ad-unlock' || (btn.id && btn.id.startsWith('waterfall-ad-btn-'))) {
+            const episodeId = btn.dataset.episodeId || state.currentEpisode?._id;
+            if (!episodeId) return;
 
-        delete btn.dataset.rsLoading;
-        btn.disabled = true;
-        btn.innerHTML = 'Verifying ad...';
+            const originalHtml = btn.dataset.originalHtml || btn.innerHTML;
+            btn.dataset.originalHtml = originalHtml;
 
-        try {
-            await api('/wallet/unlock-episode', { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ episodeId, method: 'AD', provider: 'ROCKET_SLOTH', receipt }) 
-            });
+            delete btn.dataset.robinsLoading;
+            delete btn.dataset.rsLoading;
+            btn.disabled = true;
+            btn.innerHTML = 'Verifying ad...';
 
-            toast('Ad verified! Unlocking episode...', 'success');
-            
-            const epData = state.feedEpisodes.find(e => String(e._id) === String(episodeId));
-            if (epData) epData.hasAccess = true;
-            if (state.currentEpisode && String(state.currentEpisode._id) === String(episodeId)) {
-                state.currentEpisode.hasAccess = true;
-            }
-            
-            const lockUI = document.getElementById(`lock-${episodeId}`);
-            if (lockUI) {
-                lockUI.classList.add('hidden');
-                const videoEl = lockUI.parentElement?.querySelector('video');
-                if (videoEl) {
-                    videoEl.currentTime = 0;
-                    videoEl.setAttribute('controls', 'true');
-                    safePlay(videoEl);
+            try {
+                await api('/wallet/unlock-episode', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ episodeId, method: 'AD', provider: 'ROBINS_ADS', receipt }) 
+                });
+
+                toast('Ad verified! Unlocking episode...', 'success');
+                
+                const epData = state.feedEpisodes.find(e => String(e._id) === String(episodeId));
+                if (epData) epData.hasAccess = true;
+                if (state.currentEpisode && String(state.currentEpisode._id) === String(episodeId)) {
+                    state.currentEpisode.hasAccess = true;
                 }
+                
+                const lockUI = document.getElementById(`lock-${episodeId}`);
+                if (lockUI) {
+                    lockUI.classList.add('hidden');
+                    const videoEl = lockUI.parentElement?.querySelector('video');
+                    if (videoEl) {
+                        videoEl.currentTime = 0;
+                        videoEl.setAttribute('controls', 'true');
+                        safePlay(videoEl);
+                    }
+                }
+            } catch (error) {
+                toast('Ad verification failed. You must watch the full ad to unlock.', 'error');
+                btn.disabled = false;
+                btn.innerHTML = originalHtml || 'Watch Ad to Unlock';
             }
-        } catch (error) {
-            toast('Ad verification failed. You must watch the full ad to unlock.', 'error');
-            delete btn.dataset.rsLoading;
-            btn.disabled = false;
-            btn.innerHTML = originalHtml || 'Watch Ad to Unlock';
+            return;
         }
-    }
 
-    // 2. Reward Claim Logic
-    if (btn.dataset?.rewardId) {
-        const originalHtml = btn.dataset.originalHtml || btn.innerHTML;
-        btn.dataset.originalHtml = originalHtml;
+        // 2. Reward Claim Logic
+        if (btn.dataset?.rewardId) {
+            const originalHtml = btn.dataset.originalHtml || btn.innerHTML;
+            btn.dataset.originalHtml = originalHtml;
 
-        delete btn.dataset.rsLoading;
-        btn.disabled = true;
-        btn.textContent = 'Verifying ad...';
-        
-        try {
-            await api(`/rewards/${encodeURIComponent(btn.dataset.rewardId)}/claim`, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ method: 'AD', provider: 'ROCKET_SLOTH', receipt }) 
-            });
+            delete btn.dataset.robinsLoading;
+            delete btn.dataset.rsLoading;
+            btn.disabled = true;
+            btn.textContent = 'Verifying ad...';
             
-            toast('Reward verified and added to your wallet', 'success'); 
-            await loadRewards(); 
-            refreshNotificationBadge();
-        } catch (error) { 
-            toast('Ad verification failed. You must watch the full ad to claim.', 'error');
-            delete btn.dataset.rsLoading;
-            btn.disabled = false; 
-            btn.innerHTML = originalHtml; 
+            try {
+                await api(`/rewards/${encodeURIComponent(btn.dataset.rewardId)}/claim`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ method: 'AD', provider: 'ROBINS_ADS', receipt }) 
+                });
+                
+                toast('Reward verified and added to your wallet', 'success'); 
+                await loadRewards(); 
+                refreshNotificationBadge();
+            } catch (error) { 
+                toast('Ad verification failed. You must watch the full ad to claim.', 'error');
+                btn.disabled = false; 
+                btn.innerHTML = originalHtml; 
+            }
         }
+    } finally {
+        if (btn.dataset) delete btn.dataset.robinsVerifying;
     }
-});
+}
+
+document.addEventListener('robins:rewarded', handleRewardedAdComplete);
+document.addEventListener('rs:rewarded', handleRewardedAdComplete);
 
 const uploadForm = $('#upload-form');
 if (uploadForm) uploadForm.addEventListener('submit', submitUpload);
@@ -2093,7 +2119,8 @@ async function boot() {
             await loadDiscover().catch(e => console.warn(e)); 
         }
         refreshNotificationBadge().catch(e => console.warn(e)); 
-        setupLazyLoading(); 
+        setupLazyLoading();
+        window.AfroStoryAds?.refresh?.().catch?.(() => {});
         return true; 
     } catch (error) {
         logFrontendError('boot_failure', error.message, error.stack);
