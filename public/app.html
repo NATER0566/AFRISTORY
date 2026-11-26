@@ -1038,7 +1038,7 @@
       </section>
 
       <!-- SINGLE DISPLAY AD SLOT (Contained inside feed, never touches sidebar) -->
-      <div id="global-ad-slot" data-robins-ad></div>
+      <div id="global-ad-slot" data-robins-ad data-website-id="6b06e5d10354f7305a5bc51b" data-zone-id="9824292"></div>
 
       <!-- LEGAL & SUPPORT FOOTER -->
       <footer class="app-footer">
@@ -1294,7 +1294,24 @@
         if ((event.target === document || event.target === window) && window.__lastRobinsTrigger) {
           const btn = window.__lastRobinsTrigger;
           window.__lastRobinsTrigger = null;
-          btn.dispatchEvent(new CustomEvent('robins:rewarded', { bubbles: true, detail: event.detail || {} }));
+          const rawDetail = event.detail || {};
+          const fallbackId =
+            rawDetail.rewardId ||
+            rawDetail.transactionId ||
+            `robins_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+          btn.dispatchEvent(
+            new CustomEvent('robins:rewarded', {
+              bubbles: true,
+              detail: {
+                provider: 'ROBINADS',
+                websiteId: '6b06e5d10354f7305a5bc51b',
+                zoneId: '9824292',
+                ...rawDetail,
+                rewardId: fallbackId,
+                transactionId: fallbackId
+              }
+            })
+          );
         }
       }
 
@@ -1309,8 +1326,8 @@
   </script>
 
   <!-- Cache-busted module scripts -->
-  <script type="module" src="/js/ads.js?v=11"></script>
-  <script type="module" src="/js/main.js?v=11"></script>
+  <script type="module" src="/js/ads.js?v=12"></script>
+  <script type="module" src="/js/main.js?v=12"></script>
 
 </body>
 </html>
