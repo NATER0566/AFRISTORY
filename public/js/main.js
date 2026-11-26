@@ -1,5 +1,5 @@
 const API = '/api';
-const PREVIEW_LIMIT = 10; // Seconds of gripping hook preview before the video locks
+const PREVIEW_LIMIT = 5; // Seconds of gripping hook preview before the video locks
 const state = { 
     user: null, profile: null, rewards: null, series: [], 
     currentSeries: null, currentEpisode: null, hls: null, 
