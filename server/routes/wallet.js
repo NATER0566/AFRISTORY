@@ -8,7 +8,7 @@ import Series from '../models/Series.js';
 import { verifyAuth } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { generateReference, formatDecimal, paginate } from '../utils/helpers.js';
-import { verifyAndConsumeRobinAdsReward } from '../services/robinAdsService.js';
+import { verifyAndConsumeRobinAdsReward } from '../utils/robinAdsService.js';
 import mongoose from 'mongoose';
 
 export default async function walletRoutes(fastify, opts) {
