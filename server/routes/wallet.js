@@ -101,6 +101,7 @@ export default async function walletRoutes(fastify, opts) {
         provider = 'ROBINADS',
         rewardId,
         transactionId,
+        receipt,
       } = request.body || {};
 
       if (!episodeId) {
@@ -149,12 +150,21 @@ export default async function walletRoutes(fastify, opts) {
           return sendError(reply, 'This episode requires Story Coins or VIP pass.', 403);
         }
 
-        if (String(provider).toUpperCase() !== 'ROBINADS') {
+        const normalizedProvider = String(provider).toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (!['ROBINADS', 'ROBINSADS'].includes(normalizedProvider)) {
           await session.abortTransaction();
           return sendError(reply, 'Unsupported ad provider. Expected ROBINADS.', 400);
         }
 
-        const resolvedRewardId = String(rewardId || transactionId || '').trim();
+        const resolvedRewardId = String(
+          rewardId ||
+            transactionId ||
+            receipt?.rewardId ||
+            receipt?.transactionId ||
+            receipt?.id ||
+            ''
+        ).trim();
+
         if (!resolvedRewardId) {
           await session.abortTransaction();
           return sendError(reply, 'Missing Robins Ads reward session ID.', 400);
