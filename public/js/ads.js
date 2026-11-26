@@ -4,6 +4,13 @@ const Ads = (() => {
   const ROBINS_WEBSITE_ID = '6b06e5d10354f7305a5bc51b';
   const ROBINS_ZONE_ID = '9824292';
 
+  function createRewardSessionId() {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return `robins_${crypto.randomUUID()}`;
+    }
+    return `robins_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
+  }
+
   const api = async (path, options = {}) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -150,12 +157,18 @@ const Ads = (() => {
   }
 
   function dispatchRewardedCompletion(triggerEl, detail = {}) {
+    const resolvedRewardId = String(
+      detail.rewardId || detail.transactionId || detail.id || createRewardSessionId()
+    ).trim();
+
     const payload = {
-      provider: 'robinsads',
+      provider: 'ROBINADS',
       websiteId: ROBINS_WEBSITE_ID,
       zoneId: ROBINS_ZONE_ID,
       completedAt: Date.now(),
-      ...detail
+      ...detail,
+      rewardId: resolvedRewardId,
+      transactionId: resolvedRewardId
     };
 
     if (triggerEl && typeof triggerEl.dispatchEvent === 'function') {
@@ -165,6 +178,8 @@ const Ads = (() => {
       document.dispatchEvent(new CustomEvent('robins:rewarded', { bubbles: true, detail: payload }));
       window.dispatchEvent(new CustomEvent('robins:rewarded', { detail: payload }));
     }
+
+    return payload;
   }
 
   function dispatchRewardedClosed() {
@@ -218,12 +233,14 @@ const Ads = (() => {
         if (settled) return;
         settled = true;
         cleanup();
-        const detail = {
-          provider: 'robinsads',
+        const generatedRewardId = createRewardSessionId();
+        const detail = dispatchRewardedCompletion(triggerEl, {
+          provider: 'ROBINADS',
           websiteId: ROBINS_WEBSITE_ID,
-          zoneId: ROBINS_ZONE_ID
-        };
-        dispatchRewardedCompletion(triggerEl, detail);
+          zoneId: ROBINS_ZONE_ID,
+          rewardId: generatedRewardId,
+          transactionId: generatedRewardId
+        });
         resolve({ completed: true, ...detail });
       };
 
@@ -377,8 +394,8 @@ const Ads = (() => {
             websiteId: ROBINS_WEBSITE_ID,
             zoneId: ROBINS_ZONE_ID
           });
-          dispatchRewardedCompletion(options.triggerEl || null, result || {});
-          return { completed: true, provider: 'robinsads-sdk' };
+          const payload = dispatchRewardedCompletion(options.triggerEl || null, result || {});
+          return { completed: true, provider: 'robinsads-sdk', ...payload };
         }
         if (typeof sdk.showInterstitial === 'function') {
           const result = await sdk.showInterstitial({
@@ -386,7 +403,8 @@ const Ads = (() => {
             zoneId: ROBINS_ZONE_ID
           });
           if (options.rewarded) {
-            dispatchRewardedCompletion(options.triggerEl || null, result || {});
+            const payload = dispatchRewardedCompletion(options.triggerEl || null, result || {});
+            return { completed: true, provider: 'robinsads-sdk', ...payload };
           }
           return { completed: true, provider: 'robinsads-sdk' };
         }
