@@ -79,15 +79,23 @@ window.addEventListener('unhandledrejection', (event) => {
 const api = async (path, options = {}) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), Math.min(options.timeout || 15000, 15000));
+    const method = (options.method || 'GET').toUpperCase();
     
     const startTime = performance.now();
 
     try {
-        const response = await fetch(`${API}${path}`, { 
-            credentials: 'include', 
-            signal: controller.signal, 
-            ...options 
-        });
+        const fetchOptions = {
+            credentials: 'include',
+            signal: controller.signal,
+            ...options
+        };
+
+        // Prevent stale browser caching on dynamic GET requests (notifications, balances, feeds)
+        if (method === 'GET' && !fetchOptions.cache) {
+            fetchOptions.cache = 'no-store';
+        }
+
+        const response = await fetch(`${API}${path}`, fetchOptions);
         
         const duration = performance.now() - startTime;
         if (duration > 3000) {
@@ -194,6 +202,21 @@ function formatViews(views) {
     return v.toString();
 }
 
+function formatFileSize(bytes) {
+    const b = Number(bytes) || 0;
+    if (b >= 1024 * 1024 * 1024) return `${(b / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+    if (b >= 1024 * 1024) return `${(b / (1024 * 1024)).toFixed(1)} MB`;
+    if (b >= 1024) return `${Math.round(b / 1024)} KB`;
+    return `${b} B`;
+}
+
+function formatDurationSeconds(seconds) {
+    const total = Math.max(0, Math.round(Number(seconds) || 0));
+    const mins = Math.floor(total / 60);
+    const secs = total % 60;
+    return mins > 0 ? `${mins}m ${String(secs).padStart(2, '0')}s` : `${secs}s`;
+}
+
 function getUserDisplayName(user) { return user?.profile?.displayName || user?.displayName || user?.username || 'Account'; }
 function getUserAvatarUrl(user) { return user?.profile?.avatarUrl || user?.profileImage || user?.avatarUrl || null; }
 
@@ -242,7 +265,7 @@ function setSection(name) {
     if (name !== 'watch' && state.currentEpisode) {
         const activeVideo = currentlyPlaying || document.querySelector('.feed-video-card video');
         if (activeVideo) {
-            saveProgressFeed(state.currentEpisode, activeVideo);
+            saveProgressFeed(state.currentEpisode, activeVideo, false, true);
             activeVideo.pause();
         }
     }
@@ -311,7 +334,7 @@ function episodeCard(episode, tagOverride = null) {
         <div class="card-body">
             <h3>${esc(episode.title)}</h3>
             <p>${esc(series.title || 'Story')} · ${esc(episode.culturalCategory || 'African story')}</p>
-            <p>${esc(creator.brandName || '')} · ${esc(episode.language || 'English')} · ${Math.round(Number(episode.duration || 0) / 60)} min</p>
+            <p>${esc(creator.brandName || '')} · ${esc(episode.language || 'English')} · ${Math.max(1, Math.round(Number(episode.duration || 0) / 60))} min</p>
         </div>
     </article>`; 
 }
@@ -399,12 +422,20 @@ function safePlay(videoEl) {
 }
 
 function seekToHookIfNeeded(videoEl, episode) {
-    if (!videoEl || !episode || episode.hasAccess) return;
-    const hookStart = getEpisodeHookStart(episode);
-    if (hookStart > 0 && videoEl.currentTime < hookStart) {
+    if (!videoEl || !episode) return;
+    if (!episode.hasAccess) {
+        const hookStart = getEpisodeHookStart(episode);
+        if (hookStart > 0 && videoEl.currentTime < hookStart) {
+            try {
+                if (Number.isFinite(videoEl.duration) && hookStart < videoEl.duration - 2) {
+                    videoEl.currentTime = hookStart;
+                }
+            } catch (e) {}
+        }
+    } else if (Number(episode.lastPosition) > 1 && videoEl.currentTime < 1) {
         try {
-            if (Number.isFinite(videoEl.duration) && hookStart < videoEl.duration - 2) {
-                videoEl.currentTime = hookStart;
+            if (Number.isFinite(videoEl.duration) && Number(episode.lastPosition) < videoEl.duration - 2) {
+                videoEl.currentTime = Number(episode.lastPosition);
             }
         } catch (e) {}
     }
@@ -527,7 +558,7 @@ async function openSeries(id) {
                     <p class="eyebrow" style="position: relative; z-index: 10;">${esc(seriesInfo.genre || 'SERIES')}</p>
                     <h2 style="position: relative; z-index: 10;">${esc(seriesInfo.title)}</h2>
                     <p style="position: relative; z-index: 10; max-width: 600px;">${esc(seriesInfo.description || 'No description available.')}</p>
-                    <p style="color:#d4a017; margin-top:10px; position: relative; z-index: 10;">${esc(seriesInfo.language || 'English')} &nbsp; · &nbsp; ${esc(seriesInfo.genre || 'Story')}</p>
+                    <p style="color:#d4a017; margin-top:10px; position: relative; z-index: 10;">${esc(seriesInfo.language || 'English')} &nbsp; · &nbsp; ${esc(seriesInfo.genre || 'Story')} &nbsp; · &nbsp; ${episodes.length} Episode${episodes.length === 1 ? '' : 's'}</p>
                     ${episodes.length > 0 ? `<button class="button button-primary" data-episode-id="${esc(episodes[0]._id)}" style="margin-top:15px; position: relative; z-index: 10;">Play Episode 1</button>` : ''}
                 </article>
             `;
@@ -731,6 +762,7 @@ async function openEpisode(id, preloadedEpisodes = null) {
             }
 
             let hasTrackedView = false;
+            let lastSavedBucket = -1;
 
             if (!episode.hasAccess) { 
                 videoEl.addEventListener('timeupdate', () => { 
@@ -763,15 +795,24 @@ async function openEpisode(id, preloadedEpisodes = null) {
                 }); 
             } else {
                 videoEl.addEventListener('timeupdate', () => { 
-                    if (!hasTrackedView && videoEl.currentTime > 10) {
+                    if (!hasTrackedView && videoEl.currentTime > 5) {
                         hasTrackedView = true;
                         api(`/episodes/${episode._id}/record-view`, { method: 'POST' }).catch(() => {});
+                    }
+
+                    // Save watch progress every 5 seconds and detect completion even on looped videos
+                    const bucket = Math.floor(videoEl.currentTime / 5);
+                    if (bucket > lastSavedBucket && videoEl.currentTime > 1) {
+                        lastSavedBucket = bucket;
+                        const dur = (videoEl.duration && Number.isFinite(videoEl.duration)) ? videoEl.duration : (episode.duration || 0);
+                        const isDone = dur > 0 && (videoEl.currentTime / dur) >= 0.92;
+                        saveProgressFeed(episode, videoEl, isDone);
                     }
                 });
             }
             
-            videoEl.addEventListener('pause', () => saveProgressFeed(episode, videoEl)); 
-            videoEl.addEventListener('ended', () => saveProgressFeed(episode, videoEl, true)); 
+            videoEl.addEventListener('pause', () => saveProgressFeed(episode, videoEl, false, true)); 
+            videoEl.addEventListener('ended', () => saveProgressFeed(episode, videoEl, true, true)); 
             
             feedContainer.appendChild(cardEl); 
             feedObserver.observe(cardEl); 
@@ -783,21 +824,34 @@ async function openEpisode(id, preloadedEpisodes = null) {
 }
 
 let saveProgressTimeout = null;
-async function saveProgressFeed(episode, video, completed = false) {
-    if (!episode || video.currentTime === 0) return;
+async function saveProgressFeed(episode, video, completed = false, immediate = false) {
+    if (!episode || !episode._id || (!completed && video.currentTime === 0)) return;
     
-    clearTimeout(saveProgressTimeout);
-    saveProgressTimeout = setTimeout(async () => {
-        let durationToUse = (video.duration && Number.isFinite(video.duration)) ? video.duration : (episode.duration || 60);
-        let percentage = Math.min(100, (video.currentTime / durationToUse) * 100);
+    const sendProgress = async () => {
+        const durationToUse = (video.duration && Number.isFinite(video.duration)) ? video.duration : (Number(episode.duration) || 60);
+        const rawPct = completed ? 100 : Math.min(100, Math.round((video.currentTime / durationToUse) * 100));
+        const isCompleted = Boolean(completed || rawPct >= 92);
+        const watchedPercentage = isCompleted ? 100 : rawPct;
+
         try {
             await api(`/episodes/${episode._id}/watch`, { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ lastPosition: video.currentTime, watchedPercentage: percentage, completed }) 
+                body: JSON.stringify({ 
+                    lastPosition: isCompleted ? 0 : video.currentTime, 
+                    watchedPercentage, 
+                    completed: isCompleted 
+                }) 
             });
         } catch {}
-    }, 1000); 
+    };
+
+    clearTimeout(saveProgressTimeout);
+    if (immediate) {
+        await sendProgress();
+    } else {
+        saveProgressTimeout = setTimeout(sendProgress, 800);
+    }
 }
 
 /* ============================================================================ */
@@ -858,7 +912,10 @@ async function loadComments(id, force = false) {
     lastCommentsEpisodeId = id;
     try { 
         const result = await api(`/comments/episode/${id}?limit=50`) || {}; 
-        const render = comment => `<article class="comment"><span class="comment-meta">${esc(comment.userId?.username || 'Story lover')}</span><p>${esc(comment.text)}</p><button class="text-button" data-reply-comment="${esc(comment._id)}">Reply</button>${comment.replies?.length ? `<div class="comment-replies">${comment.replies.map(render).join('')}</div>` : ''}</article>`; 
+        const render = comment => {
+            const username = comment.userId?.username || 'Story lover';
+            return `<article class="comment"><span class="comment-meta">${esc(username)}</span><p>${esc(comment.text)}</p><button type="button" class="text-button" data-reply-comment="${esc(comment._id)}" data-reply-user="${esc(username)}">Reply</button>${comment.replies?.length ? `<div class="comment-replies">${comment.replies.map(render).join('')}</div>` : ''}</article>`;
+        }; 
         const commentsList = $('#comments-list');
         if (commentsList) commentsList.innerHTML = (result.comments || []).map(render).join('') || '<p>Be the first to share a thought.</p>'; 
         
@@ -1032,7 +1089,7 @@ async function handleCreatorSubmit(event) {
     }
 }
 
-async function loadCreator() { 
+async function loadCreator(preferredSeriesId = null) { 
     try { 
         const dashboard = $('#creator-dashboard');
         const onboarding = $('#creator-onboarding');
@@ -1081,6 +1138,7 @@ async function loadCreator() {
             }
 
             const series = await api(`/creators/${creator._id}/series?limit=100`) || {}; 
+            const seriesList = series.series || [];
             const statsContainer = $('#creator-stats');
             if (statsContainer) {
                 statsContainer.innerHTML = [
@@ -1089,18 +1147,22 @@ async function loadCreator() {
                     ['RETURNING VIEWERS', creator.returningViewers || 0, ''],
                     ['TOTAL EARNINGS', creator.totalEarnings, ''], 
                     ['FOLLOWERS', creator.totalFollowers, 'data-action="view-followers" style="cursor:pointer; text-decoration: underline; text-decoration-color: #d4a017;" title="Click to view and follow back"'], 
-                    ['SERIES', series.series?.length || 0, '']
+                    ['SERIES', seriesList.length, '']
                 ].map(item => `<div class="stat-card" ${item[2] || ''}><span class="eyebrow">${item[0]}</span><strong>${Number(item[1] || 0).toLocaleString()}</strong></div>`).join(''); 
             }
 
             const seriesGrid = $('#my-series-grid');
             if (seriesGrid) {
-                seriesGrid.innerHTML = (series.series || []).map(card).join('') || '<p>Create your first series.</p>'; 
+                seriesGrid.innerHTML = seriesList.map(card).join('') || '<p>Create your first series.</p>'; 
             }
             
             const uploadSelect = $('#upload-series');
             if (uploadSelect) {
-                uploadSelect.innerHTML = (series.series || []).map(item => `<option value="${esc(item._id)}">${esc(item.title)}</option>`).join(''); 
+                const previousVal = preferredSeriesId || uploadSelect.value;
+                uploadSelect.innerHTML = seriesList.map(item => `<option value="${esc(item._id)}">${esc(item.title)}</option>`).join('');
+                if (previousVal && seriesList.some(s => String(s._id) === String(previousVal))) {
+                    uploadSelect.value = previousVal;
+                }
             }
         }
     } catch (error) { 
@@ -1163,8 +1225,171 @@ function injectCreatorForm(existingBrandName = '', rejectionReason = '') {
     $('#become-creator-form').addEventListener('submit', handleCreatorSubmit);
 }
 
-async function uploadAsset(path, file) { 
+/* ============================================================================ */
+/* DIRECT CLOUD UPLOAD WITH LIVE PROGRESS, FILE DETAILS & MEDIA HELPERS */
+/* ============================================================================ */
+function getLocalVideoMetadata(file) {
+    return new Promise((resolve) => {
+        if (!file || !file.type?.startsWith('video/')) return resolve({ duration: 0, width: 0, height: 0 });
+        const tempVideo = document.createElement('video');
+        tempVideo.preload = 'metadata';
+        const objectUrl = URL.createObjectURL(file);
+        const cleanup = () => {
+            try { URL.revokeObjectURL(objectUrl); } catch (e) {}
+            tempVideo.remove();
+        };
+        tempVideo.onloadedmetadata = () => {
+            const meta = {
+                duration: Number.isFinite(tempVideo.duration) ? Math.round(tempVideo.duration) : 0,
+                width: tempVideo.videoWidth || 0,
+                height: tempVideo.videoHeight || 0
+            };
+            cleanup();
+            resolve(meta);
+        };
+        tempVideo.onerror = () => {
+            cleanup();
+            resolve({ duration: 0, width: 0, height: 0 });
+        };
+        tempVideo.src = objectUrl;
+    });
+}
+
+function normalizePlayableVideoUrl(rawUrl) {
+    if (!rawUrl || typeof rawUrl !== 'string') return '';
+    // If Cloudinary stored a .mov, .mkv, .avi, or .webm source, request its playable .mp4 delivery URL
+    if (rawUrl.includes('cloudinary.com') && /\.(mov|mkv|avi|webm)(\?.*)?$/i.test(rawUrl)) {
+        return rawUrl.replace(/\.(mov|mkv|avi|webm)(\?.*)?$/i, '.mp4$2');
+    }
+    return rawUrl;
+}
+
+function ensureUploadTelemetryUI(form, prefix) {
+    if (!form) return null;
+    let box = form.querySelector(`#${prefix}-telemetry-box`);
+    if (!box) {
+        const submitBtn = form.querySelector('button[type="submit"]');
+        box = document.createElement('div');
+        box.id = `${prefix}-telemetry-box`;
+        box.className = 'hidden';
+        box.style.cssText = 'margin: 14px 0; padding: 12px 14px; background: #141414; border: 1px solid #333; border-radius: 10px; text-align: left;';
+        box.innerHTML = `
+            <div id="${prefix}-file-details" style="font-size: 12px; color: #bbb; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;"></div>
+            <div id="${prefix}-progress-wrap" class="hidden">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 12px;">
+                    <span id="${prefix}-stage-text" style="color: #f5f5f5; font-weight: 600;">Preparing upload...</span>
+                    <strong id="${prefix}-percent-text" style="color: #d4a017; font-size: 13px;">0%</strong>
+                </div>
+                <div style="width: 100%; height: 8px; background: #262626; border-radius: 999px; overflow: hidden;">
+                    <div id="${prefix}-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #b8860b, #d4a017, #f1c40f); border-radius: 999px; transition: width 0.2s ease;"></div>
+                </div>
+                <div id="${prefix}-transfer-stats" style="margin-top: 6px; font-size: 11px; color: #999; display: flex; justify-content: space-between; gap: 8px;">
+                    <span id="${prefix}-bytes-text">0 MB / 0 MB</span>
+                    <span id="${prefix}-speed-text">Calculating speed...</span>
+                </div>
+            </div>
+        `;
+        if (submitBtn) {
+            submitBtn.parentNode.insertBefore(box, submitBtn);
+        } else {
+            form.appendChild(box);
+        }
+    }
+
+    return {
+        box,
+        fileDetails: box.querySelector(`#${prefix}-file-details`),
+        progressWrap: box.querySelector(`#${prefix}-progress-wrap`),
+        stageText: box.querySelector(`#${prefix}-stage-text`),
+        percentText: box.querySelector(`#${prefix}-percent-text`),
+        progressBar: box.querySelector(`#${prefix}-progress-bar`),
+        bytesText: box.querySelector(`#${prefix}-bytes-text`),
+        speedText: box.querySelector(`#${prefix}-speed-text`)
+    };
+}
+
+function updateUploadTelemetry(ui, { percent = 0, stage = '', bytesText = '', speedText = '', isError = false, isSuccess = false } = {}) {
+    if (!ui) return;
+    ui.box.classList.remove('hidden');
+    ui.progressWrap.classList.remove('hidden');
+
+    const clamped = Math.max(0, Math.min(100, Math.round(percent)));
+    ui.percentText.textContent = `${clamped}%`;
+    ui.percentText.style.color = isError ? '#e74c3c' : (isSuccess ? '#2ecc71' : '#d4a017');
+    ui.progressBar.style.width = `${clamped}%`;
+    ui.progressBar.style.background = isError
+        ? '#e74c3c'
+        : (isSuccess ? '#2ecc71' : 'linear-gradient(90deg, #b8860b, #d4a017, #f1c40f)');
+
+    if (stage) ui.stageText.textContent = stage;
+    if (bytesText !== undefined) ui.bytesText.textContent = bytesText;
+    if (speedText !== undefined) ui.speedText.textContent = speedText;
+}
+
+function resetUploadTelemetry(form, prefix) {
+    if (!form) return;
+    delete form.dataset.uploading;
+    const box = form.querySelector(`#${prefix}-telemetry-box`);
+    if (box) {
+        box.classList.add('hidden');
+        const progressWrap = box.querySelector(`#${prefix}-progress-wrap`);
+        if (progressWrap) progressWrap.classList.add('hidden');
+        const fileDetails = box.querySelector(`#${prefix}-file-details`);
+        if (fileDetails) fileDetails.innerHTML = '';
+    }
+}
+
+async function bindFileSelectionPreviews() {
+    const seriesCoverInput = $('#series-form input[name="cover"]');
+    if (seriesCoverInput && !seriesCoverInput.dataset.previewBound) {
+        seriesCoverInput.dataset.previewBound = 'true';
+        seriesCoverInput.addEventListener('change', () => {
+            const file = seriesCoverInput.files?.[0];
+            const form = $('#series-form');
+            const ui = ensureUploadTelemetryUI(form, 'series');
+            if (!ui) return;
+            if (!file) {
+                resetUploadTelemetry(form, 'series');
+                return;
+            }
+            ui.box.classList.remove('hidden');
+            ui.progressWrap.classList.add('hidden');
+            ui.fileDetails.innerHTML = `<span>🖼 <strong>${esc(file.name)}</strong></span><span style="color:#d4a017; font-weight:600;">${formatFileSize(file.size)}</span>`;
+        });
+    }
+
+    const episodeVideoInput = $('#upload-form input[name="video"]');
+    if (episodeVideoInput && !episodeVideoInput.dataset.previewBound) {
+        episodeVideoInput.dataset.previewBound = 'true';
+        episodeVideoInput.addEventListener('change', async () => {
+            const file = episodeVideoInput.files?.[0];
+            const form = $('#upload-form');
+            const ui = ensureUploadTelemetryUI(form, 'episode');
+            if (!ui) return;
+            if (!file) {
+                resetUploadTelemetry(form, 'episode');
+                return;
+            }
+            ui.box.classList.remove('hidden');
+            ui.progressWrap.classList.add('hidden');
+            ui.fileDetails.innerHTML = `<span>🎬 <strong>${esc(file.name)}</strong></span><span style="color:#d4a017; font-weight:600;">${formatFileSize(file.size)} · Reading duration...</span>`;
+
+            const meta = await getLocalVideoMetadata(file);
+            form.dataset.localDuration = String(meta.duration || 0);
+            const extraBits = [formatFileSize(file.size)];
+            if (meta.duration > 0) extraBits.push(formatDurationSeconds(meta.duration));
+            if (meta.width > 0 && meta.height > 0) extraBits.push(`${meta.width}×${meta.height}`);
+            ui.fileDetails.innerHTML = `<span>🎬 <strong>${esc(file.name)}</strong></span><span style="color:#d4a017; font-weight:600;">${extraBits.join(' · ')}</span>`;
+        });
+    }
+}
+
+async function uploadAsset(path, file, onProgress = null) { 
     const isVideo = path.includes('video');
+    if (typeof onProgress === 'function') {
+        onProgress({ percent: 2, stage: 'Step 1/3 · Securing cloud upload...', loaded: 0, total: file.size, speedBps: 0, etaSeconds: null });
+    }
+
     const signRes = await api(`/upload/sign?type=${isVideo ? 'video' : 'image'}`);
     
     if (!signRes || !signRes.signature) {
@@ -1179,49 +1404,129 @@ async function uploadAsset(path, file) {
     formData.append('api_key', signRes.apiKey);
     formData.append('timestamp', signRes.timestamp);
     formData.append('signature', signRes.signature);
-    formData.append('folder', signRes.folder);
-
-    try {
-        const response = await fetch(cloudinaryUrl, {
-            method: 'POST',
-            body: formData
-        });
-
-        if (!response.ok) {
-            const errData = await response.json();
-            throw new Error(errData.error?.message || 'Cloudinary direct upload failed');
-        }
-
-        const data = await response.json();
-
-        return {
-            url: data.secure_url,
-            mediaUrl: data.secure_url,
-            secure_url: data.secure_url,
-            publicId: data.public_id,
-            duration: data.duration || 0
-        };
-    } catch (error) {
-        console.error('Direct upload failed:', error);
-        throw new Error('Upload failed. Please check your internet connection and try again.');
+    if (signRes.folder) formData.append('folder', signRes.folder);
+    if (signRes.uploadPreset || signRes.upload_preset) {
+        formData.append('upload_preset', signRes.uploadPreset || signRes.upload_preset);
     }
+    if (signRes.publicId || signRes.public_id) {
+        formData.append('public_id', signRes.publicId || signRes.public_id);
+    }
+
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        const startedAt = performance.now();
+
+        xhr.open('POST', cloudinaryUrl, true);
+        xhr.timeout = 10 * 60 * 1000; // 10 minutes for large vertical drama videos
+
+        xhr.upload.onprogress = (event) => {
+            if (!event.lengthComputable || typeof onProgress !== 'function') return;
+            const rawRatio = event.total > 0 ? (event.loaded / event.total) : 0;
+            // Map file upload bytes from 5% -> 88% so processing & DB creation steps have smooth headroom
+            const mappedPercent = Math.min(88, Math.max(5, Math.round(5 + rawRatio * 83)));
+            const elapsedSec = Math.max(0.25, (performance.now() - startedAt) / 1000);
+            const speedBps = event.loaded / elapsedSec;
+            const remainingBytes = Math.max(0, event.total - event.loaded);
+            const etaSeconds = speedBps > 0 ? Math.ceil(remainingBytes / speedBps) : null;
+
+            onProgress({
+                percent: mappedPercent,
+                rawPercent: Math.round(rawRatio * 100),
+                stage: `Step 2/3 · Uploading ${isVideo ? 'video' : 'cover image'} (${Math.round(rawRatio * 100)}%)...`,
+                loaded: event.loaded,
+                total: event.total,
+                speedBps,
+                etaSeconds
+            });
+        };
+
+        xhr.upload.onload = () => {
+            if (typeof onProgress === 'function') {
+                onProgress({
+                    percent: 90,
+                    rawPercent: 100,
+                    stage: `Step 2/3 · Processing ${isVideo ? 'video' : 'image'} on cloud...`,
+                    loaded: file.size,
+                    total: file.size,
+                    speedBps: 0,
+                    etaSeconds: 0
+                });
+            }
+        };
+
+        xhr.onload = () => {
+            let data = {};
+            try { data = JSON.parse(xhr.responseText || '{}'); } catch (e) {}
+
+            if (xhr.status >= 200 && xhr.status < 300 && data.secure_url) {
+                resolve({
+                    url: data.secure_url,
+                    mediaUrl: data.secure_url,
+                    secure_url: data.secure_url,
+                    publicId: data.public_id,
+                    format: data.format || '',
+                    duration: Number(data.duration) || 0
+                });
+            } else {
+                const msg = data.error?.message || `Cloud upload failed (${xhr.status})`;
+                reject(new Error(msg));
+            }
+        };
+
+        xhr.onerror = () => reject(new Error('Network error during upload. Check your internet connection and try again.'));
+        xhr.ontimeout = () => reject(new Error('Upload timed out. Please try again on a stronger connection.'));
+
+        xhr.send(formData);
+    });
 }
 
 async function submitSeries(event) { 
     event.preventDefault(); 
     const form = event.target; 
+    if (form.dataset.uploading === 'true') return;
+
     const submit = form.querySelector('button[type="submit"]'); 
     const values = new FormData(form); 
     const cover = values.get('cover'); 
     
     if (!cover?.size) return toast('Choose a cover image', 'error'); 
     
+    const ui = ensureUploadTelemetryUI(form, 'series');
+    if (ui) {
+        ui.fileDetails.innerHTML = `<span>🖼 <strong>${esc(cover.name)}</strong></span><span style="color:#d4a017; font-weight:600;">${formatFileSize(cover.size)}</span>`;
+    }
+
+    form.dataset.uploading = 'true';
     submit.disabled = true; 
-    submit.textContent = 'Creating series (please wait)...';
+    submit.textContent = 'Uploading series...';
+    updateUploadTelemetry(ui, {
+        percent: 2,
+        stage: 'Step 1/3 · Preparing series upload...',
+        bytesText: `0 MB / ${formatFileSize(cover.size)}`,
+        speedText: 'Starting...'
+    });
     
     try { 
-        const upload = await uploadAsset('/upload/image', cover); 
-        await api('/series/create', { 
+        const upload = await uploadAsset('/upload/image', cover, (p) => {
+            const speedLabel = p.speedBps > 0
+                ? `${formatFileSize(p.speedBps)}/s${p.etaSeconds != null ? ` · ~${p.etaSeconds}s left` : ''}`
+                : 'Finalizing image...';
+            updateUploadTelemetry(ui, {
+                percent: p.percent,
+                stage: p.stage,
+                bytesText: `${formatFileSize(p.loaded)} / ${formatFileSize(p.total)}`,
+                speedText: speedLabel
+            });
+        }); 
+
+        updateUploadTelemetry(ui, {
+            percent: 94,
+            stage: 'Step 3/3 · Creating series & updating studio...',
+            bytesText: `${formatFileSize(cover.size)} / ${formatFileSize(cover.size)}`,
+            speedText: 'Saving details...'
+        });
+
+        const createdRes = await api('/series/create', { 
             method: 'POST', 
             headers: { 'Content-Type': 'application/json' }, 
             body: JSON.stringify({ 
@@ -1235,15 +1540,33 @@ async function submitSeries(event) {
                 isPremiumExclusive: values.get('premium') === 'on' 
             }) 
         }); 
+
+        const createdSeries = createdRes?.series || createdRes || {};
+        updateUploadTelemetry(ui, {
+            percent: 100,
+            stage: '✓ Series created successfully!',
+            bytesText: `${formatFileSize(cover.size)} / ${formatFileSize(cover.size)}`,
+            speedText: 'Complete',
+            isSuccess: true
+        });
         
+        discoverLoaded = false;
         const modal = $('#series-modal');
         if (modal) modal.classList.add('hidden'); 
         form.reset(); 
-        await loadCreator(); 
-        toast('Series created', 'success'); 
+        resetUploadTelemetry(form, 'series');
+        await loadCreator(createdSeries._id || null); 
+        toast('Series created! You can now upload episodes to it.', 'success'); 
     } catch (error) { 
+        updateUploadTelemetry(ui, {
+            percent: 100,
+            stage: `Upload failed: ${error.message}`,
+            speedText: 'Stopped',
+            isError: true
+        });
         toast(error.message, 'error'); 
     } finally { 
+        delete form.dataset.uploading;
         submit.disabled = false; 
         submit.textContent = 'Create series'; 
     } 
@@ -1252,6 +1575,8 @@ async function submitSeries(event) {
 async function submitUpload(event) { 
     event.preventDefault(); 
     const form = event.target; 
+    if (form.dataset.uploading === 'true') return;
+
     const submit = form.querySelector('button[type="submit"]'); 
     const values = new FormData(form); 
     const seriesId = values.get('seriesId'); 
@@ -1263,17 +1588,58 @@ async function submitUpload(event) {
     
     if (!seriesId || !file?.size) return toast('Choose a series and video', 'error'); 
     if (!genre || !culturalCategory || !language) return toast('Choose a genre, cultural category, and language', 'error'); 
+
+    const localDuration = Number(form.dataset.localDuration || 0) || (await getLocalVideoMetadata(file)).duration;
+    const ui = ensureUploadTelemetryUI(form, 'episode');
+    if (ui) {
+        const metaParts = [formatFileSize(file.size)];
+        if (localDuration > 0) metaParts.push(formatDurationSeconds(localDuration));
+        ui.fileDetails.innerHTML = `<span>🎬 <strong>${esc(file.name)}</strong></span><span style="color:#d4a017; font-weight:600;">${metaParts.join(' · ')}</span>`;
+    }
     
+    form.dataset.uploading = 'true';
     submit.disabled = true; 
-    submit.textContent = 'Uploading directly to cloud...'; 
+    submit.textContent = 'Uploading episode...'; 
+    updateUploadTelemetry(ui, {
+        percent: 2,
+        stage: 'Step 1/3 · Securing cloud upload...',
+        bytesText: `0 MB / ${formatFileSize(file.size)}`,
+        speedText: 'Starting...'
+    });
     
     try { 
-        const upload = await uploadAsset('/upload/video', file); 
-        const baseMediaUrl = upload.hlsUrl || upload.mediaUrl || upload.secure_url || upload.url; 
-        if (!baseMediaUrl || !/^https?:\/\/.+\.(mp4|m3u8)(?:\?.*)?$/i.test(baseMediaUrl)) throw new Error('Cloudinary did not return a playable MP4 or HLS URL'); 
+        const upload = await uploadAsset('/upload/video', file, (p) => {
+            const speedLabel = p.speedBps > 0
+                ? `${formatFileSize(p.speedBps)}/s${p.etaSeconds != null ? ` · ~${p.etaSeconds}s left` : ''}`
+                : 'Processing video...';
+            updateUploadTelemetry(ui, {
+                percent: p.percent,
+                stage: p.stage,
+                bytesText: `${formatFileSize(p.loaded)} / ${formatFileSize(p.total)}`,
+                speedText: speedLabel
+            });
+        }); 
+
+        const rawMediaUrl = upload.hlsUrl || upload.mediaUrl || upload.secure_url || upload.url; 
+        const baseMediaUrl = normalizePlayableVideoUrl(rawMediaUrl);
+        if (!baseMediaUrl || !/^https?:\/\/.+/i.test(baseMediaUrl)) {
+            throw new Error('Cloud storage did not return a playable video URL'); 
+        }
 
         const mediaUrl = hookStart > 0 ? `${baseMediaUrl}#t=${hookStart}` : baseMediaUrl;
         const access = values.get('access'); 
+        const rawCoinCost = values.get('coinCost');
+        const coinCost = (rawCoinCost !== null && rawCoinCost !== '' && Number.isFinite(Number(rawCoinCost)))
+            ? Math.max(0, Number(rawCoinCost))
+            : 10;
+        const finalDuration = Math.max(1, Math.round(Number(upload.duration) || localDuration || 0));
+
+        updateUploadTelemetry(ui, {
+            percent: 95,
+            stage: 'Step 3/3 · Publishing episode & updating feed...',
+            bytesText: `${formatFileSize(file.size)} / ${formatFileSize(file.size)}`,
+            speedText: 'Saving episode...'
+        });
         
         await api(`/episodes/series/${encodeURIComponent(seriesId)}/create`, { 
             method: 'POST', 
@@ -1288,22 +1654,41 @@ async function submitUpload(event) {
                 culturalCategory, 
                 language, 
                 tags: String(values.get('tags') || '').split(',').map(tag => tag.trim()).filter(Boolean), 
-                duration: upload.duration || 0, 
-                coinCost: Number(values.get('coinCost')), 
+                duration: finalDuration, 
+                coinCost, 
                 isFree: false, 
                 adUnlockable: access === 'Ad', 
                 isPublished: values.get('publish') === 'on' 
             }) 
         }); 
+
+        updateUploadTelemetry(ui, {
+            percent: 100,
+            stage: '✓ Upload complete! Episode is live.',
+            bytesText: `${formatFileSize(file.size)} / ${formatFileSize(file.size)}`,
+            speedText: 'Complete',
+            isSuccess: true
+        });
         
+        discoverLoaded = false;
         const modal = $('#upload-modal');
         if (modal) modal.classList.add('hidden'); 
         form.reset(); 
-        await loadCreator(); 
+        delete form.dataset.localDuration;
+        resetUploadTelemetry(form, 'episode');
+        await loadCreator(seriesId); 
+        refreshNotificationBadge();
         toast('Upload successful! Your gripping scene is live in the feed.', 'success'); 
     } catch (error) { 
+        updateUploadTelemetry(ui, {
+            percent: 100,
+            stage: `Upload failed: ${error.message}`,
+            speedText: 'Stopped',
+            isError: true
+        });
         toast(error.message, 'error'); 
     } finally { 
+        delete form.dataset.uploading;
         submit.disabled = false; 
         submit.textContent = 'Upload episode'; 
     } 
@@ -1458,12 +1843,80 @@ function openProfileEditor() {
     }
 }
 
+/* ============================================================================ */
+/* NOTIFICATIONS, BADGE RECONCILIATION & DELETION SYNC */
+/* ============================================================================ */
+const DELETED_NOTIF_STORAGE_KEY = 'afrostory_deleted_notifications';
+
+function getDeletedNotificationIds() {
+    try {
+        const raw = JSON.parse(localStorage.getItem(DELETED_NOTIF_STORAGE_KEY) || '[]');
+        return new Set(Array.isArray(raw) ? raw.map(String) : []);
+    } catch (e) {
+        return new Set();
+    }
+}
+
+function rememberDeletedNotificationIds(ids) {
+    try {
+        const existing = [...getDeletedNotificationIds()];
+        const merged = [...new Set([...existing, ...ids.map(String)])].slice(-200);
+        localStorage.setItem(DELETED_NOTIF_STORAGE_KEY, JSON.stringify(merged));
+    } catch (e) {}
+}
+
+function setNotificationBadgeCount(count) {
+    const safeCount = Math.max(0, Math.floor(Number(count) || 0));
+    const badge = $('#notification-badge');
+    if (badge) {
+        badge.textContent = String(safeCount);
+        badge.classList.toggle('hidden', safeCount === 0);
+    }
+}
+
+function ensureNotificationClearAllButton() {
+    const readAllBtn = $('#notification-modal [data-action="read-all"]');
+    if (!readAllBtn) return;
+    const parent = readAllBtn.parentElement;
+    if (parent && !parent.querySelector('[data-action="clear-notifications"]')) {
+        const clearBtn = document.createElement('button');
+        clearBtn.type = 'button';
+        clearBtn.className = 'text-button';
+        clearBtn.dataset.action = 'clear-notifications';
+        clearBtn.style.cssText = 'color: #e74c3c; margin-left: 10px;';
+        clearBtn.textContent = 'Clear all';
+        readAllBtn.insertAdjacentElement('afterend', clearBtn);
+    }
+}
+
 async function loadNotifications() { 
     try { 
+        ensureNotificationClearAllButton();
         const result = await api('/notifications/me?limit=50') || {}; 
+        const deletedIds = getDeletedNotificationIds();
+        const rawList = Array.isArray(result.notifications) ? result.notifications : [];
+        const visibleList = rawList.filter(item => item && !deletedIds.has(String(item._id)));
+
+        // Keep badge strictly synchronized with the actual unread notifications
+        const unreadInList = visibleList.filter(item => !item.read).length;
+        setNotificationBadgeCount(unreadInList);
+
         const listEl = $('#notification-list');
         if (listEl) {
-            listEl.innerHTML = (result.notifications || []).map(item => `<article class="notification-item ${item.read ? '' : 'notification-unread'}"><span class="notification-item-icon">✧</span><div class="notification-item-content"><strong>${esc(item.title)}</strong><p>${esc(item.message || '')}</p><time>${new Date(item.createdAt).toLocaleString()}</time></div><div class="notification-item-actions"><button class="text-button" data-read-notification="${esc(item._id)}">Read</button></div></article>`).join('') || '<p>No new notifications</p>'; 
+            listEl.innerHTML = visibleList.map(item => `
+                <article class="notification-item ${item.read ? '' : 'notification-unread'}" data-notification-id="${esc(item._id)}">
+                    <span class="notification-item-icon">✧</span>
+                    <div class="notification-item-content">
+                        <strong>${esc(item.title)}</strong>
+                        <p>${esc(item.message || '')}</p>
+                        <time>${new Date(item.createdAt).toLocaleString()}</time>
+                    </div>
+                    <div class="notification-item-actions" style="display:flex; align-items:center; gap:8px;">
+                        ${item.read ? '' : `<button type="button" class="text-button" data-read-notification="${esc(item._id)}">Read</button>`}
+                        <button type="button" class="text-button" style="color:#e74c3c;" data-delete-notification="${esc(item._id)}" title="Delete notification">Delete</button>
+                    </div>
+                </article>
+            `).join('') || '<p>No new notifications</p>'; 
         }
     } catch (error) { toast(error.message, 'error'); } 
 }
@@ -1471,11 +1924,20 @@ async function loadNotifications() {
 async function refreshNotificationBadge() { 
     try { 
         const result = await api('/notifications/me/unread-count') || {}; 
-        const badge = $('#notification-badge'); 
-        if (badge) {
-            badge.textContent = result.unreadCount || 0; 
-            badge.classList.toggle('hidden', !result.unreadCount); 
+        const serverUnread = Math.max(0, Number(result.unreadCount ?? result.count ?? result.unread ?? 0) || 0);
+        const deletedIds = getDeletedNotificationIds();
+
+        // If user previously deleted items locally, cross-check against /notifications/me so ghost counts never stick
+        if (serverUnread > 0 && deletedIds.size > 0) {
+            const listRes = await api('/notifications/me?limit=50').catch(() => null);
+            if (listRes && Array.isArray(listRes.notifications)) {
+                const realUnread = listRes.notifications.filter(n => n && !n.read && !deletedIds.has(String(n._id))).length;
+                setNotificationBadgeCount(realUnread);
+                return;
+            }
         }
+
+        setNotificationBadgeCount(serverUnread);
     } catch {} 
 } 
 
@@ -1666,6 +2128,11 @@ document.addEventListener('click', async event => {
                         svg.setAttribute('color', 'currentColor');
                     }
                     span.textContent = formatViews(res.likeCount || 0);
+                    const epObj = state.feedEpisodes.find(e => String(e._id) === String(epId));
+                    if (epObj) {
+                        epObj.isLiked = res.isLiked;
+                        epObj.likeCount = res.likeCount;
+                    }
                 }
             } catch (err) { toast(err.message, 'error'); }
             finally { likeBtn.disabled = false; }
@@ -1692,6 +2159,19 @@ document.addEventListener('click', async event => {
                 }
             } else {
                 toast('Rating system is initializing, try again.', 'info');
+            }
+        }
+
+        const replyCommentBtn = event.target.closest('[data-reply-comment]');
+        if (replyCommentBtn) {
+            event.preventDefault();
+            const input = $('#comment-input');
+            const username = replyCommentBtn.dataset.replyUser || '';
+            if (input) {
+                input.focus();
+                if (username && !input.value.startsWith(`@${username}`)) {
+                    input.value = `@${username} ${input.value}`.trimStart();
+                }
             }
         }
 
@@ -1790,10 +2270,16 @@ document.addEventListener('click', async event => {
         if (event.target.closest('[data-action="buy-pass"]')) showSubscriptionPlans();
 
         if (event.target.closest('[data-action="close-upload"]') || event.target.id === 'upload-modal') {
+            if ($('#upload-form')?.dataset.uploading === 'true') {
+                return toast('Episode upload is in progress — please wait until it completes.', 'info');
+            }
             const el = $('#upload-modal');
             if (el) el.classList.add('hidden');
         }
         if (event.target.closest('[data-action="close-series"]') || event.target.id === 'series-modal') {
+            if ($('#series-form')?.dataset.uploading === 'true') {
+                return toast('Series creation is in progress — please wait until it completes.', 'info');
+            }
             const el = $('#series-modal');
             if (el) el.classList.add('hidden');
         }
@@ -1809,10 +2295,12 @@ document.addEventListener('click', async event => {
         if (event.target.closest('[data-action="new-series"]')) {
             const el = $('#series-modal');
             if (el) el.classList.remove('hidden');
+            bindFileSelectionPreviews();
         }
         if (event.target.closest('[data-action="open-upload"]')) { 
             const el = $('#upload-modal');
             if (el) el.classList.remove('hidden'); 
+            bindFileSelectionPreviews();
             loadCreator(); 
         }
 
@@ -1842,19 +2330,83 @@ document.addEventListener('click', async event => {
         
         if (event.target.closest('[data-action="read-all"]')) { 
             try { 
-                await api('/notifications/me/read-all', { method: 'PUT' }); 
+                $$('#notification-list .notification-unread').forEach(el => {
+                    el.classList.remove('notification-unread');
+                    el.querySelector('[data-read-notification]')?.remove();
+                });
+                setNotificationBadgeCount(0);
+
+                await api('/notifications/me/read-all', { method: 'PUT' }).catch(() =>
+                    api('/notifications/me/read-all', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({})
+                    })
+                );
                 await loadNotifications(); 
-                refreshNotificationBadge(); 
             } catch (error) { toast(error.message, 'error'); } 
         }
         
         const notification = event.target.closest('[data-read-notification]');
         if (notification) { 
+            const notifId = notification.dataset.readNotification;
             try { 
-                await api(`/notifications/${notification.dataset.readNotification}/read`, { method: 'PUT' }); 
+                const itemEl = notification.closest('.notification-item');
+                if (itemEl) itemEl.classList.remove('notification-unread');
+                notification.remove();
+                const remainingUnread = $$('#notification-list .notification-unread').length;
+                setNotificationBadgeCount(remainingUnread);
+
+                await api(`/notifications/${encodeURIComponent(notifId)}/read`, { method: 'PUT' }).catch(() =>
+                    api(`/notifications/${encodeURIComponent(notifId)}/read`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({})
+                    })
+                );
                 await loadNotifications(); 
-                refreshNotificationBadge(); 
             } catch (error) { toast(error.message, 'error'); } 
+        }
+
+        const deleteNotifBtn = event.target.closest('[data-delete-notification]');
+        if (deleteNotifBtn) {
+            event.preventDefault();
+            const notifId = deleteNotifBtn.dataset.deleteNotification;
+            if (notifId) {
+                rememberDeletedNotificationIds([notifId]);
+                const itemEl = deleteNotifBtn.closest('.notification-item');
+                if (itemEl) itemEl.remove();
+
+                const listEl = $('#notification-list');
+                if (listEl && !listEl.querySelector('.notification-item')) {
+                    listEl.innerHTML = '<p>No new notifications</p>';
+                }
+                const remainingUnread = $$('#notification-list .notification-unread').length;
+                setNotificationBadgeCount(remainingUnread);
+
+                // Sync deletion / read state to backend without failing if route style differs
+                api(`/notifications/${encodeURIComponent(notifId)}`, { method: 'DELETE' })
+                    .catch(() => api(`/notifications/me/${encodeURIComponent(notifId)}`, { method: 'DELETE' }))
+                    .catch(() => api(`/notifications/${encodeURIComponent(notifId)}/read`, { method: 'PUT' }))
+                    .catch(() => {});
+            }
+        }
+
+        if (event.target.closest('[data-action="clear-notifications"]')) {
+            event.preventDefault();
+            const allIds = $$('#notification-list [data-notification-id]').map(el => el.dataset.notificationId).filter(Boolean);
+            if (allIds.length > 0) {
+                rememberDeletedNotificationIds(allIds);
+            }
+            const listEl = $('#notification-list');
+            if (listEl) listEl.innerHTML = '<p>No new notifications</p>';
+            setNotificationBadgeCount(0);
+
+            api('/notifications/me/all', { method: 'DELETE' })
+                .catch(() => api('/notifications/all', { method: 'DELETE' }))
+                .catch(() => api('/notifications/me/read-all', { method: 'PUT' }))
+                .catch(() => {});
+            toast('Notifications cleared', 'success');
         }
 
         const historyLink = event.target.closest('[data-history-episode]');
@@ -2112,6 +2664,7 @@ async function boot() {
         }
 
         ensureClassificationControls(); 
+        bindFileSelectionPreviews();
         const initialSection = location.hash.slice(1) || 'discover';
         if (initialSection === 'discover') {
             await loadDiscover().catch(e => console.warn(e)); 
