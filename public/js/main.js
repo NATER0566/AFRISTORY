@@ -78,16 +78,18 @@ window.addEventListener('unhandledrejection', (event) => {
 /* ============================================================================ */
 const api = async (path, options = {}) => {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), Math.min(options.timeout || 15000, 15000));
+    const timeoutMs = Number(options.timeout) > 0 ? Number(options.timeout) : 15000;
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     const method = (options.method || 'GET').toUpperCase();
     
     const startTime = performance.now();
 
     try {
+        const { timeout, isExplicitLogout, ...restOptions } = options;
         const fetchOptions = {
             credentials: 'include',
             signal: controller.signal,
-            ...options
+            ...restOptions
         };
 
         // Prevent stale browser caching on dynamic GET requests (notifications, balances, feeds)
@@ -105,7 +107,7 @@ const api = async (path, options = {}) => {
         const data = await response.json().catch(() => ({}));
         
         if (response.status === 401) { 
-            if (options.isExplicitLogout) window.location.replace('/');
+            if (isExplicitLogout) window.location.replace('/');
             return null; 
         }
         
@@ -308,7 +310,8 @@ function ensureClassificationControls() {
     if (form && !$('#upload-genre')) {
         const access = form.querySelector('[name="access"]');
         if (access) {
-            access.insertAdjacentHTML('beforebegin', `<label>Genre<select id="upload-genre" name="genre" required><option value="">Choose genre</option>${options(episodeGenres)}</select></label><label>Cultural category<select id="upload-cultural-category" name="culturalCategory" required><option value="">Choose culture</option>${options(culturalCategories)}</select></label><label>Language<select id="upload-language" name="language" required><option value="">Choose language</option>${options(episodeLanguages)}</select></label><label>Tags<input name="tags" maxlength="300" placeholder="family, tradition, village"></label>`);
+            const anchor = access.closest('label') || access;
+            anchor.insertAdjacentHTML('beforebegin', `<label>Genre<select id="upload-genre" name="genre" required><option value="">Choose genre</option>${options(episodeGenres)}</select></label><label>Cultural category<select id="upload-cultural-category" name="culturalCategory" required><option value="">Choose culture</option>${options(culturalCategories)}</select></label><label>Language<select id="upload-language" name="language" required><option value="">Choose language</option>${options(episodeLanguages)}</select></label><label>Tags<input name="tags" maxlength="300" placeholder="family, tradition, village"></label>`);
         }
     }
 }
@@ -1228,6 +1231,12 @@ function injectCreatorForm(existingBrandName = '', rejectionReason = '') {
 /* ============================================================================ */
 /* DIRECT CLOUD UPLOAD WITH LIVE PROGRESS, FILE DETAILS & MEDIA HELPERS */
 /* ============================================================================ */
+function emitUploadLifecycle(eventName, detail = {}) {
+    try {
+        window.dispatchEvent(new CustomEvent(eventName, { detail }));
+    } catch (e) {}
+}
+
 function getLocalVideoMetadata(file) {
     return new Promise((resolve) => {
         if (!file || !file.type?.startsWith('video/')) return resolve({ duration: 0, width: 0, height: 0 });
@@ -1391,17 +1400,19 @@ async function uploadAsset(path, file, onProgress = null) {
     }
 
     const signRes = await api(`/upload/sign?type=${isVideo ? 'video' : 'image'}`);
+    const cloudName = signRes?.cloudName || signRes?.cloud_name;
+    const apiKey = signRes?.apiKey || signRes?.api_key;
     
-    if (!signRes || !signRes.signature) {
+    if (!signRes || !signRes.signature || !cloudName || !apiKey) {
         throw new Error('Failed to secure upload connection');
     }
 
     const resourceType = isVideo ? 'video' : 'image';
-    const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${signRes.cloudName}/${resourceType}/upload`;
+    const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/${resourceType}/upload`;
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('api_key', signRes.apiKey);
+    formData.append('api_key', apiKey);
     formData.append('timestamp', signRes.timestamp);
     formData.append('signature', signRes.signature);
     if (signRes.folder) formData.append('folder', signRes.folder);
@@ -1417,6 +1428,8 @@ async function uploadAsset(path, file, onProgress = null) {
         const startedAt = performance.now();
 
         xhr.open('POST', cloudinaryUrl, true);
+        // Never send cookies/credentials to Cloudinary (Access-Control-Allow-Origin: *)
+        xhr.withCredentials = false;
         xhr.timeout = 10 * 60 * 1000; // 10 minutes for large vertical drama videos
 
         xhr.upload.onprogress = (event) => {
@@ -1505,6 +1518,7 @@ async function submitSeries(event) {
         bytesText: `0 MB / ${formatFileSize(cover.size)}`,
         speedText: 'Starting...'
     });
+    emitUploadLifecycle('afrostory:upload-progress', { kind: 'series', percent: 2, stage: 'Step 1/3 · Preparing series upload...' });
     
     try { 
         const upload = await uploadAsset('/upload/image', cover, (p) => {
@@ -1517,6 +1531,7 @@ async function submitSeries(event) {
                 bytesText: `${formatFileSize(p.loaded)} / ${formatFileSize(p.total)}`,
                 speedText: speedLabel
             });
+            emitUploadLifecycle('afrostory:upload-progress', { kind: 'series', percent: p.percent, stage: p.stage });
         }); 
 
         updateUploadTelemetry(ui, {
@@ -1525,9 +1540,11 @@ async function submitSeries(event) {
             bytesText: `${formatFileSize(cover.size)} / ${formatFileSize(cover.size)}`,
             speedText: 'Saving details...'
         });
+        emitUploadLifecycle('afrostory:upload-progress', { kind: 'series', percent: 94, stage: 'Step 3/3 · Creating series...' });
 
         const createdRes = await api('/series/create', { 
             method: 'POST', 
+            timeout: 30000,
             headers: { 'Content-Type': 'application/json' }, 
             body: JSON.stringify({ 
                 title: values.get('title'), 
@@ -1549,6 +1566,7 @@ async function submitSeries(event) {
             speedText: 'Complete',
             isSuccess: true
         });
+        emitUploadLifecycle('afrostory:upload-complete', { kind: 'series', series: createdSeries });
         
         discoverLoaded = false;
         const modal = $('#series-modal');
@@ -1564,6 +1582,7 @@ async function submitSeries(event) {
             speedText: 'Stopped',
             isError: true
         });
+        emitUploadLifecycle('afrostory:upload-error', { kind: 'series', message: error.message });
         toast(error.message, 'error'); 
     } finally { 
         delete form.dataset.uploading;
@@ -1606,6 +1625,7 @@ async function submitUpload(event) {
         bytesText: `0 MB / ${formatFileSize(file.size)}`,
         speedText: 'Starting...'
     });
+    emitUploadLifecycle('afrostory:upload-progress', { kind: 'episode', percent: 2, stage: 'Step 1/3 · Securing cloud upload...' });
     
     try { 
         const upload = await uploadAsset('/upload/video', file, (p) => {
@@ -1618,6 +1638,7 @@ async function submitUpload(event) {
                 bytesText: `${formatFileSize(p.loaded)} / ${formatFileSize(p.total)}`,
                 speedText: speedLabel
             });
+            emitUploadLifecycle('afrostory:upload-progress', { kind: 'episode', percent: p.percent, stage: p.stage });
         }); 
 
         const rawMediaUrl = upload.hlsUrl || upload.mediaUrl || upload.secure_url || upload.url; 
@@ -1640,9 +1661,11 @@ async function submitUpload(event) {
             bytesText: `${formatFileSize(file.size)} / ${formatFileSize(file.size)}`,
             speedText: 'Saving episode...'
         });
+        emitUploadLifecycle('afrostory:upload-progress', { kind: 'episode', percent: 95, stage: 'Step 3/3 · Saving episode...' });
         
         await api(`/episodes/series/${encodeURIComponent(seriesId)}/create`, { 
             method: 'POST', 
+            timeout: 30000,
             headers: { 'Content-Type': 'application/json' }, 
             body: JSON.stringify({ 
                 title: values.get('title'), 
@@ -1669,6 +1692,7 @@ async function submitUpload(event) {
             speedText: 'Complete',
             isSuccess: true
         });
+        emitUploadLifecycle('afrostory:upload-complete', { kind: 'episode', seriesId });
         
         discoverLoaded = false;
         const modal = $('#upload-modal');
@@ -1686,6 +1710,7 @@ async function submitUpload(event) {
             speedText: 'Stopped',
             isError: true
         });
+        emitUploadLifecycle('afrostory:upload-error', { kind: 'episode', message: error.message });
         toast(error.message, 'error'); 
     } finally { 
         delete form.dataset.uploading;
