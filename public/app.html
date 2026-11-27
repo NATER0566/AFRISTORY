@@ -1,9 +1,8 @@
 <!doctype html>
 <html lang="en">
 <head>
-
-<meta name="8d88086ab803e8ce6e903cbf141dcd2916a84f9e" content="8d88086ab803e8ce6e903cbf141dcd2916a84f9e" />
-<meta name="referrer" content="no-referrer-when-downgrade" />
+  <meta name="8d88086ab803e8ce6e903cbf141dcd2916a84f9e" content="8d88086ab803e8ce6e903cbf141dcd2916a84f9e" />
+  <meta name="referrer" content="no-referrer-when-downgrade" />
 
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,7 +10,7 @@
   <title>AfriStory | Watch something real</title>
   <meta
     name="description"
-    content="AfriStory is the home of African stories. Watch original series, short films, and creator episodes, earn rewards, and support African storytellers."
+    content="AfriStory is the home of African stories. Watch original vertical series, short films, and creator episodes, earn Story Coins, and support African storytellers."
   >
   <link rel="canonical" href="https://afristory.live/">
   <link
@@ -35,7 +34,7 @@
   <!-- Robins Ads Official Automatic Script -->
   <script src="https://robinsads.com/ads.js" data-website-id="6b06e5d10354f7305a5bc51b" data-automatic="true" async></script>
 
-  <!-- Webpushr tracking code -->
+  <!-- Webpushr Tracking Code -->
   <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js"; fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk')); webpushr('setup',{'key':'BNU5SGkr0e0hblBnGp11dDoVaxpXaOk7ErjAHxRhg8SsMEhJAwONUM4GZnLNpMUBg35mzdNgBSOcMQ4YlZaZ0SY' });</script>
 
   <!-- Google AdSense -->
@@ -43,28 +42,423 @@
 
   <style>
     /* ==============================================================
-       1. STANDARDIZED Z-INDEX HIERARCHY & CSS VARIABLES
+       1. DESIGN TOKENS, Z-INDEX HIERARCHY & BASE TRANSITIONS
        Main Content / Ads: 10 | Save Button: 400 | Sidebar: 450
        Mobile Watch: 460 | Desktop Watch: 520 | Header/Topbar: 560
        Floating Upload Pill: 580 | Bottom Sheet: 600 | Comments: 650
        Modals: 700 | Toasts: 9999
     ============================================================== */
-
     :root {
       --sidebar-safe-left: 280px;
+      --gold-primary: #d4a017;
+      --gold-bright: #f3ca52;
+      --gold-soft: rgba(212, 160, 23, 0.14);
+      --gold-border: rgba(212, 160, 23, 0.34);
+      --glass-surface: rgba(22, 22, 25, 0.74);
+      --glass-surface-strong: rgba(16, 16, 19, 0.88);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+      --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
-    *, *::before, *::after { box-sizing: border-box; }
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
 
-    .discover-filters { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 24px; }
-    .discover-filters label { color: #999; display: flex; flex-direction: column; font-size: 11px; gap: 6px; }
-    .discover-filters select { background: #242424; border: 1px solid #343434; border-radius: 6px; color: #f5f5f5; padding: 9px 28px 9px 10px; }
+    body.app-page {
+      background:
+        radial-gradient(circle at 18% 0%, rgba(212, 160, 23, 0.07) 0%, transparent 42%),
+        radial-gradient(circle at 88% 12%, rgba(46, 204, 113, 0.04) 0%, transparent 38%),
+        #0e0e10;
+      color: #f5f5f5;
+      font-family: 'DM Sans', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Smooth Section Entrance Animation */
+    .app-section:not(.hidden) {
+      animation: sectionReveal 0.38s var(--ease-spring) both;
+    }
+    @keyframes sectionReveal {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ==============================================================
+       2. MODERN GLASSMORPHIC BUTTONS, INPUTS & FILTER BAR
+    ============================================================== */
+    .button {
+      border-radius: 12px !important;
+      font-family: 'DM Sans', sans-serif !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.2px !important;
+      transition:
+        transform 0.22s var(--ease-spring),
+        box-shadow 0.24s ease,
+        background 0.24s ease,
+        border-color 0.24s ease,
+        filter 0.24s ease !important;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .button-primary {
+      background: linear-gradient(135deg, #f3ca52 0%, #d4a017 58%, #b5850b 100%) !important;
+      color: #111111 !important;
+      border: 1px solid rgba(255, 238, 175, 0.45) !important;
+      box-shadow: 0 8px 24px rgba(212, 160, 23, 0.26) !important;
+    }
+    .button-primary::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -120%;
+      width: 75%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+      transform: skewX(-22deg);
+      transition: left 0.55s ease;
+      pointer-events: none;
+    }
+    .button-primary:hover::after {
+      left: 140%;
+    }
+    .button-primary:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: 0 12px 30px rgba(212, 160, 23, 0.4) !important;
+      filter: brightness(1.03);
+    }
+    .button-primary:active {
+      transform: translateY(0) scale(0.98) !important;
+    }
+
+    .button-accent {
+      background: rgba(212, 160, 23, 0.14) !important;
+      color: #f3ca52 !important;
+      border: 1px solid rgba(212, 160, 23, 0.45) !important;
+      backdrop-filter: blur(10px);
+    }
+    .button-accent:hover {
+      background: rgba(212, 160, 23, 0.24) !important;
+      border-color: #f3ca52 !important;
+      color: #ffffff !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 8px 22px rgba(212, 160, 23, 0.2) !important;
+    }
+
+    .button-quiet {
+      background: rgba(255, 255, 255, 0.05) !important;
+      color: #e4e4e7 !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      backdrop-filter: blur(8px);
+    }
+    .button-quiet:hover {
+      background: rgba(255, 255, 255, 0.1) !important;
+      border-color: rgba(212, 160, 23, 0.45) !important;
+      color: #ffffff !important;
+      transform: translateY(-2px) !important;
+    }
+
+    .text-button {
+      transition: color 0.2s ease, transform 0.2s ease !important;
+    }
+    .text-button:hover {
+      color: #f3ca52 !important;
+      transform: translateX(2px);
+    }
+
+    /* Modern Glass Search Box */
+    .search-box {
+      background: rgba(22, 22, 26, 0.78) !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      border-radius: 14px !important;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.22s ease !important;
+    }
+    .search-box:focus-within {
+      border-color: rgba(212, 160, 23, 0.65) !important;
+      box-shadow: 0 0 0 3px rgba(212, 160, 23, 0.16), 0 10px 28px rgba(0, 0, 0, 0.45) !important;
+      transform: translateY(-1px);
+    }
+    .search-box button {
+      border-radius: 10px !important;
+      background: linear-gradient(135deg, #f3ca52, #d4a017) !important;
+      color: #111 !important;
+      font-weight: 700 !important;
+      transition: filter 0.2s ease, transform 0.18s ease !important;
+    }
+    .search-box button:hover {
+      filter: brightness(1.06);
+      transform: scale(1.02);
+    }
+
+    /* Scoped Discover Filter Bar (Visible on Discover only) */
+    .discover-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin: 0 0 24px;
+      padding: 14px 16px;
+      background: var(--glass-surface);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    body:has(#section-discover.hidden) .discover-filters,
+    body:not(.discover-view-active) .discover-filters {
+      display: none !important;
+    }
+    .discover-filters label {
+      color: #a1a1aa;
+      display: flex;
+      flex-direction: column;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.7px;
+      text-transform: uppercase;
+      gap: 6px;
+      min-width: 155px;
+    }
+    .discover-filters select {
+      appearance: none;
+      -webkit-appearance: none;
+      background-color: rgba(14, 14, 17, 0.9);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='%23d4a017' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 15px 15px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      color: #f5f5f5;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13.5px;
+      font-weight: 500;
+      padding: 10px 36px 10px 12px;
+      cursor: pointer;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.18s ease;
+    }
+    .discover-filters select:hover {
+      border-color: rgba(212, 160, 23, 0.45);
+    }
+    .discover-filters select:focus {
+      outline: none;
+      border-color: #d4a017;
+      box-shadow: 0 0 0 3px rgba(212, 160, 23, 0.16);
+      transform: translateY(-1px);
+    }
+
+    /* Interactive Genre & Search Pill Strips */
+    .quick-pill-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 9px;
+      margin: 0 0 26px;
+    }
+    .quick-pill {
+      background: rgba(255, 255, 255, 0.045);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      color: #d4d4d8;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 7px 15px;
+      transition:
+        transform 0.2s var(--ease-spring),
+        background 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease,
+        box-shadow 0.2s ease;
+    }
+    .quick-pill:hover {
+      background: rgba(212, 160, 23, 0.14);
+      border-color: rgba(212, 160, 23, 0.5);
+      color: #ffffff;
+      transform: translateY(-2px);
+    }
+    .quick-pill.active {
+      background: linear-gradient(135deg, #f3ca52, #d4a017);
+      border-color: #f3ca52;
+      color: #111111;
+      box-shadow: 0 6px 18px rgba(212, 160, 23, 0.28);
+    }
+
+    /* ==============================================================
+       3. EDITORIAL & PLATFORM CONTENT BLOCKS (AD-SAFE NATURAL FLOW)
+    ============================================================== */
+    .editorial-showcase {
+      margin-top: 44px;
+      margin-bottom: 24px;
+      padding: 28px;
+      background: linear-gradient(155deg, rgba(24, 24, 28, 0.84) 0%, rgba(15, 15, 18, 0.92) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 18px 46px rgba(0, 0, 0, 0.42);
+    }
+    .editorial-showcase-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 22px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    .editorial-showcase-header h2,
+    .editorial-showcase-header h3 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 21px;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 4px 0 0;
+      letter-spacing: -0.2px;
+    }
+    .editorial-showcase-header p.editorial-lead {
+      color: #a1a1aa;
+      font-size: 13.5px;
+      line-height: 1.5;
+      max-width: 560px;
+      margin: 0;
+    }
+
+    .editorial-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+    .editorial-grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+    @media (max-width: 980px) {
+      .editorial-grid-3,
+      .editorial-grid-4 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 620px) {
+      .editorial-showcase {
+        padding: 20px 18px;
+        margin-top: 32px;
+      }
+      .editorial-grid-3,
+      .editorial-grid-4 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .editorial-card {
+      background: rgba(14, 14, 17, 0.78);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition:
+        transform 0.26s var(--ease-spring),
+        border-color 0.26s ease,
+        background 0.26s ease,
+        box-shadow 0.26s ease;
+    }
+    .editorial-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(212, 160, 23, 0.42);
+      background: rgba(22, 22, 26, 0.92);
+      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.5);
+    }
+    .editorial-card-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      width: fit-content;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(212, 160, 23, 0.12);
+      border: 1px solid rgba(212, 160, 23, 0.3);
+      color: #f3ca52;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+    }
+    .editorial-card h4 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 16.5px;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 2px 0 0;
+      line-height: 1.3;
+    }
+    .editorial-card p {
+      color: #b4b4bc;
+      font-size: 13.5px;
+      line-height: 1.58;
+      margin: 0;
+    }
+    .editorial-card-meta {
+      margin-top: auto;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      color: #8e8e98;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Hero Banner Enhancements */
+    .discover-hero-banner {
+      background:
+        radial-gradient(circle at 85% 20%, rgba(212, 160, 23, 0.18) 0%, transparent 48%),
+        linear-gradient(135deg, rgba(24, 24, 28, 0.92) 0%, rgba(14, 14, 17, 0.96) 100%);
+      border: 1px solid rgba(212, 160, 23, 0.25);
+      border-radius: 22px;
+      padding: 26px 28px;
+      margin-bottom: 24px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+    }
+    .discover-hero-sub {
+      color: #b4b4bc;
+      font-size: 14px;
+      line-height: 1.55;
+      max-width: 560px;
+      margin: 10px 0 0;
+    }
+
     .profile-form { max-width: 520px; }
     .save-current { bottom: 28px; position: fixed; right: 28px; z-index: 400; }
-    .history-row { border: 0; color: inherit; cursor: pointer; text-align: left; width: 100%; }
+    .history-row { border: 0; color: inherit; cursor: pointer; text-align: left; width: 100%; transition: transform 0.2s ease, border-color 0.2s ease; }
+    .history-row:hover { transform: translateX(3px); }
     .notification-unread { border-left: 3px solid #d4a017; }
     .comment-replies { border-left: 1px solid #343434; margin: 12px 0 0 18px; padding-left: 14px; }
-    .empty-state { text-align: center; padding: 32px 20px; color: #888; font-size: 14px; border: 1px dashed #333; border-radius: 12px; margin-top: 16px; }
+    .empty-state {
+      text-align: center;
+      padding: 36px 22px;
+      color: #9ca3af;
+      font-size: 14px;
+      line-height: 1.55;
+      background: rgba(20, 20, 24, 0.65);
+      border: 1px dashed rgba(212, 160, 23, 0.28);
+      border-radius: 16px;
+      margin-top: 16px;
+    }
     .creator-rejection-banner {
       background: rgba(231, 76, 60, 0.12);
       border: 1px solid rgba(231, 76, 60, 0.45);
@@ -79,7 +473,7 @@
     .creator-rejection-banner strong { color: #ff6b5b; display: block; margin-bottom: 4px; }
 
     /* ==============================================================
-       2. BUTTON SPINNER & TOAST NOTIFICATIONS
+       4. BUTTON SPINNER & TOAST NOTIFICATIONS
     ============================================================== */
     .btn-spinner {
       width: 17px;
@@ -93,7 +487,7 @@
     }
 
     .toast-region { position: fixed !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important; z-index: 9999 !important; display: flex !important; flex-direction: column !important; align-items: center !important; gap: 16px !important; pointer-events: none !important; width: 100% !important; padding: 20px !important; }
-    .toast { pointer-events: auto !important; align-items: center; background: linear-gradient(135deg, #242424, #2d2d2d); border: 2px solid #343434; border-radius: 16px; color: #f5f5f5; display: flex; font-size: 17px !important; font-weight: 700; gap: 14px !important; width: 100%; max-width: 460px !important; padding: 20px 26px !important; position: relative; word-wrap: break-word; box-shadow: 0 24px 64px rgba(0, 0, 0, 0.92) !important; animation: popInToast 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important; justify-content: center !important; text-align: center !important; }
+    .toast { pointer-events: auto !important; align-items: center; background: linear-gradient(135deg, #242424, #2d2d2d); border: 2px solid #343434; border-radius: 16px; color: #f5f5f5; display: flex; font-size: 17px !important; font-weight: 700; gap: 14px !important; width: 100%; max-width: 460px !important; padding: 20px 26px !important; position: relative; word-wrap: break-word; box-shadow: 0 24px 64px rgba(0, 0, 0, 0.92) !important; animation: popInToast 0.35s var(--ease-bounce) forwards !important; justify-content: center !important; text-align: center !important; backdrop-filter: blur(14px); }
     .toast.success { border-color: #76a86b; background: linear-gradient(135deg, #253625, #182618); box-shadow: 0 0 36px rgba(118, 168, 107, 0.45), inset 0 0 18px rgba(118, 168, 107, 0.1) !important; }
     .toast.error { border-color: #e67e22; background: linear-gradient(135deg, #382718, #241709); box-shadow: 0 0 36px rgba(230, 126, 34, 0.45), inset 0 0 18px rgba(230, 126, 34, 0.1) !important; }
     .toast-icon { font-size: 22px !important; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; min-width: 24px; }
@@ -106,23 +500,23 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ==============================================================
-       3. MODALS & PREMIUM EPISODE UPLOAD STUDIO DESIGN
+       5. MODALS & PREMIUM EPISODE UPLOAD STUDIO DESIGN
     ============================================================== */
-    .modal-root { position: fixed !important; inset: 0 !important; background: rgba(0,0,0,0.86) !important; z-index: 700 !important; display: flex !important; align-items: flex-start !important; justify-content: center !important; padding: 68px 18px 110px 18px !important; overflow-y: auto !important; backdrop-filter: blur(8px); }
+    .modal-root { position: fixed !important; inset: 0 !important; background: rgba(0,0,0,0.84) !important; z-index: 700 !important; display: flex !important; align-items: flex-start !important; justify-content: center !important; padding: 68px 18px 110px 18px !important; overflow-y: auto !important; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
     .modal-root.hidden { display: none !important; }
     .modal {
-      background: linear-gradient(165deg, #181818 0%, #111111 100%) !important;
-      border: 1px solid rgba(212, 160, 23, 0.28) !important;
-      border-radius: 20px !important;
+      background: linear-gradient(165deg, rgba(26, 26, 30, 0.96) 0%, rgba(15, 15, 18, 0.98) 100%) !important;
+      border: 1px solid rgba(212, 160, 23, 0.32) !important;
+      border-radius: 22px !important;
       width: 100% !important;
       max-width: 520px !important;
       margin: auto !important;
       flex-shrink: 0 !important;
-      box-shadow: 0 28px 70px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.03) inset !important;
+      box-shadow: 0 28px 70px rgba(0,0,0,0.88), 0 0 0 1px rgba(255,255,255,0.04) inset !important;
       padding: 24px 26px !important;
       position: relative !important;
       z-index: 701 !important;
-      animation: modalCardEntrance 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      animation: modalCardEntrance 0.32s var(--ease-spring) forwards;
     }
     @keyframes modalCardEntrance {
       from { opacity: 0; transform: translateY(18px) scale(0.97); }
@@ -136,7 +530,7 @@
       gap: 14px !important;
       padding-bottom: 16px !important;
       margin-bottom: 18px !important;
-      border-bottom: 1px solid #262626 !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
     }
     .modal-header .eyebrow {
       color: #d4a017 !important;
@@ -172,16 +566,15 @@
       justify-content: center !important;
       cursor: pointer !important;
       flex-shrink: 0 !important;
-      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease !important;
+      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.22s ease !important;
     }
     .modal-close:hover {
-      background: rgba(212, 160, 23, 0.16) !important;
+      background: rgba(212, 160, 23, 0.18) !important;
       border-color: #d4a017 !important;
       color: #fff !important;
       transform: rotate(90deg);
     }
 
-    /* Premium Form Grid & Animated Fields (Upload Episode & Create Series) */
     #upload-modal .modal {
       max-width: 580px !important;
     }
@@ -210,7 +603,7 @@
       flex-direction: column !important;
       gap: 7px !important;
       margin: 0 !important;
-      animation: fieldFadeUp 0.36s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+      animation: fieldFadeUp 0.36s var(--ease-spring) backwards;
     }
     .studio-field:nth-child(1) { animation-delay: 0.03s; }
     .studio-field:nth-child(2) { animation-delay: 0.06s; }
@@ -252,8 +645,8 @@
     .studio-premium-form select {
       width: 100% !important;
       height: 46px !important;
-      background: #101010 !important;
-      border: 1px solid #2e2e2e !important;
+      background: rgba(14, 14, 17, 0.92) !important;
+      border: 1px solid #2e2e34 !important;
       border-radius: 12px !important;
       color: #f5f5f5 !important;
       font-family: 'DM Sans', sans-serif !important;
@@ -284,7 +677,7 @@
       background-size: 16px 16px !important;
     }
     .studio-premium-form select option {
-      background: #161616;
+      background: #161619;
       color: #f5f5f5;
       padding: 10px;
     }
@@ -292,16 +685,17 @@
     .studio-premium-form input:hover,
     .studio-premium-form textarea:hover,
     .studio-premium-form select:hover {
-      border-color: #4a4a4a !important;
-      background-color: #141414 !important;
+      border-color: #4a4a52 !important;
+      background-color: #151519 !important;
     }
 
     .studio-premium-form input:focus,
     .studio-premium-form textarea:focus,
     .studio-premium-form select:focus {
       border-color: #d4a017 !important;
-      background-color: #151515 !important;
+      background-color: #16161b !important;
       box-shadow: 0 0 0 3px rgba(212, 160, 23, 0.18), 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+      transform: translateY(-1px);
     }
 
     /* Interactive Video Dropzone Card */
@@ -310,7 +704,7 @@
       display: flex;
       align-items: center;
       gap: 14px;
-      background: linear-gradient(135deg, rgba(212, 160, 23, 0.08) 0%, rgba(18, 18, 18, 0.98) 100%);
+      background: linear-gradient(135deg, rgba(212, 160, 23, 0.08) 0%, rgba(18, 18, 22, 0.98) 100%);
       border: 1.5px dashed rgba(212, 160, 23, 0.48);
       border-radius: 14px;
       padding: 14px 16px;
@@ -319,14 +713,14 @@
     }
     .video-dropzone-card:hover {
       border-color: #f0c44d;
-      background: linear-gradient(135deg, rgba(212, 160, 23, 0.14) 0%, rgba(22, 22, 22, 0.98) 100%);
-      transform: translateY(-1px);
+      background: linear-gradient(135deg, rgba(212, 160, 23, 0.14) 0%, rgba(22, 22, 27, 0.98) 100%);
+      transform: translateY(-2px);
       box-shadow: 0 8px 24px rgba(212, 160, 23, 0.14);
     }
     .video-dropzone-card.has-file {
       border-style: solid;
       border-color: #2ecc71;
-      background: linear-gradient(135deg, rgba(46, 204, 113, 0.1) 0%, rgba(18, 18, 18, 0.98) 100%);
+      background: linear-gradient(135deg, rgba(46, 204, 113, 0.1) 0%, rgba(18, 18, 22, 0.98) 100%);
     }
     .video-dropzone-card input[type="file"] {
       position: absolute;
@@ -392,8 +786,8 @@
       align-items: center !important;
       justify-content: space-between !important;
       gap: 12px !important;
-      background: #121212 !important;
-      border: 1px solid #292929 !important;
+      background: rgba(16, 16, 20, 0.9) !important;
+      border: 1px solid #292930 !important;
       border-radius: 12px !important;
       padding: 12px 15px !important;
       cursor: pointer !important;
@@ -419,13 +813,13 @@
       -webkit-appearance: none !important;
       width: 44px !important;
       height: 24px !important;
-      background: #2b2b2b !important;
+      background: #2b2b30 !important;
       border-radius: 999px !important;
       position: relative !important;
       cursor: pointer !important;
       flex-shrink: 0 !important;
       transition: background 0.22s ease !important;
-      border: 1px solid #3c3c3c !important;
+      border: 1px solid #3c3c44 !important;
     }
     .studio-toggle-row input[type="checkbox"]::after {
       content: '';
@@ -436,7 +830,7 @@
       height: 18px;
       border-radius: 50%;
       background: #bbb;
-      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.22s ease;
+      transition: transform 0.22s var(--ease-bounce), background 0.22s ease;
     }
     .studio-toggle-row input[type="checkbox"]:checked {
       background: linear-gradient(135deg, #f0c44d, #d4a017) !important;
@@ -465,7 +859,7 @@
       justify-content: center !important;
       gap: 8px !important;
       margin-top: 4px !important;
-      transition: transform 0.18s ease, box-shadow 0.2s ease, filter 0.2s ease !important;
+      transition: transform 0.2s var(--ease-spring), box-shadow 0.22s ease, filter 0.22s ease !important;
     }
     .studio-submit-btn:hover {
       transform: translateY(-2px) !important;
@@ -477,7 +871,7 @@
     }
 
     /* ==============================================================
-       4. TOPBAR & MINIMIZED TRANSPARENT HEADER IN WATCH MODE
+       6. TOPBAR & MINIMIZED TRANSPARENT HEADER IN WATCH MODE
     ============================================================== */
     .topbar {
       display: flex;
@@ -485,16 +879,35 @@
       align-items: center;
       padding: 0 4vw;
       height: 76px;
-      background: #111;
-      border-bottom: 1px solid #2b2b2b;
+      background: rgba(15, 15, 18, 0.84);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       position: sticky;
       top: 0;
       z-index: 560 !important;
       transition: height 0.25s ease, background 0.25s ease, padding 0.25s ease;
     }
     .topbar-actions { display: flex; align-items: center; gap: 16px; }
-    .notification-button { align-items: center; background: #242424; border: 1px solid #3b3b3b; border-radius: 50%; display: inline-flex; height: 44px; width: 44px; min-width: 44px; justify-content: center; transition: border-color .2s, transform .2s; position: relative; flex-shrink: 0; }
-    .notification-button:hover { border-color: #d4a017; transform: translateY(-1px); }
+    .notification-button {
+      align-items: center;
+      background: rgba(34, 34, 38, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 50%;
+      display: inline-flex;
+      height: 44px;
+      width: 44px;
+      min-width: 44px;
+      justify-content: center;
+      transition: border-color .22s, transform .22s var(--ease-spring), background .22s;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .notification-button:hover {
+      border-color: #d4a017;
+      background: rgba(212, 160, 23, 0.12);
+      transform: translateY(-2px);
+    }
     .header-icon { font-size: 19px; line-height: 1; }
     .notification-button .notification-badge { position: absolute; right: -4px; top: -3px; background: #d4a017; color: #111; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: bold; }
 
@@ -503,9 +916,9 @@
       border: none !important; padding: 0 !important; margin: 0 !important; cursor: pointer !important;
       width: 50px !important; height: 50px !important; min-width: 50px !important; min-height: 50px !important;
       max-width: 50px !important; max-height: 50px !important; flex-shrink: 0 !important; position: relative !important;
-      transition: transform .2s ease !important;
+      transition: transform .22s var(--ease-spring) !important;
     }
-    .header-profile-btn:hover { transform: translateY(-2px) scale(1.02); }
+    .header-profile-btn:hover { transform: translateY(-2px) scale(1.03); }
 
     .header-avatar-container { position: relative !important; width: 46px !important; height: 46px !important; display: flex !important; align-items: center !important; justify-content: center !important; border-radius: 50% !important; }
     .header-avatar-container::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, #d4a017, #76a86b, #d4a017, transparent 60%); animation: spinAvatarBorder 3s linear infinite; z-index: 1; }
@@ -537,6 +950,8 @@
       height: 54px !important;
       padding: 0 18px !important;
       background: linear-gradient(to bottom, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.25) 65%, transparent 100%) !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
       border-bottom: none !important;
       box-shadow: none !important;
       pointer-events: none !important;
@@ -560,13 +975,9 @@
       transform: scale(0.84);
       transform-origin: right center;
     }
-    body.watch-mode-active .discover-filters,
-    body:has(#section-watch:not(.hidden)) .discover-filters {
-      display: none !important;
-    }
 
     /* ==============================================================
-       5. WATCH SECTION & AUTO-PLAY VIDEO HOOK STAGE
+       7. WATCH SECTION & AUTO-PLAY VIDEO HOOK STAGE
     ============================================================== */
     #section-watch {
       position: fixed !important;
@@ -601,12 +1012,13 @@
       gap: 8px;
       backdrop-filter: blur(10px);
       box-shadow: 0 4px 16px rgba(0,0,0,0.6);
-      transition: background .2s, border-color .2s, color .2s;
+      transition: background .2s, border-color .2s, color .2s, transform .2s;
     }
     .watch-home-btn:hover {
       background: #d4a017;
       color: #111;
       border-color: #d4a017;
+      transform: translateX(-2px);
     }
     .watch-next-btn {
       position: absolute;
@@ -625,8 +1037,9 @@
       align-items: center;
       gap: 8px;
       box-shadow: 0 6px 20px rgba(0,0,0,0.7);
-      transition: transform .15s, background .2s;
+      transition: transform .18s var(--ease-spring), background .2s;
     }
+    .watch-next-btn:hover { transform: translateY(-2px); }
     .watch-next-btn:active { transform: scale(0.95); }
 
     .unmute-pill {
@@ -820,7 +1233,7 @@
     .feed-action-btn span { font-size: 13px; font-weight: 600; }
 
     /* ==============================================================
-       6. PREMIUM CINEMA UNLOCK OVERLAY & BUTTONS
+       8. PREMIUM CINEMA UNLOCK OVERLAY & BUTTONS
     ============================================================== */
     .feed-lock-overlay {
       position: absolute !important;
@@ -978,17 +1391,46 @@
     }
 
     /* ==============================================================
-       7. MOBILE BOTTOM SHEET & RESPONSIVE SIDEBAR
+       9. WALLET & REWARDS GLASSMORPHIC UPGRADES
     ============================================================== */
-    .bottom-sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 600; display: flex; align-items: flex-end; opacity: 1; transition: opacity 0.3s; }
+    .wallet-overview .balance-card,
+    .wallet-overview .wallet-stat {
+      background: linear-gradient(145deg, rgba(26, 26, 30, 0.88) 0%, rgba(16, 16, 19, 0.94) 100%) !important;
+      border: 1px solid rgba(212, 160, 23, 0.26) !important;
+      border-radius: 18px !important;
+      backdrop-filter: blur(14px);
+      transition: transform 0.24s var(--ease-spring), border-color 0.24s ease, box-shadow 0.24s ease;
+    }
+    .wallet-overview .balance-card:hover,
+    .wallet-overview .wallet-stat:hover {
+      transform: translateY(-3px);
+      border-color: rgba(212, 160, 23, 0.52) !important;
+      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.45);
+    }
+
+    .rewards-hero {
+      background:
+        radial-gradient(circle at 80% 15%, rgba(212, 160, 23, 0.2) 0%, transparent 50%),
+        linear-gradient(140deg, rgba(28, 24, 18, 0.92) 0%, rgba(16, 16, 19, 0.96) 100%) !important;
+      border: 1px solid rgba(212, 160, 23, 0.32) !important;
+      border-radius: 20px !important;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.44);
+    }
+
+    /* ==============================================================
+       10. MOBILE BOTTOM SHEET & RESPONSIVE SIDEBAR
+    ============================================================== */
+    .bottom-sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 600; display: flex; align-items: flex-end; opacity: 1; transition: opacity 0.3s; backdrop-filter: blur(6px); }
     .bottom-sheet-overlay.hidden { opacity: 0; pointer-events: none; }
-    .bottom-sheet { background: #111; border-top: 1px solid #333; border-radius: 24px 24px 0 0; width: 100%; padding: 16px 24px 40px; transform: translateY(0); transition: transform 0.3s; box-shadow: 0 -10px 40px rgba(0,0,0,0.9); }
+    .bottom-sheet { background: rgba(17, 17, 20, 0.96); border-top: 1px solid rgba(212, 160, 23, 0.25); border-radius: 24px 24px 0 0; width: 100%; padding: 16px 24px 40px; transform: translateY(0); transition: transform 0.3s var(--ease-spring); box-shadow: 0 -10px 40px rgba(0,0,0,0.9); }
     .bottom-sheet-overlay.hidden .bottom-sheet { transform: translateY(100%); }
     .sheet-handle { width: 40px; height: 4px; background: #444; border-radius: 4px; margin: 0 auto 24px; }
     .bottom-sheet h3 { text-align: center; color: #fff; margin: 0 0 24px; font-size: 18px; font-weight: 600; }
     .sheet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .sheet-item { background: #1a1a1a; border: none; border-radius: 14px; padding: 18px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; color: #f5f5f5; cursor: pointer; transition: border-color .2s; }
-    .sheet-item:active { background: #222; }
+    .sheet-item { background: #1a1a1e; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 14px; padding: 18px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; color: #f5f5f5; cursor: pointer; transition: border-color .2s, transform .18s; }
+    .sheet-item:hover { border-color: rgba(212, 160, 23, 0.4); transform: translateY(-2px); }
+    .sheet-item:active { background: #222; transform: scale(0.97); }
     .sheet-item i { font-size: 24px; font-style: normal; color: #d4a017; }
     .sheet-item span { font-size: 13px; font-weight: 500; }
     .sheet-logout { grid-column: 1 / -1; margin-top: 12px; background: rgba(220, 53, 69, 0.1); color: #ff4d4f; border: 1px solid rgba(220, 53, 69, 0.3); flex-direction: row; justify-content: center; gap: 12px; padding: 16px; }
@@ -998,9 +1440,17 @@
       .sidebar {
         position: relative;
         z-index: 450 !important;
-        background: #111;
+        background: rgba(15, 15, 18, 0.94);
+        backdrop-filter: blur(14px);
         flex-shrink: 0;
-        border-right: 1px solid #262626 !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+      }
+      .sidebar .nav-item {
+        border-radius: 12px;
+        transition: background 0.2s ease, color 0.2s ease, transform 0.2s var(--ease-spring);
+      }
+      .sidebar .nav-item:hover {
+        transform: translateX(3px);
       }
       .main-content {
         flex: 1 1 auto !important;
@@ -1015,7 +1465,7 @@
       .desktop-only { display: none !important; }
       .mobile-only { display: flex !important; }
       .app-layout { flex-direction: column; }
-      .sidebar { position: fixed; bottom: 0; left: 0; right: 0; transform: none; width: 100%; max-width: 100%; height: 80px; background: #111; border-top: 1px solid #222; border-radius: 30px 30px 0 0; z-index: 500 !important; display: flex; padding: 10px 10px 20px; align-items: center; box-shadow: 0 -4px 30px rgba(0,0,0,0.9); }
+      .sidebar { position: fixed; bottom: 0; left: 0; right: 0; transform: none; width: 100%; max-width: 100%; height: 80px; background: rgba(15, 15, 18, 0.94); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-top: 1px solid rgba(255, 255, 255, 0.08); border-radius: 26px 26px 0 0; z-index: 500 !important; display: flex; padding: 10px 10px 20px; align-items: center; box-shadow: 0 -4px 30px rgba(0,0,0,0.9); }
       .side-nav { display: flex; flex-direction: row; justify-content: space-between; width: 100%; padding: 0; margin: 0; }
       .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1 1 0; gap: 4px; font-size: 10px; font-weight: 500; color: #999; padding: 8px 0; border: none; background: transparent; }
       .nav-icon { font-size: 22px; font-style: normal; margin-bottom: 2px; transition: transform 0.2s; }
@@ -1041,22 +1491,23 @@
     }
 
     /* ==============================================================
-       8. PROFILE SECTION STYLES
+       11. PROFILE SECTION STYLES
     ============================================================== */
-    .profile-cover{background:linear-gradient(120deg,#2b2114,#171717 52%,#222);border:1px solid #343434;min-height:230px;padding:28px 32px;position:relative;overflow:hidden}.profile-cover[style]{background-position:center;background-size:cover}.profile-header{align-items:flex-end;display:flex;gap:22px;min-height:174px}.profile-avatar{align-items:center;background:#d4a017;color:#111;display:flex;flex:0 0 104px;font-family:Georgia,serif;font-size:48px;height:104px;justify-content:center;overflow:hidden;border-radius:50%;}.profile-avatar img{height:100%;object-fit:cover;width:100%}.profile-identity{max-width:650px}.profile-identity h1{font-size:clamp(30px,4vw,52px)}.profile-handle{margin:4px 0 10px}.profile-bio{color:#ddd;margin:0}.profile-location{color:#d4a017;font-size:13px;margin-top:10px}.profile-actions{display:flex;gap:10px;margin-left:auto}.profile-tabs{border-bottom:1px solid #343434;display:flex;gap:24px;overflow:auto;padding:0 4px}.profile-tab{background:none;border:0;border-bottom:2px solid transparent;color:#999;padding:16px 4px;white-space:nowrap}.profile-tab.active,.profile-tab:hover{border-color:#d4a017;color:#f5f5f5}.profile-panel{padding-top:30px}.profile-summary-grid{display:grid;gap:30px;grid-template-columns:1fr 1fr}.profile-section-heading{align-items:end;display:flex;justify-content:space-between;margin:28px 0 18px}.profile-section-heading h2{font-size:24px}.profile-list{display:grid;gap:10px}.profile-list-row{align-items:center;background:#1b1b1b;border:1px solid #343434;display:flex;gap:14px;padding:12px}.profile-list-row strong{display:block}.profile-list-row p{color:#999;font-size:13px;margin:2px 0 0}.profile-list-row .progress{background:#343434;height:4px;margin-top:8px;width:180px}.profile-list-row .progress i{background:#d4a017;display:block;height:100%}.profile-story-grid{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-story-grid .series-card{min-width:0}.interest-list{display:flex;flex-wrap:wrap;gap:8px}.interest-chip{background:#242424;border:1px solid #4a4a4a;color:#f5f5f5;padding:7px 11px}.profile-about{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr));max-width:680px}.profile-about div{background:#1b1b1b;border-bottom:1px solid #343434;padding:14px}.profile-about span{color:#999;display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase}.profile-edit-panel{border-top:1px solid #343434;margin-top:30px;padding-top:24px}.profile-edit-grid{display:grid;gap:14px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-form label{color:#bbb;display:grid;font-size:12px;gap:6px}.profile-form input,.profile-form textarea,.profile-form select{background:#111;border:1px solid #444;color:#f5f5f5;padding:11px}.profile-form select[multiple]{min-height:130px}.profile-privacy{display:flex;flex-wrap:wrap;gap:18px;margin:16px 0}.profile-privacy label{display:flex;gap:8px}.profile-empty{border:1px dashed #444;color:#999;padding:24px}.profile-empty button{margin-top:12px}@media(max-width:700px){.profile-cover{padding:22px 18px}.profile-header{align-items:flex-start;flex-wrap:wrap}.profile-avatar{flex-basis:78px;font-size:36px;height:78px}.profile-actions{margin-left:0;width:100%}.profile-actions .button{flex:1}.profile-summary-grid,.profile-about,.profile-edit-grid{grid-template-columns:1fr}.profile-tabs{gap:16px}.profile-story-grid{grid-template-columns:1fr 1fr}}
+    .profile-cover{background:linear-gradient(120deg,#2b2114,#171717 52%,#222);border:1px solid #343434;border-radius:20px;min-height:230px;padding:28px 32px;position:relative;overflow:hidden}.profile-cover[style]{background-position:center;background-size:cover}.profile-header{align-items:flex-end;display:flex;gap:22px;min-height:174px}.profile-avatar{align-items:center;background:#d4a017;color:#111;display:flex;flex:0 0 104px;font-family:Georgia,serif;font-size:48px;height:104px;justify-content:center;overflow:hidden;border-radius:50%;}.profile-avatar img{height:100%;object-fit:cover;width:100%}.profile-identity{max-width:650px}.profile-identity h1{font-size:clamp(30px,4vw,52px)}.profile-handle{margin:4px 0 10px}.profile-bio{color:#ddd;margin:0}.profile-location{color:#d4a017;font-size:13px;margin-top:10px}.profile-actions{display:flex;gap:10px;margin-left:auto}.profile-tabs{border-bottom:1px solid #343434;display:flex;gap:24px;overflow:auto;padding:0 4px}.profile-tab{background:none;border:0;border-bottom:2px solid transparent;color:#999;padding:16px 4px;white-space:nowrap;transition:color 0.2s, border-color 0.2s}.profile-tab.active,.profile-tab:hover{border-color:#d4a017;color:#f5f5f5}.profile-panel{padding-top:30px}.profile-summary-grid{display:grid;gap:30px;grid-template-columns:1fr 1fr}.profile-section-heading{align-items:end;display:flex;justify-content:space-between;margin:28px 0 18px}.profile-section-heading h2{font-size:24px}.profile-list{display:grid;gap:10px}.profile-list-row{align-items:center;background:#1b1b1b;border:1px solid #343434;border-radius:12px;display:flex;gap:14px;padding:12px}.profile-list-row strong{display:block}.profile-list-row p{color:#999;font-size:13px;margin:2px 0 0}.profile-list-row .progress{background:#343434;height:4px;margin-top:8px;width:180px}.profile-list-row .progress i{background:#d4a017;display:block;height:100%}.profile-story-grid{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-story-grid .series-card{min-width:0}.interest-list{display:flex;flex-wrap:wrap;gap:8px}.interest-chip{background:#242424;border:1px solid #4a4a4a;border-radius:999px;color:#f5f5f5;padding:7px 13px}.profile-about{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr));max-width:680px}.profile-about div{background:#1b1b1b;border-bottom:1px solid #343434;border-radius:12px;padding:14px}.profile-about span{color:#999;display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase}.profile-edit-panel{border-top:1px solid #343434;margin-top:30px;padding-top:24px}.profile-edit-grid{display:grid;gap:14px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-form label{color:#bbb;display:grid;font-size:12px;gap:6px}.profile-form input,.profile-form textarea,.profile-form select{background:#111;border:1px solid #444;border-radius:10px;color:#f5f5f5;padding:11px;transition:border-color 0.2s, box-shadow 0.2s}.profile-form input:focus,.profile-form textarea:focus,.profile-form select:focus{outline:none;border-color:#d4a017;box-shadow:0 0 0 3px rgba(212,160,23,0.16)}.profile-form select[multiple]{min-height:130px}.profile-privacy{display:flex;flex-wrap:wrap;gap:18px;margin:16px 0}.profile-privacy label{display:flex;gap:8px}.profile-empty{border:1px dashed #444;border-radius:14px;color:#999;padding:24px}.profile-empty button{margin-top:12px}@media(max-width:700px){.profile-cover{padding:22px 18px}.profile-header{align-items:flex-start;flex-wrap:wrap}.profile-avatar{flex-basis:78px;font-size:36px;height:78px}.profile-actions{margin-left:0;width:100%}.profile-actions .button{flex:1}.profile-summary-grid,.profile-about,.profile-edit-grid{grid-template-columns:1fr}.profile-tabs{gap:16px}.profile-story-grid{grid-template-columns:1fr 1fr}}
 
     /* ==============================================================
-       9. CREATOR STUDIO PORTABLE CARDS & ONE-TIME WELCOME BANNER
+       12. CREATOR STUDIO PORTABLE CARDS & ONE-TIME WELCOME BANNER
     ============================================================== */
     .creator-portable-card {
-      background: linear-gradient(145deg, #1a1a1a 0%, #131313 100%);
-      border: 1px solid #2f2f2f;
-      border-radius: 16px;
-      max-width: 460px;
-      margin: 12px auto 20px auto !important;
-      padding: 22px 24px;
+      background: linear-gradient(145deg, rgba(26, 26, 30, 0.92) 0%, rgba(16, 16, 19, 0.96) 100%);
+      border: 1px solid rgba(212, 160, 23, 0.28);
+      border-radius: 18px;
+      max-width: 480px;
+      margin: 12px auto 24px auto !important;
+      padding: 24px 26px;
       text-align: center;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
     }
     .creator-portable-card h2 {
       margin: 6px 0 8px;
@@ -1075,12 +1526,12 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      background: linear-gradient(135deg, rgba(212, 160, 23, 0.14) 0%, rgba(24, 24, 24, 0.96) 65%);
+      background: linear-gradient(135deg, rgba(212, 160, 23, 0.15) 0%, rgba(22, 22, 26, 0.96) 65%);
       border: 1px solid rgba(212, 160, 23, 0.45);
-      border-radius: 14px;
-      padding: 14px 18px;
+      border-radius: 16px;
+      padding: 15px 18px;
       margin: 0 0 18px 0;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
       animation: fadeInOverlay 0.25s ease-out;
     }
     .creator-welcome-banner.hidden {
@@ -1141,7 +1592,7 @@
     }
 
     /* ==============================================================
-       10. CIRCULAR (ROUND) UPLOAD PROGRESS RING & BACKGROUND PILL
+       13. CIRCULAR (ROUND) UPLOAD PROGRESS RING & BACKGROUND PILL
     ============================================================== */
     .upload-progress-stage {
       display: flex;
@@ -1182,7 +1633,7 @@
       stroke-linecap: round;
       stroke-dasharray: 326.73;
       stroke-dashoffset: 326.73;
-      transition: stroke-dashoffset 0.32s cubic-bezier(0.22, 1, 0.36, 1), stroke 0.3s ease;
+      transition: stroke-dashoffset 0.32s var(--ease-spring), stroke 0.3s ease;
     }
     .round-progress-fill.is-complete {
       stroke: #2ecc71;
@@ -1251,7 +1702,6 @@
       justify-content: center;
     }
 
-    /* Live Creator Studio Inline Upload Card */
     .studio-upload-tracker {
       display: flex;
       align-items: center;
@@ -1305,7 +1755,6 @@
       color: #fff;
     }
 
-    /* Floating Mini Pill when Browsing Other Pages During Upload */
     .bg-upload-pill {
       position: fixed;
       right: 22px;
@@ -1314,7 +1763,7 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      background: rgba(18, 18, 18, 0.96);
+      background: rgba(18, 18, 22, 0.96);
       border: 1px solid rgba(212, 160, 23, 0.6);
       border-radius: 50px;
       padding: 8px 16px 8px 10px;
@@ -1338,7 +1787,7 @@
     }
 
     /* ==============================================================
-       11. NOTIFICATION DISMISS & CLEAR CONTROLS
+       14. NOTIFICATION DISMISS & CLEAR CONTROLS
     ============================================================== */
     .notification-toolbar {
       display: flex;
@@ -1384,7 +1833,7 @@
     }
 
     /* ==============================================================
-       12. AUTOMATIC ADS DESKTOP SIDEBAR GUARD & WATCH-MODE HIDE
+       15. AUTOMATIC ADS DESKTOP SIDEBAR GUARD & WATCH-MODE HIDE
     ============================================================== */
     body.watch-mode-active > [id*="robins"],
     body.watch-mode-active > [class*="robins"],
@@ -1410,12 +1859,12 @@
     }
 
     /* ==============================================================
-       13. LEGAL & SUPPORT FOOTER (CRAWLER & USER ACCESSIBLE)
+       16. LEGAL & SUPPORT FOOTER (CRAWLER & USER ACCESSIBLE)
     ============================================================== */
     .app-footer {
-      margin-top: 48px;
-      padding: 24px 16px 16px;
-      border-top: 1px solid #262626;
+      margin-top: 52px;
+      padding: 28px 16px 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
       text-align: center;
       color: #888888;
       font-size: 13px;
@@ -1444,7 +1893,7 @@
     }
   </style>
 </head>
-<body class="app-page">
+<body class="app-page discover-view-active">
 
   <!-- TOPBAR HEADER (Auto-minimizes transparently on Watch page) -->
   <header class="topbar">
@@ -1490,26 +1939,83 @@
 
     <!-- MAIN CONTENT FEED -->
     <main class="main-content">
+      <!-- DISCOVER CATALOG FILTERS -->
       <div class="discover-filters">
         <label>Genre<select id="genre-filter"><option value="">All genres</option><option>Action</option><option>Drama</option><option>Comedy</option><option>Romance</option><option>Thriller</option><option>Sci-Fi</option><option>Horror</option><option>Documentary</option><option>Afro-Futurism</option><option>Folklore</option><option>Urban Drama</option><option>Animation</option><option>Historical</option><option>Adventure</option><option>Mystery</option><option>Crime</option><option>Family</option><option>Faith &amp; Inspirational</option><option>Musical</option><option>Biography</option><option>Short Film</option></select></label>
         <label>Language<select id="language-filter"><option value="">All languages</option><option>English</option><option>Nigerian Pidgin</option><option>Tiv</option><option>Igbo</option><option>Yoruba</option><option>Hausa</option><option>French</option><option>Arabic</option><option>Swahili</option></select></label>
         <label>Sort<select id="sort-filter"><option value="trending">Trending</option><option value="newest">Newest</option><option value="rating">Top rated</option></select></label>
       </div>
 
-      <!-- DISCOVER SECTION -->
+      <!-- ============================================================
+           1. DISCOVER SECTION
+      ============================================================ -->
       <section id="section-discover" class="app-section">
-        <div class="section-heading hero-heading">
-          <div><p class="eyebrow">THE HOME OF AFRICAN STORIES</p><h1>Find your next<br><em>favorite world.</em></h1></div>
-          <form id="search-form" class="search-box"><span>⌕</span><input id="search-input" type="search" placeholder="Search series, creators..." aria-label="Search"><button type="submit">Search</button></form>
+        <div class="discover-hero-banner">
+          <div class="section-heading hero-heading" style="margin-bottom:0;">
+            <div>
+              <p class="eyebrow">THE HOME OF AFRICAN STORIES</p>
+              <h1>Find your next<br><em>favorite world.</em></h1>
+              <p class="discover-hero-sub">Stream original vertical drama series, Nollywood cliffhangers, indigenous folklore, and independent short films crafted by storytellers across Africa.</p>
+            </div>
+            <form id="search-form" class="search-box"><span>⌕</span><input id="search-input" type="search" placeholder="Search series, creators..." aria-label="Search"><button type="submit">Search</button></form>
+          </div>
         </div>
+
+        <!-- Quick Genre Filter Pills -->
+        <div class="quick-pill-bar" aria-label="Quick genre filters">
+          <button type="button" class="quick-pill active" data-quick-genre="">All Worlds</button>
+          <button type="button" class="quick-pill" data-quick-genre="Urban Drama">Urban Drama</button>
+          <button type="button" class="quick-pill" data-quick-genre="Drama">Drama</button>
+          <button type="button" class="quick-pill" data-quick-genre="Romance">Romance</button>
+          <button type="button" class="quick-pill" data-quick-genre="Thriller">Thriller</button>
+          <button type="button" class="quick-pill" data-quick-genre="Folklore">Folklore</button>
+          <button type="button" class="quick-pill" data-quick-genre="Afro-Futurism">Afro-Futurism</button>
+          <button type="button" class="quick-pill" data-quick-genre="Comedy">Comedy</button>
+        </div>
+
         <div id="featured-series" class="featured-strip"></div>
+
         <div class="section-heading"><div><p class="eyebrow">CURATED FOR YOU</p><h2>Trending now</h2></div><button class="text-button" data-action="refresh-discover">View all ↗</button></div>
         <div id="series-grid" class="content-grid"></div>
-        <div class="section-heading compact-heading"><div><p class="eyebrow">VOICES TO KNOW</p><h2>Top creators</h2></div></div>
+
+        <div class="section-heading compact-heading" style="margin-top:34px;"><div><p class="eyebrow">VOICES TO KNOW</p><h2>Top creators</h2></div></div>
         <div id="creator-grid" class="creator-grid"></div>
+
+        <!-- Editorial & Platform Guide (Rich Publisher Content + Ad-Safe Spacing) -->
+        <article class="editorial-showcase" aria-label="Curated Story Collections">
+          <div class="editorial-showcase-header">
+            <div>
+              <p class="eyebrow">EDITORIAL SPOTLIGHT</p>
+              <h3>Curated Story Worlds on AfriStory</h3>
+            </div>
+            <p class="editorial-lead">Every series on AfriStory is produced for vertical mobile cinema, combining tight dramatic pacing with authentic African dialogue and cultural depth.</p>
+          </div>
+          <div class="editorial-grid-3">
+            <div class="editorial-card">
+              <span class="editorial-card-badge">Boardroom &amp; Family</span>
+              <h4>High-Stakes Urban &amp; Dynasty Dramas</h4>
+              <p>Follow hidden identities, corporate power struggles, and family secrets unfolding across Lagos, Abuja, Accra, and Johannesburg in sharp episodic chapters.</p>
+              <div class="editorial-card-meta"><span>9:16 Vertical Series</span><span>Updated Weekly</span></div>
+            </div>
+            <div class="editorial-card">
+              <span class="editorial-card-badge">Heritage &amp; Roots</span>
+              <h4>Indigenous Folklore &amp; Oral Legends</h4>
+              <p>Experience timeless myths and community proverbs reimagined for modern screens in English, Nigerian Pidgin, Tiv, Yoruba, Igbo, Hausa, and Swahili.</p>
+              <div class="editorial-card-meta"><span>Multilingual Audio</span><span>Cultural Archive</span></div>
+            </div>
+            <div class="editorial-card">
+              <span class="editorial-card-badge">Ad-Supported Access</span>
+              <h4>Watch Free or Unlock with Story Coins</h4>
+              <p>Stream ad-supported episodes at zero cost, or use Story Coins earned through daily streaks and partner previews to unlock finale episodes instantly.</p>
+              <div class="editorial-card-meta"><span>Creator Revenue Share</span><span>Instant Playback</span></div>
+            </div>
+          </div>
+        </article>
       </section>
 
-      <!-- WATCH SECTION -->
+      <!-- ============================================================
+           2. WATCH SECTION
+      ============================================================ -->
       <section id="section-watch" class="app-section hidden">
         <button class="watch-home-btn desktop-only" data-section="discover" aria-label="Back to Home" title="Back to Home">
           <span>← Back to Home</span>
@@ -1538,7 +2044,9 @@
         </div>
       </section>
 
-      <!-- WALLET SECTION -->
+      <!-- ============================================================
+           3. WALLET SECTION
+      ============================================================ -->
       <section id="section-wallet" class="app-section hidden">
         <div class="section-heading">
           <div><p class="eyebrow">YOUR STORY ECONOMY</p><h1>Wallet</h1></div>
@@ -1548,39 +2056,111 @@
             <button id="withdraw-earnings-btn" class="button button-quiet hidden" data-action="withdraw-earnings">Withdraw</button>
           </div>
         </div>
+
         <div class="wallet-overview">
-          <div class="balance-card"><span class="eyebrow">AVAILABLE COINS</span><strong style="display: inline-flex; align-items: center; gap: 6px;"><span style="color: #d4a017; font-size: 0.9em;">◈</span><span id="wallet-balance">0</span></strong><span class="balance-caption">Use coins to unlock premium episodes.</span></div>
-          <div class="wallet-stat"><span class="eyebrow">TOTAL EARNED</span><strong style="display: inline-flex; align-items: center; gap: 4px;"><span style="color: #2ecc71; font-size: 0.9em;">₦</span><span id="wallet-earned">0</span></strong><span>Creator earnings</span></div>
+          <div class="balance-card"><span class="eyebrow">AVAILABLE COINS</span><strong style="display: inline-flex; align-items: center; gap: 6px;"><span style="color: #d4a017; font-size: 0.9em;">◈</span><span id="wallet-balance">0</span></strong><span class="balance-caption">Use Story Coins to unlock premium cliffhanger episodes.</span></div>
+          <div class="wallet-stat"><span class="eyebrow">TOTAL EARNED</span><strong style="display: inline-flex; align-items: center; gap: 4px;"><span style="color: #2ecc71; font-size: 0.9em;">₦</span><span id="wallet-earned">0</span></strong><span>Verified creator earnings</span></div>
         </div>
+
+        <!-- Wallet Utility & Story Economy Overview -->
+        <article class="editorial-showcase" style="margin-top:26px; margin-bottom:28px;" aria-label="Story Economy Guide">
+          <div class="editorial-showcase-header">
+            <div>
+              <p class="eyebrow">HOW YOUR WALLET WORKS</p>
+              <h3>Story Coins, Season Passes &amp; Creator Payouts</h3>
+            </div>
+            <p class="editorial-lead">Every coin unlock directly supports independent African filmmakers and keeps original series in production.</p>
+          </div>
+          <div class="editorial-grid-3">
+            <div class="editorial-card">
+              <span class="editorial-card-badge">◈ Story Coins</span>
+              <h4>Pay-Per-Episode Unlocks</h4>
+              <p>Top up Story Coins or earn them free in Rewards, then unlock individual premium episodes across any series without recurring monthly lock-in.</p>
+              <div class="editorial-card-meta"><span>Instant Library Access</span><span>No Expiry</span></div>
+            </div>
+            <div class="editorial-card">
+              <span class="editorial-card-badge">✦ Season Passes</span>
+              <h4>Uninterrupted Binge Access</h4>
+              <p>Activate an AfriStory Pass to watch eligible premium series back-to-back and enjoy early access to newly released episodes.</p>
+              <div class="editorial-card-meta"><span>Full-Season Viewing</span><span>Priority Drops</span></div>
+            </div>
+            <div class="editorial-card">
+              <span class="editorial-card-badge">₦ Creator Revenue</span>
+              <h4>Transparent Creator Earnings</h4>
+              <p>Approved storytellers earn revenue whenever viewers unlock premium episodes or watch ad-supported releases, with direct Naira payout tracking.</p>
+              <div class="editorial-card-meta"><span>Real-Time Ledger</span><span>Verified Withdrawals</span></div>
+            </div>
+          </div>
+        </article>
+
         <div class="section-heading compact-heading"><h2>Recent transactions</h2></div>
         <div id="transactions-list" class="data-list">
-          <div class="empty-state hidden" id="empty-transactions"><p>No transactions yet.</p></div>
+          <div class="empty-state hidden" id="empty-transactions"><p>No transactions yet. Top up Story Coins, claim daily rewards, or unlock a premium episode to see your ledger activity here.</p></div>
         </div>
       </section>
 
-      <!-- REWARDS SECTION -->
+      <!-- ============================================================
+           4. REWARDS SECTION
+      ============================================================ -->
       <section id="section-rewards" class="app-section hidden">
         <div class="rewards-hero">
-          <div><p class="eyebrow">AFRISTORY REWARDS</p><h1>Return. Discover. Earn.</h1><p class="muted">Complete activities on AfriStory and earn coins.</p></div>
+          <div><p class="eyebrow">AFRISTORY REWARDS</p><h1>Return. Discover. Earn.</h1><p class="muted">Complete daily check-ins, watch sponsored previews, and support African storytellers to earn Story Coins.</p></div>
           <div class="rewards-balance"><span class="eyebrow">CURRENT BALANCE</span><strong style="display: inline-flex; align-items: center; gap: 6px;"><span style="color: #d4a017; font-size: 0.9em;">◈</span><span id="rewards-balance">0</span></strong><span>story coins</span><div class="reward-streak"><b id="reward-current-streak">0</b> day streak <small>Best <span id="reward-best-streak">0</span></small></div></div>
         </div>
+
         <div id="daily-reward-card" class="daily-reward-card"></div>
         <div id="rewarded-ad-card" class="daily-reward-card hidden"></div>
-        <div class="section-heading compact-heading"><div><p class="eyebrow">SOCIAL MEDIA REWARDS</p><h2>Support AfriStory</h2><p class="muted">Support AfriStory on social media and earn bonus coins.</p></div></div>
+
+        <div class="section-heading compact-heading" style="margin-top:28px;"><div><p class="eyebrow">SOCIAL MEDIA REWARDS</p><h2>Support AfriStory</h2><p class="muted">Follow and engage with official AfriStory channels to claim bonus Story Coins.</p></div></div>
         <div id="social-rewards-grid" class="rewards-grid"></div>
-        <div class="section-heading compact-heading"><div><p class="eyebrow">EARN COINS</p><h2>Available missions</h2></div></div>
+
+        <div class="section-heading compact-heading" style="margin-top:28px;"><div><p class="eyebrow">EARN COINS</p><h2>Available missions</h2></div></div>
         <div id="rewards-grid" class="rewards-grid"></div>
-        <div class="section-heading compact-heading"><div><p class="eyebrow">REWARD HISTORY</p><h2>Recent activity</h2></div></div>
+
+        <!-- Rewards Program Standards & Coin Utility Guide -->
+        <article class="editorial-showcase" aria-label="Rewards Program Guide">
+          <div class="editorial-showcase-header">
+            <div>
+              <p class="eyebrow">REWARDS &amp; FAIR USE</p>
+              <h3>How Story Coin Rewards Work</h3>
+            </div>
+            <p class="editorial-lead">AfriStory partners with advertisers and sponsors so viewers can earn free viewing credits while creators get paid for every stream.</p>
+          </div>
+          <div class="editorial-grid-3">
+            <div class="editorial-card">
+              <span class="editorial-card-badge">Step 01 • Check-In</span>
+              <h4>Build Your Daily Streak</h4>
+              <p>Claim your daily check-in bonus every 24 hours. Maintaining consecutive days increases your streak record and unlocks milestone coin drops.</p>
+              <div class="editorial-card-meta"><span>Resets Daily</span><span>Auto-Credited</span></div>
+            </div>
+            <div class="editorial-card">
+              <span class="editorial-card-badge">Step 02 • Sponsored Ads</span>
+              <h4>Watch Partner Showcases</h4>
+              <p>Complete a short sponsored video preview to earn immediate Story Coins. Coins are deposited straight into your Wallet upon completion.</p>
+              <div class="editorial-card-meta"><span>Verified Completion</span><span>Instant Unlock</span></div>
+            </div>
+            <div class="editorial-card">
+              <span class="editorial-card-badge">Step 03 • Redeem</span>
+              <h4>Unlock Premium Episodes</h4>
+              <p>Use your earned Story Coins on any locked episode in the Watch feed. Reward coins carry full in-app unlocking value across all series.</p>
+              <div class="editorial-card-meta"><span>100% Platform Utility</span><span>Supports Creators</span></div>
+            </div>
+          </div>
+        </article>
+
+        <div class="section-heading compact-heading" style="margin-top:28px;"><div><p class="eyebrow">REWARD HISTORY</p><h2>Recent activity</h2></div></div>
         <div id="rewards-history" class="data-list"></div>
       </section>
 
-      <!-- CREATOR STUDIO SECTION -->
+      <!-- ============================================================
+           5. CREATOR STUDIO SECTION
+      ============================================================ -->
       <section id="section-creator" class="app-section hidden">
         <!-- Portable Onboarding Card -->
         <div id="creator-onboarding" class="creator-portable-card hidden">
           <p class="eyebrow">SHARE YOUR VOICE</p>
           <h2>Become a creator</h2>
-          <p>Create a home for your stories and upload episodes.</p>
+          <p>Create a dedicated home for your series, publish vertical drama episodes, and earn from your audience.</p>
           <div id="creator-rejection-banner" class="creator-rejection-banner hidden"></div>
           <form id="become-creator-form" class="stack-form" style="text-align: left;">
             <label>Creator Name<input name="brandName" required maxlength="100" placeholder="e.g. Nater Studios"></label>
@@ -1637,15 +2217,50 @@
           <div class="section-heading compact-heading"><h2>Your series</h2><button class="button button-accent" data-action="open-upload">Upload episode</button></div>
           <div id="my-series-grid" class="content-grid"></div>
         </div>
+
+        <!-- Creator Production Handbook & Monetization Standards -->
+        <article class="editorial-showcase" aria-label="Creator Studio Production Guide">
+          <div class="editorial-showcase-header">
+            <div>
+              <p class="eyebrow">CREATOR HANDBOOK</p>
+              <h3>Vertical Production &amp; Monetization Standards</h3>
+            </div>
+            <p class="editorial-lead">Designed for filmmakers, scriptwriters, and digital drama studios publishing episodic content on AfriStory.</p>
+          </div>
+          <div class="editorial-grid-3">
+            <div class="editorial-card">
+              <span class="editorial-card-badge">9:16 Vertical Format</span>
+              <h4>Hook-First Episode Structure</h4>
+              <p>Export crisp vertical MP4/MOV episodes and set the exact <strong>Hook Start (Sec)</strong> timestamp so your strongest dramatic conflict auto-plays in the Watch feed.</p>
+              <div class="editorial-card-meta"><span>1080×1920 Recommended</span><span>Auto-Preview Ready</span></div>
+            </div>
+            <div class="editorial-card">
+              <span class="editorial-card-badge">Hybrid Monetization</span>
+              <h4>Ad-Supported &amp; Premium Tiers</h4>
+              <p>Release opening episodes as free Ad-Supported hooks to maximize discovery, then gate high-tension cliffhanger episodes with Story Coin unlocks.</p>
+              <div class="editorial-card-meta"><span>Flexible Episode Pricing</span><span>Audience Growth</span></div>
+            </div>
+            <div class="editorial-card">
+              <span class="editorial-card-badge">Rights &amp; Quality</span>
+              <h4>Original Storytelling Guidelines</h4>
+              <p>Ensure you hold full distribution and audio rights for every upload, include a high-contrast series cover poster, and write clear episode synopses.</p>
+              <div class="editorial-card-meta"><span>Creator Ownership</span><span>Fast Cloud Delivery</span></div>
+            </div>
+          </div>
+        </article>
       </section>
 
-      <!-- HISTORY SECTION -->
+      <!-- ============================================================
+           6. HISTORY SECTION
+      ============================================================ -->
       <section id="section-history" class="app-section hidden">
         <div class="section-heading"><div><p class="eyebrow">YOUR JOURNEY</p><h1>Watch history</h1></div><button class="button button-quiet" data-section="discover">Discover stories</button></div>
-        <div id="history-list" class="data-list"><div class="empty-state hidden" id="empty-history"><p>No watch history yet.</p></div></div>
+        <div id="history-list" class="data-list"><div class="empty-state hidden" id="empty-history"><p>No watch history yet. Start watching any series in Discover or the Watch feed to track your viewing journey.</p></div></div>
       </section>
 
-      <!-- PROFILE SECTION -->
+      <!-- ============================================================
+           7. PROFILE SECTION
+      ============================================================ -->
       <section id="section-profile" class="app-section hidden">
         <div id="profile-cover" class="profile-cover">
           <div class="profile-header">
@@ -1708,32 +2323,83 @@
         </div>
       </section>
 
-      <!-- SEARCH SECTION -->
+      <!-- ============================================================
+           8. SEARCH SECTION
+      ============================================================ -->
       <section id="section-search" class="app-section hidden">
         <div class="section-heading"><div><p class="eyebrow">EXPLORE THE LIBRARY</p><h1>Search</h1></div></div>
-        <form id="library-search-form" class="search-box library-search"><span>⌕</span><input id="library-search-input" type="search" placeholder="Search series and creators" aria-label="Search the library"><button type="submit">Search</button></form>
+        <form id="library-search-form" class="search-box library-search"><span>⌕</span><input id="library-search-input" type="search" placeholder="Search series, genres, languages, and creators..." aria-label="Search the library"><button type="submit">Search</button></form>
+
+        <!-- Quick Search Suggestions -->
+        <div class="quick-pill-bar" style="margin-top:16px;" aria-label="Popular searches">
+          <button type="button" class="quick-pill" data-quick-search="Drama">Drama</button>
+          <button type="button" class="quick-pill" data-quick-search="Romance">Romance</button>
+          <button type="button" class="quick-pill" data-quick-search="Lagos">Lagos Stories</button>
+          <button type="button" class="quick-pill" data-quick-search="Folklore">Folklore</button>
+          <button type="button" class="quick-pill" data-quick-search="Thriller">Thriller</button>
+          <button type="button" class="quick-pill" data-quick-search="Yoruba">Yoruba</button>
+          <button type="button" class="quick-pill" data-quick-search="Igbo">Igbo</button>
+          <button type="button" class="quick-pill" data-quick-search="Pidgin">Nigerian Pidgin</button>
+        </div>
+
         <div id="search-results" class="content-grid"></div>
+
+        <!-- Library Catalog Directory (Structured Content & Ad-Safe Spacing) -->
+        <article class="editorial-showcase" aria-label="Catalog Directory">
+          <div class="editorial-showcase-header">
+            <div>
+              <p class="eyebrow">CATALOG DIRECTORY</p>
+              <h3>Browse AfriStory by Format &amp; Regional Hub</h3>
+            </div>
+            <p class="editorial-lead">Search across original episodic dramas, creator channels, and multilingual African storytelling hubs.</p>
+          </div>
+          <div class="editorial-grid-4">
+            <div class="editorial-card">
+              <span class="editorial-card-badge">Format • Episodic</span>
+              <h4>Vertical Mini-Series</h4>
+              <p>Fast-moving multi-part dramas engineered for vertical screens with cliffhangers at the end of every chapter.</p>
+              <div class="editorial-card-meta"><span>9:16 Cinema</span><span>Binge Ready</span></div>
+            </div>
+            <div class="editorial-card">
+              <span class="editorial-card-badge">West Africa</span>
+              <h4>Nollywood &amp; Pidgin</h4>
+              <p>Contemporary Nigerian and Ghanaian stories spanning corporate intrigue, family secrets, and street comedy.</p>
+              <div class="editorial-card-meta"><span>English &amp; Pidgin</span><span>Top Rated</span></div>
+            </div>
+            <div class="editorial-card">
+              <span class="editorial-card-badge">Heritage</span>
+              <h4>Indigenous Voices</h4>
+              <p>Authentic productions filmed in Tiv, Yoruba, Igbo, Hausa, Swahili, French, and Arabic celebrating local culture.</p>
+              <div class="editorial-card-meta"><span>9+ Languages</span><span>Community Picks</span></div>
+            </div>
+            <div class="editorial-card">
+              <span class="editorial-card-badge">Independent</span>
+              <h4>Short Films &amp; Docs</h4>
+              <p>Curated biographies, faith-inspired narratives, and documentary portraits from emerging African directors.</p>
+              <div class="editorial-card-meta"><span>Festival Shorts</span><span>Creator Spotlights</span></div>
+            </div>
+          </div>
+        </article>
       </section>
 
-      <!-- TRENDING SECTION -->
+      <!-- ============================================================
+           9. TRENDING, CONTINUE, FAVORITES & SETTINGS SECTIONS
+      ============================================================ -->
       <section id="section-trending" class="app-section hidden">
         <div class="section-heading"><div><p class="eyebrow">WHAT PEOPLE ARE WATCHING</p><h1>Trending</h1></div></div>
-        <div id="trending-list" class="content-grid"><div class="empty-state hidden" id="empty-trending"><p>No trending stories right now.</p></div></div>
+        <div id="trending-list" class="content-grid"><div class="empty-state hidden" id="empty-trending"><p>No trending stories right now. Check back shortly for newly ranked episodes.</p></div></div>
       </section>
 
-      <!-- CONTINUE SECTION -->
       <section id="section-continue" class="app-section hidden">
         <div class="section-heading"><div><p class="eyebrow">PICK UP WHERE YOU LEFT OFF</p><h1>Continue watching</h1></div></div>
-        <div id="continue-list" class="data-list"><div class="empty-state hidden" id="empty-continue"><p>No stories to continue.</p></div></div>
+        <div id="continue-list" class="data-list"><div class="empty-state hidden" id="empty-continue"><p>No stories in progress yet. Your partially watched episodes appear here automatically so you never lose your place.</p></div></div>
       </section>
 
-      <!-- FAVORITES SECTION -->
       <section id="section-favorites" class="app-section hidden">
         <div class="section-heading"><div><p class="eyebrow">YOUR LIBRARY</p><h1>Favorites</h1></div></div>
-        <div id="favorites-list" class="content-grid"><div class="empty-state hidden" id="empty-favorites"><p>No saved favorites yet.</p></div></div>
+        <div id="favorites-list" class="content-grid"><div class="empty-state hidden" id="empty-favorites"><p>No saved favorites yet. Tap <strong>Save to favorites</strong> on any series to build your personal watchlist.</p></div></div>
       </section>
 
-      <!-- SETTINGS SECTION -->
       <section id="section-settings" class="app-section hidden">
         <div class="section-heading"><div><p class="eyebrow">PREFERENCES</p><h1>Settings</h1></div></div>
         <form id="settings-form" class="stack-form profile-form">
@@ -1764,7 +2430,7 @@
     </main>
   </div>
 
-  <!-- FLOATING BACKGROUND UPLOAD PROGRESS PILL (Visible when exploring during upload) -->
+  <!-- FLOATING BACKGROUND UPLOAD PROGRESS PILL -->
   <div id="bg-upload-pill" class="bg-upload-pill hidden" role="button" tabindex="0" title="View episode upload progress in Creator Studio">
     <div class="mini-ring-wrap" style="width:40px; height:40px;">
       <svg viewBox="0 0 56 56" style="width:40px; height:40px;">
@@ -1997,10 +2663,11 @@
   <div id="modal-root" class="modal-root hidden"></div>
   <div id="toast-region" class="toast-region" aria-live="polite"></div>
 
-  <!-- Instant UI Bridge: Sidebar Boundary Guard, Creator Welcome, Circular Upload, & Notification Sync -->
+  <!-- Instant UI Bridge: Sidebar Guard, Quick Pills, Creator Welcome, Circular Upload & Notification Sync -->
   <script>
     (function () {
       const watchSection = document.getElementById('section-watch');
+      const discoverSection = document.getElementById('section-discover');
       const sidebarEl = document.querySelector('.sidebar');
 
       // ==============================================================
@@ -2051,20 +2718,64 @@
       }
 
       // ==============================================================
-      // B. SYNC WATCH MODE & AUTO-STRIP STATIC POSTERS
+      // B. SYNC WATCH & DISCOVER VIEW STATES + QUICK FILTER PILLS
       // ==============================================================
-      function syncWatchMode() {
+      function syncActiveSectionFlags() {
         const isWatchOpen = watchSection && !watchSection.classList.contains('hidden');
+        const isDiscoverOpen = discoverSection && !discoverSection.classList.contains('hidden');
         document.body.classList.toggle('watch-mode-active', Boolean(isWatchOpen));
+        document.body.classList.toggle('discover-view-active', Boolean(isDiscoverOpen));
       }
-      syncWatchMode();
-      if (watchSection) {
-        new MutationObserver(syncWatchMode).observe(watchSection, {
-          attributes: true,
-          attributeFilter: ['class']
+      syncActiveSectionFlags();
+
+      [watchSection, discoverSection].forEach((sec) => {
+        if (sec) {
+          new MutationObserver(syncActiveSectionFlags).observe(sec, {
+            attributes: true,
+            attributeFilter: ['class']
+          });
+        }
+      });
+
+      // Quick Genre Pills -> sync directly with #genre-filter
+      const genreFilter = document.getElementById('genre-filter');
+      document.querySelectorAll('[data-quick-genre]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const val = btn.getAttribute('data-quick-genre') || '';
+          document.querySelectorAll('[data-quick-genre]').forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          if (genreFilter) {
+            genreFilter.value = val;
+            genreFilter.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        });
+      });
+
+      if (genreFilter) {
+        genreFilter.addEventListener('change', () => {
+          const current = genreFilter.value || '';
+          document.querySelectorAll('[data-quick-genre]').forEach((b) => {
+            b.classList.toggle('active', (b.getAttribute('data-quick-genre') || '') === current);
+          });
         });
       }
 
+      // Quick Search Pills -> sync directly with #library-search-form
+      const libSearchForm = document.getElementById('library-search-form');
+      const libSearchInput = document.getElementById('library-search-input');
+      document.querySelectorAll('[data-quick-search]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const q = btn.getAttribute('data-quick-search') || '';
+          document.querySelectorAll('[data-quick-search]').forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          if (libSearchInput && libSearchForm) {
+            libSearchInput.value = q;
+            libSearchForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+          }
+        });
+      });
+
+      // Strip static posters from Watch feed videos so hook frames render live
       const feedEl = document.getElementById('tiktok-feed');
       if (feedEl) {
         new MutationObserver(function () {
@@ -2253,7 +2964,6 @@
           false
         );
 
-        // Smooth baseline ticker in case server buffers before XHR upload events fire
         fallbackProgressTimer = setInterval(() => {
           if (activeUploadState.active && activeUploadState.pct < 82) {
             setUploadProgressUI(activeUploadState.pct + 2);
@@ -2296,7 +3006,6 @@
         }
       }
 
-      // Immediately switch to Circular Progress Stage when Upload Episode form submits
       uploadForm?.addEventListener('submit', () => {
         if (!uploadForm.checkValidity()) return;
         const titleInput = uploadForm.querySelector('[name="title"]');
@@ -2344,7 +3053,6 @@
         document.querySelector('[data-section="creator"]')?.click();
       });
 
-      // Suppress legacy "Uploading to the cloud..." toast while circular ring is active
       const toastRegion = document.getElementById('toast-region');
       if (toastRegion) {
         new MutationObserver(() => {
@@ -2553,7 +3261,6 @@
         const method = ((init && init.method) || (input && input.method) || 'GET').toUpperCase();
         const body = init && init.body;
 
-        // 1. Intercept ANY FormData POST containing a video file (regardless of endpoint path)
         const isVideoFormData =
           body instanceof FormData &&
           Array.from(body.values()).some((v) => v instanceof File && (v.type.startsWith('video/') || /\.(mp4|mov|webm|mkv|avi)$/i.test(v.name || '')));
@@ -2636,7 +3343,6 @@
           });
         }
 
-        // 2. Intercept GET /api/notifications so deleted/cleared items never resurrect badge count
         if (method === 'GET' && /\/api\/notifications(\?|$)/i.test(url)) {
           return nativeFetch(input, init).then(async (res) => {
             try {
@@ -2696,8 +3402,8 @@
   </script>
 
   <!-- Cache-busted module scripts -->
-  <script type="module" src="/js/ads.js?v=16"></script>
-  <script type="module" src="/js/main.js?v=16"></script>
+  <script type="module" src="/js/ads.js?v=17"></script>
+  <script type="module" src="/js/main.js?v=17"></script>
 
 </body>
 </html>
