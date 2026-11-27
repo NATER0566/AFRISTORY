@@ -106,12 +106,375 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ==============================================================
-       3. MODALS
+       3. MODALS & PREMIUM EPISODE UPLOAD STUDIO DESIGN
     ============================================================== */
-    .modal-root { position: fixed !important; inset: 0 !important; background: rgba(0,0,0,0.85) !important; z-index: 700 !important; display: flex !important; align-items: flex-start !important; justify-content: center !important; padding: 76px 20px 110px 20px !important; overflow-y: auto !important; backdrop-filter: blur(5px); }
+    .modal-root { position: fixed !important; inset: 0 !important; background: rgba(0,0,0,0.86) !important; z-index: 700 !important; display: flex !important; align-items: flex-start !important; justify-content: center !important; padding: 68px 18px 110px 18px !important; overflow-y: auto !important; backdrop-filter: blur(8px); }
     .modal-root.hidden { display: none !important; }
-    .modal { background: #141414 !important; border: 1px solid #333 !important; border-radius: 16px !important; width: 100% !important; max-width: 500px !important; margin: auto !important; flex-shrink: 0 !important; box-shadow: 0 20px 50px rgba(0,0,0,0.6) !important; padding: 22px 24px !important; position: relative !important; z-index: 701 !important; }
-    .modal-header h2 { font-size: 21px !important; margin: 0 0 12px !important; }
+    .modal {
+      background: linear-gradient(165deg, #181818 0%, #111111 100%) !important;
+      border: 1px solid rgba(212, 160, 23, 0.28) !important;
+      border-radius: 20px !important;
+      width: 100% !important;
+      max-width: 520px !important;
+      margin: auto !important;
+      flex-shrink: 0 !important;
+      box-shadow: 0 28px 70px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.03) inset !important;
+      padding: 24px 26px !important;
+      position: relative !important;
+      z-index: 701 !important;
+      animation: modalCardEntrance 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    @keyframes modalCardEntrance {
+      from { opacity: 0; transform: translateY(18px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .modal-header {
+      display: flex !important;
+      align-items: flex-start !important;
+      justify-content: space-between !important;
+      gap: 14px !important;
+      padding-bottom: 16px !important;
+      margin-bottom: 18px !important;
+      border-bottom: 1px solid #262626 !important;
+    }
+    .modal-header .eyebrow {
+      color: #d4a017 !important;
+      font-size: 11px !important;
+      font-weight: 700 !important;
+      letter-spacing: 1.4px !important;
+      margin: 0 0 4px !important;
+    }
+    .modal-header h2 {
+      font-family: 'Space Grotesk', sans-serif !important;
+      font-size: 22px !important;
+      font-weight: 700 !important;
+      color: #ffffff !important;
+      margin: 0 !important;
+      letter-spacing: -0.3px !important;
+    }
+    .modal-subtitle {
+      color: #9a9a9a;
+      font-size: 12.5px;
+      margin: 4px 0 0;
+      line-height: 1.4;
+    }
+    .modal-close {
+      width: 34px !important;
+      height: 34px !important;
+      border-radius: 50% !important;
+      background: rgba(255, 255, 255, 0.06) !important;
+      border: 1px solid #333 !important;
+      color: #ccc !important;
+      font-size: 20px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      cursor: pointer !important;
+      flex-shrink: 0 !important;
+      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease !important;
+    }
+    .modal-close:hover {
+      background: rgba(212, 160, 23, 0.16) !important;
+      border-color: #d4a017 !important;
+      color: #fff !important;
+      transform: rotate(90deg);
+    }
+
+    /* Premium Form Grid & Animated Fields (Upload Episode & Create Series) */
+    #upload-modal .modal {
+      max-width: 580px !important;
+    }
+
+    .studio-premium-form {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 15px !important;
+    }
+
+    .studio-form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+    @media (max-width: 560px) {
+      .studio-form-row {
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+    }
+
+    .studio-field {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 7px !important;
+      margin: 0 !important;
+      animation: fieldFadeUp 0.36s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    }
+    .studio-field:nth-child(1) { animation-delay: 0.03s; }
+    .studio-field:nth-child(2) { animation-delay: 0.06s; }
+    .studio-field:nth-child(3) { animation-delay: 0.09s; }
+    .studio-field:nth-child(4) { animation-delay: 0.12s; }
+    .studio-field:nth-child(5) { animation-delay: 0.15s; }
+    .studio-field:nth-child(6) { animation-delay: 0.18s; }
+    .studio-field:nth-child(7) { animation-delay: 0.21s; }
+
+    @keyframes fieldFadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .studio-field-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      color: #c8c8c8;
+    }
+    .studio-field-hint {
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: none;
+      letter-spacing: 0;
+      color: #888;
+    }
+
+    .studio-premium-form input[type="text"],
+    .studio-premium-form input[type="number"],
+    .studio-premium-form input:not([type]),
+    .studio-premium-form textarea,
+    .studio-premium-form select {
+      width: 100% !important;
+      height: 46px !important;
+      background: #101010 !important;
+      border: 1px solid #2e2e2e !important;
+      border-radius: 12px !important;
+      color: #f5f5f5 !important;
+      font-family: 'DM Sans', sans-serif !important;
+      font-size: 14px !important;
+      font-weight: 500 !important;
+      padding: 0 14px !important;
+      outline: none !important;
+      transition: border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease, transform 0.18s ease !important;
+    }
+
+    .studio-premium-form textarea {
+      height: auto !important;
+      min-height: 78px !important;
+      padding: 11px 14px !important;
+      line-height: 1.45 !important;
+      resize: vertical !important;
+    }
+
+    .studio-premium-form select {
+      appearance: none !important;
+      -webkit-appearance: none !important;
+      -moz-appearance: none !important;
+      padding-right: 40px !important;
+      cursor: pointer !important;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23d4a017' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+      background-repeat: no-repeat !important;
+      background-position: right 14px center !important;
+      background-size: 16px 16px !important;
+    }
+    .studio-premium-form select option {
+      background: #161616;
+      color: #f5f5f5;
+      padding: 10px;
+    }
+
+    .studio-premium-form input:hover,
+    .studio-premium-form textarea:hover,
+    .studio-premium-form select:hover {
+      border-color: #4a4a4a !important;
+      background-color: #141414 !important;
+    }
+
+    .studio-premium-form input:focus,
+    .studio-premium-form textarea:focus,
+    .studio-premium-form select:focus {
+      border-color: #d4a017 !important;
+      background-color: #151515 !important;
+      box-shadow: 0 0 0 3px rgba(212, 160, 23, 0.18), 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    /* Interactive Video Dropzone Card */
+    .video-dropzone-card {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: linear-gradient(135deg, rgba(212, 160, 23, 0.08) 0%, rgba(18, 18, 18, 0.98) 100%);
+      border: 1.5px dashed rgba(212, 160, 23, 0.48);
+      border-radius: 14px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: border-color 0.22s ease, background 0.22s ease, transform 0.2s ease, box-shadow 0.22s ease;
+    }
+    .video-dropzone-card:hover {
+      border-color: #f0c44d;
+      background: linear-gradient(135deg, rgba(212, 160, 23, 0.14) 0%, rgba(22, 22, 22, 0.98) 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(212, 160, 23, 0.14);
+    }
+    .video-dropzone-card.has-file {
+      border-style: solid;
+      border-color: #2ecc71;
+      background: linear-gradient(135deg, rgba(46, 204, 113, 0.1) 0%, rgba(18, 18, 18, 0.98) 100%);
+    }
+    .video-dropzone-card input[type="file"] {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+      z-index: 2;
+    }
+    .video-dropzone-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(212, 160, 23, 0.16);
+      border: 1px solid rgba(212, 160, 23, 0.4);
+      color: #f0c44d;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+      transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+    }
+    .video-dropzone-card.has-file .video-dropzone-icon {
+      background: rgba(46, 204, 113, 0.18);
+      border-color: rgba(46, 204, 113, 0.45);
+      color: #2ecc71;
+    }
+    .video-dropzone-meta {
+      flex: 1;
+      min-width: 0;
+    }
+    .video-dropzone-meta strong {
+      display: block;
+      color: #fff;
+      font-size: 13.5px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .video-dropzone-meta span {
+      display: block;
+      color: #9e9e9e;
+      font-size: 12px;
+      margin-top: 2px;
+    }
+    .video-dropzone-badge {
+      background: rgba(212, 160, 23, 0.18);
+      color: #f0c44d;
+      border: 1px solid rgba(212, 160, 23, 0.35);
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 10px;
+      flex-shrink: 0;
+    }
+
+    /* Premium Toggle Switch Row */
+    .studio-toggle-row {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      gap: 12px !important;
+      background: #121212 !important;
+      border: 1px solid #292929 !important;
+      border-radius: 12px !important;
+      padding: 12px 15px !important;
+      cursor: pointer !important;
+      transition: border-color 0.2s ease !important;
+    }
+    .studio-toggle-row:hover {
+      border-color: rgba(212, 160, 23, 0.45) !important;
+    }
+    .studio-toggle-row span {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #ececec;
+    }
+    .studio-toggle-row small {
+      display: block;
+      font-size: 11.5px;
+      font-weight: 400;
+      color: #888;
+      margin-top: 1px;
+    }
+    .studio-toggle-row input[type="checkbox"] {
+      appearance: none !important;
+      -webkit-appearance: none !important;
+      width: 44px !important;
+      height: 24px !important;
+      background: #2b2b2b !important;
+      border-radius: 999px !important;
+      position: relative !important;
+      cursor: pointer !important;
+      flex-shrink: 0 !important;
+      transition: background 0.22s ease !important;
+      border: 1px solid #3c3c3c !important;
+    }
+    .studio-toggle-row input[type="checkbox"]::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #bbb;
+      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.22s ease;
+    }
+    .studio-toggle-row input[type="checkbox"]:checked {
+      background: linear-gradient(135deg, #f0c44d, #d4a017) !important;
+      border-color: #f0c44d !important;
+    }
+    .studio-toggle-row input[type="checkbox"]:checked::after {
+      transform: translateX(20px);
+      background: #111;
+    }
+
+    .studio-submit-btn {
+      width: 100% !important;
+      height: 48px !important;
+      border-radius: 12px !important;
+      font-family: 'Space Grotesk', sans-serif !important;
+      font-size: 15px !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.2px !important;
+      background: linear-gradient(135deg, #f3ca52 0%, #d4a017 60%, #b5850b 100%) !important;
+      color: #111 !important;
+      border: 1px solid rgba(255, 238, 175, 0.5) !important;
+      box-shadow: 0 10px 26px rgba(212, 160, 23, 0.3) !important;
+      cursor: pointer !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 8px !important;
+      margin-top: 4px !important;
+      transition: transform 0.18s ease, box-shadow 0.2s ease, filter 0.2s ease !important;
+    }
+    .studio-submit-btn:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: 0 14px 32px rgba(212, 160, 23, 0.45) !important;
+      filter: brightness(1.04) !important;
+    }
+    .studio-submit-btn:active {
+      transform: scale(0.98) !important;
+    }
 
     /* ==============================================================
        4. TOPBAR & MINIMIZED TRANSPARENT HEADER IN WATCH MODE
@@ -203,7 +566,7 @@
     }
 
     /* ==============================================================
-       5. WATCH SECTION & AUTO-PLAY VIDEO HOOK STAGE (NO COVER IMAGES)
+       5. WATCH SECTION & AUTO-PLAY VIDEO HOOK STAGE
     ============================================================== */
     #section-watch {
       position: fixed !important;
@@ -286,7 +649,6 @@
       box-shadow: 0 4px 16px rgba(0,0,0,0.65);
     }
 
-    /* Live Motion Episode Card Preview */
     .episode-card .card-image {
       position: relative;
       overflow: hidden;
@@ -786,7 +1148,8 @@
       flex-direction: column;
       align-items: center;
       text-align: center;
-      padding: 10px 6px 4px;
+      padding: 12px 6px 4px;
+      animation: modalCardEntrance 0.3s ease-out forwards;
     }
     .upload-progress-stage.hidden {
       display: none !important;
@@ -794,32 +1157,32 @@
 
     .round-progress-wrap {
       position: relative;
-      width: 126px;
-      height: 126px;
-      margin: 4px auto 16px;
+      width: 136px;
+      height: 136px;
+      margin: 4px auto 18px;
       display: flex;
       align-items: center;
       justify-content: center;
     }
     .round-progress-svg {
-      width: 126px;
-      height: 126px;
+      width: 136px;
+      height: 136px;
       transform: rotate(-90deg);
-      filter: drop-shadow(0 0 14px rgba(212, 160, 23, 0.25));
+      filter: drop-shadow(0 0 18px rgba(212, 160, 23, 0.32));
     }
     .round-progress-track {
       fill: none;
-      stroke: #262626;
-      stroke-width: 8;
+      stroke: #242424;
+      stroke-width: 8.5;
     }
     .round-progress-fill {
       fill: none;
       stroke: #d4a017;
-      stroke-width: 8;
+      stroke-width: 8.5;
       stroke-linecap: round;
       stroke-dasharray: 326.73;
       stroke-dashoffset: 326.73;
-      transition: stroke-dashoffset 0.28s ease, stroke 0.3s ease;
+      transition: stroke-dashoffset 0.32s cubic-bezier(0.22, 1, 0.36, 1), stroke 0.3s ease;
     }
     .round-progress-fill.is-complete {
       stroke: #2ecc71;
@@ -835,46 +1198,46 @@
     }
     .round-progress-pct {
       font-family: 'Space Grotesk', sans-serif;
-      font-size: 24px;
+      font-size: 27px;
       font-weight: 700;
       color: #fff;
       line-height: 1.1;
     }
     .round-progress-tag {
       font-size: 10px;
-      letter-spacing: 0.8px;
+      letter-spacing: 1px;
       text-transform: uppercase;
       color: #d4a017;
-      margin-top: 2px;
-      font-weight: 600;
+      margin-top: 3px;
+      font-weight: 700;
     }
 
     .upload-stage-title {
       font-family: 'Space Grotesk', sans-serif;
-      font-size: 18px;
+      font-size: 19px;
       font-weight: 700;
       color: #fff;
       margin: 0 0 6px;
     }
     .upload-stage-ep {
-      font-size: 13px;
+      font-size: 13.5px;
       color: #f0c44d;
       font-weight: 600;
-      margin: 0 0 10px;
+      margin: 0 0 12px;
       max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
     .upload-stage-note {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid #2b2b2b;
-      border-radius: 12px;
-      color: #b5b5b5;
-      font-size: 12.5px;
+      background: rgba(212, 160, 23, 0.07);
+      border: 1px solid rgba(212, 160, 23, 0.25);
+      border-radius: 14px;
+      color: #d2d2d2;
+      font-size: 13px;
       line-height: 1.55;
-      padding: 12px 14px;
-      margin: 0 0 18px;
+      padding: 13px 16px;
+      margin: 0 0 20px;
     }
     .upload-stage-actions {
       display: flex;
@@ -893,8 +1256,8 @@
       display: flex;
       align-items: center;
       gap: 16px;
-      background: linear-gradient(135deg, #1b1b1b, #141414);
-      border: 1px solid rgba(212, 160, 23, 0.42);
+      background: linear-gradient(135deg, #1c1a14, #141414);
+      border: 1px solid rgba(212, 160, 23, 0.45);
       border-radius: 14px;
       padding: 14px 18px;
       margin: 0 0 20px 0;
@@ -952,10 +1315,10 @@
       align-items: center;
       gap: 12px;
       background: rgba(18, 18, 18, 0.96);
-      border: 1px solid rgba(212, 160, 23, 0.55);
+      border: 1px solid rgba(212, 160, 23, 0.6);
       border-radius: 50px;
       padding: 8px 16px 8px 10px;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.75);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.78);
       backdrop-filter: blur(12px);
       cursor: pointer;
       transition: transform 0.2s ease, border-color 0.2s ease;
@@ -1447,22 +1810,102 @@
         <div>
           <p class="eyebrow">CREATOR STUDIO</p>
           <h2>Upload episode</h2>
+          <p class="modal-subtitle">Publish a vertical drama episode with instant hook preview.</p>
         </div>
         <button class="modal-close" data-action="close-upload" aria-label="Close">×</button>
       </div>
 
-      <!-- Step 1: Episode Upload Form -->
-      <form id="upload-form" class="stack-form">
-        <label>Series<select id="upload-series" name="seriesId" required></select></label>
-        <label>Episode title<input name="title" required maxlength="200" placeholder="e.g. Episode 1: The Hidden Truth"></label>
-        <label>Episode number (optional)<input name="episodeNumber" type="number" min="1" placeholder="Auto-increments if left blank"></label>
-        <label>Description<textarea name="description" maxlength="2000" rows="2" placeholder="Briefly describe this episode..."></textarea></label>
-        <label>Access<select name="access" required><option value="Ad">Ad-supported</option><option value="Premium">Premium</option></select></label>
-        <label>Coin cost<input name="coinCost" type="number" min="1" value="10" required></label>
-        <label>Video (auto-plays gripping hook scene in feed)<input name="video" type="file" accept="video/*" required></label>
-        <label>Hook preview start (seconds, optional)<input name="hookStart" type="number" min="0" value="0" placeholder="e.g. 14 — jumps straight to your gripping scene"></label>
-        <label class="checkbox-label"><input name="publish" type="checkbox" checked> Publish episode now</label>
-        <button class="button button-primary" type="submit">Upload episode</button>
+      <!-- Step 1: Redesigned Animated Episode Upload Form -->
+      <form id="upload-form" class="studio-premium-form">
+        <div class="studio-field">
+          <label class="studio-field-label" for="upload-series">
+            <span>Select Series</span>
+            <span class="studio-field-hint">Required</span>
+          </label>
+          <select id="upload-series" name="seriesId" required></select>
+        </div>
+
+        <div class="studio-field">
+          <label class="studio-field-label" for="upload-ep-title">
+            <span>Episode Title</span>
+          </label>
+          <input id="upload-ep-title" name="title" required maxlength="200" placeholder="e.g. Episode 1: The Hidden Truth">
+        </div>
+
+        <div class="studio-form-row">
+          <div class="studio-field">
+            <label class="studio-field-label" for="upload-ep-number">
+              <span>Episode No.</span>
+              <span class="studio-field-hint">Optional</span>
+            </label>
+            <input id="upload-ep-number" name="episodeNumber" type="number" min="1" placeholder="Auto">
+          </div>
+
+          <div class="studio-field">
+            <label class="studio-field-label" for="upload-hook-start">
+              <span>Hook Start (Sec)</span>
+              <span class="studio-field-hint">Feed preview</span>
+            </label>
+            <input id="upload-hook-start" name="hookStart" type="number" min="0" value="0" placeholder="e.g. 14">
+          </div>
+        </div>
+
+        <div class="studio-form-row">
+          <div class="studio-field">
+            <label class="studio-field-label" for="upload-access">
+              <span>Access Mode</span>
+            </label>
+            <select id="upload-access" name="access" required>
+              <option value="Ad">Ad-supported (Free)</option>
+              <option value="Premium">Premium (Coins)</option>
+            </select>
+          </div>
+
+          <div class="studio-field">
+            <label class="studio-field-label" for="upload-coin-cost">
+              <span>Coin Cost</span>
+              <span class="studio-field-hint">Story Coins</span>
+            </label>
+            <input id="upload-coin-cost" name="coinCost" type="number" min="1" value="10" required>
+          </div>
+        </div>
+
+        <div class="studio-field">
+          <label class="studio-field-label" for="upload-ep-desc">
+            <span>Episode Synopsis</span>
+            <span class="studio-field-hint">Optional</span>
+          </label>
+          <textarea id="upload-ep-desc" name="description" maxlength="2000" rows="2" placeholder="Tease the drama or cliffhanger in this episode..."></textarea>
+        </div>
+
+        <div class="studio-field">
+          <span class="studio-field-label">
+            <span>Episode Video</span>
+            <span class="studio-field-hint">9:16 Vertical MP4 / MOV</span>
+          </span>
+          <div class="video-dropzone-card" id="upload-video-dropzone">
+            <div class="video-dropzone-icon" aria-hidden="true">▶</div>
+            <div class="video-dropzone-meta">
+              <strong id="upload-video-filename">Tap to choose episode video</strong>
+              <span id="upload-video-filesize">Auto-plays gripping hook scene in Watch feed</span>
+            </div>
+            <span class="video-dropzone-badge" id="upload-video-badge">Browse</span>
+            <input id="upload-video-input" name="video" type="file" accept="video/*" required>
+          </div>
+        </div>
+
+        <label class="studio-toggle-row">
+          <div>
+            <span>Publish episode immediately</span>
+            <small>Make visible to viewers as soon as upload finishes</small>
+          </div>
+          <input name="publish" type="checkbox" checked>
+        </label>
+
+        <button class="studio-submit-btn" type="submit">
+          <span>✦</span>
+          <span>Upload Episode</span>
+        </button>
       </form>
 
       <!-- Step 2: Circular (Round) Progress Ring & Background Upload View -->
@@ -1492,17 +1935,50 @@
 
   <div id="series-modal" class="modal-root hidden">
     <div class="modal">
-      <div class="modal-header"><div><p class="eyebrow">CREATOR STUDIO</p><h2>Create a series</h2></div><button class="modal-close" data-action="close-series" aria-label="Close">×</button></div>
-      <form id="series-form" class="stack-form">
-        <label>Series title<input name="title" required maxlength="200"></label>
-        <label>Description<textarea name="description" maxlength="2000"></textarea></label>
-        <label>Genre<input name="genre" maxlength="80" placeholder="Drama, history, comedy..."></label>
-        <label>Language<input name="language" value="English" maxlength="40"></label>
-        <label>Tags<input name="tags" placeholder="culture, family, Lagos"></label>
-        <label>Cover image<input name="cover" type="file" accept="image/*" required></label>
-        <label class="checkbox-label"><input name="publish" type="checkbox" checked> Publish series now</label>
-        <label class="checkbox-label"><input name="premium" type="checkbox"> VIP subscribers only</label>
-        <button class="button button-primary" type="submit">Create series</button>
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">CREATOR STUDIO</p>
+          <h2>Create a series</h2>
+          <p class="modal-subtitle">Set up your series title, genre, and cover poster.</p>
+        </div>
+        <button class="modal-close" data-action="close-series" aria-label="Close">×</button>
+      </div>
+      <form id="series-form" class="studio-premium-form">
+        <div class="studio-field">
+          <label class="studio-field-label"><span>Series Title</span></label>
+          <input name="title" required maxlength="200" placeholder="e.g. The Billionaire's Hidden Wife">
+        </div>
+        <div class="studio-field">
+          <label class="studio-field-label"><span>Description</span></label>
+          <textarea name="description" maxlength="2000" placeholder="Tell viewers what your series is about..."></textarea>
+        </div>
+        <div class="studio-form-row">
+          <div class="studio-field">
+            <label class="studio-field-label"><span>Genre</span></label>
+            <input name="genre" maxlength="80" placeholder="Drama, Romance...">
+          </div>
+          <div class="studio-field">
+            <label class="studio-field-label"><span>Language</span></label>
+            <input name="language" value="English" maxlength="40">
+          </div>
+        </div>
+        <div class="studio-field">
+          <label class="studio-field-label"><span>Tags</span></label>
+          <input name="tags" placeholder="culture, family, Lagos">
+        </div>
+        <div class="studio-field">
+          <label class="studio-field-label"><span>Cover Image</span></label>
+          <input name="cover" type="file" accept="image/*" required style="padding-top:10px !important;">
+        </div>
+        <label class="studio-toggle-row">
+          <div><span>Publish series now</span></div>
+          <input name="publish" type="checkbox" checked>
+        </label>
+        <label class="studio-toggle-row">
+          <div><span>VIP subscribers only</span></div>
+          <input name="premium" type="checkbox">
+        </label>
+        <button class="studio-submit-btn" type="submit">Create Series</button>
       </form>
     </div>
   </div>
@@ -1521,7 +1997,7 @@
   <div id="modal-root" class="modal-root hidden"></div>
   <div id="toast-region" class="toast-region" aria-live="polite"></div>
 
-  <!-- Instant UI Bridge: Sidebar Boundary Guard, One-Time Creator Welcome, Circular Upload, & Notification Delete -->
+  <!-- Instant UI Bridge: Sidebar Boundary Guard, Creator Welcome, Circular Upload, & Notification Sync -->
   <script>
     (function () {
       const watchSection = document.getElementById('section-watch');
@@ -1677,7 +2153,7 @@
       });
 
       // ==============================================================
-      // D. CIRCULAR (ROUND) EPISODE UPLOAD PROGRESS & BACKGROUND BROWSING
+      // D. VIDEO DROPZONE UI & CIRCULAR UPLOAD PROGRESS RING
       // ==============================================================
       const uploadModal = document.getElementById('upload-modal');
       const uploadForm = document.getElementById('upload-form');
@@ -1688,6 +2164,12 @@
       const stageTitle = document.getElementById('upload-stage-title');
       const stageEp = document.getElementById('upload-stage-ep');
       const stageNote = document.getElementById('upload-stage-note');
+
+      const videoInput = document.getElementById('upload-video-input');
+      const videoDropzone = document.getElementById('upload-video-dropzone');
+      const videoFilename = document.getElementById('upload-video-filename');
+      const videoFilesize = document.getElementById('upload-video-filesize');
+      const videoBadge = document.getElementById('upload-video-badge');
 
       const studioTracker = document.getElementById('studio-upload-tracker');
       const studioRingFill = document.getElementById('studio-ring-fill');
@@ -1700,12 +2182,34 @@
       const pillRingPct = document.getElementById('pill-ring-pct');
       const pillTitle = document.getElementById('pill-upload-title');
 
+      function resetVideoDropzoneUI() {
+        videoDropzone?.classList.remove('has-file');
+        if (videoFilename) videoFilename.textContent = 'Tap to choose episode video';
+        if (videoFilesize) videoFilesize.textContent = 'Auto-plays gripping hook scene in Watch feed';
+        if (videoBadge) videoBadge.textContent = 'Browse';
+      }
+
+      videoInput?.addEventListener('change', () => {
+        const file = videoInput.files && videoInput.files[0];
+        if (!file) {
+          resetVideoDropzoneUI();
+          return;
+        }
+        const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+        videoDropzone?.classList.add('has-file');
+        if (videoFilename) videoFilename.textContent = file.name;
+        if (videoFilesize) videoFilesize.textContent = `${sizeMb} MB • Ready to upload`;
+        if (videoBadge) videoBadge.textContent = 'Selected ✓';
+      });
+
       const BIG_CIRCUMFERENCE = 2 * Math.PI * 52;   // 326.73
       const MINI_CIRCUMFERENCE = 2 * Math.PI * 23;  // 144.51
-      let activeUploadState = { active: false, completed: false, title: '' };
+      let activeUploadState = { active: false, completed: false, title: '', pct: 0 };
+      let fallbackProgressTimer = null;
 
       function setUploadProgressUI(pct, titleText, subText, isComplete = false) {
         const clamped = Math.max(0, Math.min(100, Math.round(pct)));
+        activeUploadState.pct = clamped;
         const bigOffset = BIG_CIRCUMFERENCE - (clamped / 100) * BIG_CIRCUMFERENCE;
         const miniOffset = MINI_CIRCUMFERENCE - (clamped / 100) * MINI_CIRCUMFERENCE;
 
@@ -1714,7 +2218,7 @@
           roundFill.classList.toggle('is-complete', isComplete);
         }
         if (roundPct) roundPct.textContent = isComplete ? '✓' : clamped + '%';
-        if (roundTag) roundTag.textContent = isComplete ? 'Published' : (clamped >= 90 ? 'Finalizing' : 'Uploading');
+        if (roundTag) roundTag.textContent = isComplete ? 'Published' : (clamped >= 89 ? 'Finalizing' : 'Uploading');
         if (stageTitle && titleText) stageTitle.textContent = titleText;
         if (stageNote && subText) stageNote.textContent = subText;
 
@@ -1734,12 +2238,71 @@
         if (pillTitle) pillTitle.textContent = isComplete ? 'Episode published!' : `Uploading (${clamped}%)...`;
       }
 
+      function showCircularUploadStage(epTitle) {
+        clearInterval(fallbackProgressTimer);
+        activeUploadState = { active: true, completed: false, title: epTitle, pct: 4 };
+        if (stageEp) stageEp.textContent = epTitle;
+        uploadModal?.classList.remove('hidden');
+        uploadForm?.classList.add('hidden');
+        uploadStage?.classList.remove('hidden');
+        studioTracker?.classList.remove('hidden');
+        setUploadProgressUI(
+          4,
+          'Uploading your episode...',
+          'You don\'t need to stay on this screen. Feel free to explore other parts of AfriStory — we will notify you as soon as your episode is ready, or return to Creator Studio anytime to track progress.',
+          false
+        );
+
+        // Smooth baseline ticker in case server buffers before XHR upload events fire
+        fallbackProgressTimer = setInterval(() => {
+          if (activeUploadState.active && activeUploadState.pct < 82) {
+            setUploadProgressUI(activeUploadState.pct + 2);
+          }
+        }, 1200);
+      }
+
+      function finishCircularUploadStage(ok, epTitle) {
+        clearInterval(fallbackProgressTimer);
+        activeUploadState.active = false;
+        activeUploadState.completed = ok;
+        if (ok) {
+          setUploadProgressUI(
+            100,
+            'Episode published!',
+            `"${epTitle}" is now live on AfriStory.`,
+            true
+          );
+          appendLocalNotification(
+            'Episode Published',
+            `Your episode "${epTitle}" has finished uploading and is now ready on AfriStory.`
+          );
+          setTimeout(() => {
+            bgPill?.classList.add('hidden');
+            uploadForm?.reset();
+            resetVideoDropzoneUI();
+            resetUploadModalToForm();
+          }, 3500);
+        } else {
+          bgPill?.classList.add('hidden');
+          studioTracker?.classList.add('hidden');
+          resetUploadModalToForm();
+        }
+      }
+
       function resetUploadModalToForm() {
         if (!activeUploadState.active) {
           uploadForm?.classList.remove('hidden');
           uploadStage?.classList.add('hidden');
         }
       }
+
+      // Immediately switch to Circular Progress Stage when Upload Episode form submits
+      uploadForm?.addEventListener('submit', () => {
+        if (!uploadForm.checkValidity()) return;
+        const titleInput = uploadForm.querySelector('[name="title"]');
+        const epTitle = (titleInput && titleInput.value.trim()) || 'New Episode';
+        showCircularUploadStage(epTitle);
+      }, true);
 
       document.addEventListener('click', (e) => {
         if (e.target.closest('[data-action="open-upload"]')) {
@@ -1781,148 +2344,24 @@
         document.querySelector('[data-section="creator"]')?.click();
       });
 
+      // Suppress legacy "Uploading to the cloud..." toast while circular ring is active
       const toastRegion = document.getElementById('toast-region');
       if (toastRegion) {
         new MutationObserver(() => {
-          toastRegion.querySelectorAll('.toast-message').forEach((msgEl) => {
+          toastRegion.querySelectorAll('.toast').forEach((toastEl) => {
+            const msgEl = toastEl.querySelector('.toast-message') || toastEl;
             if (/uploading\s+(to\s+(the\s+)?)?cloud/i.test(msgEl.textContent)) {
-              msgEl.textContent = 'Uploading your episode...';
+              toastEl.remove();
             }
           });
         }).observe(toastRegion, { childList: true, subtree: true, characterData: true });
       }
 
-      const nativeFetch = window.fetch.bind(window);
-      window.fetch = function (input, init) {
-        const url = typeof input === 'string' ? input : (input && input.url) || '';
-        const method = ((init && init.method) || (input && input.method) || 'GET').toUpperCase();
-        const body = init && init.body;
-        const isVideoFormData = body instanceof FormData && Array.from(body.values()).some((v) => v instanceof File && v.type.startsWith('video/'));
-
-        if (method === 'POST' && isVideoFormData && (/\/api\/(episodes|upload)/i.test(url))) {
-          const epTitle = String(body.get('title') || 'New Episode').trim();
-          activeUploadState = { active: true, completed: false, title: epTitle };
-
-          if (stageEp) stageEp.textContent = epTitle;
-          uploadForm?.classList.add('hidden');
-          uploadStage?.classList.remove('hidden');
-          studioTracker?.classList.remove('hidden');
-          setUploadProgressUI(
-            2,
-            'Uploading your episode...',
-            'You can safely explore other parts of AfriStory while we upload your video. We will notify you once it is ready, or return to Creator Studio anytime to check progress.',
-            false
-          );
-
-          return new Promise((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', url, true);
-            xhr.withCredentials = true;
-
-            if (init && init.headers) {
-              const hdrs = new Headers(init.headers);
-              hdrs.forEach((val, key) => {
-                if (key.toLowerCase() !== 'content-type') {
-                  xhr.setRequestHeader(key, val);
-                }
-              });
-            }
-
-            let processingTimer = null;
-            xhr.upload.onprogress = function (evt) {
-              if (!evt.lengthComputable) return;
-              const uploadPct = Math.min(88, Math.round((evt.loaded / evt.total) * 88));
-              setUploadProgressUI(
-                uploadPct,
-                'Uploading your episode...',
-                'Feel free to explore AfriStory while your video uploads. We will notify you as soon as it is ready.',
-                false
-              );
-              if (evt.loaded >= evt.total && !processingTimer) {
-                let simPct = 89;
-                setUploadProgressUI(
-                  simPct,
-                  'Optimizing video playback...',
-                  'Preparing smooth streaming for your viewers. You will receive a notification once published.',
-                  false
-                );
-                processingTimer = setInterval(() => {
-                  if (simPct < 98) {
-                    simPct += 1;
-                    setUploadProgressUI(
-                      simPct,
-                      'Optimizing video playback...',
-                      'Preparing smooth streaming for your viewers. You will receive a notification once published.',
-                      false
-                    );
-                  }
-                }, 900);
-              }
-            };
-
-            xhr.onload = function () {
-              clearInterval(processingTimer);
-              const ok = xhr.status >= 200 && xhr.status < 300;
-              activeUploadState.active = false;
-              activeUploadState.completed = ok;
-
-              if (ok) {
-                setUploadProgressUI(
-                  100,
-                  'Episode published!',
-                  `"${epTitle}" is now live on AfriStory.`,
-                  true
-                );
-                appendLocalNotification(
-                  'Episode Published',
-                  `Your episode "${epTitle}" has finished uploading and is now ready on AfriStory.`
-                );
-                setTimeout(() => {
-                  bgPill?.classList.add('hidden');
-                  uploadForm?.reset();
-                  resetUploadModalToForm();
-                }, 3500);
-              } else {
-                bgPill?.classList.add('hidden');
-                studioTracker?.classList.add('hidden');
-                resetUploadModalToForm();
-              }
-
-              const responseHeaders = new Headers();
-              xhr.getAllResponseHeaders().trim().split(/[\r\n]+/).forEach((line) => {
-                const parts = line.split(': ');
-                const header = parts.shift();
-                const value = parts.join(': ');
-                if (header) responseHeaders.append(header, value);
-              });
-
-              resolve(new Response(xhr.responseText, {
-                status: xhr.status,
-                statusText: xhr.statusText,
-                headers: responseHeaders
-              }));
-            };
-
-            xhr.onerror = function () {
-              clearInterval(processingTimer);
-              activeUploadState.active = false;
-              bgPill?.classList.add('hidden');
-              studioTracker?.classList.add('hidden');
-              resetUploadModalToForm();
-              reject(new TypeError('Network request failed during episode upload'));
-            };
-
-            xhr.send(body);
-          });
-        }
-
-        return nativeFetch(input, init);
-      };
-
       // ==============================================================
-      // E. NOTIFICATION DISMISS / DELETE & CLEAR ALL CONTROLS
+      // E. NOTIFICATION DISMISS / DELETE & COUNTER SYNC (0 WHEN EMPTY)
       // ==============================================================
       const DISMISSED_NOTIFS_KEY = 'afristory_dismissed_notifications_v1';
+      const CLEARED_ALL_AT_KEY = 'afristory_cleared_all_notifs_ts_v1';
       const notificationList = document.getElementById('notification-list');
       const emptyNotifications = document.getElementById('empty-notifications');
       const notificationBadge = document.getElementById('notification-badge');
@@ -1936,11 +2375,43 @@
       }
 
       function saveDismissedNotif(key) {
+        if (!key) return;
         const set = getDismissedNotifs();
-        set.add(key);
+        set.add(String(key));
         try {
-          localStorage.setItem(DISMISSED_NOTIFS_KEY, JSON.stringify(Array.from(set).slice(-300)));
+          localStorage.setItem(DISMISSED_NOTIFS_KEY, JSON.stringify(Array.from(set).slice(-400)));
         } catch (_) {}
+      }
+
+      function getClearedAllTimestamp() {
+        try {
+          return Number(localStorage.getItem(CLEARED_ALL_AT_KEY) || 0);
+        } catch (_) {
+          return 0;
+        }
+      }
+
+      function isNotificationDismissedObj(item, dismissedSet, clearedBeforeTs) {
+        if (!item || typeof item !== 'object') return false;
+        const id = item._id || item.id || item.notificationId;
+        const title = String(item.title || '').trim();
+        const message = String(item.message || item.body || item.text || '').trim();
+        const sig = `${title} ${message}`.replace(/\s+/g, ' ').trim().slice(0, 120);
+
+        if (id && dismissedSet.has(String(id))) return true;
+        if (sig && dismissedSet.has(sig)) return true;
+        if (clearedBeforeTs > 0 && item.createdAt) {
+          const itemTs = new Date(item.createdAt).getTime();
+          if (!Number.isNaN(itemTs) && itemTs <= clearedBeforeTs) return true;
+        }
+        return false;
+      }
+
+      function setBadgeExactCount(count) {
+        if (!notificationBadge) return;
+        const safeCount = Math.max(0, Number(count) || 0);
+        notificationBadge.textContent = String(safeCount);
+        notificationBadge.classList.toggle('hidden', safeCount === 0);
       }
 
       function updateNotificationCountUI() {
@@ -1952,38 +2423,39 @@
           emptyNotifications.classList.toggle('hidden', rows.length > 0);
         }
         const unreadCount = rows.filter((el) => el.classList.contains('notification-unread')).length;
-        if (notificationBadge) {
-          notificationBadge.textContent = String(unreadCount);
-          notificationBadge.classList.toggle('hidden', unreadCount === 0);
-        }
+        setBadgeExactCount(rows.length === 0 ? 0 : unreadCount);
       }
 
       function getNotifSignature(row) {
-        return (
-          row.dataset.id ||
-          row.dataset.notificationId ||
-          row.getAttribute('data-notif-id') ||
-          row.textContent.replace(/\s+/g, ' ').trim().slice(0, 120)
-        );
+        const clone = row.cloneNode(true);
+        clone.querySelectorAll('.notif-delete-btn').forEach((b) => b.remove());
+        return clone.textContent.replace(/\s+/g, ' ').trim().slice(0, 120);
       }
 
-      function deleteNotificationRow(row) {
-        if (!row || row.dataset.deleting === 'true') return;
-        row.dataset.deleting = 'true';
-        const sig = getNotifSignature(row);
-        const rawId = row.dataset.id || row.dataset.notificationId || row.getAttribute('data-notif-id');
-        saveDismissedNotif(sig);
-
-        row.classList.add('notif-row-removing');
-        setTimeout(() => {
-          row.remove();
-          updateNotificationCountUI();
-        }, 200);
-
-        if (rawId && !rawId.startsWith('local-')) {
-          const token = localStorage.getItem('token') || localStorage.getItem('afristory_token') || '';
-          const headers = token ? { Authorization: 'Bearer ' + token } : {};
+      function persistBackendNotificationReadOrDelete(rawId) {
+        const token = localStorage.getItem('token') || localStorage.getItem('afristory_token') || '';
+        const headers = {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: 'Bearer ' + token } : {})
+        };
+        if (rawId && !String(rawId).startsWith('local-')) {
           nativeFetch(`/api/notifications/${encodeURIComponent(rawId)}`, {
+            method: 'DELETE',
+            credentials: 'include',
+            headers
+          }).catch(() => {});
+          nativeFetch(`/api/notifications/${encodeURIComponent(rawId)}/read`, {
+            method: 'POST',
+            credentials: 'include',
+            headers
+          }).catch(() => {});
+        } else {
+          nativeFetch('/api/notifications/read-all', {
+            method: 'POST',
+            credentials: 'include',
+            headers
+          }).catch(() => {});
+          nativeFetch('/api/notifications', {
             method: 'DELETE',
             credentials: 'include',
             headers
@@ -1991,13 +2463,31 @@
         }
       }
 
+      function deleteNotificationRow(row) {
+        if (!row || row.dataset.deleting === 'true') return;
+        row.dataset.deleting = 'true';
+        const rawId = row.dataset.id || row.dataset.notificationId || row.getAttribute('data-notif-id');
+        const sig = getNotifSignature(row);
+        if (rawId) saveDismissedNotif(rawId);
+        if (sig) saveDismissedNotif(sig);
+
+        row.classList.add('notif-row-removing');
+        setTimeout(() => {
+          row.remove();
+          updateNotificationCountUI();
+        }, 180);
+
+        persistBackendNotificationReadOrDelete(rawId);
+      }
+
       function enhanceNotificationItems() {
         if (!notificationList) return;
         const dismissed = getDismissedNotifs();
         Array.from(notificationList.children).forEach((row) => {
           if (row.id === 'empty-notifications') return;
+          const rawId = row.dataset.id || row.dataset.notificationId || row.getAttribute('data-notif-id');
           const sig = getNotifSignature(row);
-          if (dismissed.has(sig)) {
+          if ((rawId && dismissed.has(String(rawId))) || (sig && dismissed.has(sig))) {
             row.remove();
             return;
           }
@@ -2039,20 +2529,157 @@
       }
 
       document.getElementById('clear-all-notifications-btn')?.addEventListener('click', () => {
-        if (!notificationList) return;
-        const rows = Array.from(notificationList.children).filter((el) => el.id !== 'empty-notifications');
-        rows.forEach((row) => deleteNotificationRow(row));
-        const token = localStorage.getItem('token') || localStorage.getItem('afristory_token') || '';
-        const headers = token ? { Authorization: 'Bearer ' + token } : {};
-        nativeFetch('/api/notifications', {
-          method: 'DELETE',
-          credentials: 'include',
-          headers
-        }).catch(() => {});
+        try { localStorage.setItem(CLEARED_ALL_AT_KEY, String(Date.now())); } catch (_) {}
+        if (notificationList) {
+          const rows = Array.from(notificationList.children).filter((el) => el.id !== 'empty-notifications');
+          rows.forEach((row) => deleteNotificationRow(row));
+        }
+        setBadgeExactCount(0);
+        persistBackendNotificationReadOrDelete(null);
+      });
+
+      document.addEventListener('click', (e) => {
+        if (e.target.closest('[data-action="read-all"]')) {
+          setBadgeExactCount(0);
+        }
       });
 
       // ==============================================================
-      // F. RECORD REWARDED AD TRIGGER
+      // F. UNIFIED FETCH INTERCEPTOR (VIDEO XHR PROGRESS + NOTIF FILTER)
+      // ==============================================================
+      const nativeFetch = window.fetch.bind(window);
+      window.fetch = function (input, init) {
+        const url = typeof input === 'string' ? input : (input && input.url) || '';
+        const method = ((init && init.method) || (input && input.method) || 'GET').toUpperCase();
+        const body = init && init.body;
+
+        // 1. Intercept ANY FormData POST containing a video file (regardless of endpoint path)
+        const isVideoFormData =
+          body instanceof FormData &&
+          Array.from(body.values()).some((v) => v instanceof File && (v.type.startsWith('video/') || /\.(mp4|mov|webm|mkv|avi)$/i.test(v.name || '')));
+
+        if (method === 'POST' && isVideoFormData) {
+          const epTitle = String(body.get('title') || activeUploadState.title || 'New Episode').trim();
+          if (!activeUploadState.active) {
+            showCircularUploadStage(epTitle);
+          }
+
+          return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', url, true);
+            xhr.withCredentials = true;
+
+            if (init && init.headers) {
+              const hdrs = new Headers(init.headers);
+              hdrs.forEach((val, key) => {
+                if (key.toLowerCase() !== 'content-type') {
+                  xhr.setRequestHeader(key, val);
+                }
+              });
+            }
+
+            let processingTimer = null;
+            xhr.upload.onprogress = function (evt) {
+              if (!evt.lengthComputable) return;
+              clearInterval(fallbackProgressTimer);
+              const uploadPct = Math.max(5, Math.min(88, Math.round((evt.loaded / evt.total) * 88)));
+              setUploadProgressUI(
+                uploadPct,
+                'Uploading your episode...',
+                'You don\'t need to stay on this screen. Feel free to explore other parts of AfriStory — we will notify you as soon as your episode is ready, or return to Creator Studio anytime to track progress.',
+                false
+              );
+              if (evt.loaded >= evt.total && !processingTimer) {
+                let simPct = 89;
+                setUploadProgressUI(
+                  simPct,
+                  'Finalizing episode stream...',
+                  'Preparing smooth playback for your viewers. You will receive a notification once published.',
+                  false
+                );
+                processingTimer = setInterval(() => {
+                  if (simPct < 98) {
+                    simPct += 1;
+                    setUploadProgressUI(simPct);
+                  }
+                }, 850);
+              }
+            };
+
+            xhr.onload = function () {
+              clearInterval(processingTimer);
+              const ok = xhr.status >= 200 && xhr.status < 300;
+              finishCircularUploadStage(ok, epTitle);
+
+              const responseHeaders = new Headers();
+              xhr.getAllResponseHeaders().trim().split(/[\r\n]+/).forEach((line) => {
+                const parts = line.split(': ');
+                const header = parts.shift();
+                const value = parts.join(': ');
+                if (header) responseHeaders.append(header, value);
+              });
+
+              resolve(new Response(xhr.responseText, {
+                status: xhr.status,
+                statusText: xhr.statusText,
+                headers: responseHeaders
+              }));
+            };
+
+            xhr.onerror = function () {
+              clearInterval(processingTimer);
+              finishCircularUploadStage(false, epTitle);
+              reject(new TypeError('Network request failed during episode upload'));
+            };
+
+            xhr.send(body);
+          });
+        }
+
+        // 2. Intercept GET /api/notifications so deleted/cleared items never resurrect badge count
+        if (method === 'GET' && /\/api\/notifications(\?|$)/i.test(url)) {
+          return nativeFetch(input, init).then(async (res) => {
+            try {
+              const cloned = res.clone();
+              const data = await cloned.json();
+              const dismissedSet = getDismissedNotifs();
+              const clearedBeforeTs = getClearedAllTimestamp();
+
+              if (Array.isArray(data)) {
+                const filtered = data.filter((item) => !isNotificationDismissedObj(item, dismissedSet, clearedBeforeTs));
+                const unread = filtered.filter((n) => !n.read && !n.isRead).length;
+                setBadgeExactCount(unread);
+                return new Response(JSON.stringify(filtered), {
+                  status: res.status,
+                  statusText: res.statusText,
+                  headers: res.headers
+                });
+              }
+
+              if (data && Array.isArray(data.notifications)) {
+                const filtered = data.notifications.filter((item) => !isNotificationDismissedObj(item, dismissedSet, clearedBeforeTs));
+                const unread = filtered.filter((n) => !n.read && !n.isRead).length;
+                data.notifications = filtered;
+                if ('unreadCount' in data) data.unreadCount = unread;
+                if ('unread' in data) data.unread = unread;
+                if ('count' in data) data.count = unread;
+                setBadgeExactCount(unread);
+                return new Response(JSON.stringify(data), {
+                  status: res.status,
+                  statusText: res.statusText,
+                  headers: res.headers
+                });
+              }
+            } catch (_) {}
+            return res;
+          });
+        }
+
+        return nativeFetch(input, init);
+      };
+
+      // ==============================================================
+      // G. RECORD REWARDED AD TRIGGER
       // ==============================================================
       document.addEventListener('click', function (event) {
         const trigger = event.target.closest('[data-robins-rewarded]');
@@ -2069,8 +2696,8 @@
   </script>
 
   <!-- Cache-busted module scripts -->
-  <script type="module" src="/js/ads.js?v=15"></script>
-  <script type="module" src="/js/main.js?v=15"></script>
+  <script type="module" src="/js/ads.js?v=16"></script>
+  <script type="module" src="/js/main.js?v=16"></script>
 
 </body>
 </html>
