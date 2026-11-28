@@ -2618,7 +2618,7 @@
           <div><p class="eyebrow">YOUR STORY ECONOMY</p><h1>Wallet</h1></div>
           <div style="display:flex; flex-wrap:wrap; gap:10px;">
             <button class="button button-primary" data-action="buy-coins">Get coins <span>↗</span></button>
-            <button id="wallet-watch-ad-btn" class="button button-accent" type="button" data-robins-rewarded="wallet-earn-coins" data-action="watch-rewarded-ad" disabled>▶ Watch Ad (+5 Coins)</button>
+            <button id="wallet-watch-ad-btn" class="button button-accent" type="button" data-robins-rewarded="wallet-earn-coins" data-purpose="PROMO_REWARD" data-target-id="watch_ads" data-action="watch-rewarded-ad" disabled>▶ Watch Ad (+5 Coins)</button>
             <button class="button button-quiet" data-action="buy-pass">Get VIP credits</button>
             <button id="withdraw-earnings-btn" class="button button-quiet hidden" data-action="withdraw-earnings">Withdraw</button>
           </div>
@@ -2716,7 +2716,7 @@
             </div>
           </div>
           <div class="ad-earn-spotlight-actions">
-            <button id="watch-ad-earn-coins-btn" class="button button-primary" type="button" data-robins-rewarded="earn-coins" data-action="watch-rewarded-ad" disabled>
+            <button id="watch-ad-earn-coins-btn" class="button button-primary" type="button" data-robins-rewarded="earn-coins" data-purpose="PROMO_REWARD" data-target-id="watch_ads" data-action="watch-rewarded-ad" disabled>
               <span>▶ Watch Ad &amp; Earn 5 Coins</span>
             </button>
             <small id="rewarded-ad-status-note">Requires verified ad completion</small>
@@ -3481,9 +3481,6 @@
 
       // ==============================================================
       // E. ONE-TIME CREATOR STUDIO APPROVAL WELCOME CARD
-      //    - Appears ONLY once when an approved creator first enters Studio
-      //    - Auto-hides after 10s, on any click/entry action, or on leaving
-      //    - Blocked from re-appearing on future visits even if main.js unhides it
       // ==============================================================
       const CREATOR_WELCOME_BASE_KEY = 'afristory_creator_welcome_seen_v2';
       const creatorSection = document.getElementById('section-creator');
@@ -3529,7 +3526,6 @@
       function syncCreatorWelcomeBanner() {
         if (!creatorDashboard || !creatorWelcomeBanner) return;
 
-        // If the user left Studio or dashboard is hidden, hide banner and lock it seen if already displayed
         const studioHidden = !creatorSection || creatorSection.classList.contains('hidden');
         const dashboardHidden = creatorDashboard.classList.contains('hidden');
         if (studioHidden || dashboardHidden) {
@@ -3541,13 +3537,11 @@
           return;
         }
 
-        // If already seen previously, strictly keep hidden
         if (isCreatorWelcomeSeen() && !creatorWelcomeShownThisVisit) {
           creatorWelcomeBanner.classList.add('hidden');
           return;
         }
 
-        // First-ever approved visit: show once, persist seen immediately, and auto-dismiss after 10s
         if (!creatorWelcomeShownThisVisit) {
           creatorWelcomeShownThisVisit = true;
           persistCreatorWelcomeSeen();
@@ -3556,7 +3550,6 @@
         }
       }
 
-      // Observe both #section-creator and #creator-dashboard for visibility changes
       [creatorSection, creatorDashboard].forEach((el) => {
         if (el) {
           new MutationObserver(syncCreatorWelcomeBanner).observe(el, {
@@ -3566,7 +3559,6 @@
         }
       });
 
-      // Guard #creator-welcome-banner itself so main.js cannot force it visible after dismissal
       if (creatorWelcomeBanner) {
         new MutationObserver(() => {
           if (!creatorWelcomeBanner.classList.contains('hidden') && isCreatorWelcomeSeen() && !creatorWelcomeShownThisVisit) {
@@ -3584,7 +3576,6 @@
         document.querySelector('[data-action="open-upload"]')?.click();
       });
 
-      // Clicking any Studio action or card ("click and enter the page") dismisses it permanently
       creatorDashboard?.addEventListener('click', (e) => {
         if (e.target.closest('#creator-welcome-banner')) return;
         if (creatorWelcomeShownThisVisit || isCreatorWelcomeSeen()) {
@@ -3793,8 +3784,8 @@
   </script>
 
   <!-- Cache-busted module scripts -->
-  <script type="module" src="/js/ads.js?v=20"></script>
-  <script type="module" src="/js/main.js?v=20"></script>
+  <script type="module" src="/js/ads.js?v=21"></script>
+  <script type="module" src="/js/main.js?v=21"></script>
 
 </body>
 </html>
