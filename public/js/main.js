@@ -1,13 +1,21 @@
 const API = '/api';
 const PREVIEW_LIMIT = 5; // Seconds of gripping hook preview before the video locks
 const state = { 
-    user: null, profile: null, rewards: null, series: [], 
+    user: null, profile: null, wallet: null, rewards: null, series: [], 
     currentSeries: null, currentEpisode: null, hls: null, 
-    recommendedEpisodes: [], feedEpisodes: [] 
+    recommendedEpisodes: [], feedEpisodes: [],
+    coinRateNaira: 10, // Default Naira equivalent per Story Coin (auto-calibrated from /payment/packages)
+    viewingSeriesId: null
 };
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
+
+function emitAppEvent(name, detail = {}) {
+    try {
+        window.dispatchEvent(new CustomEvent(name, { detail }));
+    } catch (e) {}
+}
 
 /* ============================================================================ */
 /* ADMIN VISIBILITY CHECKER */
@@ -204,6 +212,24 @@ function formatViews(views) {
     return v.toString();
 }
 
+function formatNaira(amount) {
+    const num = Number(amount) || 0;
+    return `₦${num.toLocaleString(undefined, { minimumFractionDigits: num % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatDateTime(dateInput) {
+    if (!dateInput) return '';
+    const d = new Date(dateInput);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+    });
+}
+
 function formatFileSize(bytes) {
     const b = Number(bytes) || 0;
     if (b >= 1024 * 1024 * 1024) return `${(b / (1024 * 1024 * 1024)).toFixed(2)} GB`;
@@ -263,6 +289,14 @@ function setupLazyLoading() {
 
 let discoverLoaded = false;
 
+function getActiveSectionName() {
+    const activeSection = document.querySelector('.app-section:not(.hidden)');
+    if (activeSection && activeSection.id?.startsWith('section-')) {
+        return activeSection.id.replace('section-', '');
+    }
+    return location.hash.slice(1) || 'discover';
+}
+
 function setSection(name) {
     if (name !== 'watch' && state.currentEpisode) {
         const activeVideo = currentlyPlaying || document.querySelector('.feed-video-card video');
@@ -280,10 +314,12 @@ function setSection(name) {
     
     $('#mobile-more-sheet')?.classList.add('hidden');
     
-    location.hash = name;
+    if (location.hash.slice(1) !== name) {
+        location.hash = name;
+    }
 
     if (name === 'discover' && !discoverLoaded) loadDiscover();
-    if (name === 'watch' && !state.currentEpisode) openDefaultFeed();
+    if (name === 'watch' && (!state.currentEpisode || !$('#tiktok-feed')?.children.length)) openDefaultFeed();
     if (name === 'wallet') loadWallet();
     if (name === 'rewards') loadRewards();
     if (name === 'creator') loadCreator();
@@ -345,6 +381,7 @@ function episodeCard(episode, tagOverride = null) {
 async function loadDiscover() {
     try {
         discoverLoaded = true;
+        state.viewingSeriesId = null;
         $$('#section-discover .section-heading').forEach(el => el.classList.remove('hidden'));
         const creatorGrid = $('#creator-grid');
         if (creatorGrid) creatorGrid.classList.remove('hidden');
@@ -388,8 +425,19 @@ async function loadDiscover() {
 } 
 
 /* ============================================================================ */
-/* TIKTOK STYLE FEED & SEQUENTIAL SERIES QUEUE */
+/* TIKTOK STYLE FEED & BOLD FOLLOW ICON BADGE */
 /* ============================================================================ */
+function buildFollowBadgeMarkup(isFollowing) {
+    if (isFollowing) {
+        return `<div class="follow-badge-icon" aria-label="Following" style="position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%); width: 22px; height: 22px; border-radius: 50%; background: #22c55e; color: #ffffff; border: 2px solid #0b0b0b; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.9); display: flex; align-items: center; justify-content: center; z-index: 6; transition: transform 0.18s ease, background 0.2s ease;">
+            <svg viewBox="0 0 24 24" width="13" height="13" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>`;
+    }
+    return `<div class="follow-badge-icon" aria-label="Follow" style="position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%); width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, #ffd24c 0%, #d4a017 100%); color: #0b0b0b; border: 2px solid #0b0b0b; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.9), 0 0 0 1.5px rgba(255, 210, 76, 0.45); display: flex; align-items: center; justify-content: center; z-index: 6; transition: transform 0.18s ease, background 0.2s ease;">
+        <svg viewBox="0 0 24 24" width="13" height="13" stroke="#0b0b0b" stroke-width="4.2" stroke-linecap="round" fill="none" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    </div>`;
+}
+
 function ensureUnmutePill(videoEl) {
     const cardEl = videoEl?.closest('.feed-video-card');
     if (!cardEl || cardEl.querySelector('.unmute-pill')) return;
@@ -525,7 +573,7 @@ async function openDefaultFeed() {
     }
 } 
 
-async function openSeries(id) {
+async function openSeries(id, options = {}) {
     try {
         const [rawSeries, episodesData] = await Promise.all([
             api(`/series/${id}`).catch(() => null),
@@ -541,13 +589,16 @@ async function openSeries(id) {
         }));
 
         state.currentSeries = seriesInfo;
+        state.viewingSeriesId = String(seriesInfo._id);
         discoverLoaded = true;
 
-        $$('.app-section').forEach(section => section.classList.toggle('hidden', section.id !== 'section-discover'));
-        $$('.nav-item[data-section]').forEach(item => item.classList.toggle('active', item.dataset.section === 'discover'));
-        $('#genre-filter')?.closest('.discover-filters')?.classList.remove('hidden');
-        $('#save-current')?.classList.add('hidden');
-        location.hash = 'discover';
+        if (!options.silent) {
+            $$('.app-section').forEach(section => section.classList.toggle('hidden', section.id !== 'section-discover'));
+            $$('.nav-item[data-section]').forEach(item => item.classList.toggle('active', item.dataset.section === 'discover'));
+            $('#genre-filter')?.closest('.discover-filters')?.classList.remove('hidden');
+            $('#save-current')?.classList.add('hidden');
+            if (location.hash.slice(1) !== 'discover') location.hash = 'discover';
+        }
 
         $$('#section-discover .section-heading').forEach(el => el.classList.add('hidden'));
         const creatorGrid = $('#creator-grid');
@@ -576,9 +627,11 @@ async function openSeries(id) {
             }
         }
         
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (!options.silent) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     } catch(e) { 
-        toast('Could not open story.', 'error'); 
+        if (!options.silent) toast('Could not open story.', 'error'); 
     }
 }
 
@@ -668,6 +721,11 @@ async function openEpisode(id, preloadedEpisodes = null) {
             episodes = [...seriesQueue, ...discoveryEpisodes];
         }
 
+        const hasActiveVip = Boolean(state.user?.subscriptionExpiresAt && new Date(state.user.subscriptionExpiresAt) > new Date());
+        if (hasActiveVip) {
+            episodes = episodes.map(ep => ({ ...ep, hasAccess: true }));
+        }
+
         state.feedEpisodes = episodes;
         if (episodes[0]) {
             state.currentEpisode = episodes[0];
@@ -709,49 +767,50 @@ async function openEpisode(id, preloadedEpisodes = null) {
                 </div>`; 
             } 
 
-            const creatorImgUrl = episode.seriesId?.creatorId?.profileImage;
-            const fallbackInitial = esc((episode.seriesId?.creatorId?.brandName || 'A')[0].toUpperCase());
+            const creatorObj = episode.seriesId?.creatorId || {};
+            const creatorId = creatorObj._id || '';
+            const creatorImgUrl = creatorObj.profileImage || creatorObj.userId?.profileImage;
+            const fallbackInitial = esc((creatorObj.brandName || 'A')[0].toUpperCase());
             const profileDisplayHtml = creatorImgUrl 
-                ? `<img src="${image(creatorImgUrl)}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">` 
-                : `<span style="font-weight:bold;color:#fff;font-size:18px;">${fallbackInitial}</span>`;
+                ? `<img src="${image(creatorImgUrl)}" alt="${esc(creatorObj.brandName || 'Creator')}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;">` 
+                : `<span style="font-weight:800; color:#fff; font-size:18px; line-height:1;">${fallbackInitial}</span>`;
 
             const epNumText = episode.episodeNumber ? `Episode ${episode.episodeNumber} · ` : '';
-            const isFollowing = episode.isFollowing; 
-
-            const followIconBadge = isFollowing 
-                ? `<div class="follow-badge-icon" style="position: absolute; bottom: 0; right: 0; background: #76a86b; color: #fff; width: 14px; height: 14px; border-radius: 50%; font-size: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid #111;">✓</div>`
-                : `<div class="follow-badge-icon" style="position: absolute; bottom: 0; right: 0; background: #d4a017; color: #111; width: 14px; height: 14px; border-radius: 50%; font-size: 14px; line-height: 14px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid #111;">+</div>`;
+            const isFollowing = Boolean(episode.isFollowing); 
+            const followIconBadge = buildFollowBadgeMarkup(isFollowing);
 
             cardEl.innerHTML = `
                 <video preload="${index <= 1 ? 'auto' : 'none'}" loop playsinline ${episode.hasAccess ? 'controls' : ''}></video> 
                 ${lockScreen} 
                 <div class="feed-overlay"> 
                     <h3 style="margin:0; font-size:18px; font-weight:700;">${esc(episode.title)}</h3> 
-                    <p style="margin:4px 0 0 0; font-size:14px; opacity:0.9;">@${esc(episode.seriesId?.creatorId?.brandName || 'AfroStory')} · ${epNumText}${esc(episode.seriesId?.title || '')}</p> 
-                    <p style="margin:4px 0 0 0; font-size:12px; color:#d4a017;">
+                    <p style="margin:4px 0 0 0; font-size:14px; opacity:0.9;">@${esc(creatorObj.brandName || 'AfroStory')} · ${epNumText}${esc(episode.seriesId?.title || '')}</p> 
+                    <p class="feed-stats-line" style="margin:4px 0 0 0; font-size:12px; color:#d4a017;">
                         ${formatRating(episode.rating, episode.ratingCount)} &nbsp;·&nbsp; 👁 ${formatViews(episode.totalViews || 0)} views
                     </p>
                 </div> 
                 <div class="feed-sidebar"> 
-                    <button class="feed-action-btn" data-action="follow-creator" data-creator="${esc(episode.seriesId?.creatorId?._id)}" ${isFollowing ? 'disabled style="pointer-events:none;"' : ''} title="Follow Creator"> 
-                        <div style="width: 42px; height: 42px; border-radius: 50%; overflow: hidden; border: 2px solid #fff; background: #333; margin-bottom: 6px; display: flex; align-items: center; justify-content: center; position: relative;">
-                            ${profileDisplayHtml}
-                            ${followIconBadge}
+                    <button type="button" class="feed-action-btn" data-action="follow-creator" data-creator="${esc(creatorId)}" ${isFollowing || !creatorId ? 'disabled style="pointer-events:none; opacity:1;"' : 'style="opacity:1;"'} title="${isFollowing ? 'Following Creator' : 'Follow Creator'}"> 
+                        <div style="width: 48px; height: 48px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; position: relative; overflow: visible;">
+                            <div style="width: 46px; height: 46px; border-radius: 50%; overflow: hidden; border: 2.5px solid #ffffff; background: #222; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 12px rgba(0, 0, 0, 0.75);">
+                                ${profileDisplayHtml}
+                            </div>
+                            ${creatorId ? followIconBadge : ''}
                         </div>
                     </button>
-                    <button class="feed-action-btn" data-action="toggle-like" data-episode-id="${episode._id}" title="Like"> 
+                    <button type="button" class="feed-action-btn" data-action="toggle-like" data-episode-id="${episode._id}" title="Like"> 
                         <svg viewBox="0 0 24 24" width="30" height="30" stroke="currentColor" stroke-width="2.5" fill="${episode.isLiked ? '#e74c3c' : 'none'}" color="${episode.isLiked ? '#e74c3c' : 'currentColor'}"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg> 
                         <span class="like-count-text">${formatViews(episode.likeCount || 0)}</span> 
                     </button>
-                    <button class="feed-action-btn" data-action="rate-episode" data-episode-id="${episode._id}" title="Rate"> 
+                    <button type="button" class="feed-action-btn" data-action="rate-episode" data-episode-id="${episode._id}" title="Rate"> 
                         <svg viewBox="0 0 24 24" width="30" height="30" stroke="currentColor" stroke-width="2.5" fill="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg> 
                         <span>Rate</span> 
                     </button>
-                    <button class="feed-action-btn" data-action="save-current" title="Save to Favorites"> 
+                    <button type="button" class="feed-action-btn" data-action="save-current" title="Save to Favorites"> 
                         <svg viewBox="0 0 24 24" width="30" height="30" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg> 
                         <span>Save</span> 
                     </button>
-                    <button class="feed-action-btn" onclick="document.getElementById('comments-sheet').classList.remove('hidden')" title="Comments"> 
+                    <button type="button" class="feed-action-btn" onclick="document.getElementById('comments-sheet').classList.remove('hidden')" title="Comments"> 
                         <svg viewBox="0 0 24 24" width="30" height="30" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg> 
                         <span>Reply</span> 
                     </button> 
@@ -826,6 +885,26 @@ async function openEpisode(id, preloadedEpisodes = null) {
     }
 }
 
+function unlockFeedEpisodeInDOM(episodeId) {
+    const epData = state.feedEpisodes.find(e => String(e._id) === String(episodeId));
+    if (epData) epData.hasAccess = true;
+    if (state.currentEpisode && String(state.currentEpisode._id) === String(episodeId)) {
+        state.currentEpisode.hasAccess = true;
+    }
+
+    const lockUI = document.getElementById(`lock-${episodeId}`);
+    if (lockUI) {
+        lockUI.classList.add('hidden');
+        const videoEl = lockUI.parentElement?.querySelector('video');
+        if (videoEl) {
+            videoEl.currentTime = 0;
+            videoEl.setAttribute('controls', 'true');
+            safePlay(videoEl);
+        }
+    }
+    emitAppEvent('afrostory:episode-unlocked', { episodeId });
+}
+
 let saveProgressTimeout = null;
 async function saveProgressFeed(episode, video, completed = false, immediate = false) {
     if (!episode || !episode._id || (!completed && video.currentTime === 0)) return;
@@ -846,6 +925,9 @@ async function saveProgressFeed(episode, video, completed = false, immediate = f
                     completed: isCompleted 
                 }) 
             });
+            const activeTab = getActiveSectionName();
+            if (activeTab === 'history') loadHistory();
+            if (activeTab === 'continue') loadContinue();
         } catch {}
     };
 
@@ -865,6 +947,7 @@ async function unlockEpisode() {
     try {
         const hasActiveSubscription = state.user?.subscriptionExpiresAt && new Date(state.user.subscriptionExpiresAt) > new Date();
         if (hasActiveSubscription) {
+            unlockFeedEpisodeInDOM(state.currentEpisode._id);
             toast('✓ This episode is included in your VIP subscription!', 'success');
             return;
         }
@@ -894,18 +977,11 @@ async function unlockEpisode() {
         
         if (!unlockRes) return toast('Failed to unlock (not enough coins)', 'error');
         
-        state.currentEpisode.hasAccess = true; 
-        const lockScreen = document.getElementById(`lock-${state.currentEpisode._id}`); 
-        if (lockScreen) { 
-            lockScreen.classList.add('hidden'); 
-            const videoEl = lockScreen.parentElement.querySelector('video'); 
-            if (videoEl) { 
-                videoEl.currentTime = 0;
-                videoEl.setAttribute('controls', 'true'); 
-                safePlay(videoEl); 
-            } 
-        } 
+        unlockFeedEpisodeInDOM(state.currentEpisode._id);
         toast('✨ Episode unlocked! Enjoy the story!', 'success'); 
+
+        // Live sync wallet balance, transactions & notifications in the background
+        Promise.all([loadWallet(), loadRewards(), refreshNotificationBadge()]).catch(() => {});
     } catch (error) { toast(error.message, 'error'); }
 }
 
@@ -935,20 +1011,165 @@ async function loadComments(id, force = false) {
     } 
 } 
 
+/* ============================================================================ */
+/* WALLET & MONEY DISPLAY (LIVE SYNCED & HIGH-CLARITY LEDGER) */
+/* ============================================================================ */
+function ensureWalletSummaryBanner(walletInfo) {
+    const walletSection = $('#section-wallet');
+    if (!walletSection) return;
+
+    let summaryBox = $('#wallet-live-summary');
+    if (!summaryBox) {
+        summaryBox = document.createElement('div');
+        summaryBox.id = 'wallet-live-summary';
+        summaryBox.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 16px 0 22px; padding: 14px; background: linear-gradient(135deg, rgba(212, 160, 23, 0.12), rgba(20, 20, 20, 0.95)); border: 1px solid rgba(212, 160, 23, 0.35); border-radius: 12px;';
+
+        const transList = $('#transactions-list');
+        const anchor = transList?.closest('.panel, .card, .section-card') || transList;
+        if (anchor && anchor.parentNode) {
+            anchor.parentNode.insertBefore(summaryBox, anchor);
+        } else {
+            walletSection.appendChild(summaryBox);
+        }
+    }
+
+    const hasActiveVip = Boolean(state.user?.subscriptionExpiresAt && new Date(state.user.subscriptionExpiresAt) > new Date());
+    const vipText = hasActiveVip
+        ? `VIP Active · Until ${new Date(state.user.subscriptionExpiresAt).toLocaleDateString()}`
+        : 'Standard Pass';
+
+    summaryBox.innerHTML = `
+        <div style="background: rgba(15, 15, 15, 0.85); border: 1px solid #2b2b2b; border-radius: 10px; padding: 12px 14px;">
+            <span style="display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #999; margin-bottom: 4px;">Available Balance</span>
+            <strong style="display: block; font-size: 20px; font-weight: 800; color: #ffd24c; line-height: 1.2;">${walletInfo.storyCoins.toLocaleString()} <span style="font-size: 12px; font-weight: 600; color: #e5e5e5;">Coins</span></strong>
+            <small style="display: block; margin-top: 4px; font-size: 12px; color: #2ecc71; font-weight: 600;">Value ≈ ${formatNaira(walletInfo.estimatedNaira)}</small>
+        </div>
+        <div style="background: rgba(15, 15, 15, 0.85); border: 1px solid #2b2b2b; border-radius: 10px; padding: 12px 14px;">
+            <span style="display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #999; margin-bottom: 4px;">Total Earned</span>
+            <strong style="display: block; font-size: 20px; font-weight: 800; color: #2ecc71; line-height: 1.2;">+${walletInfo.totalEarned.toLocaleString()} <span style="font-size: 12px; font-weight: 600; color: #e5e5e5;">Coins</span></strong>
+            <small style="display: block; margin-top: 4px; font-size: 12px; color: #aaa;">Rewards & Creator Earnings</small>
+        </div>
+        <div style="background: rgba(15, 15, 15, 0.85); border: 1px solid #2b2b2b; border-radius: 10px; padding: 12px 14px;">
+            <span style="display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #999; margin-bottom: 4px;">Total Spent</span>
+            <strong style="display: block; font-size: 20px; font-weight: 800; color: #f5f5f5; line-height: 1.2;">${walletInfo.totalSpent.toLocaleString()} <span style="font-size: 12px; font-weight: 600; color: #aaa;">Coins</span></strong>
+            <small style="display: block; margin-top: 4px; font-size: 12px; color: #d4a017; font-weight: 600;">${esc(vipText)}</small>
+        </div>
+    `;
+}
+
+function renderWalletTransactionRow(item) {
+    const rawType = String(item.type || item.category || 'TRANSACTION').toUpperCase();
+    const isSpend = rawType === 'SPEND' || rawType === 'DEBIT' || rawType === 'UNLOCK' || Number(item.amount) < 0;
+    const absAmount = Math.abs(Number(item.amount || 0));
+
+    let badgeLabel = rawType.replaceAll('_', ' ');
+    let badgeBg = 'rgba(212, 160, 23, 0.16)';
+    let badgeColor = '#ffd24c';
+    let iconSymbol = '◈';
+
+    if (rawType.includes('PURCHASE') || rawType.includes('DEPOSIT') || rawType.includes('TOPUP')) {
+        badgeLabel = 'COIN PURCHASE';
+        badgeBg = 'rgba(46, 204, 113, 0.16)';
+        badgeColor = '#2ecc71';
+        iconSymbol = '💳';
+    } else if (rawType.includes('REWARD') || rawType.includes('BONUS') || rawType.includes('EARN')) {
+        badgeLabel = 'REWARD EARNED';
+        badgeBg = 'rgba(46, 204, 113, 0.16)';
+        badgeColor = '#2ecc71';
+        iconSymbol = '✦';
+    } else if (rawType.includes('VIP') || rawType.includes('PASS') || rawType.includes('SUB')) {
+        badgeLabel = 'VIP GATE PASS';
+        badgeBg = 'rgba(212, 160, 23, 0.2)';
+        badgeColor = '#ffd24c';
+        iconSymbol = '👑';
+    } else if (isSpend) {
+        badgeLabel = 'STORY UNLOCK';
+        badgeBg = 'rgba(231, 76, 60, 0.16)';
+        badgeColor = '#ff7675';
+        iconSymbol = '🎬';
+    }
+
+    const nairaRaw = item.nairaAmount ?? item.amountNaira ?? item.fiatAmount ?? null;
+    const nairaSubtext = (nairaRaw != null && Number(nairaRaw) > 0)
+        ? `<small style="display: block; font-size: 11px; color: #aaa; margin-top: 2px;">${formatNaira(nairaRaw)}</small>`
+        : '';
+
+    const sign = isSpend ? '-' : '+';
+    const amountColor = isSpend ? '#ff7675' : '#2ecc71';
+
+    return `
+        <div class="data-row" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 12px; border-bottom: 1px solid #242424; background: rgba(255,255,255,0.015); border-radius: 8px; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: ${badgeBg}; color: ${badgeColor}; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.06);">
+                    ${iconSymbol}
+                </div>
+                <div style="min-width: 0; flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 3px;">
+                        <strong style="color: #f5f5f5; font-size: 14px; font-weight: 700;">${esc(item.description || badgeLabel)}</strong>
+                        <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.06em; padding: 2px 7px; border-radius: 999px; background: ${badgeBg}; color: ${badgeColor};">${esc(badgeLabel)}</span>
+                    </div>
+                    <p style="margin: 0; font-size: 12px; color: #999;">${esc(formatDateTime(item.createdAt))}</p>
+                </div>
+            </div>
+            <div style="text-align: right; flex-shrink: 0;">
+                <span class="data-value" style="display: block; font-size: 15px; font-weight: 800; color: ${amountColor};">${sign}${absAmount.toLocaleString()} Coins</span>
+                ${nairaSubtext}
+            </div>
+        </div>
+    `;
+}
+
 async function loadWallet() { 
     try { 
-        const [wallet = {}, transactions = {}] = await Promise.all([api('/wallet/me/balance').catch(()=>({})), api('/wallet/me/transactions?limit=10').catch(()=>({}))]); 
-        
+        const [rawWallet = {}, rawTransactions = {}, rawPackages = null] = await Promise.all([
+            api('/wallet/me/balance').catch(() => ({})),
+            api('/wallet/me/transactions?limit=30').catch(() => ({})),
+            api('/payment/packages').catch(() => null)
+        ]); 
+
+        if (rawPackages && typeof rawPackages === 'object') {
+            const pkgList = Object.values(rawPackages).filter(p => Number(p?.coins) > 0 && Number(p?.naira) > 0);
+            if (pkgList.length > 0) {
+                state.coinRateNaira = Number(pkgList[0].naira) / Number(pkgList[0].coins);
+            }
+        }
+
+        const walletObj = rawWallet?.wallet || rawWallet || {};
+        const storyCoins = Number(walletObj.storyCoins ?? walletObj.balance ?? walletObj.coins ?? 0);
+        const totalEarned = Number(walletObj.totalEarned ?? walletObj.earned ?? 0);
+        const totalSpent = Number(walletObj.totalSpent ?? walletObj.spent ?? 0);
+        const estimatedNaira = Number(walletObj.nairaBalance ?? walletObj.fiatBalance ?? (storyCoins * state.coinRateNaira));
+
+        state.wallet = { storyCoins, totalEarned, totalSpent, estimatedNaira };
+
         const balEl = $('#wallet-balance');
-        if (balEl) balEl.textContent = Number(wallet.storyCoins || 0).toLocaleString(); 
+        if (balEl) balEl.textContent = storyCoins.toLocaleString(); 
         
         const earnEl = $('#wallet-earned');
-        if (earnEl) earnEl.textContent = Number(wallet.totalEarned || 0).toLocaleString(); 
+        if (earnEl) earnEl.textContent = totalEarned.toLocaleString(); 
+
+        const rewardsBalEl = $('#rewards-balance');
+        if (rewardsBalEl) rewardsBalEl.textContent = storyCoins.toLocaleString();
+
+        $$('[data-wallet-balance]').forEach(el => { el.textContent = storyCoins.toLocaleString(); });
+        $$('[data-wallet-earned]').forEach(el => { el.textContent = totalEarned.toLocaleString(); });
+        $$('[data-wallet-spent]').forEach(el => { el.textContent = totalSpent.toLocaleString(); });
+        $$('[data-wallet-naira]').forEach(el => { el.textContent = formatNaira(estimatedNaira); });
+
+        ensureWalletSummaryBanner(state.wallet);
         
+        const txArray = Array.isArray(rawTransactions)
+            ? rawTransactions
+            : (rawTransactions.transactions || rawTransactions.data || []);
+
         const transList = $('#transactions-list');
         if (transList) {
-            transList.innerHTML = (transactions.transactions || []).map(item => `<div class="data-row"><div><strong>${esc(item.description || item.type)}</strong><p>${new Date(item.createdAt).toLocaleDateString()}</p></div><span class="data-value">${esc(item.type === 'SPEND' ? '-' : '+')}${Number(item.amount || 0).toLocaleString()}</span></div>`).join('') || '<p>No transactions yet.</p>'; 
+            transList.innerHTML = txArray.length > 0
+                ? txArray.map(renderWalletTransactionRow).join('')
+                : '<p style="color:#999; padding: 14px 0;">No transactions yet. Claim daily rewards or top up coins to get started.</p>'; 
         }
+
+        emitAppEvent('afrostory:wallet-updated', state.wallet);
     } catch (error) { toast(error.message, 'error'); } 
 } 
 
@@ -972,9 +1193,13 @@ async function loadRewards() {
     try {
         const result = await api('/rewards/me') || {};
         state.rewards = result;
+        const balanceVal = Number(result.balance ?? state.wallet?.storyCoins ?? 0);
         
         const balEl = $('#rewards-balance');
-        if (balEl) balEl.textContent = Number(result.balance || 0).toLocaleString();
+        if (balEl) balEl.textContent = balanceVal.toLocaleString();
+
+        const walletBalEl = $('#wallet-balance');
+        if (walletBalEl) walletBalEl.textContent = balanceVal.toLocaleString();
         
         const currentStreak = $('#reward-current-streak');
         if (currentStreak) currentStreak.textContent = Number(result.streak?.currentStreak || 0);
@@ -999,7 +1224,7 @@ async function loadRewards() {
         
         const histContainer = $('#rewards-history');
         if (histContainer) {
-            histContainer.innerHTML = (result.history || []).map(item => `<div class="data-row"><div><strong>${esc(item.description || 'Reward activity')}</strong><p>${new Date(item.createdAt).toLocaleDateString()}</p></div><span class="data-value ${item.type === 'SPEND' ? '' : 'reward-positive'}">${item.type === 'SPEND' ? '-' : '+'}${Number(item.amount || 0).toLocaleString()}</span></div>`).join('') || '<p>Your reward history will appear here.</p>';
+            histContainer.innerHTML = (result.history || []).map(item => `<div class="data-row"><div><strong>${esc(item.description || 'Reward activity')}</strong><p>${esc(formatDateTime(item.createdAt))}</p></div><span class="data-value ${item.type === 'SPEND' ? '' : 'reward-positive'}">${item.type === 'SPEND' ? '-' : '+'}${Number(item.amount || 0).toLocaleString()} Coins</span></div>`).join('') || '<p>Your reward history will appear here.</p>';
         }
     } catch (error) { toast(error.message, 'error'); }
 } 
@@ -1054,7 +1279,7 @@ async function loadFollowersList() {
 }
 
 /* ============================================================================ */
-/* CREATOR APPROVAL FLOW */
+/* CREATOR APPROVAL FLOW & LIVE STUDIO SYNC */
 /* ============================================================================ */
 async function handleCreatorSubmit(event) {
     event.preventDefault();                           
@@ -1167,6 +1392,8 @@ async function loadCreator(preferredSeriesId = null) {
                     uploadSelect.value = previousVal;
                 }
             }
+
+            emitAppEvent('afrostory:creator-updated', { creator, seriesCount: seriesList.length });
         }
     } catch (error) { 
         const dashboard = $('#creator-dashboard');
@@ -1229,12 +1456,10 @@ function injectCreatorForm(existingBrandName = '', rejectionReason = '') {
 }
 
 /* ============================================================================ */
-/* DIRECT CLOUD UPLOAD WITH LIVE PROGRESS, FILE DETAILS & MEDIA HELPERS */
+/* DIRECT CLOUD UPLOAD WITH LIVE PROGRESS, FILE DETAILS & AUTO-REFRESH SYNC */
 /* ============================================================================ */
 function emitUploadLifecycle(eventName, detail = {}) {
-    try {
-        window.dispatchEvent(new CustomEvent(eventName, { detail }));
-    } catch (e) {}
+    emitAppEvent(eventName, detail);
 }
 
 function getLocalVideoMetadata(file) {
@@ -1266,7 +1491,6 @@ function getLocalVideoMetadata(file) {
 
 function normalizePlayableVideoUrl(rawUrl) {
     if (!rawUrl || typeof rawUrl !== 'string') return '';
-    // If Cloudinary stored a .mov, .mkv, .avi, or .webm source, request its playable .mp4 delivery URL
     if (rawUrl.includes('cloudinary.com') && /\.(mov|mkv|avi|webm)(\?.*)?$/i.test(rawUrl)) {
         return rawUrl.replace(/\.(mov|mkv|avi|webm)(\?.*)?$/i, '.mp4$2');
     }
@@ -1428,14 +1652,12 @@ async function uploadAsset(path, file, onProgress = null) {
         const startedAt = performance.now();
 
         xhr.open('POST', cloudinaryUrl, true);
-        // Never send cookies/credentials to Cloudinary (Access-Control-Allow-Origin: *)
         xhr.withCredentials = false;
-        xhr.timeout = 10 * 60 * 1000; // 10 minutes for large vertical drama videos
+        xhr.timeout = 10 * 60 * 1000;
 
         xhr.upload.onprogress = (event) => {
             if (!event.lengthComputable || typeof onProgress !== 'function') return;
             const rawRatio = event.total > 0 ? (event.loaded / event.total) : 0;
-            // Map file upload bytes from 5% -> 88% so processing & DB creation steps have smooth headroom
             const mappedPercent = Math.min(88, Math.max(5, Math.round(5 + rawRatio * 83)));
             const elapsedSec = Math.max(0.25, (performance.now() - startedAt) / 1000);
             const speedBps = event.loaded / elapsedSec;
@@ -1491,6 +1713,35 @@ async function uploadAsset(path, file, onProgress = null) {
 
         xhr.send(formData);
     });
+}
+
+async function syncAfterContentMutation({ seriesId = null } = {}) {
+    discoverLoaded = false;
+    state.feedEpisodes = [];
+
+    const tasks = [
+        loadCreator(seriesId || null),
+        refreshNotificationBadge()
+    ];
+
+    if ($('#notification-modal') && !$('#notification-modal').classList.contains('hidden')) {
+        tasks.push(loadNotifications());
+    }
+
+    const activeSection = getActiveSectionName();
+    if (activeSection === 'discover') {
+        if (state.viewingSeriesId && (!seriesId || String(state.viewingSeriesId) === String(seriesId))) {
+            tasks.push(openSeries(state.viewingSeriesId, { silent: true }));
+        } else {
+            tasks.push(loadDiscover());
+        }
+    } else if (activeSection === 'trending') {
+        tasks.push(loadTrending());
+    } else if (activeSection === 'watch') {
+        tasks.push(openDefaultFeed());
+    }
+
+    await Promise.allSettled(tasks);
 }
 
 async function submitSeries(event) { 
@@ -1568,13 +1819,12 @@ async function submitSeries(event) {
         });
         emitUploadLifecycle('afrostory:upload-complete', { kind: 'series', series: createdSeries });
         
-        discoverLoaded = false;
         const modal = $('#series-modal');
         if (modal) modal.classList.add('hidden'); 
         form.reset(); 
         resetUploadTelemetry(form, 'series');
-        await loadCreator(createdSeries._id || null); 
-        toast('Series created! You can now upload episodes to it.', 'success'); 
+        await syncAfterContentMutation({ seriesId: createdSeries._id || null });
+        toast('Series created! Studio & library updated automatically.', 'success'); 
     } catch (error) { 
         updateUploadTelemetry(ui, {
             percent: 100,
@@ -1663,7 +1913,7 @@ async function submitUpload(event) {
         });
         emitUploadLifecycle('afrostory:upload-progress', { kind: 'episode', percent: 95, stage: 'Step 3/3 · Saving episode...' });
         
-        await api(`/episodes/series/${encodeURIComponent(seriesId)}/create`, { 
+        const createdEpRes = await api(`/episodes/series/${encodeURIComponent(seriesId)}/create`, { 
             method: 'POST', 
             timeout: 30000,
             headers: { 'Content-Type': 'application/json' }, 
@@ -1685,6 +1935,7 @@ async function submitUpload(event) {
             }) 
         }); 
 
+        const createdEpisode = createdEpRes?.episode || createdEpRes || {};
         updateUploadTelemetry(ui, {
             percent: 100,
             stage: '✓ Upload complete! Episode is live.',
@@ -1692,17 +1943,15 @@ async function submitUpload(event) {
             speedText: 'Complete',
             isSuccess: true
         });
-        emitUploadLifecycle('afrostory:upload-complete', { kind: 'episode', seriesId });
+        emitUploadLifecycle('afrostory:upload-complete', { kind: 'episode', seriesId, episode: createdEpisode });
         
-        discoverLoaded = false;
         const modal = $('#upload-modal');
         if (modal) modal.classList.add('hidden'); 
         form.reset(); 
         delete form.dataset.localDuration;
         resetUploadTelemetry(form, 'episode');
-        await loadCreator(seriesId); 
-        refreshNotificationBadge();
-        toast('Upload successful! Your gripping scene is live in the feed.', 'success'); 
+        await syncAfterContentMutation({ seriesId });
+        toast('Upload successful! Your episode is live across your studio & feed.', 'success'); 
     } catch (error) { 
         updateUploadTelemetry(ui, {
             percent: 100,
@@ -1818,10 +2067,16 @@ function renderProfile(profile) {
     if (locEl) locEl.textContent = [details.region, details.country].filter(Boolean).join(' · ');
     
     const avatarEl = $('#profile-avatar');
-    if (avatarEl) avatarEl.innerHTML = avatar ? `<img src="${image(avatar)}" alt="">` : esc((details.displayName || user.username || 'A')[0].toUpperCase());
+    if (avatarEl) {
+        const cacheBust = avatar ? `${avatar}${avatar.includes('?') ? '&' : '?'}t=${Date.now()}` : null;
+        avatarEl.innerHTML = cacheBust ? `<img src="${image(cacheBust)}" alt="">` : esc((details.displayName || user.username || 'A')[0].toUpperCase());
+    }
     
     const coverEl = $('#profile-cover');
-    if (coverEl && details.coverUrl) coverEl.style.backgroundImage = `linear-gradient(120deg,#111b,#1118),url('${image(details.coverUrl)}')`;
+    if (coverEl && details.coverUrl) {
+        const coverBust = `${details.coverUrl}${details.coverUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
+        coverEl.style.backgroundImage = `linear-gradient(120deg,#111b,#1118),url('${image(coverBust)}')`;
+    }
     
     const tabEl = $('.creator-profile-tab');
     if (tabEl) tabEl.classList.toggle('hidden', !profile.creator);
@@ -1837,7 +2092,7 @@ async function loadProfile(refresh = false) {
             return; 
         } 
         const profile = await api('/users/me/profile'); 
-        if(profile) {
+        if (profile) {
             state.profile = profile; 
             renderProfile(profile); 
             setSection('profile'); 
@@ -1922,7 +2177,6 @@ async function loadNotifications() {
         const rawList = Array.isArray(result.notifications) ? result.notifications : [];
         const visibleList = rawList.filter(item => item && !deletedIds.has(String(item._id)));
 
-        // Keep badge strictly synchronized with the actual unread notifications
         const unreadInList = visibleList.filter(item => !item.read).length;
         setNotificationBadgeCount(unreadInList);
 
@@ -1952,7 +2206,6 @@ async function refreshNotificationBadge() {
         const serverUnread = Math.max(0, Number(result.unreadCount ?? result.count ?? result.unread ?? 0) || 0);
         const deletedIds = getDeletedNotificationIds();
 
-        // If user previously deleted items locally, cross-check against /notifications/me so ghost counts never stick
         if (serverUnread > 0 && deletedIds.size > 0) {
             const listRes = await api('/notifications/me?limit=50').catch(() => null);
             if (listRes && Array.isArray(listRes.notifications)) {
@@ -2069,7 +2322,10 @@ async function toggleFavorite() {
     if (!state.currentSeries) return toast('Open a story first', 'error'); 
     try { 
         const result = await api(`/favorites/${state.currentSeries._id}/toggle`, { method: 'POST' }); 
-        if(result) toast(result.saved ? 'Added to favorites' : 'Removed from favorites', 'success'); 
+        if (result) {
+            toast(result.saved ? 'Added to favorites' : 'Removed from favorites', 'success');
+            loadFavorites().catch(() => {});
+        }
     } catch (error) { toast(error.message, 'error'); } 
 }
 
@@ -2178,7 +2434,18 @@ document.addEventListener('click', async event => {
                 });
                 if (rating) {
                     try {
-                        await api(`/episodes/${epId}/rate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rating: Number(rating) }) });
+                        const rateRes = await api(`/episodes/${epId}/rate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rating: Number(rating) }) });
+                        const epObj = state.feedEpisodes.find(e => String(e._id) === String(epId));
+                        if (epObj) {
+                            const prevCount = Number(epObj.ratingCount || 0);
+                            const prevAvg = Number(epObj.rating || 0);
+                            epObj.ratingCount = Number(rateRes?.ratingCount ?? (prevCount + 1));
+                            epObj.rating = Number(rateRes?.rating ?? (((prevAvg * prevCount) + Number(rating)) / Math.max(1, epObj.ratingCount)));
+                            const feedCard = document.querySelector(`.feed-video-card[data-episode-id="${epId}"] .feed-stats-line`);
+                            if (feedCard) {
+                                feedCard.innerHTML = `${formatRating(epObj.rating, epObj.ratingCount)} &nbsp;·&nbsp; 👁 ${formatViews(epObj.totalViews || 0)} views`;
+                            }
+                        }
                         toast('Rating saved successfully!', 'success');
                     } catch (err) { toast(err.message, 'error'); }
                 }
@@ -2209,7 +2476,9 @@ document.addEventListener('click', async event => {
                     btn.disabled = true;
                     btn.style.pointerEvents = 'none';
                     const iconBadge = btn.querySelector('.follow-badge-icon');
-                    if (iconBadge) iconBadge.innerHTML = '<span style="font-size:8px;">...</span>'; 
+                    if (iconBadge) {
+                        iconBadge.innerHTML = '<span style="font-size:10px; font-weight:900; color:#0b0b0b;">···</span>';
+                    }
                     if (btn.tagName.toLowerCase() === 'button' && !iconBadge) {
                         btn.textContent = 'Updating...';
                     }
@@ -2224,18 +2493,24 @@ document.addEventListener('click', async event => {
                         toast('Following creator!', 'success');
                     }
 
+                    state.feedEpisodes.forEach(ep => {
+                        if (String(ep.seriesId?.creatorId?._id) === String(creatorId)) {
+                            ep.isFollowing = true;
+                        }
+                    });
+
                     $$(`[data-action="follow-creator"][data-creator="${creatorId}"]`).forEach(btn => {
                         const iconBadge = btn.querySelector('.follow-badge-icon');
                         if (iconBadge) {
-                            iconBadge.textContent = '✓';
-                            iconBadge.style.background = '#76a86b';
-                            iconBadge.style.color = '#fff';
-                            iconBadge.style.fontSize = '10px';
+                            iconBadge.outerHTML = buildFollowBadgeMarkup(true);
                         }
                         if (btn.tagName.toLowerCase() === 'button' && !iconBadge) {
                             btn.textContent = 'Following';
                         }
                     });
+
+                    emitAppEvent('afrostory:follow-updated', { creatorId, isFollowing: true });
+                    loadCreator().catch(() => {});
                 } catch (error) { 
                     toast(error.message, 'error'); 
                     $$(`[data-action="follow-creator"][data-creator="${creatorId}"]`).forEach(btn => {
@@ -2243,7 +2518,7 @@ document.addEventListener('click', async event => {
                         btn.style.pointerEvents = 'auto';
                         const iconBadge = btn.querySelector('.follow-badge-icon');
                         if (iconBadge) {
-                            iconBadge.textContent = '+';
+                            iconBadge.outerHTML = buildFollowBadgeMarkup(false);
                         }
                         if (btn.tagName.toLowerCase() === 'button' && !iconBadge) {
                             btn.textContent = 'Follow Back';
@@ -2277,6 +2552,7 @@ document.addEventListener('click', async event => {
                     $$(`[data-action="follow-user"][data-user="${targetUserId}"]`).forEach(btn => {
                         btn.textContent = 'Following';
                     });
+                    loadCreator().catch(() => {});
                 } catch (error) { 
                     toast(error.message, 'error'); 
                     $$(`[data-action="follow-user"][data-user="${targetUserId}"]`).forEach(btn => {
@@ -2409,7 +2685,6 @@ document.addEventListener('click', async event => {
                 const remainingUnread = $$('#notification-list .notification-unread').length;
                 setNotificationBadgeCount(remainingUnread);
 
-                // Sync deletion / read state to backend without failing if route style differs
                 api(`/notifications/${encodeURIComponent(notifId)}`, { method: 'DELETE' })
                     .catch(() => api(`/notifications/me/${encodeURIComponent(notifId)}`, { method: 'DELETE' }))
                     .catch(() => api(`/notifications/${encodeURIComponent(notifId)}/read`, { method: 'PUT' }))
@@ -2449,7 +2724,7 @@ document.addEventListener('click', async event => {
         if (packageButton) { 
             try { 
                 const result = await api('/payment/initialize-transaction', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ packageKey: packageButton.dataset.package }) }); 
-                if(result) window.location.href = result.authorizationUrl; 
+                if (result) window.location.href = result.authorizationUrl; 
             } catch (error) { toast(error.message, 'error'); } 
         }
 
@@ -2461,8 +2736,12 @@ document.addEventListener('click', async event => {
                 const root = $('#modal-root');
                 if (root) root.classList.add('hidden');
                 toast('Gate Pass activated! You can now watch freely.', 'success');
-                loadWallet();
-                if (location.hash === '#watch' && state.currentEpisode) openEpisode(state.currentEpisode._id);
+
+                // Automatically unlock all loaded feed videos in-place and sync wallet
+                state.feedEpisodes.forEach(ep => {
+                    if (!ep.hasAccess) unlockFeedEpisodeInDOM(ep._id);
+                });
+                await Promise.all([loadWallet(), loadRewards(), refreshNotificationBadge()]);
             } catch (error) { toast(error.message, 'error'); }
         }
     } catch (globalError) {
@@ -2480,7 +2759,6 @@ async function handleRewardedAdComplete(event) {
         : rawTarget;
     if (!btn) return;
 
-    // Guard against duplicate event dispatches (robins:rewarded + legacy rs:rewarded)
     if (btn.dataset?.robinsVerifying === 'true') return;
     if (btn.dataset) btn.dataset.robinsVerifying = 'true';
 
@@ -2513,23 +2791,8 @@ async function handleRewardedAdComplete(event) {
                 });
 
                 toast('Ad verified! Unlocking episode...', 'success');
-                
-                const epData = state.feedEpisodes.find(e => String(e._id) === String(episodeId));
-                if (epData) epData.hasAccess = true;
-                if (state.currentEpisode && String(state.currentEpisode._id) === String(episodeId)) {
-                    state.currentEpisode.hasAccess = true;
-                }
-                
-                const lockUI = document.getElementById(`lock-${episodeId}`);
-                if (lockUI) {
-                    lockUI.classList.add('hidden');
-                    const videoEl = lockUI.parentElement?.querySelector('video');
-                    if (videoEl) {
-                        videoEl.currentTime = 0;
-                        videoEl.setAttribute('controls', 'true');
-                        safePlay(videoEl);
-                    }
-                }
+                unlockFeedEpisodeInDOM(episodeId);
+                Promise.all([loadWallet(), refreshNotificationBadge()]).catch(() => {});
             } catch (error) {
                 toast('Ad verification failed. You must watch the full ad to unlock.', 'error');
                 btn.disabled = false;
@@ -2555,9 +2818,8 @@ async function handleRewardedAdComplete(event) {
                     body: JSON.stringify({ method: 'AD', provider: 'ROBINS_ADS', receipt }) 
                 });
                 
-                toast('Reward verified and added to your wallet', 'success'); 
-                await loadRewards(); 
-                refreshNotificationBadge();
+                toast('Reward verified and added to your wallet!', 'success'); 
+                await Promise.all([loadRewards(), loadWallet(), refreshNotificationBadge()]); 
             } catch (error) { 
                 toast('Ad verification failed. You must watch the full ad to claim.', 'error');
                 btn.disabled = false; 
@@ -2632,7 +2894,47 @@ if (commentForm) {
     });
 }
 
-setInterval(refreshNotificationBadge, 30000);
+/* ============================================================================ */
+/* AUTOMATIC LIVE BACKGROUND & TAB-FOCUS SYNCHRONIZATION */
+/* ============================================================================ */
+async function syncLiveAppState() {
+    if (!state.user || document.visibilityState !== 'visible') return;
+    const isUploading = $('#upload-form')?.dataset.uploading === 'true' || $('#series-form')?.dataset.uploading === 'true';
+    if (isUploading) return;
+
+    try {
+        await refreshNotificationBadge();
+
+        if ($('#notification-modal') && !$('#notification-modal').classList.contains('hidden')) {
+            await loadNotifications();
+        }
+
+        const activeSection = getActiveSectionName();
+        if (activeSection === 'wallet') {
+            await loadWallet();
+        } else if (activeSection === 'rewards') {
+            await loadRewards();
+        } else if (activeSection === 'creator') {
+            await loadCreator();
+        } else if (activeSection === 'history') {
+            await loadHistory();
+        } else if (activeSection === 'continue') {
+            await loadContinue();
+        }
+    } catch (e) {}
+}
+
+setInterval(syncLiveAppState, 25000);
+
+window.addEventListener('focus', () => {
+    syncLiveAppState();
+});
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        syncLiveAppState();
+    }
+});
 
 window.addEventListener('hashchange', () => {
     const name = location.hash.slice(1);
@@ -2694,7 +2996,11 @@ async function boot() {
         if (initialSection === 'discover') {
             await loadDiscover().catch(e => console.warn(e)); 
         }
-        refreshNotificationBadge().catch(e => console.warn(e)); 
+        // Pre-warm wallet & notification badge immediately on boot so values are ready instantly
+        Promise.allSettled([
+            refreshNotificationBadge(),
+            state.user ? loadWallet() : Promise.resolve()
+        ]);
         setupLazyLoading();
         window.AfroStoryAds?.refresh?.().catch?.(() => {});
         return true; 
