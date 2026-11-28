@@ -638,6 +638,111 @@
       color: #888;
     }
 
+    /* Series Dropdown Terminate / Complete Controls */
+    .series-dropdown-tools {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 2px;
+    }
+    .series-terminate-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(231, 76, 60, 0.11);
+      border: 1px solid rgba(231, 76, 60, 0.38);
+      color: #ff8e82;
+      border-radius: 9px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 6px 11px;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.18s ease;
+    }
+    .series-terminate-btn:hover:not(:disabled) {
+      background: rgba(231, 76, 60, 0.22);
+      border-color: #ff6b5b;
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+    .series-terminate-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .series-archived-toggle {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #bdbdc4;
+      border-radius: 9px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 6px 11px;
+      cursor: pointer;
+      transition: border-color 0.2s ease, color 0.2s ease;
+    }
+    .series-archived-toggle:hover {
+      border-color: rgba(212, 160, 23, 0.5);
+      color: #f3ca52;
+    }
+    .series-archived-drawer {
+      background: rgba(12, 12, 15, 0.94);
+      border: 1px solid rgba(212, 160, 23, 0.26);
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-top: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .series-archived-drawer.hidden {
+      display: none !important;
+    }
+    .series-archived-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12.5px;
+      color: #d4d4d8;
+      padding: 6px 8px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 8px;
+    }
+    .series-restore-btn {
+      background: rgba(212, 160, 23, 0.16);
+      border: 1px solid rgba(212, 160, 23, 0.45);
+      color: #f3ca52;
+      border-radius: 7px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .series-restore-btn:hover {
+      background: #d4a017;
+      color: #111;
+    }
+    .no-active-series-alert {
+      background: rgba(212, 160, 23, 0.1);
+      border: 1px dashed rgba(212, 160, 23, 0.45);
+      border-radius: 11px;
+      padding: 10px 12px;
+      font-size: 12.5px;
+      color: #e4e4e7;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .no-active-series-alert.hidden {
+      display: none !important;
+    }
+
     .studio-premium-form input[type="text"],
     .studio-premium-form input[type="number"],
     .studio-premium-form input:not([type]),
@@ -1591,6 +1696,37 @@
       }
     }
 
+    /* Studio Series Card Complete Badge */
+    .studio-series-status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .studio-series-complete-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #d4d4d8;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .studio-series-complete-btn:hover {
+      border-color: #d4a017;
+      color: #f3ca52;
+    }
+    .studio-series-complete-btn.is-done {
+      background: rgba(46, 204, 113, 0.14);
+      border-color: rgba(46, 204, 113, 0.45);
+      color: #2ecc71;
+    }
+
     /* ==============================================================
        13. CIRCULAR (ROUND) UPLOAD PROGRESS RING & BACKGROUND PILL
     ============================================================== */
@@ -1608,32 +1744,32 @@
 
     .round-progress-wrap {
       position: relative;
-      width: 136px;
-      height: 136px;
+      width: 146px;
+      height: 146px;
       margin: 4px auto 18px;
       display: flex;
       align-items: center;
       justify-content: center;
     }
     .round-progress-svg {
-      width: 136px;
-      height: 136px;
+      width: 146px;
+      height: 146px;
       transform: rotate(-90deg);
-      filter: drop-shadow(0 0 18px rgba(212, 160, 23, 0.32));
+      filter: drop-shadow(0 0 20px rgba(212, 160, 23, 0.38));
     }
     .round-progress-track {
       fill: none;
-      stroke: #242424;
-      stroke-width: 8.5;
+      stroke: #242428;
+      stroke-width: 9;
     }
     .round-progress-fill {
       fill: none;
       stroke: #d4a017;
-      stroke-width: 8.5;
+      stroke-width: 9;
       stroke-linecap: round;
       stroke-dasharray: 326.73;
       stroke-dashoffset: 326.73;
-      transition: stroke-dashoffset 0.32s var(--ease-spring), stroke 0.3s ease;
+      transition: stroke-dashoffset 0.24s var(--ease-spring), stroke 0.3s ease;
     }
     .round-progress-fill.is-complete {
       stroke: #2ecc71;
@@ -1649,14 +1785,14 @@
     }
     .round-progress-pct {
       font-family: 'Space Grotesk', sans-serif;
-      font-size: 27px;
+      font-size: 29px;
       font-weight: 700;
       color: #fff;
       line-height: 1.1;
     }
     .round-progress-tag {
       font-size: 10px;
-      letter-spacing: 1px;
+      letter-spacing: 1.1px;
       text-transform: uppercase;
       color: #d4a017;
       margin-top: 3px;
@@ -1681,10 +1817,10 @@
       white-space: nowrap;
     }
     .upload-stage-note {
-      background: rgba(212, 160, 23, 0.07);
-      border: 1px solid rgba(212, 160, 23, 0.25);
+      background: rgba(212, 160, 23, 0.08);
+      border: 1px solid rgba(212, 160, 23, 0.28);
       border-radius: 14px;
-      color: #d2d2d2;
+      color: #d8d8de;
       font-size: 13px;
       line-height: 1.55;
       padding: 13px 16px;
@@ -1981,7 +2117,7 @@
         <div class="section-heading compact-heading" style="margin-top:34px;"><div><p class="eyebrow">VOICES TO KNOW</p><h2>Top creators</h2></div></div>
         <div id="creator-grid" class="creator-grid"></div>
 
-        <!-- Editorial & Platform Guide (Rich Publisher Content + Ad-Safe Spacing) -->
+        <!-- Editorial & Platform Guide -->
         <article class="editorial-showcase" aria-label="Curated Story Collections">
           <div class="editorial-showcase-header">
             <div>
@@ -2052,13 +2188,13 @@
           <div><p class="eyebrow">YOUR STORY ECONOMY</p><h1>Wallet</h1></div>
           <div style="display:flex; flex-wrap:wrap; gap:10px;">
             <button class="button button-primary" data-action="buy-coins">Get coins <span>↗</span></button>
-            <button class="button button-accent" data-action="buy-pass">Get a pass</button>
+            <button class="button button-accent" data-action="buy-pass">Get VIP pass</button>
             <button id="withdraw-earnings-btn" class="button button-quiet hidden" data-action="withdraw-earnings">Withdraw</button>
           </div>
         </div>
 
         <div class="wallet-overview">
-          <div class="balance-card"><span class="eyebrow">AVAILABLE COINS</span><strong style="display: inline-flex; align-items: center; gap: 6px;"><span style="color: #d4a017; font-size: 0.9em;">◈</span><span id="wallet-balance">0</span></strong><span class="balance-caption">Use Story Coins to unlock premium cliffhanger episodes.</span></div>
+          <div class="balance-card"><span class="eyebrow">AVAILABLE COINS</span><strong style="display: inline-flex; align-items: center; gap: 6px;"><span style="color: #d4a017; font-size: 0.9em;">◈</span><span id="wallet-balance">0</span></strong><span class="balance-caption">Use Story Coins (10–25 per episode) or VIP Passes to unlock premium cliffhangers.</span></div>
           <div class="wallet-stat"><span class="eyebrow">TOTAL EARNED</span><strong style="display: inline-flex; align-items: center; gap: 4px;"><span style="color: #2ecc71; font-size: 0.9em;">₦</span><span id="wallet-earned">0</span></strong><span>Verified creator earnings</span></div>
         </div>
 
@@ -2067,22 +2203,22 @@
           <div class="editorial-showcase-header">
             <div>
               <p class="eyebrow">HOW YOUR WALLET WORKS</p>
-              <h3>Story Coins, Season Passes &amp; Creator Payouts</h3>
+              <h3>Story Coins, VIP Passes &amp; Creator Payouts</h3>
             </div>
-            <p class="editorial-lead">Every coin unlock directly supports independent African filmmakers and keeps original series in production.</p>
+            <p class="editorial-lead">Every coin unlock and VIP pass directly supports independent African filmmakers and keeps original series in production.</p>
           </div>
           <div class="editorial-grid-3">
             <div class="editorial-card">
               <span class="editorial-card-badge">◈ Story Coins</span>
               <h4>Pay-Per-Episode Unlocks</h4>
-              <p>Top up Story Coins or earn them free in Rewards, then unlock individual premium episodes across any series without recurring monthly lock-in.</p>
+              <p>Top up Story Coins or earn them free in Rewards, then unlock individual premium episodes (10–25 coins) across any series without recurring lock-in.</p>
               <div class="editorial-card-meta"><span>Instant Library Access</span><span>No Expiry</span></div>
             </div>
             <div class="editorial-card">
-              <span class="editorial-card-badge">✦ Season Passes</span>
-              <h4>Uninterrupted Binge Access</h4>
-              <p>Activate an AfriStory Pass to watch eligible premium series back-to-back and enjoy early access to newly released episodes.</p>
-              <div class="editorial-card-meta"><span>Full-Season Viewing</span><span>Priority Drops</span></div>
+              <span class="editorial-card-badge">✦ VIP Gate Passes</span>
+              <h4>24-Hour, Weekly &amp; Monthly Binge Passes</h4>
+              <p>Activate a 24-Hour Day Pass (150 Coins), 7-Day Weekly VIP Pass (600 Coins), or 30-Day Monthly VIP Pass (1,800 Coins) for uninterrupted access.</p>
+              <div class="editorial-card-meta"><span>Full-Catalog Viewing</span><span>Creator Supported</span></div>
             </div>
             <div class="editorial-card">
               <span class="editorial-card-badge">₦ Creator Revenue</span>
@@ -2344,7 +2480,7 @@
 
         <div id="search-results" class="content-grid"></div>
 
-        <!-- Library Catalog Directory (Structured Content & Ad-Safe Spacing) -->
+        <!-- Library Catalog Directory -->
         <article class="editorial-showcase" aria-label="Catalog Directory">
           <div class="editorial-showcase-header">
             <div>
@@ -2481,14 +2617,30 @@
         <button class="modal-close" data-action="close-upload" aria-label="Close">×</button>
       </div>
 
-      <!-- Step 1: Redesigned Animated Episode Upload Form -->
+      <!-- Step 1: Episode Upload Form with Series Termination Control -->
       <form id="upload-form" class="studio-premium-form">
         <div class="studio-field">
           <label class="studio-field-label" for="upload-series">
             <span>Select Series</span>
-            <span class="studio-field-hint">Required</span>
+            <span class="studio-field-hint" id="active-series-counter">Active series</span>
           </label>
           <select id="upload-series" name="seriesId" required></select>
+
+          <div class="series-dropdown-tools">
+            <button type="button" id="terminate-series-btn" class="series-terminate-btn" title="Mark selected series complete and remove it from this upload dropdown">
+              <span>✓ Mark Series Complete (Remove from list)</span>
+            </button>
+            <button type="button" id="toggle-archived-series-btn" class="series-archived-toggle hidden">
+              Completed (<span id="archived-series-count">0</span>)
+            </button>
+          </div>
+
+          <div id="no-active-series-alert" class="no-active-series-alert hidden">
+            <span>All current series are marked complete. Create a new series or restore one below.</span>
+            <button type="button" class="button button-primary" style="padding:6px 12px; font-size:12px;" data-action="new-series">+ New Series</button>
+          </div>
+
+          <div id="series-archived-drawer" class="series-archived-drawer hidden"></div>
         </div>
 
         <div class="studio-field">
@@ -2530,9 +2682,9 @@
           <div class="studio-field">
             <label class="studio-field-label" for="upload-coin-cost">
               <span>Coin Cost</span>
-              <span class="studio-field-hint">Story Coins</span>
+              <span class="studio-field-hint">10–25 recommended</span>
             </label>
-            <input id="upload-coin-cost" name="coinCost" type="number" min="1" value="10" required>
+            <input id="upload-coin-cost" name="coinCost" type="number" min="5" value="15" required>
           </div>
         </div>
 
@@ -2568,7 +2720,7 @@
           <input name="publish" type="checkbox" checked>
         </label>
 
-        <button class="studio-submit-btn" type="submit">
+        <button id="upload-submit-btn" class="studio-submit-btn" type="submit">
           <span>✦</span>
           <span>Upload Episode</span>
         </button>
@@ -2592,8 +2744,8 @@
           You don't need to stay on this screen. Feel free to explore other parts of AfriStory — we will notify you as soon as your episode is ready, or return to Creator Studio anytime to track progress.
         </p>
         <div class="upload-stage-actions">
-          <button type="button" class="button button-primary" id="upload-continue-browsing-btn">Continue Exploring AfriStory</button>
-          <button type="button" class="button button-quiet" id="upload-view-studio-btn">View in Creator Studio</button>
+          <button type="button" class="button button-primary" id="upload-continue-browsing-btn">Explore AfriStory</button>
+          <button type="button" class="button button-quiet" id="upload-view-studio-btn">Track in Creator Studio</button>
         </div>
       </div>
     </div>
@@ -2663,7 +2815,7 @@
   <div id="modal-root" class="modal-root hidden"></div>
   <div id="toast-region" class="toast-region" aria-live="polite"></div>
 
-  <!-- Instant UI Bridge: Sidebar Guard, Quick Pills, Creator Welcome, Circular Upload & Notification Sync -->
+  <!-- Instant UI Bridge: Series Dropdown Termination, Immediate Circular Upload Meter, Real-Time Background Sync & VIP Pass Pricing -->
   <script>
     (function () {
       const watchSection = document.getElementById('section-watch');
@@ -2737,7 +2889,6 @@
         }
       });
 
-      // Quick Genre Pills -> sync directly with #genre-filter
       const genreFilter = document.getElementById('genre-filter');
       document.querySelectorAll('[data-quick-genre]').forEach((btn) => {
         btn.addEventListener('click', () => {
@@ -2760,7 +2911,6 @@
         });
       }
 
-      // Quick Search Pills -> sync directly with #library-search-form
       const libSearchForm = document.getElementById('library-search-form');
       const libSearchInput = document.getElementById('library-search-input');
       document.querySelectorAll('[data-quick-search]').forEach((btn) => {
@@ -2775,7 +2925,6 @@
         });
       });
 
-      // Strip static posters from Watch feed videos so hook frames render live
       const feedEl = document.getElementById('tiktok-feed');
       if (feedEl) {
         new MutationObserver(function () {
@@ -2800,7 +2949,235 @@
       }
 
       // ==============================================================
-      // C. ONE-TIME CREATOR STUDIO APPROVAL WELCOME BANNER
+      // C. TERMINATE / COMPLETE SERIES FROM UPLOAD DROPDOWN
+      // ==============================================================
+      const COMPLETED_SERIES_KEY = 'afristory_completed_series_v1';
+      const uploadSeriesSelect = document.getElementById('upload-series');
+      const terminateSeriesBtn = document.getElementById('terminate-series-btn');
+      const toggleArchivedBtn = document.getElementById('toggle-archived-series-btn');
+      const archivedCountSpan = document.getElementById('archived-series-count');
+      const archivedDrawer = document.getElementById('series-archived-drawer');
+      const noActiveSeriesAlert = document.getElementById('no-active-series-alert');
+      const activeSeriesCounter = document.getElementById('active-series-counter');
+      const knownSeriesCatalog = new Map(); // id -> title
+
+      function getCompletedSeriesMap() {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(COMPLETED_SERIES_KEY) || '{}');
+          return parsed && typeof parsed === 'object' ? parsed : {};
+        } catch (_) {
+          return {};
+        }
+      }
+
+      function saveCompletedSeriesMap(map) {
+        try {
+          localStorage.setItem(COMPLETED_SERIES_KEY, JSON.stringify(map));
+        } catch (_) {}
+      }
+
+      function syncSeriesCompletedBackend(seriesId, isCompleted) {
+        if (!seriesId) return;
+        const token = localStorage.getItem('token') || localStorage.getItem('afristory_token') || '';
+        const headers = {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: 'Bearer ' + token } : {})
+        };
+        const payload = JSON.stringify({
+          completed: isCompleted,
+          isCompleted: isCompleted,
+          uploadCompleted: isCompleted,
+          status: isCompleted ? 'completed' : 'ongoing'
+        });
+        nativeFetch(`/api/creator/series/${encodeURIComponent(seriesId)}`, {
+          method: 'PATCH',
+          credentials: 'include',
+          headers,
+          body: payload
+        }).catch(() => {});
+        nativeFetch(`/api/series/${encodeURIComponent(seriesId)}`, {
+          method: 'PATCH',
+          credentials: 'include',
+          headers,
+          body: payload
+        }).catch(() => {});
+      }
+
+      let isFilteringDropdown = false;
+      function filterUploadSeriesDropdown() {
+        if (!uploadSeriesSelect || isFilteringDropdown) return;
+        isFilteringDropdown = true;
+        try {
+          const completedMap = getCompletedSeriesMap();
+          const allOptions = Array.from(uploadSeriesSelect.options);
+
+          allOptions.forEach((opt) => {
+            if (opt.value) {
+              knownSeriesCatalog.set(opt.value, opt.textContent.trim());
+            }
+          });
+
+          let removedAny = false;
+          allOptions.forEach((opt) => {
+            if (opt.value && completedMap[opt.value]) {
+              opt.remove();
+              removedAny = true;
+            }
+          });
+
+          const remainingOptions = Array.from(uploadSeriesSelect.options).filter((o) => Boolean(o.value));
+          if (removedAny && remainingOptions.length > 0 && !uploadSeriesSelect.value) {
+            uploadSeriesSelect.value = remainingOptions[0].value;
+          }
+
+          if (activeSeriesCounter) {
+            activeSeriesCounter.textContent = `${remainingOptions.length} active`;
+          }
+          if (terminateSeriesBtn) {
+            terminateSeriesBtn.disabled = remainingOptions.length === 0;
+          }
+          if (noActiveSeriesAlert) {
+            noActiveSeriesAlert.classList.toggle('hidden', remainingOptions.length > 0);
+          }
+
+          renderArchivedSeriesDrawer();
+          decorateStudioSeriesCards();
+        } finally {
+          isFilteringDropdown = false;
+        }
+      }
+
+      function renderArchivedSeriesDrawer() {
+        const completedMap = getCompletedSeriesMap();
+        const archivedIds = Object.keys(completedMap);
+        if (archivedCountSpan) archivedCountSpan.textContent = String(archivedIds.length);
+        if (toggleArchivedBtn) toggleArchivedBtn.classList.toggle('hidden', archivedIds.length === 0);
+
+        if (!archivedDrawer) return;
+        if (archivedIds.length === 0) {
+          archivedDrawer.classList.add('hidden');
+          archivedDrawer.innerHTML = '';
+          return;
+        }
+
+        archivedDrawer.innerHTML = archivedIds
+          .map((id) => {
+            const title = completedMap[id] || knownSeriesCatalog.get(id) || 'Completed Series';
+            const safeTitle = title.replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+            return `
+              <div class="series-archived-item">
+                <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">✓ ${safeTitle}</span>
+                <button type="button" class="series-restore-btn" data-restore-series-id="${id}">Restore</button>
+              </div>
+            `;
+          })
+          .join('');
+      }
+
+      function markSeriesCompleted(seriesId, seriesTitle) {
+        if (!seriesId) return;
+        const completedMap = getCompletedSeriesMap();
+        completedMap[seriesId] = seriesTitle || knownSeriesCatalog.get(seriesId) || 'Series';
+        saveCompletedSeriesMap(completedMap);
+        syncSeriesCompletedBackend(seriesId, true);
+        filterUploadSeriesDropdown();
+      }
+
+      function restoreCompletedSeries(seriesId) {
+        if (!seriesId) return;
+        const completedMap = getCompletedSeriesMap();
+        const title = completedMap[seriesId] || knownSeriesCatalog.get(seriesId) || 'Restored Series';
+        delete completedMap[seriesId];
+        saveCompletedSeriesMap(completedMap);
+        syncSeriesCompletedBackend(seriesId, false);
+
+        if (uploadSeriesSelect && !Array.from(uploadSeriesSelect.options).some((o) => o.value === seriesId)) {
+          const opt = document.createElement('option');
+          opt.value = seriesId;
+          opt.textContent = title;
+          uploadSeriesSelect.appendChild(opt);
+          uploadSeriesSelect.value = seriesId;
+        }
+        filterUploadSeriesDropdown();
+      }
+
+      terminateSeriesBtn?.addEventListener('click', () => {
+        if (!uploadSeriesSelect) return;
+        const selectedOpt = uploadSeriesSelect.options[uploadSeriesSelect.selectedIndex];
+        const seriesId = selectedOpt && selectedOpt.value;
+        if (!seriesId) return;
+        const seriesTitle = selectedOpt.textContent.trim();
+        markSeriesCompleted(seriesId, seriesTitle);
+        showQuickBannerToast(`"${seriesTitle}" marked complete and removed from upload dropdown.`, true);
+      });
+
+      toggleArchivedBtn?.addEventListener('click', () => {
+        archivedDrawer?.classList.toggle('hidden');
+      });
+
+      archivedDrawer?.addEventListener('click', (e) => {
+        const restoreBtn = e.target.closest('[data-restore-series-id]');
+        if (!restoreBtn) return;
+        const id = restoreBtn.getAttribute('data-restore-series-id');
+        restoreCompletedSeries(id);
+        showQuickBannerToast('Series restored to upload dropdown.', true);
+      });
+
+      if (uploadSeriesSelect) {
+        new MutationObserver(filterUploadSeriesDropdown).observe(uploadSeriesSelect, {
+          childList: true,
+          subtree: true
+        });
+      }
+
+      function decorateStudioSeriesCards() {
+        const mySeriesGrid = document.getElementById('my-series-grid');
+        if (!mySeriesGrid) return;
+        const completedMap = getCompletedSeriesMap();
+        mySeriesGrid.querySelectorAll('[data-series-id], .series-card, .content-card').forEach((card) => {
+          const sId =
+            card.getAttribute('data-series-id') ||
+            card.dataset.id ||
+            card.querySelector('[data-series-id]')?.getAttribute('data-series-id');
+          if (!sId) return;
+          const titleEl = card.querySelector('h3, h4, .card-title, strong');
+          const sTitle = titleEl ? titleEl.textContent.trim() : knownSeriesCatalog.get(sId) || 'Series';
+          knownSeriesCatalog.set(sId, sTitle);
+
+          let bar = card.querySelector('.studio-series-status-bar');
+          if (!bar) {
+            bar = document.createElement('div');
+            bar.className = 'studio-series-status-bar';
+            bar.innerHTML = `<button type="button" class="studio-series-complete-btn"></button>`;
+            card.appendChild(bar);
+          }
+          const btn = bar.querySelector('.studio-series-complete-btn');
+          const isDone = Boolean(completedMap[sId]);
+          btn.classList.toggle('is-done', isDone);
+          btn.textContent = isDone ? '✓ Completed (Hidden from upload)' : 'Mark Series Complete';
+          btn.onclick = (evt) => {
+            evt.stopPropagation();
+            if (getCompletedSeriesMap()[sId]) {
+              restoreCompletedSeries(sId);
+              showQuickBannerToast(`"${sTitle}" restored to upload dropdown.`, true);
+            } else {
+              markSeriesCompleted(sId, sTitle);
+              showQuickBannerToast(`"${sTitle}" marked complete and removed from upload dropdown.`, true);
+            }
+          };
+        });
+      }
+
+      const mySeriesGridEl = document.getElementById('my-series-grid');
+      if (mySeriesGridEl) {
+        new MutationObserver(decorateStudioSeriesCards).observe(mySeriesGridEl, {
+          childList: true,
+          subtree: true
+        });
+      }
+
+      // ==============================================================
+      // D. ONE-TIME CREATOR STUDIO APPROVAL WELCOME BANNER
       // ==============================================================
       const CREATOR_WELCOME_KEY = 'afristory_creator_welcome_seen_v1';
       const creatorDashboard = document.getElementById('creator-dashboard');
@@ -2864,10 +3241,11 @@
       });
 
       // ==============================================================
-      // D. VIDEO DROPZONE UI & CIRCULAR UPLOAD PROGRESS RING
+      // E. IMMEDIATE CIRCULAR UPLOAD METER BAR (FETCH + XHR + MODAL LOCK)
       // ==============================================================
       const uploadModal = document.getElementById('upload-modal');
       const uploadForm = document.getElementById('upload-form');
+      const uploadSubmitBtn = document.getElementById('upload-submit-btn');
       const uploadStage = document.getElementById('upload-progress-stage');
       const roundFill = document.getElementById('round-progress-fill');
       const roundPct = document.getElementById('round-progress-pct');
@@ -2915,8 +3293,26 @@
 
       const BIG_CIRCUMFERENCE = 2 * Math.PI * 52;   // 326.73
       const MINI_CIRCUMFERENCE = 2 * Math.PI * 23;  // 144.51
-      let activeUploadState = { active: false, completed: false, title: '', pct: 0 };
+      let activeUploadState = {
+        active: false,
+        completed: false,
+        userMinimized: false,
+        title: '',
+        seriesId: '',
+        pct: 0
+      };
       let fallbackProgressTimer = null;
+
+      // Guard #upload-modal so main.js cannot auto-hide the round progress ring mid-upload
+      if (uploadModal) {
+        new MutationObserver(() => {
+          if (activeUploadState.active && !activeUploadState.userMinimized && uploadModal.classList.contains('hidden')) {
+            uploadModal.classList.remove('hidden');
+            uploadForm?.classList.add('hidden');
+            uploadStage?.classList.remove('hidden');
+          }
+        }).observe(uploadModal, { attributes: true, attributeFilter: ['class'] });
+      }
 
       function setUploadProgressUI(pct, titleText, subText, isComplete = false) {
         const clamped = Math.max(0, Math.min(100, Math.round(pct)));
@@ -2929,7 +3325,7 @@
           roundFill.classList.toggle('is-complete', isComplete);
         }
         if (roundPct) roundPct.textContent = isComplete ? '✓' : clamped + '%';
-        if (roundTag) roundTag.textContent = isComplete ? 'Published' : (clamped >= 89 ? 'Finalizing' : 'Uploading');
+        if (roundTag) roundTag.textContent = isComplete ? 'Published' : (clamped >= 90 ? 'Finalizing' : 'Uploading');
         if (stageTitle && titleText) stageTitle.textContent = titleText;
         if (stageNote && subText) stageNote.textContent = subText;
 
@@ -2949,26 +3345,33 @@
         if (pillTitle) pillTitle.textContent = isComplete ? 'Episode published!' : `Uploading (${clamped}%)...`;
       }
 
-      function showCircularUploadStage(epTitle) {
+      function showCircularUploadStage(epTitle, seriesId) {
         clearInterval(fallbackProgressTimer);
-        activeUploadState = { active: true, completed: false, title: epTitle, pct: 4 };
+        activeUploadState = {
+          active: true,
+          completed: false,
+          userMinimized: false,
+          title: epTitle,
+          seriesId: seriesId || (uploadSeriesSelect && uploadSeriesSelect.value) || '',
+          pct: 2
+        };
         if (stageEp) stageEp.textContent = epTitle;
         uploadModal?.classList.remove('hidden');
         uploadForm?.classList.add('hidden');
         uploadStage?.classList.remove('hidden');
         studioTracker?.classList.remove('hidden');
         setUploadProgressUI(
-          4,
+          2,
           'Uploading your episode...',
           'You don\'t need to stay on this screen. Feel free to explore other parts of AfriStory — we will notify you as soon as your episode is ready, or return to Creator Studio anytime to track progress.',
           false
         );
 
         fallbackProgressTimer = setInterval(() => {
-          if (activeUploadState.active && activeUploadState.pct < 82) {
-            setUploadProgressUI(activeUploadState.pct + 2);
+          if (activeUploadState.active && activeUploadState.pct < 84) {
+            setUploadProgressUI(activeUploadState.pct + 1);
           }
-        }, 1200);
+        }, 1400);
       }
 
       function finishCircularUploadStage(ok, epTitle) {
@@ -2978,20 +3381,23 @@
         if (ok) {
           setUploadProgressUI(
             100,
-            'Episode published!',
-            `"${epTitle}" is now live on AfriStory.`,
+            'Episode published & live!',
+            `"${epTitle}" is now live across AfriStory and updated automatically in your catalog.`,
             true
           );
           appendLocalNotification(
             'Episode Published',
-            `Your episode "${epTitle}" has finished uploading and is now ready on AfriStory.`
+            `Your episode "${epTitle}" has finished uploading and is now live on AfriStory.`
           );
+          // Immediately trigger background UI synchronization across all sections (no refresh needed)
+          triggerRealtimeAppSync('episode-uploaded');
+
           setTimeout(() => {
             bgPill?.classList.add('hidden');
             uploadForm?.reset();
             resetVideoDropzoneUI();
             resetUploadModalToForm();
-          }, 3500);
+          }, 3200);
         } else {
           bgPill?.classList.add('hidden');
           studioTracker?.classList.add('hidden');
@@ -3003,20 +3409,31 @@
         if (!activeUploadState.active) {
           uploadForm?.classList.remove('hidden');
           uploadStage?.classList.add('hidden');
+          filterUploadSeriesDropdown();
         }
       }
 
-      uploadForm?.addEventListener('submit', () => {
-        if (!uploadForm.checkValidity()) return;
+      function triggerImmediateUploadStageFromForm() {
+        if (!uploadForm) return;
+        const hasVideo = videoInput && videoInput.files && videoInput.files.length > 0;
+        if (!uploadForm.checkValidity() || !hasVideo) return;
         const titleInput = uploadForm.querySelector('[name="title"]');
         const epTitle = (titleInput && titleInput.value.trim()) || 'New Episode';
-        showCircularUploadStage(epTitle);
-      }, true);
+        const sId = (uploadSeriesSelect && uploadSeriesSelect.value) || '';
+        if (!activeUploadState.active) {
+          showCircularUploadStage(epTitle, sId);
+        }
+      }
+
+      uploadSubmitBtn?.addEventListener('click', triggerImmediateUploadStageFromForm, true);
+      uploadForm?.addEventListener('submit', triggerImmediateUploadStageFromForm, true);
 
       document.addEventListener('click', (e) => {
         if (e.target.closest('[data-action="open-upload"]')) {
           markCreatorWelcomeSeen();
+          activeUploadState.userMinimized = false;
           if (activeUploadState.active) {
+            uploadModal?.classList.remove('hidden');
             uploadForm?.classList.add('hidden');
             uploadStage?.classList.remove('hidden');
           } else {
@@ -3024,6 +3441,7 @@
           }
         }
         if (e.target.closest('[data-action="close-upload"]')) {
+          activeUploadState.userMinimized = true;
           uploadModal?.classList.add('hidden');
           if (activeUploadState.active) {
             bgPill?.classList.remove('hidden');
@@ -3032,6 +3450,7 @@
       }, true);
 
       document.getElementById('upload-continue-browsing-btn')?.addEventListener('click', () => {
+        activeUploadState.userMinimized = true;
         uploadModal?.classList.add('hidden');
         if (activeUploadState.active) {
           bgPill?.classList.remove('hidden');
@@ -3043,14 +3462,23 @@
       });
 
       document.getElementById('upload-view-studio-btn')?.addEventListener('click', () => {
+        activeUploadState.userMinimized = true;
         uploadModal?.classList.add('hidden');
         bgPill?.classList.add('hidden');
         document.querySelector('[data-section="creator"]')?.click();
       });
 
       bgPill?.addEventListener('click', () => {
-        bgPill.classList.add('hidden');
-        document.querySelector('[data-section="creator"]')?.click();
+        activeUploadState.userMinimized = false;
+        if (activeUploadState.active) {
+          bgPill.classList.add('hidden');
+          uploadModal?.classList.remove('hidden');
+          uploadForm?.classList.add('hidden');
+          uploadStage?.classList.remove('hidden');
+        } else {
+          bgPill.classList.add('hidden');
+          document.querySelector('[data-section="creator"]')?.click();
+        }
       });
 
       const toastRegion = document.getElementById('toast-region');
@@ -3065,8 +3493,144 @@
         }).observe(toastRegion, { childList: true, subtree: true, characterData: true });
       }
 
+      function showQuickBannerToast(message, isSuccess) {
+        if (!toastRegion) return;
+        const t = document.createElement('div');
+        t.className = 'toast ' + (isSuccess ? 'success' : 'error');
+        t.innerHTML = `<span class="toast-icon"></span><span class="toast-message">${message}</span>`;
+        toastRegion.appendChild(t);
+        setTimeout(() => {
+          t.style.animation = 'fadeOutToast 0.25s ease forwards';
+          setTimeout(() => t.remove(), 260);
+        }, 2600);
+      }
+
       // ==============================================================
-      // E. NOTIFICATION DISMISS / DELETE & COUNTER SYNC (0 WHEN EMPTY)
+      // F. REAL-TIME BACKGROUND DATA SYNC ENGINE (ZERO REFRESH NEEDED)
+      // ==============================================================
+      let syncInFlight = false;
+      function triggerRealtimeAppSync(reason) {
+        if (syncInFlight) return;
+        syncInFlight = true;
+        try {
+          // 1. Trigger main.js built-in refresh hooks silently
+          document.querySelector('[data-action="refresh-discover"]')?.click();
+          if (!document.getElementById('section-creator')?.classList.contains('hidden')) {
+            document.querySelector('[data-action="refresh-creator-status"]')?.click();
+          }
+
+          // 2. Re-trigger active navigation tab loader in main.js if on Discover, Creator, Trending, or Watch
+          const activeNav = document.querySelector('.side-nav .nav-item.active[data-section]');
+          const activeSecName = activeNav ? activeNav.getAttribute('data-section') : '';
+          if (['discover', 'creator', 'trending', 'wallet', 'rewards'].includes(activeSecName)) {
+            activeNav.dispatchEvent(new CustomEvent('afristory:refresh-section', { bubbles: true, detail: { reason } }));
+          }
+
+          // 3. Cache-busted background fetch to update Creator Studio, Discover, Wallet & Notifications live
+          const token = localStorage.getItem('token') || localStorage.getItem('afristory_token') || '';
+          const headers = token ? { Authorization: 'Bearer ' + token } : {};
+          const bust = `_rt=${Date.now()}`;
+
+          Promise.allSettled([
+            nativeFetch(`/api/creator/series?${bust}`, { credentials: 'include', cache: 'no-store', headers }).then((r) => r.ok ? r.json() : null),
+            nativeFetch(`/api/series?${bust}`, { credentials: 'include', cache: 'no-store', headers }).then((r) => r.ok ? r.json() : null),
+            nativeFetch(`/api/notifications?${bust}`, { credentials: 'include', cache: 'no-store', headers }).then((r) => r.ok ? r.json() : null),
+            nativeFetch(`/api/wallet?${bust}`, { credentials: 'include', cache: 'no-store', headers }).then((r) => r.ok ? r.json() : null)
+          ]).then(([creatorSeriesRes, allSeriesRes, notifRes, walletRes]) => {
+            const creatorSeries = creatorSeriesRes.value && (Array.isArray(creatorSeriesRes.value) ? creatorSeriesRes.value : creatorSeriesRes.value.series);
+            if (Array.isArray(creatorSeries) && uploadSeriesSelect) {
+              const prevVal = uploadSeriesSelect.value;
+              const completedMap = getCompletedSeriesMap();
+              creatorSeries.forEach((s) => {
+                const id = String(s._id || s.id || '');
+                const title = String(s.title || 'Untitled Series');
+                if (!id) return;
+                knownSeriesCatalog.set(id, title);
+                if (!completedMap[id] && !Array.from(uploadSeriesSelect.options).some((o) => o.value === id)) {
+                  const opt = document.createElement('option');
+                  opt.value = id;
+                  opt.textContent = title;
+                  uploadSeriesSelect.appendChild(opt);
+                }
+              });
+              if (prevVal && Array.from(uploadSeriesSelect.options).some((o) => o.value === prevVal)) {
+                uploadSeriesSelect.value = prevVal;
+              }
+              filterUploadSeriesDropdown();
+            }
+
+            if (walletRes.value) {
+              const w = walletRes.value.wallet || walletRes.value;
+              const bal = w.coins ?? w.balance ?? w.coinBalance;
+              if (typeof bal === 'number') {
+                const wb = document.getElementById('wallet-balance');
+                const rb = document.getElementById('rewards-balance');
+                if (wb) wb.textContent = String(bal);
+                if (rb) rb.textContent = String(bal);
+              }
+            }
+
+            window.dispatchEvent(new CustomEvent('afristory:realtime-synced', {
+              detail: {
+                reason,
+                creatorSeries: creatorSeries || null,
+                allSeries: allSeriesRes.value || null,
+                notifications: notifRes.value || null,
+                wallet: walletRes.value || null
+              }
+            }));
+          }).finally(() => {
+            syncInFlight = false;
+          });
+        } catch (_) {
+          syncInFlight = false;
+        }
+      }
+
+      // Continuous background auto-sync every 15s (pauses during active video/ad playback)
+      setInterval(() => {
+        if (document.hidden) return;
+        if (document.body.classList.contains('robins-ad-processing')) return;
+        const isWatching = !document.getElementById('section-watch')?.classList.contains('hidden');
+        if (isWatching) return;
+        triggerRealtimeAppSync('background-interval');
+      }, 15000);
+
+      // ==============================================================
+      // G. SUSTAINABLE VIP GATE PASS PRICING GUARD (150 / 600 / 1,800 COINS)
+      // ==============================================================
+      const modalRoot = document.getElementById('modal-root');
+      function upgradeGatePassModalUI() {
+        if (!modalRoot || modalRoot.classList.contains('hidden')) return;
+        const text = (modalRoot.textContent || '').toLowerCase();
+        if (!text.includes('pass') || (!text.includes('10') && !text.includes('day') && !text.includes('month'))) return;
+
+        modalRoot.querySelectorAll('button, [data-pass], [data-plan], .pass-card, .plan-card').forEach((el) => {
+          const t = el.textContent || '';
+          if (/\b10\s*coins?\b/i.test(t) || /day\s*pass/i.test(t)) {
+            el.innerHTML = el.innerHTML.replace(/\b10\s*coins?\b/gi, '150 Coins');
+            if (el.dataset.coins) el.dataset.coins = '150';
+            if (el.dataset.cost) el.dataset.cost = '150';
+          }
+          if (/\b150\s*coins?\b/i.test(t) && /month/i.test(t)) {
+            el.innerHTML = el.innerHTML.replace(/\b150\s*coins?\b/gi, '1,800 Coins');
+            if (el.dataset.coins) el.dataset.coins = '1800';
+            if (el.dataset.cost) el.dataset.cost = '1800';
+          }
+        });
+      }
+
+      if (modalRoot) {
+        new MutationObserver(upgradeGatePassModalUI).observe(modalRoot, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['class']
+        });
+      }
+
+      // ==============================================================
+      // H. NOTIFICATION DISMISS / DELETE & COUNTER SYNC
       // ==============================================================
       const DISMISSED_NOTIFS_KEY = 'afristory_dismissed_notifications_v1';
       const CLEARED_ALL_AT_KEY = 'afristory_cleared_all_notifs_ts_v1';
@@ -3253,9 +3817,90 @@
       });
 
       // ==============================================================
-      // F. UNIFIED FETCH INTERCEPTOR (VIDEO XHR PROGRESS + NOTIF FILTER)
+      // I. DUAL NETWORK INTERCEPTOR (FETCH + XHR REAL-TIME PROGRESS & AUTO-SYNC)
       // ==============================================================
       const nativeFetch = window.fetch.bind(window);
+      const NativeXHR = window.XMLHttpRequest;
+
+      // Hook native XMLHttpRequest in case main.js uploads via XHR directly
+      window.XMLHttpRequest = function () {
+        const xhr = new NativeXHR();
+        let reqMethod = 'GET';
+        let reqUrl = '';
+
+        const origOpen = xhr.open.bind(xhr);
+        xhr.open = function (method, url) {
+          reqMethod = String(method || 'GET').toUpperCase();
+          reqUrl = String(url || '');
+          return origOpen.apply(xhr, arguments);
+        };
+
+        const origSend = xhr.send.bind(xhr);
+        xhr.send = function (body) {
+          const isVideoBody =
+            body instanceof FormData &&
+            Array.from(body.values()).some((v) => v instanceof File && (v.type.startsWith('video/') || /\.(mp4|mov|webm|mkv|avi)$/i.test(v.name || '')));
+
+          if (reqMethod === 'POST' && isVideoBody) {
+            const epTitle = String(body.get('title') || activeUploadState.title || 'New Episode').trim();
+            const sId = String(body.get('seriesId') || '');
+            if (!activeUploadState.active) {
+              showCircularUploadStage(epTitle, sId);
+            }
+
+            let finalizingTimer = null;
+            xhr.upload.addEventListener('progress', (evt) => {
+              if (!evt.lengthComputable) return;
+              clearInterval(fallbackProgressTimer);
+              const pct = Math.max(4, Math.min(89, Math.round((evt.loaded / evt.total) * 89)));
+              setUploadProgressUI(
+                pct,
+                'Uploading your episode...',
+                'You don\'t need to stay on this screen. Feel free to explore other parts of AfriStory — we will notify you as soon as your episode is ready, or return to Creator Studio anytime to track progress.',
+                false
+              );
+              if (evt.loaded >= evt.total && !finalizingTimer) {
+                let simPct = 90;
+                setUploadProgressUI(
+                  simPct,
+                  'Finalizing episode stream...',
+                  'Preparing smooth playback for your viewers. You will receive a notification once published.',
+                  false
+                );
+                finalizingTimer = setInterval(() => {
+                  if (simPct < 98) {
+                    simPct += 1;
+                    setUploadProgressUI(simPct);
+                  }
+                }, 800);
+              }
+            });
+
+            xhr.addEventListener('load', () => {
+              clearInterval(finalizingTimer);
+              const ok = xhr.status >= 200 && xhr.status < 300;
+              finishCircularUploadStage(ok, epTitle);
+            });
+
+            xhr.addEventListener('error', () => {
+              clearInterval(finalizingTimer);
+              finishCircularUploadStage(false, epTitle);
+            });
+          } else if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(reqMethod) && /\/api\/(series|creator|episodes|wallet|pass)/i.test(reqUrl)) {
+            xhr.addEventListener('load', () => {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                setTimeout(() => triggerRealtimeAppSync(reqUrl), 250);
+              }
+            });
+          }
+
+          return origSend.apply(xhr, arguments);
+        };
+
+        return xhr;
+      };
+
+      // Hook window.fetch for FormData video uploads, Gate Pass pricing, and auto-sync
       window.fetch = function (input, init) {
         const url = typeof input === 'string' ? input : (input && input.url) || '';
         const method = ((init && init.method) || (input && input.method) || 'GET').toUpperCase();
@@ -3267,12 +3912,13 @@
 
         if (method === 'POST' && isVideoFormData) {
           const epTitle = String(body.get('title') || activeUploadState.title || 'New Episode').trim();
+          const sId = String(body.get('seriesId') || '');
           if (!activeUploadState.active) {
-            showCircularUploadStage(epTitle);
+            showCircularUploadStage(epTitle, sId);
           }
 
           return new Promise((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
+            const xhr = new NativeXHR();
             xhr.open('POST', url, true);
             xhr.withCredentials = true;
 
@@ -3289,7 +3935,7 @@
             xhr.upload.onprogress = function (evt) {
               if (!evt.lengthComputable) return;
               clearInterval(fallbackProgressTimer);
-              const uploadPct = Math.max(5, Math.min(88, Math.round((evt.loaded / evt.total) * 88)));
+              const uploadPct = Math.max(4, Math.min(89, Math.round((evt.loaded / evt.total) * 89)));
               setUploadProgressUI(
                 uploadPct,
                 'Uploading your episode...',
@@ -3297,7 +3943,7 @@
                 false
               );
               if (evt.loaded >= evt.total && !processingTimer) {
-                let simPct = 89;
+                let simPct = 90;
                 setUploadProgressUI(
                   simPct,
                   'Finalizing episode stream...',
@@ -3309,7 +3955,7 @@
                     simPct += 1;
                     setUploadProgressUI(simPct);
                   }
-                }, 850);
+                }, 800);
               }
             };
 
@@ -3341,6 +3987,27 @@
 
             xhr.send(body);
           });
+        }
+
+        // Enforce sustainable Gate Pass coin minimums on pass purchase requests
+        if (method === 'POST' && /\/api\/(wallet|passes?|subscriptions?)/i.test(url) && typeof body === 'string') {
+          try {
+            const parsed = JSON.parse(body);
+            if (parsed && (parsed.passType || parsed.plan || /pass/i.test(url))) {
+              const planKey = String(parsed.passType || parsed.plan || parsed.duration || '').toLowerCase();
+              if (planKey.includes('day') && Number(parsed.coins || parsed.cost || 0) < 150) {
+                parsed.coins = 150;
+                if ('cost' in parsed) parsed.cost = 150;
+              } else if (planKey.includes('week') && Number(parsed.coins || parsed.cost || 0) < 600) {
+                parsed.coins = 600;
+                if ('cost' in parsed) parsed.cost = 600;
+              } else if (planKey.includes('month') && Number(parsed.coins || parsed.cost || 0) < 1800) {
+                parsed.coins = 1800;
+                if ('cost' in parsed) parsed.cost = 1800;
+              }
+              init = Object.assign({}, init, { body: JSON.stringify(parsed) });
+            }
+          } catch (_) {}
         }
 
         if (method === 'GET' && /\/api\/notifications(\?|$)/i.test(url)) {
@@ -3381,11 +4048,19 @@
           });
         }
 
-        return nativeFetch(input, init);
+        const promise = nativeFetch(input, init);
+        if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) && /\/api\/(series|creator|episodes|wallet|pass)/i.test(url)) {
+          promise.then((res) => {
+            if (res && res.ok) {
+              setTimeout(() => triggerRealtimeAppSync(url), 250);
+            }
+          }).catch(() => {});
+        }
+        return promise;
       };
 
       // ==============================================================
-      // G. RECORD REWARDED AD TRIGGER
+      // J. RECORD REWARDED AD TRIGGER
       // ==============================================================
       document.addEventListener('click', function (event) {
         const trigger = event.target.closest('[data-robins-rewarded]');
@@ -3402,8 +4077,8 @@
   </script>
 
   <!-- Cache-busted module scripts -->
-  <script type="module" src="/js/ads.js?v=17"></script>
-  <script type="module" src="/js/main.js?v=17"></script>
+  <script type="module" src="/js/ads.js?v=18"></script>
+  <script type="module" src="/js/main.js?v=18"></script>
 
 </body>
 </html>
