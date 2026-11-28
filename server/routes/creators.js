@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Creator from '../models/Creator.js';
 import User from '../models/User.js';
 import Series from '../models/Series.js';
@@ -9,194 +10,24 @@ import { paginate, formatDecimal } from '../utils/helpers.js';
 import { createNotification } from '../utils/notificationService.js';
 
 export default async function creatorRoutes(fastify, opts) {
-  // Get creator profile
-  fastify.get('/:creatorId', async (request, reply) => {
-    try {
-      const { creatorId } = request.params;
-
-      const creator = await Creator.findById(creatorId).populate('userId', 'username profileImage profile');
-
-      if (!creator) {
-        return sendError(reply, 'Creator not found', 404);
-      }
-
-      const seriesCount = await Series.countDocuments({
-        creatorId,
-        isPublished: true,
-      });
-
-      sendSuccess(reply, {
-        ...creator.toObject(),
-        totalViews: formatDecimal(creator.totalViews),
-        uniqueViewers: creator.uniqueViewers || 0,
-        returningViewers: creator.returningViewers || 0,
-        totalEarnings: formatDecimal(creator.totalEarnings),
-        totalSeries: seriesCount,
-      });
-    } catch (error) {
-      fastify.log.error(error);
-      sendError(reply, 'Failed to fetch creator profile', 500, error.message);
-    }
-  });
-
-  // Become a creator
-  fastify.post('/become-creator', async (request, reply) => {
-    try {
-      await verifyAuth(request, reply);
-
-      if (!request.user) {
-        return sendError(reply, 'Unauthorized', 401);
-      }
-
-      const { brandName, bio, socialLinks } = request.body || {};
-
-      const user = await User.findById(request.user._id);
-      const finalBrandName = brandName || user.username || 'Creator';
-
-      let creator = await Creator.findOne({ userId: request.user._id });
-
-      if (creator) {
-        if (creator.applicationStatus === 'REJECTED') {
-          creator.brandName = finalBrandName;
-          creator.bio = bio || '';
-          if (socialLinks) creator.socialLinks = socialLinks;
-          creator.applicationStatus = 'PENDING';
-          creator.rejectionReason = null;
-          creator.isVerified = false;
-          await creator.save();
-        } else {
-          const statusMsg = creator.applicationStatus === 'PENDING' 
-            ? 'Your application is currently under review.' 
-            : 'You are already an approved creator.';
-          return sendError(reply, statusMsg, 409);
-        }
-      } else {
-        creator = new Creator({
-          userId: request.user._id,
-          brandName: finalBrandName,
-          bio: bio || '',
-          socialLinks: socialLinks || {},
-          applicationStatus: 'PENDING',
-          isVerified: false,
-        });
-        await creator.save();
-      }
-
-      // Preserve ADMIN role if an admin submits a creator application
-      if (String(user.role).toUpperCase() !== 'ADMIN') {
-        user.role = 'CREATOR';
-        await user.save();
-      }
-
-      if (fastify.jwt) {
-        const token = fastify.jwt.sign({ 
-          id: user._id, 
-          _id: user._id,
-          role: user.role 
-        });
-        
-        reply.setCookie('token', token, {
-          path: '/',
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-          maxAge: 30 * 24 * 60 * 60 * 1000
-        });
-      }
-
-      sendSuccess(reply, creator, 'Creator application submitted successfully', 201);
-    } catch (error) {
-      fastify.log.error(error);
-      sendError(reply, 'Failed to process creator application', 500, error.message);
-    }
-  });
-
-  // Update creator profile
-  fastify.put('/profile/update', async (request, reply) => {
-    try {
-      await verifyCreator(request, reply);
-
-      if (!request.user) {
-        return sendError(reply, 'Unauthorized', 401);
-      }
-
-      const { brandName, bio, socialLinks, profileImage, coverImage, bankAccount } = request.body || {};
-
-      const creator = await Creator.findOne({ userId: request.user._id });
-
-      if (!creator) {
-        return sendError(reply, 'Creator profile not found', 404);
-      }
-
-      if (brandName) creator.brandName = brandName;
-      if (bio) creator.bio = bio;
-      if (socialLinks) creator.socialLinks = { ...creator.socialLinks, ...socialLinks };
-      if (profileImage) creator.profileImage = profileImage;
-      if (coverImage) creator.coverImage = coverImage;
-      if (bankAccount) creator.bankAccount = bankAccount;
-
-      await creator.save();
-
-      sendSuccess(reply, creator, 'Creator profile updated successfully');
-    } catch (error) {
-      fastify.log.error(error);
-      sendError(reply, 'Failed to update creator profile', 500, error.message);
-    }
-  });
-
-  // Get creator series
-  fastify.get('/:creatorId/series', async (request, reply) => {
-    try {
-      const { creatorId } = request.params;
-      const { page = 1, limit = 10 } = request.query;
-      const { skip, limit: l, page: p } = paginate(page, limit);
-      let includeDrafts = false;
-      if (request.cookies?.token && await verifyAuth(request, reply, false).catch(() => false)) {
-        const currentCreator = await Creator.findOne({ userId: request.user._id });
-        includeDrafts = currentCreator?._id?.toString() === creatorId;
-      }
-      const query = includeDrafts ? { creatorId } : { creatorId, isPublished: true };
-
-      const series = await Series.find(query)
-        .skip(skip)
-        .limit(l)
-        .sort({ createdAt: -1 });
-
-      const total = await Series.countDocuments(query);
-
-      sendSuccess(reply, {
-        series: series.map(s => ({
-          ...s.toObject(),
-          rating: formatDecimal(s.rating),
-        })),
-        pagination: {
-          page: p,
-          limit: l,
-          total,
-          pages: Math.ceil(total / l),
-        },
-      });
-    } catch (error) {
-      fastify.log.error(error);
-      sendError(reply, 'Failed to fetch creator series', 500, error.message);
-    }
-  });
-
   // Get top creators
   fastify.get('/top/creators', async (request, reply) => {
     try {
-      const { limit = 10 } = request.query;
+      const limit = Math.min(50, Math.max(1, parseInt(request.query?.limit, 10) || 10));
 
       const creators = await Creator.find({})
         .sort({ totalViews: -1 })
-        .limit(parseInt(limit))
+        .limit(limit)
         .populate('userId', 'username profileImage profile');
 
-      sendSuccess(reply, creators.map(c => ({
-        ...c.toObject(),
-        totalViews: formatDecimal(c.totalViews),
-        totalEarnings: formatDecimal(c.totalEarnings),
-      })));
+      sendSuccess(
+        reply,
+        creators.map(c => ({
+          ...c.toObject(),
+          totalViews: formatDecimal(c.totalViews),
+          totalEarnings: formatDecimal(c.totalEarnings),
+        }))
+      );
     } catch (error) {
       fastify.log.error(error);
       sendError(reply, 'Failed to fetch top creators', 500, error.message);
@@ -207,6 +38,7 @@ export default async function creatorRoutes(fastify, opts) {
   fastify.get('/me/profile', async (request, reply) => {
     try {
       await verifyCreator(request, reply);
+      if (reply.sent) return;
 
       if (!request.user) {
         return sendError(reply, 'Unauthorized', 401);
@@ -242,6 +74,7 @@ export default async function creatorRoutes(fastify, opts) {
   fastify.get('/me/followers', async (request, reply) => {
     try {
       await verifyCreator(request, reply);
+      if (reply.sent) return;
       if (!request.user) return sendError(reply, 'Unauthorized', 401);
 
       const creator = await Creator.findOne({ userId: request.user._id });
@@ -250,50 +83,79 @@ export default async function creatorRoutes(fastify, opts) {
       const { page = 1, limit = 20 } = request.query;
       const { skip, limit: l, page: p } = paginate(page, limit);
 
-      const follows = await Follow.find({ creatorId: creator._id })
-        .populate({
-          path: 'followerId',
-          select: 'username profileImage profile'
-        })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(l)
+      const [follows, total] = await Promise.all([
+        Follow.find({ creatorId: creator._id })
+          .populate({
+            path: 'followerId',
+            select: 'username profileImage profile',
+          })
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(l)
+          .lean(),
+        Follow.countDocuments({ creatorId: creator._id }),
+      ]);
+
+      const validFollows = follows.filter(f => f.followerId);
+      const followerUserIds = validFollows.map(f => f.followerId._id);
+
+      const followerCreators = await Creator.find({ userId: { $in: followerUserIds } })
+        .select('_id userId')
         .lean();
 
-      const total = await Follow.countDocuments({ creatorId: creator._id });
+      const creatorByUserId = new Map(
+        followerCreators.map(fc => [fc.userId.toString(), fc])
+      );
+      const followerCreatorIds = followerCreators.map(fc => fc._id);
 
-      const followerDetails = await Promise.all(follows.map(async (f) => {
+      const [reverseCreatorFollows, reverseUserFollows] = await Promise.all([
+        followerCreatorIds.length > 0
+          ? Follow.find({
+              followerId: creator.userId,
+              creatorId: { $in: followerCreatorIds },
+            })
+              .select('creatorId')
+              .lean()
+          : Promise.resolve([]),
+        followerUserIds.length > 0
+          ? UserFollow.find({
+              followerId: creator.userId,
+              followingId: { $in: followerUserIds },
+            })
+              .select('followingId')
+              .lean()
+          : Promise.resolve([]),
+      ]);
+
+      const followedCreatorIdSet = new Set(reverseCreatorFollows.map(r => r.creatorId.toString()));
+      const followedUserIdSet = new Set(reverseUserFollows.map(r => r.followingId.toString()));
+
+      const followerDetails = validFollows.map(f => {
         const followerUser = f.followerId;
-        if (!followerUser) return null;
+        const userIdStr = followerUser._id.toString();
+        const followerCreator = creatorByUserId.get(userIdStr) || null;
 
-        const followerCreator = await Creator.findOne({ userId: followerUser._id });
-        let isMutual = false;
-        
-        if (followerCreator) {
-          const reverseCheck = await Follow.findOne({ followerId: creator.userId, creatorId: followerCreator._id });
-          isMutual = !!reverseCheck;
-        } else {
-          const reverseUserCheck = await UserFollow.findOne({ followerId: creator.userId, followingId: followerUser._id });
-          isMutual = !!reverseUserCheck;
-        }
+        const isMutual = followerCreator
+          ? followedCreatorIdSet.has(followerCreator._id.toString())
+          : followedUserIdSet.has(userIdStr);
 
         return {
           _id: followerCreator ? followerCreator._id : null,
-          followerId: followerUser._id, 
+          followerId: followerUser._id,
           userId: followerUser._id,
           username: followerUser.username,
           displayName: followerUser.profile?.displayName || followerUser.username,
           profileImage: followerUser.profile?.avatarUrl || followerUser.profileImage || null,
           createdAt: f.createdAt,
           isMutual,
-          isFollowing: isMutual, 
-          isCreator: !!followerCreator
+          isFollowing: isMutual,
+          isCreator: !!followerCreator,
         };
-      }));
+      });
 
       sendSuccess(reply, {
-        followers: followerDetails.filter(Boolean),
-        pagination: { page: p, limit: l, total, pages: Math.ceil(total / l) }
+        followers: followerDetails,
+        pagination: { page: p, limit: l, total, pages: Math.ceil(total / l) },
       });
     } catch (error) {
       fastify.log.error(error);
@@ -301,16 +163,212 @@ export default async function creatorRoutes(fastify, opts) {
     }
   });
 
+  // Get creator profile
+  fastify.get('/:creatorId', async (request, reply) => {
+    try {
+      const { creatorId } = request.params;
+      if (!mongoose.Types.ObjectId.isValid(creatorId)) {
+        return sendError(reply, 'Creator not found', 404);
+      }
+
+      const creator = await Creator.findById(creatorId).populate('userId', 'username profileImage profile');
+
+      if (!creator) {
+        return sendError(reply, 'Creator not found', 404);
+      }
+
+      const seriesCount = await Series.countDocuments({
+        creatorId,
+        isPublished: true,
+      });
+
+      sendSuccess(reply, {
+        ...creator.toObject(),
+        totalViews: formatDecimal(creator.totalViews),
+        uniqueViewers: creator.uniqueViewers || 0,
+        returningViewers: creator.returningViewers || 0,
+        totalEarnings: formatDecimal(creator.totalEarnings),
+        totalSeries: seriesCount,
+      });
+    } catch (error) {
+      fastify.log.error(error);
+      sendError(reply, 'Failed to fetch creator profile', 500, error.message);
+    }
+  });
+
+  // Become a creator
+  fastify.post('/become-creator', async (request, reply) => {
+    try {
+      await verifyAuth(request, reply);
+      if (reply.sent) return;
+
+      if (!request.user) {
+        return sendError(reply, 'Unauthorized', 401);
+      }
+
+      const { brandName, bio, socialLinks } = request.body || {};
+
+      const user = await User.findById(request.user._id);
+      if (!user) {
+        return sendError(reply, 'User not found', 404);
+      }
+
+      const finalBrandName = String(brandName || user.username || 'Creator').trim();
+
+      let creator = await Creator.findOne({ userId: request.user._id });
+
+      if (creator) {
+        if (creator.applicationStatus === 'REJECTED') {
+          creator.brandName = finalBrandName;
+          creator.bio = bio || '';
+          if (socialLinks) creator.socialLinks = socialLinks;
+          creator.applicationStatus = 'PENDING';
+          creator.rejectionReason = null;
+          creator.isVerified = false;
+          await creator.save();
+        } else {
+          const statusMsg =
+            creator.applicationStatus === 'PENDING'
+              ? 'Your application is currently under review.'
+              : 'You are already an approved creator.';
+          return sendError(reply, statusMsg, 409);
+        }
+      } else {
+        creator = new Creator({
+          userId: request.user._id,
+          brandName: finalBrandName,
+          bio: bio || '',
+          socialLinks: socialLinks || {},
+          applicationStatus: 'PENDING',
+          isVerified: false,
+        });
+        await creator.save();
+      }
+
+      // Preserve ADMIN role if an admin submits a creator application
+      if (String(user.role).toUpperCase() !== 'ADMIN') {
+        user.role = 'CREATOR';
+        await user.save();
+      }
+
+      if (fastify.jwt) {
+        const token = fastify.jwt.sign({
+          id: user._id,
+          _id: user._id,
+          role: user.role,
+        });
+
+        reply.setCookie('token', token, {
+          path: '/',
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+          maxAge: 30 * 24 * 60 * 60 * 1000,
+        });
+      }
+
+      sendSuccess(reply, creator, 'Creator application submitted successfully', 201);
+    } catch (error) {
+      fastify.log.error(error);
+      sendError(reply, 'Failed to process creator application', 500, error.message);
+    }
+  });
+
+  // Update creator profile
+  fastify.put('/profile/update', async (request, reply) => {
+    try {
+      await verifyCreator(request, reply);
+      if (reply.sent) return;
+
+      if (!request.user) {
+        return sendError(reply, 'Unauthorized', 401);
+      }
+
+      const { brandName, bio, socialLinks, profileImage, coverImage, bankAccount } = request.body || {};
+
+      const creator = await Creator.findOne({ userId: request.user._id });
+
+      if (!creator) {
+        return sendError(reply, 'Creator profile not found', 404);
+      }
+
+      if (brandName) creator.brandName = brandName;
+      if (bio !== undefined) creator.bio = bio;
+      if (socialLinks) creator.socialLinks = { ...creator.socialLinks, ...socialLinks };
+      if (profileImage) creator.profileImage = profileImage;
+      if (coverImage) creator.coverImage = coverImage;
+      if (bankAccount) creator.bankAccount = bankAccount;
+
+      await creator.save();
+
+      sendSuccess(reply, creator, 'Creator profile updated successfully');
+    } catch (error) {
+      fastify.log.error(error);
+      sendError(reply, 'Failed to update creator profile', 500, error.message);
+    }
+  });
+
+  // Get creator series
+  fastify.get('/:creatorId/series', async (request, reply) => {
+    try {
+      const { creatorId } = request.params;
+      if (!mongoose.Types.ObjectId.isValid(creatorId)) {
+        return sendError(reply, 'Creator not found', 404);
+      }
+
+      const { page = 1, limit = 10 } = request.query;
+      const { skip, limit: l, page: p } = paginate(page, limit);
+      let includeDrafts = false;
+      if (request.cookies?.token && (await verifyAuth(request, reply, false).catch(() => false))) {
+        const currentCreator = await Creator.findOne({ userId: request.user._id });
+        includeDrafts = currentCreator?._id?.toString() === creatorId;
+      }
+      const query = includeDrafts ? { creatorId } : { creatorId, isPublished: true };
+
+      const [series, total] = await Promise.all([
+        Series.find(query).skip(skip).limit(l).sort({ createdAt: -1 }),
+        Series.countDocuments(query),
+      ]);
+
+      sendSuccess(reply, {
+        series: series.map(s => {
+          const obj = s.toObject();
+          const completed = Boolean(obj.isCompleted || obj.completed || obj.status === 'COMPLETED');
+          return {
+            ...obj,
+            isCompleted: completed,
+            completed,
+            rating: formatDecimal(obj.rating),
+          };
+        }),
+        pagination: {
+          page: p,
+          limit: l,
+          total,
+          pages: Math.ceil(total / l),
+        },
+      });
+    } catch (error) {
+      fastify.log.error(error);
+      sendError(reply, 'Failed to fetch creator series', 500, error.message);
+    }
+  });
+
   // SECURE & ATOMIC FOLLOW ENDPOINT
   fastify.post('/:creatorId/follow', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
+      if (reply.sent) return;
 
       if (!request.user) {
         return sendError(reply, 'Unauthorized', 401);
       }
 
       const { creatorId } = request.params;
+      if (!mongoose.Types.ObjectId.isValid(creatorId)) {
+        return sendError(reply, 'Creator not found', 404);
+      }
+
       const targetCreator = await Creator.findById(creatorId);
 
       if (!targetCreator) {
@@ -323,24 +381,31 @@ export default async function creatorRoutes(fastify, opts) {
 
       const existingFollow = await Follow.findOne({
         followerId: request.user._id,
-        creatorId: targetCreator._id
+        creatorId: targetCreator._id,
       });
 
       if (existingFollow) {
-        return sendSuccess(reply, { 
-          totalFollowers: targetCreator.totalFollowers, 
-          alreadyFollowing: true,
-          isFollowing: true 
-        }, 'You already follow this creator');
+        return sendSuccess(
+          reply,
+          {
+            totalFollowers: targetCreator.totalFollowers,
+            alreadyFollowing: true,
+            isFollowing: true,
+          },
+          'You already follow this creator'
+        );
       }
 
       await Follow.create({
         followerId: request.user._id,
-        creatorId: targetCreator._id
+        creatorId: targetCreator._id,
       });
 
-      targetCreator.totalFollowers = (targetCreator.totalFollowers || 0) + 1;
-      await targetCreator.save();
+      const updatedCreator = await Creator.findByIdAndUpdate(
+        targetCreator._id,
+        { $inc: { totalFollowers: 1 } },
+        { new: true }
+      );
 
       const followerUser = await User.findById(request.user._id).select('profile profileImage');
       const followerAvatar = followerUser?.profile?.avatarUrl || followerUser?.profileImage || null;
@@ -353,22 +418,30 @@ export default async function creatorRoutes(fastify, opts) {
         targetUrl: '#profile',
         icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192',
         image: followerAvatar,
-        dedupeKey: `follow_${request.user._id}_${targetCreator._id}`
+        dedupeKey: `follow_${request.user._id}_${targetCreator._id}`,
       }).catch(err => fastify.log.error('Push error:', err));
 
-      sendSuccess(reply, { 
-        totalFollowers: targetCreator.totalFollowers, 
-        alreadyFollowing: false,
-        isFollowing: true 
-      }, 'Following creator');
+      sendSuccess(
+        reply,
+        {
+          totalFollowers: updatedCreator?.totalFollowers ?? targetCreator.totalFollowers + 1,
+          alreadyFollowing: false,
+          isFollowing: true,
+        },
+        'Following creator'
+      );
     } catch (error) {
       if (error.code === 11000) {
         const creator = await Creator.findById(request.params.creatorId);
-        return sendSuccess(reply, { 
-          totalFollowers: creator?.totalFollowers || 0, 
-          alreadyFollowing: true,
-          isFollowing: true 
-        }, 'You already follow this creator');
+        return sendSuccess(
+          reply,
+          {
+            totalFollowers: creator?.totalFollowers || 0,
+            alreadyFollowing: true,
+            isFollowing: true,
+          },
+          'You already follow this creator'
+        );
       }
       fastify.log.error(error);
       sendError(reply, 'Failed to follow creator', 500, error.message);
@@ -379,26 +452,40 @@ export default async function creatorRoutes(fastify, opts) {
   fastify.delete('/:creatorId/follow', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
+      if (reply.sent) return;
       if (!request.user) return sendError(reply, 'Unauthorized', 401);
 
       const { creatorId } = request.params;
+      if (!mongoose.Types.ObjectId.isValid(creatorId)) {
+        return sendError(reply, 'Creator not found', 404);
+      }
+
       const targetCreator = await Creator.findById(creatorId);
       if (!targetCreator) return sendError(reply, 'Creator not found', 404);
 
       const deleted = await Follow.findOneAndDelete({
         followerId: request.user._id,
-        creatorId: targetCreator._id
+        creatorId: targetCreator._id,
       });
 
+      let latestFollowers = targetCreator.totalFollowers || 0;
       if (deleted) {
-        targetCreator.totalFollowers = Math.max(0, (targetCreator.totalFollowers || 1) - 1);
-        await targetCreator.save();
+        const updatedCreator = await Creator.findOneAndUpdate(
+          { _id: targetCreator._id, totalFollowers: { $gt: 0 } },
+          { $inc: { totalFollowers: -1 } },
+          { new: true }
+        );
+        latestFollowers = updatedCreator ? updatedCreator.totalFollowers : 0;
       }
 
-      sendSuccess(reply, { 
-        totalFollowers: targetCreator.totalFollowers, 
-        isFollowing: false 
-      }, 'Unfollowed creator successfully');
+      sendSuccess(
+        reply,
+        {
+          totalFollowers: latestFollowers,
+          isFollowing: false,
+        },
+        'Unfollowed creator successfully'
+      );
     } catch (error) {
       fastify.log.error(error);
       sendError(reply, 'Failed to unfollow creator', 500, error.message);
