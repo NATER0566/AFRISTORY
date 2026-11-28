@@ -398,3 +398,21 @@
     initAds();
   }
 })();
+
+const {
+  launchRewardedAd,
+  showRewardedAd,
+  requestRewardedAd,
+  showSponsoredMessage,
+  refresh,
+  initAds,
+} = window.AfriStoryAds;
+
+export {
+  launchRewardedAd,
+  showRewardedAd,
+  requestRewardedAd,
+  showSponsoredMessage,
+  refresh,
+  initAds,
+};
