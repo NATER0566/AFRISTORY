@@ -25,7 +25,7 @@
   <link rel="preconnect" href="https://robinsads.com" crossorigin>
   <link rel="dns-prefetch" href="https://robinsads.com">
 
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
 
   <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -75,14 +75,13 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Smooth Section Entrance Animation */
     .app-section:not(.hidden) {
-      animation: sectionReveal 0.38s var(--ease-spring) both;
+      animation: sectionReveal 0.34s var(--ease-spring) both;
     }
     @keyframes sectionReveal {
       from {
         opacity: 0;
-        transform: translateY(14px);
+        transform: translateY(12px);
       }
       to {
         opacity: 1;
@@ -153,13 +152,13 @@
     }
 
     .button-quiet {
-      background: rgba(255, 255, 255, 0.05) !important;
-      color: #e4e4e7 !important;
-      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      background: rgba(255, 255, 255, 0.06) !important;
+      color: #ececf0 !important;
+      border: 1px solid rgba(255, 255, 255, 0.14) !important;
       backdrop-filter: blur(8px);
     }
     .button-quiet:hover {
-      background: rgba(255, 255, 255, 0.1) !important;
+      background: rgba(255, 255, 255, 0.11) !important;
       border-color: rgba(212, 160, 23, 0.45) !important;
       color: #ffffff !important;
       transform: translateY(-2px) !important;
@@ -295,14 +294,14 @@
     }
 
     /* ==============================================================
-       3. EDITORIAL & PLATFORM CONTENT BLOCKS (AD-SAFE NATURAL FLOW)
+       3. EDITORIAL & PLATFORM CONTENT BLOCKS
     ============================================================== */
     .editorial-showcase {
-      margin-top: 44px;
+      margin-top: 40px;
       margin-bottom: 24px;
       padding: 28px;
-      background: linear-gradient(155deg, rgba(24, 24, 28, 0.84) 0%, rgba(15, 15, 18, 0.92) 100%);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: linear-gradient(155deg, rgba(24, 24, 28, 0.88) 0%, rgba(15, 15, 18, 0.94) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.09);
       border-radius: 20px;
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
@@ -316,7 +315,7 @@
       gap: 12px;
       margin-bottom: 22px;
       padding-bottom: 16px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
     .editorial-showcase-header h2,
     .editorial-showcase-header h3 {
@@ -328,7 +327,7 @@
       letter-spacing: -0.2px;
     }
     .editorial-showcase-header p.editorial-lead {
-      color: #a1a1aa;
+      color: #b4b4be;
       font-size: 13.5px;
       line-height: 1.5;
       max-width: 560px;
@@ -363,8 +362,8 @@
     }
 
     .editorial-card {
-      background: rgba(14, 14, 17, 0.78);
-      border: 1px solid rgba(255, 255, 255, 0.07);
+      background: rgba(14, 14, 17, 0.84);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 16px;
       padding: 20px;
       display: flex;
@@ -378,8 +377,8 @@
     }
     .editorial-card:hover {
       transform: translateY(-4px);
-      border-color: rgba(212, 160, 23, 0.42);
-      background: rgba(22, 22, 26, 0.92);
+      border-color: rgba(212, 160, 23, 0.45);
+      background: rgba(22, 22, 26, 0.95);
       box-shadow: 0 14px 32px rgba(0, 0, 0, 0.5);
     }
     .editorial-card-badge {
@@ -389,8 +388,8 @@
       width: fit-content;
       padding: 4px 10px;
       border-radius: 999px;
-      background: rgba(212, 160, 23, 0.12);
-      border: 1px solid rgba(212, 160, 23, 0.3);
+      background: rgba(212, 160, 23, 0.14);
+      border: 1px solid rgba(212, 160, 23, 0.34);
       color: #f3ca52;
       font-size: 11px;
       font-weight: 700;
@@ -406,7 +405,7 @@
       line-height: 1.3;
     }
     .editorial-card p {
-      color: #b4b4bc;
+      color: #b8b8c2;
       font-size: 13.5px;
       line-height: 1.58;
       margin: 0;
@@ -414,8 +413,8 @@
     .editorial-card-meta {
       margin-top: auto;
       padding-top: 10px;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
-      color: #8e8e98;
+      border-top: 1px solid rgba(255, 255, 255, 0.07);
+      color: #9898a4;
       font-size: 12px;
       font-weight: 600;
       display: flex;
@@ -446,18 +445,17 @@
     .save-current { bottom: 28px; position: fixed; right: 28px; z-index: 400; }
     .history-row { border: 0; color: inherit; cursor: pointer; text-align: left; width: 100%; transition: transform 0.2s ease, border-color 0.2s ease; }
     .history-row:hover { transform: translateX(3px); }
-    .notification-unread { border-left: 3px solid #d4a017; }
     .comment-replies { border-left: 1px solid #343434; margin: 12px 0 0 18px; padding-left: 14px; }
     .empty-state {
       text-align: center;
       padding: 36px 22px;
-      color: #9ca3af;
+      color: #a1a1aa;
       font-size: 14px;
       line-height: 1.55;
-      background: rgba(20, 20, 24, 0.65);
-      border: 1px dashed rgba(212, 160, 23, 0.28);
+      background: rgba(20, 20, 24, 0.72);
+      border: 1px dashed rgba(212, 160, 23, 0.32);
       border-radius: 16px;
-      margin-top: 16px;
+      margin-top: 12px;
     }
     .creator-rejection-banner {
       background: rgba(231, 76, 60, 0.12);
@@ -505,11 +503,11 @@
     .modal-root { position: fixed !important; inset: 0 !important; background: rgba(0,0,0,0.84) !important; z-index: 700 !important; display: flex !important; align-items: flex-start !important; justify-content: center !important; padding: 68px 18px 110px 18px !important; overflow-y: auto !important; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
     .modal-root.hidden { display: none !important; }
     .modal {
-      background: linear-gradient(165deg, rgba(26, 26, 30, 0.96) 0%, rgba(15, 15, 18, 0.98) 100%) !important;
-      border: 1px solid rgba(212, 160, 23, 0.32) !important;
+      background: linear-gradient(165deg, rgba(26, 26, 30, 0.97) 0%, rgba(15, 15, 18, 0.99) 100%) !important;
+      border: 1px solid rgba(212, 160, 23, 0.34) !important;
       border-radius: 22px !important;
       width: 100% !important;
-      max-width: 520px !important;
+      max-width: 540px !important;
       margin: auto !important;
       flex-shrink: 0 !important;
       box-shadow: 0 28px 70px rgba(0,0,0,0.88), 0 0 0 1px rgba(255,255,255,0.04) inset !important;
@@ -603,19 +601,6 @@
       flex-direction: column !important;
       gap: 7px !important;
       margin: 0 !important;
-      animation: fieldFadeUp 0.36s var(--ease-spring) backwards;
-    }
-    .studio-field:nth-child(1) { animation-delay: 0.03s; }
-    .studio-field:nth-child(2) { animation-delay: 0.06s; }
-    .studio-field:nth-child(3) { animation-delay: 0.09s; }
-    .studio-field:nth-child(4) { animation-delay: 0.12s; }
-    .studio-field:nth-child(5) { animation-delay: 0.15s; }
-    .studio-field:nth-child(6) { animation-delay: 0.18s; }
-    .studio-field:nth-child(7) { animation-delay: 0.21s; }
-
-    @keyframes fieldFadeUp {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
     }
 
     .studio-field-label {
@@ -638,7 +623,7 @@
       color: #888;
     }
 
-    /* Series Dropdown Terminate / Complete Controls */
+    /* Series Dropdown Complete / Restore Controls */
     .series-dropdown-tools {
       display: flex;
       flex-wrap: wrap;
@@ -1496,31 +1481,285 @@
     }
 
     /* ==============================================================
-       9. WALLET & REWARDS GLASSMORPHIC UPGRADES
+       9. WALLET & REWARDS HIGH-CONTRAST GLASSMORPHIC UPGRADES
     ============================================================== */
+    #section-wallet h1,
+    #section-rewards h1 {
+      font-family: 'Space Grotesk', sans-serif !important;
+      font-weight: 700 !important;
+      letter-spacing: -0.4px;
+      color: #ffffff;
+    }
+
+    .wallet-overview {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+    @media (max-width: 680px) {
+      .wallet-overview {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .wallet-overview .balance-card,
     .wallet-overview .wallet-stat {
-      background: linear-gradient(145deg, rgba(26, 26, 30, 0.88) 0%, rgba(16, 16, 19, 0.94) 100%) !important;
-      border: 1px solid rgba(212, 160, 23, 0.26) !important;
-      border-radius: 18px !important;
+      background: linear-gradient(145deg, rgba(28, 28, 34, 0.94) 0%, rgba(16, 16, 20, 0.98) 100%) !important;
+      border: 1.5px solid rgba(212, 160, 23, 0.34) !important;
+      border-radius: 20px !important;
+      padding: 24px 26px !important;
       backdrop-filter: blur(14px);
+      box-shadow: 0 16px 38px rgba(0, 0, 0, 0.45);
       transition: transform 0.24s var(--ease-spring), border-color 0.24s ease, box-shadow 0.24s ease;
     }
     .wallet-overview .balance-card:hover,
     .wallet-overview .wallet-stat:hover {
       transform: translateY(-3px);
-      border-color: rgba(212, 160, 23, 0.52) !important;
-      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.45);
+      border-color: rgba(243, 202, 82, 0.65) !important;
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.55);
+    }
+    .wallet-overview .balance-card .eyebrow,
+    .wallet-overview .wallet-stat .eyebrow {
+      color: #f3ca52 !important;
+      font-weight: 800 !important;
+      font-size: 11.5px !important;
+      letter-spacing: 1.3px !important;
+    }
+    .wallet-overview .balance-card strong,
+    .wallet-overview .wallet-stat strong {
+      font-family: 'Space Grotesk', sans-serif !important;
+      font-size: clamp(34px, 4.2vw, 46px) !important;
+      font-weight: 700 !important;
+      color: #ffffff !important;
+      line-height: 1.1 !important;
+      margin: 8px 0 10px !important;
+      letter-spacing: -0.6px;
+    }
+    .wallet-overview .balance-caption,
+    .wallet-overview .wallet-stat > span:last-child {
+      color: #c6c6d0 !important;
+      font-size: 13.5px !important;
+      font-weight: 500 !important;
+      line-height: 1.48 !important;
     }
 
+    /* Prominent Fast Withdrawal / Payout Setup CTA Card */
+    .wallet-payout-cta-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 22px 26px;
+      margin: 0 0 26px 0;
+      border-radius: 20px;
+      background:
+        radial-gradient(circle at 92% 20%, rgba(46, 204, 113, 0.16) 0%, transparent 45%),
+        radial-gradient(circle at 15% 85%, rgba(212, 160, 23, 0.18) 0%, transparent 50%),
+        linear-gradient(135deg, rgba(28, 25, 19, 0.96) 0%, rgba(16, 17, 20, 0.98) 100%);
+      border: 1.5px solid rgba(243, 202, 82, 0.48);
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      transition: transform 0.24s var(--ease-spring), border-color 0.24s ease, box-shadow 0.24s ease;
+    }
+    .wallet-payout-cta-card:hover {
+      transform: translateY(-2px);
+      border-color: #f3ca52;
+      box-shadow: 0 22px 48px rgba(212, 160, 23, 0.18);
+    }
+    .wallet-payout-cta-left {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      min-width: 0;
+    }
+    .wallet-payout-cta-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(243, 202, 82, 0.24), rgba(46, 204, 113, 0.16));
+      border: 1px solid rgba(243, 202, 82, 0.55);
+      color: #f3ca52;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .wallet-payout-cta-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .wallet-payout-cta-title-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+    .wallet-payout-cta-copy h3 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 19px;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0;
+      letter-spacing: -0.2px;
+    }
+    .payout-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      background: rgba(243, 202, 82, 0.16);
+      border: 1px solid rgba(243, 202, 82, 0.45);
+      color: #f3ca52;
+    }
+    .payout-status-pill.is-verified {
+      background: rgba(46, 204, 113, 0.16);
+      border-color: rgba(46, 204, 113, 0.48);
+      color: #2ecc71;
+    }
+    .wallet-payout-cta-copy p {
+      color: #d4d4de;
+      font-size: 13.8px;
+      font-weight: 500;
+      line-height: 1.5;
+      margin: 0;
+      max-width: 600px;
+    }
+    .wallet-payout-cta-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .wallet-payout-cta-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 13px 20px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #f3ca52 0%, #d4a017 60%, #b5850b 100%);
+      color: #111111;
+      border: 1px solid rgba(255, 238, 175, 0.55);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 14.5px;
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+      box-shadow: 0 10px 26px rgba(212, 160, 23, 0.34);
+      transition: transform 0.2s var(--ease-spring), box-shadow 0.22s ease, filter 0.22s ease;
+    }
+    .wallet-payout-cta-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 32px rgba(212, 160, 23, 0.48);
+      filter: brightness(1.04);
+      color: #111111;
+    }
+    @media (max-width: 780px) {
+      .wallet-payout-cta-card {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 20px;
+      }
+      .wallet-payout-cta-actions {
+        width: 100%;
+        align-items: stretch;
+      }
+      .wallet-payout-cta-btn {
+        width: 100%;
+      }
+    }
+
+    /* Bold Wallet & Rewards Ledger Rows */
+    #transactions-list .data-row,
+    #rewards-history .data-row {
+      background: rgba(24, 24, 29, 0.9) !important;
+      border: 1px solid rgba(255, 255, 255, 0.09) !important;
+      border-radius: 14px !important;
+      padding: 15px 18px !important;
+      margin-bottom: 10px;
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+    #transactions-list .data-row:hover,
+    #rewards-history .data-row:hover {
+      border-color: rgba(212, 160, 23, 0.38) !important;
+      transform: translateY(-1px);
+    }
+    #transactions-list .data-row strong,
+    #rewards-history .data-row strong {
+      color: #ffffff !important;
+      font-weight: 700 !important;
+      font-size: 14.5px !important;
+    }
+
+    /* Rewards Hero & Mission Cards */
     .rewards-hero {
       background:
-        radial-gradient(circle at 80% 15%, rgba(212, 160, 23, 0.2) 0%, transparent 50%),
-        linear-gradient(140deg, rgba(28, 24, 18, 0.92) 0%, rgba(16, 16, 19, 0.96) 100%) !important;
-      border: 1px solid rgba(212, 160, 23, 0.32) !important;
-      border-radius: 20px !important;
+        radial-gradient(circle at 80% 15%, rgba(212, 160, 23, 0.24) 0%, transparent 50%),
+        linear-gradient(140deg, rgba(30, 26, 19, 0.95) 0%, rgba(16, 16, 20, 0.98) 100%) !important;
+      border: 1.5px solid rgba(212, 160, 23, 0.38) !important;
+      border-radius: 22px !important;
+      padding: 26px 28px !important;
       backdrop-filter: blur(14px);
-      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.44);
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.48);
+    }
+    .rewards-hero .eyebrow {
+      color: #f3ca52 !important;
+      font-weight: 800 !important;
+      letter-spacing: 1.3px !important;
+    }
+    .rewards-hero .muted {
+      color: #d0d0da !important;
+      font-size: 14px !important;
+      font-weight: 500 !important;
+    }
+    .rewards-balance strong {
+      font-family: 'Space Grotesk', sans-serif !important;
+      font-size: 40px !important;
+      font-weight: 700 !important;
+      color: #ffffff !important;
+    }
+    .reward-streak {
+      color: #f3ca52 !important;
+      font-weight: 700 !important;
+      font-size: 13px !important;
+    }
+
+    .daily-reward-card,
+    .rewards-grid .reward-card,
+    .rewards-grid > div {
+      background: linear-gradient(145deg, rgba(26, 26, 32, 0.92) 0%, rgba(16, 16, 20, 0.96) 100%) !important;
+      border: 1px solid rgba(212, 160, 23, 0.28) !important;
+      border-radius: 18px !important;
+      padding: 20px 22px !important;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+      transition: transform 0.22s var(--ease-spring), border-color 0.22s ease;
+    }
+    .daily-reward-card:hover,
+    .rewards-grid .reward-card:hover,
+    .rewards-grid > div:hover {
+      border-color: rgba(243, 202, 82, 0.55) !important;
+      transform: translateY(-2px);
+    }
+    .daily-reward-card h3,
+    .rewards-grid h3,
+    .rewards-grid h4 {
+      font-family: 'Space Grotesk', sans-serif !important;
+      font-weight: 700 !important;
+      color: #ffffff !important;
+    }
+    .daily-reward-card p,
+    .rewards-grid p {
+      color: #c8c8d2 !important;
+      font-weight: 500 !important;
     }
 
     /* ==============================================================
@@ -1923,45 +2162,137 @@
     }
 
     /* ==============================================================
-       14. NOTIFICATION DISMISS & CLEAR CONTROLS
+       14. SEPARATED NOTIFICATION DETAIL CARDS & DISMISS CONTROLS
     ============================================================== */
+    .notification-panel {
+      max-width: 560px !important;
+    }
     .notification-toolbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding-bottom: 10px;
-      margin-bottom: 12px;
-      border-bottom: 1px solid #262626;
+      padding-bottom: 12px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+    }
+    #notification-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 62vh;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .notif-card-item {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 15px 16px;
+      border-radius: 16px;
+      background: rgba(24, 24, 30, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+      cursor: pointer;
+      transition: transform 0.2s var(--ease-spring), border-color 0.2s ease, background 0.2s ease, opacity 0.22s ease;
+    }
+    .notif-card-item:hover {
+      transform: translateY(-2px);
+      border-color: rgba(212, 160, 23, 0.45);
+      background: rgba(30, 30, 38, 0.98);
+    }
+    .notif-card-item.notification-unread {
+      border-left: 4px solid #d4a017;
+      background: linear-gradient(135deg, rgba(212, 160, 23, 0.12) 0%, rgba(24, 24, 30, 0.96) 60%);
+    }
+    .notif-card-body {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .notif-card-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .notif-type-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      background: rgba(212, 160, 23, 0.16);
+      border: 1px solid rgba(212, 160, 23, 0.36);
+      color: #f3ca52;
+    }
+    .notif-unread-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #f3ca52;
+      box-shadow: 0 0 8px rgba(243, 202, 82, 0.85);
+    }
+    .notif-time-label {
+      color: #8e8e9c;
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+    .notif-card-title {
+      color: #ffffff;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.35;
+      margin: 0;
+    }
+    .notif-card-message {
+      color: #c8c8d4;
+      font-size: 13.5px;
+      line-height: 1.5;
+      margin: 0;
+      word-break: break-word;
+    }
+    .notif-card-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      width: fit-content;
+      margin-top: 2px;
+      color: #f3ca52;
+      font-size: 12.5px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .notif-card-link:hover {
+      text-decoration: underline;
     }
     .notif-delete-btn {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid #333;
-      color: #aaa;
-      width: 28px;
-      height: 28px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #b4b4be;
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 15px;
+      font-size: 16px;
       line-height: 1;
       cursor: pointer;
       flex-shrink: 0;
-      margin-left: auto;
       transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
     }
     .notif-delete-btn:hover {
-      background: rgba(231, 76, 60, 0.18);
-      border-color: rgba(231, 76, 60, 0.5);
+      background: rgba(231, 76, 60, 0.2);
+      border-color: rgba(231, 76, 60, 0.55);
       color: #ff6b5b;
-    }
-    .notif-row-enhanced {
-      display: flex !important;
-      align-items: flex-start !important;
-      justify-content: space-between !important;
-      gap: 12px !important;
-      transition: opacity 0.22s ease, transform 0.22s ease;
     }
     .notif-row-removing {
       opacity: 0 !important;
@@ -1995,7 +2326,7 @@
     }
 
     /* ==============================================================
-       16. LEGAL & SUPPORT FOOTER (CRAWLER & USER ACCESSIBLE)
+       16. LEGAL & SUPPORT FOOTER
     ============================================================== */
     .app-footer {
       margin-top: 52px;
@@ -2181,7 +2512,7 @@
       </section>
 
       <!-- ============================================================
-           3. WALLET SECTION
+           3. WALLET SECTION (Bolder Hierarchy + Fast Payout Setup CTA)
       ============================================================ -->
       <section id="section-wallet" class="app-section hidden">
         <div class="section-heading">
@@ -2194,12 +2525,40 @@
         </div>
 
         <div class="wallet-overview">
-          <div class="balance-card"><span class="eyebrow">AVAILABLE COINS</span><strong style="display: inline-flex; align-items: center; gap: 6px;"><span style="color: #d4a017; font-size: 0.9em;">◈</span><span id="wallet-balance">0</span></strong><span class="balance-caption">Use Story Coins (10–25 per episode) or VIP Passes to unlock premium cliffhangers.</span></div>
-          <div class="wallet-stat"><span class="eyebrow">TOTAL EARNED</span><strong style="display: inline-flex; align-items: center; gap: 4px;"><span style="color: #2ecc71; font-size: 0.9em;">₦</span><span id="wallet-earned">0</span></strong><span>Verified creator earnings</span></div>
+          <div class="balance-card">
+            <span class="eyebrow">AVAILABLE STORY COINS</span>
+            <strong style="display: inline-flex; align-items: center; gap: 8px;"><span style="color: #f3ca52; font-size: 0.92em;">◈</span><span id="wallet-balance">0</span></strong>
+            <span class="balance-caption" id="wallet-coin-rate-note">Use Story Coins (10–25 per episode) or VIP Passes to unlock premium cliffhangers instantly.</span>
+          </div>
+          <div class="wallet-stat">
+            <span class="eyebrow">TOTAL EARNED (NAIRA)</span>
+            <strong style="display: inline-flex; align-items: center; gap: 6px;"><span style="color: #2ecc71; font-size: 0.92em;">₦</span><span id="wallet-earned">0</span></strong>
+            <span>Verified creator &amp; affiliate earnings ready for payout</span>
+          </div>
+        </div>
+
+        <!-- Fast Withdrawal / Payout Setup CTA Card -->
+        <div id="wallet-payout-cta-card" class="wallet-payout-cta-card">
+          <div class="wallet-payout-cta-left">
+            <div class="wallet-payout-cta-icon" aria-hidden="true">₦</div>
+            <div class="wallet-payout-cta-copy">
+              <div class="wallet-payout-cta-title-row">
+                <h3>Fast Bank &amp; Payout Account Setup</h3>
+                <span id="payout-setup-status-badge" class="payout-status-pill">Action Required</span>
+              </div>
+              <p>Connect your verified Nigerian bank account or payout channel now so creator revenue and Naira withdrawals settle quickly without payout delays.</p>
+            </div>
+          </div>
+          <div class="wallet-payout-cta-actions">
+            <a id="wallet-payout-setup-btn" href="/withdraw-setup.html" class="wallet-payout-cta-btn">
+              <span>Set Up Payout Account</span>
+              <span aria-hidden="true">→</span>
+            </a>
+          </div>
         </div>
 
         <!-- Wallet Utility & Story Economy Overview -->
-        <article class="editorial-showcase" style="margin-top:26px; margin-bottom:28px;" aria-label="Story Economy Guide">
+        <article class="editorial-showcase" style="margin-top:10px; margin-bottom:28px;" aria-label="Story Economy Guide">
           <div class="editorial-showcase-header">
             <div>
               <p class="eyebrow">HOW YOUR WALLET WORKS</p>
@@ -2222,9 +2581,9 @@
             </div>
             <div class="editorial-card">
               <span class="editorial-card-badge">₦ Creator Revenue</span>
-              <h4>Transparent Creator Earnings</h4>
-              <p>Approved storytellers earn revenue whenever viewers unlock premium episodes or watch ad-supported releases, with direct Naira payout tracking.</p>
-              <div class="editorial-card-meta"><span>Real-Time Ledger</span><span>Verified Withdrawals</span></div>
+              <h4>Direct Naira Bank Withdrawals</h4>
+              <p>Approved storytellers earn revenue whenever viewers unlock premium episodes or watch ad-supported releases, settled straight to your configured bank account.</p>
+              <div class="editorial-card-meta"><span>Real-Time Ledger</span><span>Fast Payouts</span></div>
             </div>
           </div>
         </article>
@@ -2241,7 +2600,7 @@
       <section id="section-rewards" class="app-section hidden">
         <div class="rewards-hero">
           <div><p class="eyebrow">AFRISTORY REWARDS</p><h1>Return. Discover. Earn.</h1><p class="muted">Complete daily check-ins, watch sponsored previews, and support African storytellers to earn Story Coins.</p></div>
-          <div class="rewards-balance"><span class="eyebrow">CURRENT BALANCE</span><strong style="display: inline-flex; align-items: center; gap: 6px;"><span style="color: #d4a017; font-size: 0.9em;">◈</span><span id="rewards-balance">0</span></strong><span>story coins</span><div class="reward-streak"><b id="reward-current-streak">0</b> day streak <small>Best <span id="reward-best-streak">0</span></small></div></div>
+          <div class="rewards-balance"><span class="eyebrow">CURRENT BALANCE</span><strong style="display: inline-flex; align-items: center; gap: 6px;"><span style="color: #f3ca52; font-size: 0.9em;">◈</span><span id="rewards-balance">0</span></strong><span>story coins</span><div class="reward-streak"><b id="reward-current-streak">0</b> day streak <small>Best <span id="reward-best-streak">0</span></small></div></div>
         </div>
 
         <div id="daily-reward-card" class="daily-reward-card"></div>
@@ -2285,7 +2644,9 @@
         </article>
 
         <div class="section-heading compact-heading" style="margin-top:28px;"><div><p class="eyebrow">REWARD HISTORY</p><h2>Recent activity</h2></div></div>
-        <div id="rewards-history" class="data-list"></div>
+        <div id="rewards-history" class="data-list">
+          <div class="empty-state hidden" id="empty-rewards-history"><p>No reward activity yet. Claim your daily check-in or complete a mission above to earn your first Story Coins.</p></div>
+        </div>
       </section>
 
       <!-- ============================================================
@@ -2617,7 +2978,7 @@
         <button class="modal-close" data-action="close-upload" aria-label="Close">×</button>
       </div>
 
-      <!-- Step 1: Episode Upload Form with Series Termination Control -->
+      <!-- Step 1: Episode Upload Form with Series Completion Control -->
       <form id="upload-form" class="studio-premium-form">
         <div class="studio-field">
           <label class="studio-field-label" for="upload-series">
@@ -2803,19 +3164,28 @@
 
   <div id="notification-modal" class="modal-root hidden">
     <div class="modal notification-panel" role="dialog" aria-modal="true" aria-labelledby="notification-title">
-      <div class="modal-header"><div><p class="eyebrow">YOUR INBOX</p><h2 id="notification-title">Notifications</h2></div><button class="modal-close" data-action="close-notifications" aria-label="Close notifications">×</button></div>
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">YOUR INBOX</p>
+          <h2 id="notification-title">Notifications</h2>
+          <p class="modal-subtitle">Updates on rewards, episode uploads, unlocks, and creator earnings.</p>
+        </div>
+        <button class="modal-close" data-action="close-notifications" aria-label="Close notifications">×</button>
+      </div>
       <div class="modal-actions notification-toolbar">
         <button class="text-button" data-action="read-all">Mark all as read</button>
         <button class="text-button" id="clear-all-notifications-btn" type="button" style="color:#ff7b6b;">Clear all</button>
       </div>
-      <div id="notification-list" class="data-list"><div class="empty-state hidden" id="empty-notifications"><p>No new notifications.</p></div></div>
+      <div id="notification-list" class="data-list">
+        <div class="empty-state hidden" id="empty-notifications"><p>No new notifications.</p></div>
+      </div>
     </div>
   </div>
 
   <div id="modal-root" class="modal-root hidden"></div>
   <div id="toast-region" class="toast-region" aria-live="polite"></div>
 
-  <!-- Instant UI Bridge: Series Dropdown Termination, Immediate Circular Upload Meter, Real-Time Background Sync & VIP Pass Pricing -->
+  <!-- Lightweight UI Bridge Aligned Directly with main.js & Fastify Backend Routes -->
   <script>
     (function () {
       const watchSection = document.getElementById('section-watch');
@@ -2823,43 +3193,48 @@
       const sidebarEl = document.querySelector('.sidebar');
 
       // ==============================================================
-      // A. DESKTOP SIDEBAR AD BOUNDARY GUARD
+      // A. DEBOUNCED DESKTOP SIDEBAR AD BOUNDARY GUARD
       // ==============================================================
+      let adBoundaryRaf = null;
       function enforceSidebarAdBoundary() {
-        if (window.innerWidth <= 800 || !sidebarEl) return;
-        const sidebarRect = sidebarEl.getBoundingClientRect();
-        if (!sidebarRect.width) return;
+        if (adBoundaryRaf) return;
+        adBoundaryRaf = requestAnimationFrame(() => {
+          adBoundaryRaf = null;
+          if (window.innerWidth <= 800 || !sidebarEl) return;
+          const sidebarRect = sidebarEl.getBoundingClientRect();
+          if (!sidebarRect.width) return;
 
-        const safeLeft = Math.ceil(sidebarRect.right + 28);
-        const maxSafeWidth = Math.max(300, window.innerWidth - safeLeft - 28);
-        document.documentElement.style.setProperty('--sidebar-safe-left', safeLeft + 'px');
+          const safeLeft = Math.ceil(sidebarRect.right + 28);
+          const maxSafeWidth = Math.max(300, window.innerWidth - safeLeft - 28);
+          document.documentElement.style.setProperty('--sidebar-safe-left', safeLeft + 'px');
 
-        document.querySelectorAll('body > div, body > iframe, body > ins').forEach((el) => {
-          if (
-            el.classList.contains('topbar') ||
-            el.classList.contains('app-layout') ||
-            el.classList.contains('modal-root') ||
-            el.classList.contains('toast-region') ||
-            el.classList.contains('bottom-sheet-overlay') ||
-            el.classList.contains('swal2-container') ||
-            el.classList.contains('bg-upload-pill') ||
-            el.id === 'save-current'
-          ) {
-            return;
-          }
-          const style = window.getComputedStyle(el);
-          if (style.position === 'fixed' || style.position === 'sticky') {
-            const rect = el.getBoundingClientRect();
-            if (rect.width > 0 && rect.height > 0 && rect.left < safeLeft) {
-              el.style.setProperty('left', safeLeft + 'px', 'important');
-              el.style.setProperty('right', '28px', 'important');
-              el.style.setProperty('transform', 'none', 'important');
-              el.style.setProperty('width', 'auto', 'important');
-              el.style.setProperty('max-width', maxSafeWidth + 'px', 'important');
-              el.style.setProperty('margin-left', 'auto', 'important');
-              el.style.setProperty('margin-right', 'auto', 'important');
+          document.querySelectorAll('body > div, body > iframe, body > ins').forEach((el) => {
+            if (
+              el.classList.contains('topbar') ||
+              el.classList.contains('app-layout') ||
+              el.classList.contains('modal-root') ||
+              el.classList.contains('toast-region') ||
+              el.classList.contains('bottom-sheet-overlay') ||
+              el.classList.contains('swal2-container') ||
+              el.classList.contains('bg-upload-pill') ||
+              el.id === 'save-current'
+            ) {
+              return;
             }
-          }
+            const style = window.getComputedStyle(el);
+            if (style.position === 'fixed' || style.position === 'sticky') {
+              const rect = el.getBoundingClientRect();
+              if (rect.width > 0 && rect.height > 0 && rect.left < safeLeft) {
+                el.style.setProperty('left', safeLeft + 'px', 'important');
+                el.style.setProperty('right', '28px', 'important');
+                el.style.setProperty('transform', 'none', 'important');
+                el.style.setProperty('width', 'auto', 'important');
+                el.style.setProperty('max-width', maxSafeWidth + 'px', 'important');
+                el.style.setProperty('margin-left', 'auto', 'important');
+                el.style.setProperty('margin-right', 'auto', 'important');
+              }
+            }
+          });
         });
       }
 
@@ -2925,33 +3300,9 @@
         });
       });
 
-      const feedEl = document.getElementById('tiktok-feed');
-      if (feedEl) {
-        new MutationObserver(function () {
-          feedEl.querySelectorAll('video').forEach((video) => {
-            if (video.hasAttribute('poster')) {
-              video.removeAttribute('poster');
-              video.setAttribute('preload', 'auto');
-            }
-            const hook = Number(video.dataset.hookStart || 0);
-            if (hook > 0 && !video.dataset.hookApplied) {
-              video.dataset.hookApplied = 'true';
-              const applyHook = () => {
-                if (video.currentTime < 0.5 && (!video.duration || hook < video.duration - 1)) {
-                  try { video.currentTime = hook; } catch (_) {}
-                }
-              };
-              if (video.readyState >= 1) applyHook();
-              else video.addEventListener('loadedmetadata', applyHook, { once: true });
-            }
-          });
-        }).observe(feedEl, { childList: true, subtree: true });
-      }
-
       // ==============================================================
-      // C. TERMINATE / COMPLETE SERIES FROM UPLOAD DROPDOWN
+      // C. SERIES COMPLETION SYNC (PUT /api/series/:seriesId/update)
       // ==============================================================
-      const COMPLETED_SERIES_KEY = 'afristory_completed_series_v1';
       const uploadSeriesSelect = document.getElementById('upload-series');
       const terminateSeriesBtn = document.getElementById('terminate-series-btn');
       const toggleArchivedBtn = document.getElementById('toggle-archived-series-btn');
@@ -2959,146 +3310,17 @@
       const archivedDrawer = document.getElementById('series-archived-drawer');
       const noActiveSeriesAlert = document.getElementById('no-active-series-alert');
       const activeSeriesCounter = document.getElementById('active-series-counter');
-      const knownSeriesCatalog = new Map(); // id -> title
 
-      function getCompletedSeriesMap() {
-        try {
-          const parsed = JSON.parse(localStorage.getItem(COMPLETED_SERIES_KEY) || '{}');
-          return parsed && typeof parsed === 'object' ? parsed : {};
-        } catch (_) {
-          return {};
-        }
+      function updateSeriesDropdownCounts() {
+        if (!uploadSeriesSelect) return;
+        const activeCount = Array.from(uploadSeriesSelect.options).filter((o) => Boolean(o.value)).length;
+        if (activeSeriesCounter) activeSeriesCounter.textContent = `${activeCount} active`;
+        if (terminateSeriesBtn) terminateSeriesBtn.disabled = activeCount === 0;
+        if (noActiveSeriesAlert) noActiveSeriesAlert.classList.toggle('hidden', activeCount > 0);
       }
 
-      function saveCompletedSeriesMap(map) {
-        try {
-          localStorage.setItem(COMPLETED_SERIES_KEY, JSON.stringify(map));
-        } catch (_) {}
-      }
-
-      function syncSeriesCompletedBackend(seriesId, isCompleted) {
-        if (!seriesId) return;
-        const token = localStorage.getItem('token') || localStorage.getItem('afristory_token') || '';
-        const headers = {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: 'Bearer ' + token } : {})
-        };
-        const payload = JSON.stringify({
-          completed: isCompleted,
-          isCompleted: isCompleted,
-          uploadCompleted: isCompleted,
-          status: isCompleted ? 'completed' : 'ongoing'
-        });
-        nativeFetch(`/api/creator/series/${encodeURIComponent(seriesId)}`, {
-          method: 'PATCH',
-          credentials: 'include',
-          headers,
-          body: payload
-        }).catch(() => {});
-        nativeFetch(`/api/series/${encodeURIComponent(seriesId)}`, {
-          method: 'PATCH',
-          credentials: 'include',
-          headers,
-          body: payload
-        }).catch(() => {});
-      }
-
-      let isFilteringDropdown = false;
-      function filterUploadSeriesDropdown() {
-        if (!uploadSeriesSelect || isFilteringDropdown) return;
-        isFilteringDropdown = true;
-        try {
-          const completedMap = getCompletedSeriesMap();
-          const allOptions = Array.from(uploadSeriesSelect.options);
-
-          allOptions.forEach((opt) => {
-            if (opt.value) {
-              knownSeriesCatalog.set(opt.value, opt.textContent.trim());
-            }
-          });
-
-          let removedAny = false;
-          allOptions.forEach((opt) => {
-            if (opt.value && completedMap[opt.value]) {
-              opt.remove();
-              removedAny = true;
-            }
-          });
-
-          const remainingOptions = Array.from(uploadSeriesSelect.options).filter((o) => Boolean(o.value));
-          if (removedAny && remainingOptions.length > 0 && !uploadSeriesSelect.value) {
-            uploadSeriesSelect.value = remainingOptions[0].value;
-          }
-
-          if (activeSeriesCounter) {
-            activeSeriesCounter.textContent = `${remainingOptions.length} active`;
-          }
-          if (terminateSeriesBtn) {
-            terminateSeriesBtn.disabled = remainingOptions.length === 0;
-          }
-          if (noActiveSeriesAlert) {
-            noActiveSeriesAlert.classList.toggle('hidden', remainingOptions.length > 0);
-          }
-
-          renderArchivedSeriesDrawer();
-          decorateStudioSeriesCards();
-        } finally {
-          isFilteringDropdown = false;
-        }
-      }
-
-      function renderArchivedSeriesDrawer() {
-        const completedMap = getCompletedSeriesMap();
-        const archivedIds = Object.keys(completedMap);
-        if (archivedCountSpan) archivedCountSpan.textContent = String(archivedIds.length);
-        if (toggleArchivedBtn) toggleArchivedBtn.classList.toggle('hidden', archivedIds.length === 0);
-
-        if (!archivedDrawer) return;
-        if (archivedIds.length === 0) {
-          archivedDrawer.classList.add('hidden');
-          archivedDrawer.innerHTML = '';
-          return;
-        }
-
-        archivedDrawer.innerHTML = archivedIds
-          .map((id) => {
-            const title = completedMap[id] || knownSeriesCatalog.get(id) || 'Completed Series';
-            const safeTitle = title.replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
-            return `
-              <div class="series-archived-item">
-                <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">✓ ${safeTitle}</span>
-                <button type="button" class="series-restore-btn" data-restore-series-id="${id}">Restore</button>
-              </div>
-            `;
-          })
-          .join('');
-      }
-
-      function markSeriesCompleted(seriesId, seriesTitle) {
-        if (!seriesId) return;
-        const completedMap = getCompletedSeriesMap();
-        completedMap[seriesId] = seriesTitle || knownSeriesCatalog.get(seriesId) || 'Series';
-        saveCompletedSeriesMap(completedMap);
-        syncSeriesCompletedBackend(seriesId, true);
-        filterUploadSeriesDropdown();
-      }
-
-      function restoreCompletedSeries(seriesId) {
-        if (!seriesId) return;
-        const completedMap = getCompletedSeriesMap();
-        const title = completedMap[seriesId] || knownSeriesCatalog.get(seriesId) || 'Restored Series';
-        delete completedMap[seriesId];
-        saveCompletedSeriesMap(completedMap);
-        syncSeriesCompletedBackend(seriesId, false);
-
-        if (uploadSeriesSelect && !Array.from(uploadSeriesSelect.options).some((o) => o.value === seriesId)) {
-          const opt = document.createElement('option');
-          opt.value = seriesId;
-          opt.textContent = title;
-          uploadSeriesSelect.appendChild(opt);
-          uploadSeriesSelect.value = seriesId;
-        }
-        filterUploadSeriesDropdown();
+      if (uploadSeriesSelect) {
+        new MutationObserver(updateSeriesDropdownCounts).observe(uploadSeriesSelect, { childList: true });
       }
 
       terminateSeriesBtn?.addEventListener('click', () => {
@@ -3106,9 +3328,9 @@
         const selectedOpt = uploadSeriesSelect.options[uploadSeriesSelect.selectedIndex];
         const seriesId = selectedOpt && selectedOpt.value;
         if (!seriesId) return;
-        const seriesTitle = selectedOpt.textContent.trim();
-        markSeriesCompleted(seriesId, seriesTitle);
-        showQuickBannerToast(`"${seriesTitle}" marked complete and removed from upload dropdown.`, true);
+        window.dispatchEvent(new CustomEvent('afristory:set-series-status', {
+          detail: { seriesId, status: 'COMPLETED', title: selectedOpt.textContent.trim() }
+        }));
       });
 
       toggleArchivedBtn?.addEventListener('click', () => {
@@ -3118,63 +3340,12 @@
       archivedDrawer?.addEventListener('click', (e) => {
         const restoreBtn = e.target.closest('[data-restore-series-id]');
         if (!restoreBtn) return;
-        const id = restoreBtn.getAttribute('data-restore-series-id');
-        restoreCompletedSeries(id);
-        showQuickBannerToast('Series restored to upload dropdown.', true);
+        const seriesId = restoreBtn.getAttribute('data-restore-series-id');
+        if (!seriesId) return;
+        window.dispatchEvent(new CustomEvent('afristory:set-series-status', {
+          detail: { seriesId, status: 'ONGOING' }
+        }));
       });
-
-      if (uploadSeriesSelect) {
-        new MutationObserver(filterUploadSeriesDropdown).observe(uploadSeriesSelect, {
-          childList: true,
-          subtree: true
-        });
-      }
-
-      function decorateStudioSeriesCards() {
-        const mySeriesGrid = document.getElementById('my-series-grid');
-        if (!mySeriesGrid) return;
-        const completedMap = getCompletedSeriesMap();
-        mySeriesGrid.querySelectorAll('[data-series-id], .series-card, .content-card').forEach((card) => {
-          const sId =
-            card.getAttribute('data-series-id') ||
-            card.dataset.id ||
-            card.querySelector('[data-series-id]')?.getAttribute('data-series-id');
-          if (!sId) return;
-          const titleEl = card.querySelector('h3, h4, .card-title, strong');
-          const sTitle = titleEl ? titleEl.textContent.trim() : knownSeriesCatalog.get(sId) || 'Series';
-          knownSeriesCatalog.set(sId, sTitle);
-
-          let bar = card.querySelector('.studio-series-status-bar');
-          if (!bar) {
-            bar = document.createElement('div');
-            bar.className = 'studio-series-status-bar';
-            bar.innerHTML = `<button type="button" class="studio-series-complete-btn"></button>`;
-            card.appendChild(bar);
-          }
-          const btn = bar.querySelector('.studio-series-complete-btn');
-          const isDone = Boolean(completedMap[sId]);
-          btn.classList.toggle('is-done', isDone);
-          btn.textContent = isDone ? '✓ Completed (Hidden from upload)' : 'Mark Series Complete';
-          btn.onclick = (evt) => {
-            evt.stopPropagation();
-            if (getCompletedSeriesMap()[sId]) {
-              restoreCompletedSeries(sId);
-              showQuickBannerToast(`"${sTitle}" restored to upload dropdown.`, true);
-            } else {
-              markSeriesCompleted(sId, sTitle);
-              showQuickBannerToast(`"${sTitle}" marked complete and removed from upload dropdown.`, true);
-            }
-          };
-        });
-      }
-
-      const mySeriesGridEl = document.getElementById('my-series-grid');
-      if (mySeriesGridEl) {
-        new MutationObserver(decorateStudioSeriesCards).observe(mySeriesGridEl, {
-          childList: true,
-          subtree: true
-        });
-      }
 
       // ==============================================================
       // D. ONE-TIME CREATOR STUDIO APPROVAL WELCOME BANNER
@@ -3182,45 +3353,20 @@
       const CREATOR_WELCOME_KEY = 'afristory_creator_welcome_seen_v1';
       const creatorDashboard = document.getElementById('creator-dashboard');
       const creatorWelcomeBanner = document.getElementById('creator-welcome-banner');
-      let creatorSessionViewed = false;
 
       function markCreatorWelcomeSeen() {
         try { localStorage.setItem(CREATOR_WELCOME_KEY, '1'); } catch (_) {}
         if (creatorWelcomeBanner) creatorWelcomeBanner.classList.add('hidden');
       }
 
-      function stripLegacyWelcomeBanners() {
-        if (!creatorDashboard) return;
-        creatorDashboard.querySelectorAll('div, section, article').forEach((el) => {
-          if (el.id === 'creator-welcome-banner' || el.id === 'studio-upload-tracker') return;
-          const txt = (el.textContent || '').toLowerCase();
-          if (
-            txt.includes('congratulations') &&
-            (txt.includes('creator') || txt.includes('approved')) &&
-            el.querySelectorAll('button').length <= 2 &&
-            el.children.length <= 5
-          ) {
-            el.remove();
-          }
-        });
-      }
-
       function syncCreatorWelcomeBanner() {
         if (!creatorDashboard || !creatorWelcomeBanner) return;
-        stripLegacyWelcomeBanners();
-        const isDashboardVisible = !creatorDashboard.classList.contains('hidden');
-        if (!isDashboardVisible) return;
-
+        if (creatorDashboard.classList.contains('hidden')) return;
         let alreadySeen = false;
         try { alreadySeen = localStorage.getItem(CREATOR_WELCOME_KEY) === '1'; } catch (_) {}
-
         if (alreadySeen) {
           creatorWelcomeBanner.classList.add('hidden');
-          return;
-        }
-
-        if (!creatorSessionViewed) {
-          creatorSessionViewed = true;
+        } else {
           creatorWelcomeBanner.classList.remove('hidden');
           try { localStorage.setItem(CREATOR_WELCOME_KEY, '1'); } catch (_) {}
         }
@@ -3229,8 +3375,7 @@
       if (creatorDashboard) {
         new MutationObserver(syncCreatorWelcomeBanner).observe(creatorDashboard, {
           attributes: true,
-          attributeFilter: ['class'],
-          childList: true
+          attributeFilter: ['class']
         });
       }
 
@@ -3241,11 +3386,10 @@
       });
 
       // ==============================================================
-      // E. IMMEDIATE CIRCULAR UPLOAD METER BAR (FETCH + XHR + MODAL LOCK)
+      // E. CIRCULAR UPLOAD PROGRESS METER API (CONTROLLED BY main.js)
       // ==============================================================
       const uploadModal = document.getElementById('upload-modal');
       const uploadForm = document.getElementById('upload-form');
-      const uploadSubmitBtn = document.getElementById('upload-submit-btn');
       const uploadStage = document.getElementById('upload-progress-stage');
       const roundFill = document.getElementById('round-progress-fill');
       const roundPct = document.getElementById('round-progress-pct');
@@ -3293,26 +3437,7 @@
 
       const BIG_CIRCUMFERENCE = 2 * Math.PI * 52;   // 326.73
       const MINI_CIRCUMFERENCE = 2 * Math.PI * 23;  // 144.51
-      let activeUploadState = {
-        active: false,
-        completed: false,
-        userMinimized: false,
-        title: '',
-        seriesId: '',
-        pct: 0
-      };
-      let fallbackProgressTimer = null;
-
-      // Guard #upload-modal so main.js cannot auto-hide the round progress ring mid-upload
-      if (uploadModal) {
-        new MutationObserver(() => {
-          if (activeUploadState.active && !activeUploadState.userMinimized && uploadModal.classList.contains('hidden')) {
-            uploadModal.classList.remove('hidden');
-            uploadForm?.classList.add('hidden');
-            uploadStage?.classList.remove('hidden');
-          }
-        }).observe(uploadModal, { attributes: true, attributeFilter: ['class'] });
-      }
+      let activeUploadState = { active: false, userMinimized: false, title: '', pct: 0 };
 
       function setUploadProgressUI(pct, titleText, subText, isComplete = false) {
         const clamped = Math.max(0, Math.min(100, Math.round(pct)));
@@ -3345,88 +3470,57 @@
         if (pillTitle) pillTitle.textContent = isComplete ? 'Episode published!' : `Uploading (${clamped}%)...`;
       }
 
-      function showCircularUploadStage(epTitle, seriesId) {
-        clearInterval(fallbackProgressTimer);
-        activeUploadState = {
-          active: true,
-          completed: false,
-          userMinimized: false,
-          title: epTitle,
-          seriesId: seriesId || (uploadSeriesSelect && uploadSeriesSelect.value) || '',
-          pct: 2
-        };
-        if (stageEp) stageEp.textContent = epTitle;
-        uploadModal?.classList.remove('hidden');
-        uploadForm?.classList.add('hidden');
-        uploadStage?.classList.remove('hidden');
-        studioTracker?.classList.remove('hidden');
-        setUploadProgressUI(
-          2,
-          'Uploading your episode...',
-          'You don\'t need to stay on this screen. Feel free to explore other parts of AfriStory — we will notify you as soon as your episode is ready, or return to Creator Studio anytime to track progress.',
-          false
-        );
-
-        fallbackProgressTimer = setInterval(() => {
-          if (activeUploadState.active && activeUploadState.pct < 84) {
-            setUploadProgressUI(activeUploadState.pct + 1);
-          }
-        }, 1400);
-      }
-
-      function finishCircularUploadStage(ok, epTitle) {
-        clearInterval(fallbackProgressTimer);
-        activeUploadState.active = false;
-        activeUploadState.completed = ok;
-        if (ok) {
+      window.AfriStoryUploadUI = {
+        isActive() {
+          return activeUploadState.active;
+        },
+        start(epTitle) {
+          activeUploadState = { active: true, userMinimized: false, title: epTitle || 'New Episode', pct: 2 };
+          if (stageEp) stageEp.textContent = activeUploadState.title;
+          uploadModal?.classList.remove('hidden');
+          uploadForm?.classList.add('hidden');
+          uploadStage?.classList.remove('hidden');
+          studioTracker?.classList.remove('hidden');
           setUploadProgressUI(
-            100,
-            'Episode published & live!',
-            `"${epTitle}" is now live across AfriStory and updated automatically in your catalog.`,
-            true
+            2,
+            'Uploading your episode...',
+            'You don\'t need to stay on this screen. Feel free to explore other parts of AfriStory — we will notify you as soon as your episode is ready, or return to Creator Studio anytime to track progress.',
+            false
           );
-          appendLocalNotification(
-            'Episode Published',
-            `Your episode "${epTitle}" has finished uploading and is now live on AfriStory.`
-          );
-          // Immediately trigger background UI synchronization across all sections (no refresh needed)
-          triggerRealtimeAppSync('episode-uploaded');
-
-          setTimeout(() => {
+        },
+        progress(pct, titleText, subText) {
+          setUploadProgressUI(pct, titleText, subText, false);
+        },
+        finish(ok, epTitle) {
+          activeUploadState.active = false;
+          if (ok) {
+            setUploadProgressUI(
+              100,
+              'Episode published & live!',
+              `"${epTitle || activeUploadState.title}" is now live across AfriStory and updated automatically in your catalog.`,
+              true
+            );
+            setTimeout(() => {
+              bgPill?.classList.add('hidden');
+              studioTracker?.classList.add('hidden');
+              uploadForm?.reset();
+              resetVideoDropzoneUI();
+              this.reset();
+            }, 3000);
+          } else {
             bgPill?.classList.add('hidden');
-            uploadForm?.reset();
-            resetVideoDropzoneUI();
-            resetUploadModalToForm();
-          }, 3200);
-        } else {
-          bgPill?.classList.add('hidden');
-          studioTracker?.classList.add('hidden');
-          resetUploadModalToForm();
+            studioTracker?.classList.add('hidden');
+            this.reset();
+          }
+        },
+        reset() {
+          if (!activeUploadState.active) {
+            uploadForm?.classList.remove('hidden');
+            uploadStage?.classList.add('hidden');
+            updateSeriesDropdownCounts();
+          }
         }
-      }
-
-      function resetUploadModalToForm() {
-        if (!activeUploadState.active) {
-          uploadForm?.classList.remove('hidden');
-          uploadStage?.classList.add('hidden');
-          filterUploadSeriesDropdown();
-        }
-      }
-
-      function triggerImmediateUploadStageFromForm() {
-        if (!uploadForm) return;
-        const hasVideo = videoInput && videoInput.files && videoInput.files.length > 0;
-        if (!uploadForm.checkValidity() || !hasVideo) return;
-        const titleInput = uploadForm.querySelector('[name="title"]');
-        const epTitle = (titleInput && titleInput.value.trim()) || 'New Episode';
-        const sId = (uploadSeriesSelect && uploadSeriesSelect.value) || '';
-        if (!activeUploadState.active) {
-          showCircularUploadStage(epTitle, sId);
-        }
-      }
-
-      uploadSubmitBtn?.addEventListener('click', triggerImmediateUploadStageFromForm, true);
-      uploadForm?.addEventListener('submit', triggerImmediateUploadStageFromForm, true);
+      };
 
       document.addEventListener('click', (e) => {
         if (e.target.closest('[data-action="open-upload"]')) {
@@ -3437,7 +3531,7 @@
             uploadForm?.classList.add('hidden');
             uploadStage?.classList.remove('hidden');
           } else {
-            resetUploadModalToForm();
+            window.AfriStoryUploadUI.reset();
           }
         }
         if (e.target.closest('[data-action="close-upload"]')) {
@@ -3452,9 +3546,7 @@
       document.getElementById('upload-continue-browsing-btn')?.addEventListener('click', () => {
         activeUploadState.userMinimized = true;
         uploadModal?.classList.add('hidden');
-        if (activeUploadState.active) {
-          bgPill?.classList.remove('hidden');
-        }
+        if (activeUploadState.active) bgPill?.classList.remove('hidden');
         const creatorSec = document.getElementById('section-creator');
         if (creatorSec && !creatorSec.classList.contains('hidden')) {
           document.querySelector('[data-section="discover"]')?.click();
@@ -3481,586 +3573,8 @@
         }
       });
 
-      const toastRegion = document.getElementById('toast-region');
-      if (toastRegion) {
-        new MutationObserver(() => {
-          toastRegion.querySelectorAll('.toast').forEach((toastEl) => {
-            const msgEl = toastEl.querySelector('.toast-message') || toastEl;
-            if (/uploading\s+(to\s+(the\s+)?)?cloud/i.test(msgEl.textContent)) {
-              toastEl.remove();
-            }
-          });
-        }).observe(toastRegion, { childList: true, subtree: true, characterData: true });
-      }
-
-      function showQuickBannerToast(message, isSuccess) {
-        if (!toastRegion) return;
-        const t = document.createElement('div');
-        t.className = 'toast ' + (isSuccess ? 'success' : 'error');
-        t.innerHTML = `<span class="toast-icon"></span><span class="toast-message">${message}</span>`;
-        toastRegion.appendChild(t);
-        setTimeout(() => {
-          t.style.animation = 'fadeOutToast 0.25s ease forwards';
-          setTimeout(() => t.remove(), 260);
-        }, 2600);
-      }
-
       // ==============================================================
-      // F. REAL-TIME BACKGROUND DATA SYNC ENGINE (ZERO REFRESH NEEDED)
-      // ==============================================================
-      let syncInFlight = false;
-      function triggerRealtimeAppSync(reason) {
-        if (syncInFlight) return;
-        syncInFlight = true;
-        try {
-          // 1. Trigger main.js built-in refresh hooks silently
-          document.querySelector('[data-action="refresh-discover"]')?.click();
-          if (!document.getElementById('section-creator')?.classList.contains('hidden')) {
-            document.querySelector('[data-action="refresh-creator-status"]')?.click();
-          }
-
-          // 2. Re-trigger active navigation tab loader in main.js if on Discover, Creator, Trending, or Watch
-          const activeNav = document.querySelector('.side-nav .nav-item.active[data-section]');
-          const activeSecName = activeNav ? activeNav.getAttribute('data-section') : '';
-          if (['discover', 'creator', 'trending', 'wallet', 'rewards'].includes(activeSecName)) {
-            activeNav.dispatchEvent(new CustomEvent('afristory:refresh-section', { bubbles: true, detail: { reason } }));
-          }
-
-          // 3. Cache-busted background fetch to update Creator Studio, Discover, Wallet & Notifications live
-          const token = localStorage.getItem('token') || localStorage.getItem('afristory_token') || '';
-          const headers = token ? { Authorization: 'Bearer ' + token } : {};
-          const bust = `_rt=${Date.now()}`;
-
-          Promise.allSettled([
-            nativeFetch(`/api/creator/series?${bust}`, { credentials: 'include', cache: 'no-store', headers }).then((r) => r.ok ? r.json() : null),
-            nativeFetch(`/api/series?${bust}`, { credentials: 'include', cache: 'no-store', headers }).then((r) => r.ok ? r.json() : null),
-            nativeFetch(`/api/notifications?${bust}`, { credentials: 'include', cache: 'no-store', headers }).then((r) => r.ok ? r.json() : null),
-            nativeFetch(`/api/wallet?${bust}`, { credentials: 'include', cache: 'no-store', headers }).then((r) => r.ok ? r.json() : null)
-          ]).then(([creatorSeriesRes, allSeriesRes, notifRes, walletRes]) => {
-            const creatorSeries = creatorSeriesRes.value && (Array.isArray(creatorSeriesRes.value) ? creatorSeriesRes.value : creatorSeriesRes.value.series);
-            if (Array.isArray(creatorSeries) && uploadSeriesSelect) {
-              const prevVal = uploadSeriesSelect.value;
-              const completedMap = getCompletedSeriesMap();
-              creatorSeries.forEach((s) => {
-                const id = String(s._id || s.id || '');
-                const title = String(s.title || 'Untitled Series');
-                if (!id) return;
-                knownSeriesCatalog.set(id, title);
-                if (!completedMap[id] && !Array.from(uploadSeriesSelect.options).some((o) => o.value === id)) {
-                  const opt = document.createElement('option');
-                  opt.value = id;
-                  opt.textContent = title;
-                  uploadSeriesSelect.appendChild(opt);
-                }
-              });
-              if (prevVal && Array.from(uploadSeriesSelect.options).some((o) => o.value === prevVal)) {
-                uploadSeriesSelect.value = prevVal;
-              }
-              filterUploadSeriesDropdown();
-            }
-
-            if (walletRes.value) {
-              const w = walletRes.value.wallet || walletRes.value;
-              const bal = w.coins ?? w.balance ?? w.coinBalance;
-              if (typeof bal === 'number') {
-                const wb = document.getElementById('wallet-balance');
-                const rb = document.getElementById('rewards-balance');
-                if (wb) wb.textContent = String(bal);
-                if (rb) rb.textContent = String(bal);
-              }
-            }
-
-            window.dispatchEvent(new CustomEvent('afristory:realtime-synced', {
-              detail: {
-                reason,
-                creatorSeries: creatorSeries || null,
-                allSeries: allSeriesRes.value || null,
-                notifications: notifRes.value || null,
-                wallet: walletRes.value || null
-              }
-            }));
-          }).finally(() => {
-            syncInFlight = false;
-          });
-        } catch (_) {
-          syncInFlight = false;
-        }
-      }
-
-      // Continuous background auto-sync every 15s (pauses during active video/ad playback)
-      setInterval(() => {
-        if (document.hidden) return;
-        if (document.body.classList.contains('robins-ad-processing')) return;
-        const isWatching = !document.getElementById('section-watch')?.classList.contains('hidden');
-        if (isWatching) return;
-        triggerRealtimeAppSync('background-interval');
-      }, 15000);
-
-      // ==============================================================
-      // G. SUSTAINABLE VIP GATE PASS PRICING GUARD (150 / 600 / 1,800 COINS)
-      // ==============================================================
-      const modalRoot = document.getElementById('modal-root');
-      function upgradeGatePassModalUI() {
-        if (!modalRoot || modalRoot.classList.contains('hidden')) return;
-        const text = (modalRoot.textContent || '').toLowerCase();
-        if (!text.includes('pass') || (!text.includes('10') && !text.includes('day') && !text.includes('month'))) return;
-
-        modalRoot.querySelectorAll('button, [data-pass], [data-plan], .pass-card, .plan-card').forEach((el) => {
-          const t = el.textContent || '';
-          if (/\b10\s*coins?\b/i.test(t) || /day\s*pass/i.test(t)) {
-            el.innerHTML = el.innerHTML.replace(/\b10\s*coins?\b/gi, '150 Coins');
-            if (el.dataset.coins) el.dataset.coins = '150';
-            if (el.dataset.cost) el.dataset.cost = '150';
-          }
-          if (/\b150\s*coins?\b/i.test(t) && /month/i.test(t)) {
-            el.innerHTML = el.innerHTML.replace(/\b150\s*coins?\b/gi, '1,800 Coins');
-            if (el.dataset.coins) el.dataset.coins = '1800';
-            if (el.dataset.cost) el.dataset.cost = '1800';
-          }
-        });
-      }
-
-      if (modalRoot) {
-        new MutationObserver(upgradeGatePassModalUI).observe(modalRoot, {
-          childList: true,
-          subtree: true,
-          attributes: true,
-          attributeFilter: ['class']
-        });
-      }
-
-      // ==============================================================
-      // H. NOTIFICATION DISMISS / DELETE & COUNTER SYNC
-      // ==============================================================
-      const DISMISSED_NOTIFS_KEY = 'afristory_dismissed_notifications_v1';
-      const CLEARED_ALL_AT_KEY = 'afristory_cleared_all_notifs_ts_v1';
-      const notificationList = document.getElementById('notification-list');
-      const emptyNotifications = document.getElementById('empty-notifications');
-      const notificationBadge = document.getElementById('notification-badge');
-
-      function getDismissedNotifs() {
-        try {
-          return new Set(JSON.parse(localStorage.getItem(DISMISSED_NOTIFS_KEY) || '[]'));
-        } catch (_) {
-          return new Set();
-        }
-      }
-
-      function saveDismissedNotif(key) {
-        if (!key) return;
-        const set = getDismissedNotifs();
-        set.add(String(key));
-        try {
-          localStorage.setItem(DISMISSED_NOTIFS_KEY, JSON.stringify(Array.from(set).slice(-400)));
-        } catch (_) {}
-      }
-
-      function getClearedAllTimestamp() {
-        try {
-          return Number(localStorage.getItem(CLEARED_ALL_AT_KEY) || 0);
-        } catch (_) {
-          return 0;
-        }
-      }
-
-      function isNotificationDismissedObj(item, dismissedSet, clearedBeforeTs) {
-        if (!item || typeof item !== 'object') return false;
-        const id = item._id || item.id || item.notificationId;
-        const title = String(item.title || '').trim();
-        const message = String(item.message || item.body || item.text || '').trim();
-        const sig = `${title} ${message}`.replace(/\s+/g, ' ').trim().slice(0, 120);
-
-        if (id && dismissedSet.has(String(id))) return true;
-        if (sig && dismissedSet.has(sig)) return true;
-        if (clearedBeforeTs > 0 && item.createdAt) {
-          const itemTs = new Date(item.createdAt).getTime();
-          if (!Number.isNaN(itemTs) && itemTs <= clearedBeforeTs) return true;
-        }
-        return false;
-      }
-
-      function setBadgeExactCount(count) {
-        if (!notificationBadge) return;
-        const safeCount = Math.max(0, Number(count) || 0);
-        notificationBadge.textContent = String(safeCount);
-        notificationBadge.classList.toggle('hidden', safeCount === 0);
-      }
-
-      function updateNotificationCountUI() {
-        if (!notificationList) return;
-        const rows = Array.from(notificationList.children).filter(
-          (el) => el.id !== 'empty-notifications' && !el.classList.contains('hidden')
-        );
-        if (emptyNotifications) {
-          emptyNotifications.classList.toggle('hidden', rows.length > 0);
-        }
-        const unreadCount = rows.filter((el) => el.classList.contains('notification-unread')).length;
-        setBadgeExactCount(rows.length === 0 ? 0 : unreadCount);
-      }
-
-      function getNotifSignature(row) {
-        const clone = row.cloneNode(true);
-        clone.querySelectorAll('.notif-delete-btn').forEach((b) => b.remove());
-        return clone.textContent.replace(/\s+/g, ' ').trim().slice(0, 120);
-      }
-
-      function persistBackendNotificationReadOrDelete(rawId) {
-        const token = localStorage.getItem('token') || localStorage.getItem('afristory_token') || '';
-        const headers = {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: 'Bearer ' + token } : {})
-        };
-        if (rawId && !String(rawId).startsWith('local-')) {
-          nativeFetch(`/api/notifications/${encodeURIComponent(rawId)}`, {
-            method: 'DELETE',
-            credentials: 'include',
-            headers
-          }).catch(() => {});
-          nativeFetch(`/api/notifications/${encodeURIComponent(rawId)}/read`, {
-            method: 'POST',
-            credentials: 'include',
-            headers
-          }).catch(() => {});
-        } else {
-          nativeFetch('/api/notifications/read-all', {
-            method: 'POST',
-            credentials: 'include',
-            headers
-          }).catch(() => {});
-          nativeFetch('/api/notifications', {
-            method: 'DELETE',
-            credentials: 'include',
-            headers
-          }).catch(() => {});
-        }
-      }
-
-      function deleteNotificationRow(row) {
-        if (!row || row.dataset.deleting === 'true') return;
-        row.dataset.deleting = 'true';
-        const rawId = row.dataset.id || row.dataset.notificationId || row.getAttribute('data-notif-id');
-        const sig = getNotifSignature(row);
-        if (rawId) saveDismissedNotif(rawId);
-        if (sig) saveDismissedNotif(sig);
-
-        row.classList.add('notif-row-removing');
-        setTimeout(() => {
-          row.remove();
-          updateNotificationCountUI();
-        }, 180);
-
-        persistBackendNotificationReadOrDelete(rawId);
-      }
-
-      function enhanceNotificationItems() {
-        if (!notificationList) return;
-        const dismissed = getDismissedNotifs();
-        Array.from(notificationList.children).forEach((row) => {
-          if (row.id === 'empty-notifications') return;
-          const rawId = row.dataset.id || row.dataset.notificationId || row.getAttribute('data-notif-id');
-          const sig = getNotifSignature(row);
-          if ((rawId && dismissed.has(String(rawId))) || (sig && dismissed.has(sig))) {
-            row.remove();
-            return;
-          }
-          row.classList.add('notif-row-enhanced');
-          if (!row.querySelector('.notif-delete-btn')) {
-            const delBtn = document.createElement('button');
-            delBtn.type = 'button';
-            delBtn.className = 'notif-delete-btn';
-            delBtn.setAttribute('aria-label', 'Dismiss notification');
-            delBtn.title = 'Delete notification';
-            delBtn.innerHTML = '&times;';
-            delBtn.addEventListener('click', (evt) => {
-              evt.stopPropagation();
-              deleteNotificationRow(row);
-            });
-            row.appendChild(delBtn);
-          }
-        });
-        updateNotificationCountUI();
-      }
-
-      function appendLocalNotification(title, body) {
-        if (!notificationList) return;
-        const row = document.createElement('div');
-        row.className = 'data-row notification-unread notif-row-enhanced';
-        row.dataset.id = 'local-' + Date.now();
-        row.innerHTML = `<div style="flex:1; min-width:0;"><strong style="display:block; color:#fff; font-size:14px;">${title}</strong><p style="margin:4px 0 0; color:#bbb; font-size:12.5px;">${body}</p></div>`;
-        if (emptyNotifications && emptyNotifications.parentNode === notificationList) {
-          notificationList.insertBefore(row, emptyNotifications.nextSibling);
-        } else {
-          notificationList.prepend(row);
-        }
-        enhanceNotificationItems();
-      }
-
-      if (notificationList) {
-        new MutationObserver(enhanceNotificationItems).observe(notificationList, { childList: true });
-        enhanceNotificationItems();
-      }
-
-      document.getElementById('clear-all-notifications-btn')?.addEventListener('click', () => {
-        try { localStorage.setItem(CLEARED_ALL_AT_KEY, String(Date.now())); } catch (_) {}
-        if (notificationList) {
-          const rows = Array.from(notificationList.children).filter((el) => el.id !== 'empty-notifications');
-          rows.forEach((row) => deleteNotificationRow(row));
-        }
-        setBadgeExactCount(0);
-        persistBackendNotificationReadOrDelete(null);
-      });
-
-      document.addEventListener('click', (e) => {
-        if (e.target.closest('[data-action="read-all"]')) {
-          setBadgeExactCount(0);
-        }
-      });
-
-      // ==============================================================
-      // I. DUAL NETWORK INTERCEPTOR (FETCH + XHR REAL-TIME PROGRESS & AUTO-SYNC)
-      // ==============================================================
-      const nativeFetch = window.fetch.bind(window);
-      const NativeXHR = window.XMLHttpRequest;
-
-      // Hook native XMLHttpRequest in case main.js uploads via XHR directly
-      window.XMLHttpRequest = function () {
-        const xhr = new NativeXHR();
-        let reqMethod = 'GET';
-        let reqUrl = '';
-
-        const origOpen = xhr.open.bind(xhr);
-        xhr.open = function (method, url) {
-          reqMethod = String(method || 'GET').toUpperCase();
-          reqUrl = String(url || '');
-          return origOpen.apply(xhr, arguments);
-        };
-
-        const origSend = xhr.send.bind(xhr);
-        xhr.send = function (body) {
-          const isVideoBody =
-            body instanceof FormData &&
-            Array.from(body.values()).some((v) => v instanceof File && (v.type.startsWith('video/') || /\.(mp4|mov|webm|mkv|avi)$/i.test(v.name || '')));
-
-          if (reqMethod === 'POST' && isVideoBody) {
-            const epTitle = String(body.get('title') || activeUploadState.title || 'New Episode').trim();
-            const sId = String(body.get('seriesId') || '');
-            if (!activeUploadState.active) {
-              showCircularUploadStage(epTitle, sId);
-            }
-
-            let finalizingTimer = null;
-            xhr.upload.addEventListener('progress', (evt) => {
-              if (!evt.lengthComputable) return;
-              clearInterval(fallbackProgressTimer);
-              const pct = Math.max(4, Math.min(89, Math.round((evt.loaded / evt.total) * 89)));
-              setUploadProgressUI(
-                pct,
-                'Uploading your episode...',
-                'You don\'t need to stay on this screen. Feel free to explore other parts of AfriStory — we will notify you as soon as your episode is ready, or return to Creator Studio anytime to track progress.',
-                false
-              );
-              if (evt.loaded >= evt.total && !finalizingTimer) {
-                let simPct = 90;
-                setUploadProgressUI(
-                  simPct,
-                  'Finalizing episode stream...',
-                  'Preparing smooth playback for your viewers. You will receive a notification once published.',
-                  false
-                );
-                finalizingTimer = setInterval(() => {
-                  if (simPct < 98) {
-                    simPct += 1;
-                    setUploadProgressUI(simPct);
-                  }
-                }, 800);
-              }
-            });
-
-            xhr.addEventListener('load', () => {
-              clearInterval(finalizingTimer);
-              const ok = xhr.status >= 200 && xhr.status < 300;
-              finishCircularUploadStage(ok, epTitle);
-            });
-
-            xhr.addEventListener('error', () => {
-              clearInterval(finalizingTimer);
-              finishCircularUploadStage(false, epTitle);
-            });
-          } else if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(reqMethod) && /\/api\/(series|creator|episodes|wallet|pass)/i.test(reqUrl)) {
-            xhr.addEventListener('load', () => {
-              if (xhr.status >= 200 && xhr.status < 300) {
-                setTimeout(() => triggerRealtimeAppSync(reqUrl), 250);
-              }
-            });
-          }
-
-          return origSend.apply(xhr, arguments);
-        };
-
-        return xhr;
-      };
-
-      // Hook window.fetch for FormData video uploads, Gate Pass pricing, and auto-sync
-      window.fetch = function (input, init) {
-        const url = typeof input === 'string' ? input : (input && input.url) || '';
-        const method = ((init && init.method) || (input && input.method) || 'GET').toUpperCase();
-        const body = init && init.body;
-
-        const isVideoFormData =
-          body instanceof FormData &&
-          Array.from(body.values()).some((v) => v instanceof File && (v.type.startsWith('video/') || /\.(mp4|mov|webm|mkv|avi)$/i.test(v.name || '')));
-
-        if (method === 'POST' && isVideoFormData) {
-          const epTitle = String(body.get('title') || activeUploadState.title || 'New Episode').trim();
-          const sId = String(body.get('seriesId') || '');
-          if (!activeUploadState.active) {
-            showCircularUploadStage(epTitle, sId);
-          }
-
-          return new Promise((resolve, reject) => {
-            const xhr = new NativeXHR();
-            xhr.open('POST', url, true);
-            xhr.withCredentials = true;
-
-            if (init && init.headers) {
-              const hdrs = new Headers(init.headers);
-              hdrs.forEach((val, key) => {
-                if (key.toLowerCase() !== 'content-type') {
-                  xhr.setRequestHeader(key, val);
-                }
-              });
-            }
-
-            let processingTimer = null;
-            xhr.upload.onprogress = function (evt) {
-              if (!evt.lengthComputable) return;
-              clearInterval(fallbackProgressTimer);
-              const uploadPct = Math.max(4, Math.min(89, Math.round((evt.loaded / evt.total) * 89)));
-              setUploadProgressUI(
-                uploadPct,
-                'Uploading your episode...',
-                'You don\'t need to stay on this screen. Feel free to explore other parts of AfriStory — we will notify you as soon as your episode is ready, or return to Creator Studio anytime to track progress.',
-                false
-              );
-              if (evt.loaded >= evt.total && !processingTimer) {
-                let simPct = 90;
-                setUploadProgressUI(
-                  simPct,
-                  'Finalizing episode stream...',
-                  'Preparing smooth playback for your viewers. You will receive a notification once published.',
-                  false
-                );
-                processingTimer = setInterval(() => {
-                  if (simPct < 98) {
-                    simPct += 1;
-                    setUploadProgressUI(simPct);
-                  }
-                }, 800);
-              }
-            };
-
-            xhr.onload = function () {
-              clearInterval(processingTimer);
-              const ok = xhr.status >= 200 && xhr.status < 300;
-              finishCircularUploadStage(ok, epTitle);
-
-              const responseHeaders = new Headers();
-              xhr.getAllResponseHeaders().trim().split(/[\r\n]+/).forEach((line) => {
-                const parts = line.split(': ');
-                const header = parts.shift();
-                const value = parts.join(': ');
-                if (header) responseHeaders.append(header, value);
-              });
-
-              resolve(new Response(xhr.responseText, {
-                status: xhr.status,
-                statusText: xhr.statusText,
-                headers: responseHeaders
-              }));
-            };
-
-            xhr.onerror = function () {
-              clearInterval(processingTimer);
-              finishCircularUploadStage(false, epTitle);
-              reject(new TypeError('Network request failed during episode upload'));
-            };
-
-            xhr.send(body);
-          });
-        }
-
-        // Enforce sustainable Gate Pass coin minimums on pass purchase requests
-        if (method === 'POST' && /\/api\/(wallet|passes?|subscriptions?)/i.test(url) && typeof body === 'string') {
-          try {
-            const parsed = JSON.parse(body);
-            if (parsed && (parsed.passType || parsed.plan || /pass/i.test(url))) {
-              const planKey = String(parsed.passType || parsed.plan || parsed.duration || '').toLowerCase();
-              if (planKey.includes('day') && Number(parsed.coins || parsed.cost || 0) < 150) {
-                parsed.coins = 150;
-                if ('cost' in parsed) parsed.cost = 150;
-              } else if (planKey.includes('week') && Number(parsed.coins || parsed.cost || 0) < 600) {
-                parsed.coins = 600;
-                if ('cost' in parsed) parsed.cost = 600;
-              } else if (planKey.includes('month') && Number(parsed.coins || parsed.cost || 0) < 1800) {
-                parsed.coins = 1800;
-                if ('cost' in parsed) parsed.cost = 1800;
-              }
-              init = Object.assign({}, init, { body: JSON.stringify(parsed) });
-            }
-          } catch (_) {}
-        }
-
-        if (method === 'GET' && /\/api\/notifications(\?|$)/i.test(url)) {
-          return nativeFetch(input, init).then(async (res) => {
-            try {
-              const cloned = res.clone();
-              const data = await cloned.json();
-              const dismissedSet = getDismissedNotifs();
-              const clearedBeforeTs = getClearedAllTimestamp();
-
-              if (Array.isArray(data)) {
-                const filtered = data.filter((item) => !isNotificationDismissedObj(item, dismissedSet, clearedBeforeTs));
-                const unread = filtered.filter((n) => !n.read && !n.isRead).length;
-                setBadgeExactCount(unread);
-                return new Response(JSON.stringify(filtered), {
-                  status: res.status,
-                  statusText: res.statusText,
-                  headers: res.headers
-                });
-              }
-
-              if (data && Array.isArray(data.notifications)) {
-                const filtered = data.notifications.filter((item) => !isNotificationDismissedObj(item, dismissedSet, clearedBeforeTs));
-                const unread = filtered.filter((n) => !n.read && !n.isRead).length;
-                data.notifications = filtered;
-                if ('unreadCount' in data) data.unreadCount = unread;
-                if ('unread' in data) data.unread = unread;
-                if ('count' in data) data.count = unread;
-                setBadgeExactCount(unread);
-                return new Response(JSON.stringify(data), {
-                  status: res.status,
-                  statusText: res.statusText,
-                  headers: res.headers
-                });
-              }
-            } catch (_) {}
-            return res;
-          });
-        }
-
-        const promise = nativeFetch(input, init);
-        if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) && /\/api\/(series|creator|episodes|wallet|pass)/i.test(url)) {
-          promise.then((res) => {
-            if (res && res.ok) {
-              setTimeout(() => triggerRealtimeAppSync(url), 250);
-            }
-          }).catch(() => {});
-        }
-        return promise;
-      };
-
-      // ==============================================================
-      // J. RECORD REWARDED AD TRIGGER
+      // F. RECORD REWARDED AD TRIGGER
       // ==============================================================
       document.addEventListener('click', function (event) {
         const trigger = event.target.closest('[data-robins-rewarded]');
@@ -4068,17 +3582,12 @@
           window.__lastRobinsTrigger = trigger;
         }
       }, true);
-
-      new MutationObserver(enforceSidebarAdBoundary).observe(document.body, {
-        childList: true,
-        subtree: true
-      });
     })();
   </script>
 
   <!-- Cache-busted module scripts -->
-  <script type="module" src="/js/ads.js?v=18"></script>
-  <script type="module" src="/js/main.js?v=18"></script>
+  <script type="module" src="/js/ads.js?v=19"></script>
+  <script type="module" src="/js/main.js?v=19"></script>
 
 </body>
 </html>
