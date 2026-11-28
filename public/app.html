@@ -1544,6 +1544,86 @@
       line-height: 1.48 !important;
     }
 
+    /* Dedicated Watch Ad to Earn Coins Action Card (Rewards & Wallet) */
+    .ad-earn-spotlight-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 22px 24px;
+      margin: 16px 0 22px 0;
+      border-radius: 20px;
+      background:
+        radial-gradient(circle at 90% 18%, rgba(243, 202, 82, 0.2) 0%, transparent 48%),
+        linear-gradient(135deg, rgba(32, 27, 18, 0.96) 0%, rgba(17, 17, 21, 0.98) 100%);
+      border: 1.5px solid rgba(243, 202, 82, 0.48);
+      box-shadow: 0 16px 38px rgba(0, 0, 0, 0.45);
+      transition: transform 0.22s var(--ease-spring), border-color 0.22s ease;
+    }
+    .ad-earn-spotlight-card:hover {
+      transform: translateY(-2px);
+      border-color: #f3ca52;
+    }
+    .ad-earn-spotlight-left {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      min-width: 0;
+    }
+    .ad-earn-spotlight-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 14px;
+      background: rgba(243, 202, 82, 0.18);
+      border: 1px solid rgba(243, 202, 82, 0.5);
+      color: #f3ca52;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 21px;
+      flex-shrink: 0;
+    }
+    .ad-earn-spotlight-copy h3 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 18.5px;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 2px 0 5px;
+    }
+    .ad-earn-spotlight-copy p {
+      color: #d2d2dc;
+      font-size: 13.5px;
+      line-height: 1.5;
+      margin: 0;
+      max-width: 560px;
+    }
+    .ad-earn-spotlight-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .ad-earn-spotlight-actions small {
+      color: #f3ca52;
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+    @media (max-width: 760px) {
+      .ad-earn-spotlight-card {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .ad-earn-spotlight-actions {
+        width: 100%;
+        align-items: stretch;
+      }
+      .ad-earn-spotlight-actions button {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
     /* Prominent Fast Withdrawal / Payout Setup CTA Card */
     .wallet-payout-cta-card {
       display: flex;
@@ -2162,56 +2242,69 @@
     }
 
     /* ==============================================================
-       14. SEPARATED NOTIFICATION DETAIL CARDS & DISMISS CONTROLS
+       14. STANDALONE INDIVIDUAL NOTIFICATION CARDS (CLEAR SEPARATION)
     ============================================================== */
     .notification-panel {
-      max-width: 560px !important;
+      max-width: 580px !important;
     }
     .notification-toolbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding-bottom: 12px;
-      margin-bottom: 14px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      gap: 12px !important;
+      padding-bottom: 12px !important;
+      margin-bottom: 16px !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
     }
     #notification-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      max-height: 62vh;
-      overflow-y: auto;
-      padding-right: 4px;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 14px !important;
+      max-height: 64vh !important;
+      overflow-y: auto !important;
+      padding: 2px 4px 6px 2px !important;
+      background: transparent !important;
     }
-    .notif-card-item {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 14px;
-      padding: 15px 16px;
-      border-radius: 16px;
-      background: rgba(24, 24, 30, 0.94);
-      border: 1px solid rgba(255, 255, 255, 0.09);
-      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
-      cursor: pointer;
-      transition: transform 0.2s var(--ease-spring), border-color 0.2s ease, background 0.2s ease, opacity 0.22s ease;
+    /* Force EVERY notification item (whether .notif-card-item or .data-row) into its own standalone card */
+    #notification-list > *:not(#empty-notifications),
+    #notification-list .notif-card-item,
+    #notification-list .data-row {
+      display: flex !important;
+      align-items: flex-start !important;
+      justify-content: space-between !important;
+      gap: 14px !important;
+      margin: 0 !important;
+      padding: 16px 18px !important;
+      border-radius: 16px !important;
+      background: linear-gradient(145deg, rgba(28, 28, 35, 0.96) 0%, rgba(19, 19, 24, 0.98) 100%) !important;
+      border: 1.5px solid rgba(255, 255, 255, 0.12) !important;
+      border-left: 4px solid rgba(212, 160, 23, 0.45) !important;
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+      cursor: pointer !important;
+      position: relative !important;
+      transition: transform 0.2s var(--ease-spring), border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, opacity 0.22s ease !important;
     }
-    .notif-card-item:hover {
-      transform: translateY(-2px);
-      border-color: rgba(212, 160, 23, 0.45);
-      background: rgba(30, 30, 38, 0.98);
+    #notification-list > *:not(#empty-notifications):hover,
+    #notification-list .notif-card-item:hover,
+    #notification-list .data-row:hover {
+      transform: translateY(-2px) !important;
+      border-color: rgba(243, 202, 82, 0.55) !important;
+      background: linear-gradient(145deg, rgba(34, 34, 43, 0.98) 0%, rgba(22, 22, 28, 0.99) 100%) !important;
+      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.58) !important;
     }
-    .notif-card-item.notification-unread {
-      border-left: 4px solid #d4a017;
-      background: linear-gradient(135deg, rgba(212, 160, 23, 0.12) 0%, rgba(24, 24, 30, 0.96) 60%);
+    #notification-list > .notification-unread,
+    #notification-list .notif-card-item.notification-unread,
+    #notification-list .data-row.notification-unread {
+      border-color: rgba(243, 202, 82, 0.38) !important;
+      border-left: 4px solid #f3ca52 !important;
+      background: linear-gradient(135deg, rgba(212, 160, 23, 0.16) 0%, rgba(24, 24, 31, 0.98) 58%) !important;
     }
     .notif-card-body {
       flex: 1;
       min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 7px;
     }
     .notif-card-meta {
       display: flex;
@@ -2222,14 +2315,14 @@
     .notif-type-badge {
       display: inline-flex;
       align-items: center;
-      padding: 2px 9px;
+      padding: 3px 10px;
       border-radius: 999px;
       font-size: 10.5px;
       font-weight: 800;
       letter-spacing: 0.6px;
       text-transform: uppercase;
       background: rgba(212, 160, 23, 0.16);
-      border: 1px solid rgba(212, 160, 23, 0.36);
+      border: 1px solid rgba(212, 160, 23, 0.4);
       color: #f3ca52;
     }
     .notif-unread-dot {
@@ -2240,24 +2333,27 @@
       box-shadow: 0 0 8px rgba(243, 202, 82, 0.85);
     }
     .notif-time-label {
-      color: #8e8e9c;
+      color: #9898a8;
       font-size: 11.5px;
       font-weight: 600;
     }
-    .notif-card-title {
-      color: #ffffff;
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 15px;
-      font-weight: 700;
-      line-height: 1.35;
-      margin: 0;
+    .notif-card-title,
+    #notification-list .data-row strong {
+      color: #ffffff !important;
+      font-family: 'Space Grotesk', sans-serif !important;
+      font-size: 15.5px !important;
+      font-weight: 700 !important;
+      line-height: 1.35 !important;
+      margin: 0 !important;
+      display: block !important;
     }
-    .notif-card-message {
-      color: #c8c8d4;
-      font-size: 13.5px;
-      line-height: 1.5;
-      margin: 0;
-      word-break: break-word;
+    .notif-card-message,
+    #notification-list .data-row p {
+      color: #cfcfe0 !important;
+      font-size: 13.5px !important;
+      line-height: 1.52 !important;
+      margin: 4px 0 0 !important;
+      word-break: break-word !important;
     }
     .notif-card-link {
       display: inline-flex;
@@ -2274,25 +2370,25 @@
       text-decoration: underline;
     }
     .notif-delete-btn {
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      color: #b4b4be;
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-      line-height: 1;
-      cursor: pointer;
-      flex-shrink: 0;
-      transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+      background: rgba(255, 255, 255, 0.07) !important;
+      border: 1px solid rgba(255, 255, 255, 0.16) !important;
+      color: #c4c4d0 !important;
+      width: 32px !important;
+      height: 32px !important;
+      border-radius: 50% !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-size: 16px !important;
+      line-height: 1 !important;
+      cursor: pointer !important;
+      flex-shrink: 0 !important;
+      transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease !important;
     }
     .notif-delete-btn:hover {
-      background: rgba(231, 76, 60, 0.2);
-      border-color: rgba(231, 76, 60, 0.55);
-      color: #ff6b5b;
+      background: rgba(231, 76, 60, 0.22) !important;
+      border-color: rgba(231, 76, 60, 0.6) !important;
+      color: #ff6b5b !important;
     }
     .notif-row-removing {
       opacity: 0 !important;
@@ -2473,7 +2569,7 @@
             <div class="editorial-card">
               <span class="editorial-card-badge">Ad-Supported Access</span>
               <h4>Watch Free or Unlock with Story Coins</h4>
-              <p>Stream ad-supported episodes at zero cost, or use Story Coins earned through daily streaks and partner previews to unlock finale episodes instantly.</p>
+              <p>Stream ad-supported episodes at zero cost, or use Story Coins earned through daily streaks and partner ads to unlock finale episodes instantly.</p>
               <div class="editorial-card-meta"><span>Creator Revenue Share</span><span>Instant Playback</span></div>
             </div>
           </div>
@@ -2512,14 +2608,15 @@
       </section>
 
       <!-- ============================================================
-           3. WALLET SECTION (Bolder Hierarchy + Fast Payout Setup CTA)
+           3. WALLET SECTION (Bolder Hierarchy + Watch Ads + Payout CTA)
       ============================================================ -->
       <section id="section-wallet" class="app-section hidden">
         <div class="section-heading">
           <div><p class="eyebrow">YOUR STORY ECONOMY</p><h1>Wallet</h1></div>
           <div style="display:flex; flex-wrap:wrap; gap:10px;">
             <button class="button button-primary" data-action="buy-coins">Get coins <span>↗</span></button>
-            <button class="button button-accent" data-action="buy-pass">Get VIP pass</button>
+            <button id="wallet-watch-ad-btn" class="button button-accent" type="button" data-robins-rewarded="wallet-earn-coins" data-action="watch-rewarded-ad">▶ Watch Ad (+Coins)</button>
+            <button class="button button-quiet" data-action="buy-pass">Get VIP pass</button>
             <button id="withdraw-earnings-btn" class="button button-quiet hidden" data-action="withdraw-earnings">Withdraw</button>
           </div>
         </div>
@@ -2528,7 +2625,7 @@
           <div class="balance-card">
             <span class="eyebrow">AVAILABLE STORY COINS</span>
             <strong style="display: inline-flex; align-items: center; gap: 8px;"><span style="color: #f3ca52; font-size: 0.92em;">◈</span><span id="wallet-balance">0</span></strong>
-            <span class="balance-caption" id="wallet-coin-rate-note">Use Story Coins (10–25 per episode) or VIP Passes to unlock premium cliffhangers instantly.</span>
+            <span class="balance-caption" id="wallet-coin-rate-note">Unlock single episodes (10–25+ coins each) permanently, or activate a VIP Binge Pass for unlimited 24h–30d access.</span>
           </div>
           <div class="wallet-stat">
             <span class="eyebrow">TOTAL EARNED (NAIRA)</span>
@@ -2562,22 +2659,22 @@
           <div class="editorial-showcase-header">
             <div>
               <p class="eyebrow">HOW YOUR WALLET WORKS</p>
-              <h3>Story Coins, VIP Passes &amp; Creator Payouts</h3>
+              <h3>Single-Episode Unlocks vs. VIP Binge Passes</h3>
             </div>
-            <p class="editorial-lead">Every coin unlock and VIP pass directly supports independent African filmmakers and keeps original series in production.</p>
+            <p class="editorial-lead">Choose between unlocking individual episodes permanently or getting an all-access VIP pass for nonstop bingeing.</p>
           </div>
           <div class="editorial-grid-3">
             <div class="editorial-card">
-              <span class="editorial-card-badge">◈ Story Coins</span>
-              <h4>Pay-Per-Episode Unlocks</h4>
-              <p>Top up Story Coins or earn them free in Rewards, then unlock individual premium episodes (10–25 coins) across any series without recurring lock-in.</p>
-              <div class="editorial-card-meta"><span>Instant Library Access</span><span>No Expiry</span></div>
+              <span class="editorial-card-badge">◈ Pay-Per-Episode</span>
+              <h4>Unlock 1 Episode (10–25+ Coins)</h4>
+              <p>Each premium episode has a creator-set coin price. If your balance is short, watch partner ads in Rewards/Wallet to add coins or top up your balance.</p>
+              <div class="editorial-card-meta"><span>Permanent Episode Access</span><span>No Expiry</span></div>
             </div>
             <div class="editorial-card">
               <span class="editorial-card-badge">✦ VIP Gate Passes</span>
-              <h4>24-Hour, Weekly &amp; Monthly Binge Passes</h4>
-              <p>Activate a 24-Hour Day Pass (150 Coins), 7-Day Weekly VIP Pass (600 Coins), or 30-Day Monthly VIP Pass (1,800 Coins) for uninterrupted access.</p>
-              <div class="editorial-card-meta"><span>Full-Catalog Viewing</span><span>Creator Supported</span></div>
+              <h4>All-Access Binge Passes</h4>
+              <p>Get a <strong>24-Hour Day Pass (150 Coins)</strong>, <strong>7-Day Weekly VIP Pass (600 Coins)</strong>, or <strong>30-Day Monthly VIP Pass (1,800 Coins)</strong> to watch every premium episode freely while active.</p>
+              <div class="editorial-card-meta"><span>Unlimited Catalog Access</span><span>Best for Bingeing</span></div>
             </div>
             <div class="editorial-card">
               <span class="editorial-card-badge">₦ Creator Revenue</span>
@@ -2595,16 +2692,33 @@
       </section>
 
       <!-- ============================================================
-           4. REWARDS SECTION
+           4. REWARDS SECTION (Visible Watch Ad to Earn Coins Button)
       ============================================================ -->
       <section id="section-rewards" class="app-section hidden">
         <div class="rewards-hero">
-          <div><p class="eyebrow">AFRISTORY REWARDS</p><h1>Return. Discover. Earn.</h1><p class="muted">Complete daily check-ins, watch sponsored previews, and support African storytellers to earn Story Coins.</p></div>
+          <div><p class="eyebrow">AFRISTORY REWARDS</p><h1>Return. Discover. Earn.</h1><p class="muted">Complete daily check-ins, watch sponsored ads to add Story Coins to your balance, and support African storytellers.</p></div>
           <div class="rewards-balance"><span class="eyebrow">CURRENT BALANCE</span><strong style="display: inline-flex; align-items: center; gap: 6px;"><span style="color: #f3ca52; font-size: 0.9em;">◈</span><span id="rewards-balance">0</span></strong><span>story coins</span><div class="reward-streak"><b id="reward-current-streak">0</b> day streak <small>Best <span id="reward-best-streak">0</span></small></div></div>
         </div>
 
         <div id="daily-reward-card" class="daily-reward-card"></div>
-        <div id="rewarded-ad-card" class="daily-reward-card hidden"></div>
+
+        <!-- Dedicated Visible Watch Ad & Earn Coins Card -->
+        <div id="rewarded-ad-card" class="ad-earn-spotlight-card">
+          <div class="ad-earn-spotlight-left">
+            <div class="ad-earn-spotlight-icon" aria-hidden="true">▶</div>
+            <div class="ad-earn-spotlight-copy">
+              <span class="editorial-card-badge" style="margin-bottom:4px;">Instant Coin Top-Up</span>
+              <h3>Watch Partner Ad &amp; Earn Story Coins</h3>
+              <p>Need extra coins to unlock an episode? Watch a short partner ad and Story Coins will be added directly to your Wallet balance. You can repeat this to build up your coins.</p>
+            </div>
+          </div>
+          <div class="ad-earn-spotlight-actions">
+            <button id="watch-ad-earn-coins-btn" class="button button-primary" type="button" data-robins-rewarded="earn-coins" data-action="watch-rewarded-ad">
+              <span>▶ Watch Ad &amp; Earn Coins</span>
+            </button>
+            <small id="rewarded-ad-status-note">Credits straight to your Wallet</small>
+          </div>
+        </div>
 
         <div class="section-heading compact-heading" style="margin-top:28px;"><div><p class="eyebrow">SOCIAL MEDIA REWARDS</p><h2>Support AfriStory</h2><p class="muted">Follow and engage with official AfriStory channels to claim bonus Story Coins.</p></div></div>
         <div id="social-rewards-grid" class="rewards-grid"></div>
@@ -2630,9 +2744,9 @@
             </div>
             <div class="editorial-card">
               <span class="editorial-card-badge">Step 02 • Sponsored Ads</span>
-              <h4>Watch Partner Showcases</h4>
-              <p>Complete a short sponsored video preview to earn immediate Story Coins. Coins are deposited straight into your Wallet upon completion.</p>
-              <div class="editorial-card-meta"><span>Verified Completion</span><span>Instant Unlock</span></div>
+              <h4>Watch Ads to Add Coins</h4>
+              <p>Tap <strong>Watch Ad &amp; Earn Coins</strong> anytime to view a sponsored preview. Once finished, Story Coins deposit straight into your Wallet balance.</p>
+              <div class="editorial-card-meta"><span>Verified Completion</span><span>Instant Credit</span></div>
             </div>
             <div class="editorial-card">
               <span class="editorial-card-badge">Step 03 • Redeem</span>
@@ -2645,7 +2759,7 @@
 
         <div class="section-heading compact-heading" style="margin-top:28px;"><div><p class="eyebrow">REWARD HISTORY</p><h2>Recent activity</h2></div></div>
         <div id="rewards-history" class="data-list">
-          <div class="empty-state hidden" id="empty-rewards-history"><p>No reward activity yet. Claim your daily check-in or complete a mission above to earn your first Story Coins.</p></div>
+          <div class="empty-state hidden" id="empty-rewards-history"><p>No reward activity yet. Claim your daily check-in or watch a partner ad above to earn your first Story Coins.</p></div>
         </div>
       </section>
 
@@ -3301,12 +3415,27 @@
       });
 
       // ==============================================================
-      // C. SERIES COMPLETION SYNC (PUT /api/series/:seriesId/update)
+      // C. STANDALONE CARD UPGRADER FOR INCOMING NOTIFICATIONS
+      // ==============================================================
+      const notificationListEl = document.getElementById('notification-list');
+      function upgradeNotificationCards() {
+        if (!notificationListEl) return;
+        Array.from(notificationListEl.children).forEach((child) => {
+          if (child.id === 'empty-notifications' || child.dataset.cardEnhanced === '1') return;
+          child.dataset.cardEnhanced = '1';
+          child.classList.add('notif-card-item');
+        });
+      }
+      if (notificationListEl) {
+        new MutationObserver(upgradeNotificationCards).observe(notificationListEl, { childList: true });
+      }
+
+      // ==============================================================
+      // D. SERIES COMPLETION SYNC (PUT /api/series/:seriesId/update)
       // ==============================================================
       const uploadSeriesSelect = document.getElementById('upload-series');
       const terminateSeriesBtn = document.getElementById('terminate-series-btn');
       const toggleArchivedBtn = document.getElementById('toggle-archived-series-btn');
-      const archivedCountSpan = document.getElementById('archived-series-count');
       const archivedDrawer = document.getElementById('series-archived-drawer');
       const noActiveSeriesAlert = document.getElementById('no-active-series-alert');
       const activeSeriesCounter = document.getElementById('active-series-counter');
@@ -3348,7 +3477,7 @@
       });
 
       // ==============================================================
-      // D. ONE-TIME CREATOR STUDIO APPROVAL WELCOME BANNER
+      // E. ONE-TIME CREATOR STUDIO APPROVAL WELCOME BANNER
       // ==============================================================
       const CREATOR_WELCOME_KEY = 'afristory_creator_welcome_seen_v1';
       const creatorDashboard = document.getElementById('creator-dashboard');
@@ -3386,7 +3515,7 @@
       });
 
       // ==============================================================
-      // E. CIRCULAR UPLOAD PROGRESS METER API (CONTROLLED BY main.js)
+      // F. CIRCULAR UPLOAD PROGRESS METER API (CONTROLLED BY main.js)
       // ==============================================================
       const uploadModal = document.getElementById('upload-modal');
       const uploadForm = document.getElementById('upload-form');
@@ -3574,7 +3703,7 @@
       });
 
       // ==============================================================
-      // F. RECORD REWARDED AD TRIGGER
+      // G. RECORD REWARDED AD TRIGGER (FOR WATCH FEED, REWARDS & WALLET)
       // ==============================================================
       document.addEventListener('click', function (event) {
         const trigger = event.target.closest('[data-robins-rewarded]');
@@ -3586,8 +3715,8 @@
   </script>
 
   <!-- Cache-busted module scripts -->
-  <script type="module" src="/js/ads.js?v=19"></script>
-  <script type="module" src="/js/main.js?v=19"></script>
+  <script type="module" src="/js/ads.js?v=20"></script>
+  <script type="module" src="/js/main.js?v=20"></script>
 
 </body>
 </html>
