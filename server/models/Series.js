@@ -135,6 +135,19 @@ const seriesSchema = new mongoose.Schema(
       default: 'DRAFT',
       index: true,
     },
+    isCompleted: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    completed: {
+      type: Boolean,
+      default: false,
+    },
+    completedAt: {
+      type: Date,
+      default: null,
+    },
     followers: {
       type: Number,
       default: 0,
@@ -255,8 +268,64 @@ const seriesSchema = new mongoose.Schema(
       default: false,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: {
+      transform(_doc, ret) {
+        if (ret.rating != null && typeof ret.rating === 'object' && ret.rating.$numberDecimal != null) {
+          ret.rating = Number(ret.rating.$numberDecimal) || 0;
+        } else if (ret.rating != null) {
+          ret.rating = Number(ret.rating) || 0;
+        }
+        return ret;
+      },
+    },
+    toObject: {
+      transform(_doc, ret) {
+        if (ret.rating != null && typeof ret.rating === 'object' && ret.rating.$numberDecimal != null) {
+          ret.rating = Number(ret.rating.$numberDecimal) || 0;
+        } else if (ret.rating != null) {
+          ret.rating = Number(ret.rating) || 0;
+        }
+        return ret;
+      },
+    },
+  }
 );
+
+seriesSchema.pre('save', async function () {
+  if (this.creatorId && !this.creator) {
+    this.creator = this.creatorId;
+  }
+
+  if (this.genre && !this.primaryGenre && GENRES.includes(this.genre)) {
+    this.primaryGenre = this.genre;
+  }
+
+  if (this.isModified('status')) {
+    const isDone = this.status === 'COMPLETED';
+    this.isCompleted = isDone;
+    this.completed = isDone;
+    this.completedAt = isDone ? (this.completedAt || new Date()) : null;
+  } else if (this.isModified('isCompleted') || this.isModified('completed')) {
+    const isDone = Boolean(this.isCompleted || this.completed);
+    this.isCompleted = isDone;
+    this.completed = isDone;
+    this.status = isDone ? 'COMPLETED' : (this.status === 'COMPLETED' ? 'ONGOING' : this.status);
+    this.completedAt = isDone ? (this.completedAt || new Date()) : null;
+  }
+
+  if (this.title && !this.slug) {
+    const baseSlug = this.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 80);
+    if (baseSlug) {
+      this.slug = `${baseSlug}-${Date.now().toString(36)}`;
+    }
+  }
+});
 
 // Index for better query performance
 seriesSchema.index({ creatorId: 1, status: 1 });
