@@ -65,6 +65,17 @@ function setTriggerStatus(trigger, label) {
   }
 }
 
+function normalizePurpose(rawPurpose, hasEpisodeTarget) {
+  const normalized = String(rawPurpose || '').trim().toUpperCase();
+  if (
+    ['EPISODE_UNLOCK', 'UNLOCK_EPISODE', 'DIRECT_EPISODE_UNLOCK'].includes(normalized) ||
+    (!normalized && hasEpisodeTarget)
+  ) {
+    return 'DIRECT_EPISODE_UNLOCK';
+  }
+  return 'PROMO_REWARD';
+}
+
 function dispatchRewardVerified(trigger, payload) {
   const detail = {
     provider: 'ROBINADS',
@@ -83,7 +94,7 @@ function dispatchRewardVerified(trigger, payload) {
   );
 }
 
-async function pollRewardUntilTerminal({ rewardId, popupWindow, trigger }) {
+async function pollRewardUntilTerminal({ rewardId, purpose, targetId, popupWindow, trigger }) {
   const startedAt = Date.now();
 
   return new Promise((resolve, reject) => {
@@ -133,6 +144,8 @@ async function pollRewardUntilTerminal({ rewardId, popupWindow, trigger }) {
           const result = {
             rewardId,
             transactionId: rewardId,
+            purpose: data.purpose || purpose,
+            targetId: data.targetId || targetId,
             verified: true,
           };
           dispatchRewardVerified(trigger, result);
@@ -171,7 +184,7 @@ async function pollRewardUntilTerminal({ rewardId, popupWindow, trigger }) {
  * Fallback to Robins Ads Section 2a / Section 4 in-app interstitial
  * when inside Telegram WebApp or if the browser blocks window.open().
  */
-async function runInAppInterstitialFallback(trigger) {
+async function runInAppInterstitialFallback(trigger, { purpose, targetId }) {
   if (!window.RobinAds || typeof window.RobinAds.showInterstitial !== 'function') {
     throw new Error('Please allow popups for afristory.live to watch the sponsor ad.');
   }
@@ -187,6 +200,8 @@ async function runInAppInterstitialFallback(trigger) {
     rewardId: result.rewardId,
     transactionId: result.rewardId,
     token: result.token,
+    purpose,
+    targetId,
     verified: true,
   };
 
@@ -205,17 +220,31 @@ export async function launchRewardedAd(options = {}) {
     return activeSession;
   }
 
-  const purpose =
-    options.purpose ||
-    trigger?.dataset?.purpose ||
-    (trigger?.dataset?.episodeId ? 'DIRECT_EPISODE_UNLOCK' : 'PROMO_REWARD');
-  const targetId =
+  const episodeId = options.episodeId || trigger?.dataset?.episodeId || null;
+  const purpose = normalizePurpose(
+    options.purpose || trigger?.dataset?.purpose,
+    Boolean(episodeId)
+  );
+
+  const rawTargetId =
     options.targetId ||
-    trigger?.dataset?.episodeId ||
+    episodeId ||
     trigger?.dataset?.targetId ||
     trigger?.dataset?.rewardId ||
     null;
-  const coins = 5;
+
+  const targetId =
+    purpose === 'DIRECT_EPISODE_UNLOCK'
+      ? rawTargetId
+      : rawTargetId || 'watch_ads';
+
+  if (purpose === 'DIRECT_EPISODE_UNLOCK' && !targetId) {
+    const err = new Error('Missing episode ID for direct episode ad unlock.');
+    showStatusToast(err.message, 'error');
+    throw err;
+  }
+
+  const coins = purpose === 'PROMO_REWARD' ? 5 : 0;
 
   setTriggerStatus(trigger, 'Starting sponsor ad...');
 
@@ -223,7 +252,7 @@ export async function launchRewardedAd(options = {}) {
     try {
       // Inside Telegram Mini Apps, window.open is blocked — use RobinAds.showInterstitial() per Section 4
       if (isTelegramWebApp()) {
-        return await runInAppInterstitialFallback(trigger);
+        return await runInAppInterstitialFallback(trigger, { purpose, targetId });
       }
 
       // Step 1: Ask AfriStory backend to create a verified Robins Ads reward session
@@ -252,7 +281,7 @@ export async function launchRewardedAd(options = {}) {
 
       // If popup was blocked by browser settings, fall back to in-app RobinAds.showInterstitial()
       if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-        return await runInAppInterstitialFallback(trigger);
+        return await runInAppInterstitialFallback(trigger, { purpose, targetId });
       }
 
       setTriggerStatus(trigger, 'Watching sponsor ad... Finish to verify');
@@ -260,6 +289,8 @@ export async function launchRewardedAd(options = {}) {
       // Step 3: Poll backend until Robins Ads server flips status to "verified"
       return await pollRewardUntilTerminal({
         rewardId: session.id,
+        purpose,
+        targetId,
         popupWindow: popup,
         trigger,
       });
@@ -281,12 +312,20 @@ export const showRewardedAd = launchRewardedAd;
 export const requestRewardedAd = launchRewardedAd;
 export const showSponsoredMessage = launchRewardedAd;
 
+window.AfriStoryAds = {
+  launchRewardedAd,
+  showRewardedAd,
+  requestRewardedAd,
+  showSponsoredMessage,
+};
+
 export function initAds() {
   document.addEventListener('click', (event) => {
     const trigger = event.target.closest('[data-robins-rewarded]');
     if (!trigger) return;
 
     event.preventDefault();
+    window.__lastRobinsTrigger = trigger;
     launchRewardedAd({ trigger }).catch(() => {});
   });
 }
