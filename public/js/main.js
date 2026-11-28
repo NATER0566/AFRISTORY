@@ -197,6 +197,15 @@ function sortSeriesEpisodes(episodes) {
     });
 }
 
+function isSeriesCompleted(series) {
+    if (!series) return false;
+    return Boolean(
+        series.isCompleted === true ||
+        series.completed === true ||
+        String(series.status || '').toUpperCase() === 'COMPLETED'
+    );
+}
+
 /* ============================================================================ */
 /* FORMATTERS */
 /* ============================================================================ */
@@ -288,6 +297,7 @@ function setupLazyLoading() {
 }
 
 let discoverLoaded = false;
+let suppressHashSync = false;
 
 function getActiveSectionName() {
     const activeSection = document.querySelector('.app-section:not(.hidden)');
@@ -298,6 +308,8 @@ function getActiveSectionName() {
 }
 
 function setSection(name) {
+    if (!name) return;
+
     if (name !== 'watch' && state.currentEpisode) {
         const activeVideo = currentlyPlaying || document.querySelector('.feed-video-card video');
         if (activeVideo) {
@@ -315,7 +327,9 @@ function setSection(name) {
     $('#mobile-more-sheet')?.classList.add('hidden');
     
     if (location.hash.slice(1) !== name) {
+        suppressHashSync = true;
         location.hash = name;
+        setTimeout(() => { suppressHashSync = false; }, 0);
     }
 
     if (name === 'discover' && !discoverLoaded) loadDiscover();
@@ -352,8 +366,31 @@ function ensureClassificationControls() {
     }
 }
 
-function card(series) { 
-    return `<article class="series-card" data-series-id="${esc(series._id)}"><div class="card-image" style="background-image:url('${image(series.coverImage)}')"><span class="card-tag">${esc(series.genre || 'SERIES')}</span></div><div class="card-body"><h3>${esc(series.title)}</h3><p>${esc(series.language || 'English')} &nbsp; · &nbsp; ${esc(series.genre || 'Story')}</p></div></article>`; 
+function card(series, opts = {}) { 
+    const completed = isSeriesCompleted(series);
+    const statusBadge = completed
+        ? `<span class="card-tag" style="background: rgba(34, 197, 94, 0.92); color: #09150e; font-weight: 800;">✓ COMPLETED</span>`
+        : `<span class="card-tag">${esc(series.genre || 'SERIES')}</span>`;
+
+    const creatorControls = opts.showCreatorControls
+        ? `<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #262626; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                <span style="font-size: 11px; font-weight: 700; color: ${completed ? '#22c55e' : '#d4a017'};">${completed ? '● Completed Series' : '● Ongoing Series'}</span>
+                <button type="button" class="button button-quiet" data-action="toggle-series-complete" data-series-id="${esc(series._id)}" data-completed="${completed ? 'true' : 'false'}" style="padding: 5px 10px; font-size: 11px; border-color: ${completed ? '#444' : '#d4a017'}; color: ${completed ? '#ccc' : '#ffd24c'};">
+                    ${completed ? 'Reopen Series' : 'Mark Completed'}
+                </button>
+           </div>`
+        : '';
+
+    return `<article class="series-card" data-series-id="${esc(series._id)}">
+        <div class="card-image" style="background-image:url('${image(series.coverImage)}')">
+            ${statusBadge}
+        </div>
+        <div class="card-body">
+            <h3>${esc(series.title)}</h3>
+            <p>${esc(series.language || 'English')} &nbsp; · &nbsp; ${esc(series.genre || 'Story')}${completed ? ' &nbsp; · &nbsp; <strong style="color:#22c55e;">Completed</strong>' : ''}</p>
+            ${creatorControls}
+        </div>
+    </article>`; 
 }
 
 function episodeCard(episode, tagOverride = null) { 
@@ -406,7 +443,7 @@ async function loadDiscover() {
         
         const seriesGrid = $('#series-grid');
         if (seriesGrid) {
-            seriesGrid.innerHTML = state.series.map(card).join('') || '<p>No stories match this filter.</p>';
+            seriesGrid.innerHTML = state.series.map(s => card(s)).join('') || '<p>No stories match this filter.</p>';
         }
         
         let creatorsList = [];
@@ -423,6 +460,61 @@ async function loadDiscover() {
         toast(error.message, 'error'); 
     }
 } 
+
+/* ============================================================================ */
+/* SERIES COMPLETION / STATUS MANAGEMENT */
+/* ============================================================================ */
+async function toggleSeriesCompletion(seriesId, currentCompleted) {
+    if (!seriesId) return;
+    const nextCompleted = !Boolean(currentCompleted);
+    const nextStatus = nextCompleted ? 'COMPLETED' : 'ONGOING';
+
+    $$(`[data-action="toggle-series-complete"][data-series-id="${seriesId}"]`).forEach(btn => {
+        btn.disabled = true;
+        btn.textContent = 'Updating...';
+    });
+
+    try {
+        const payload = {
+            isCompleted: nextCompleted,
+            completed: nextCompleted,
+            status: nextStatus
+        };
+
+        const updatedRes = await api(`/series/${encodeURIComponent(seriesId)}/complete`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .catch(() => api(`/series/${encodeURIComponent(seriesId)}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }))
+        .catch(() => api(`/series/${encodeURIComponent(seriesId)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }));
+
+        const updatedSeries = updatedRes?.series || updatedRes || {};
+        if (state.currentSeries && String(state.currentSeries._id) === String(seriesId)) {
+            state.currentSeries = { ...state.currentSeries, ...payload, ...updatedSeries };
+        }
+        state.series = state.series.map(s => String(s._id) === String(seriesId) ? { ...s, ...payload, ...updatedSeries } : s);
+
+        emitAppEvent('afrostory:series-updated', { seriesId, isCompleted: nextCompleted, status: nextStatus });
+        toast(nextCompleted ? 'Series marked as Completed!' : 'Series reopened as Ongoing!', 'success');
+
+        await syncAfterContentMutation({ seriesId });
+    } catch (error) {
+        toast(error.message || 'Could not update series status', 'error');
+        $$(`[data-action="toggle-series-complete"][data-series-id="${seriesId}"]`).forEach(btn => {
+            btn.disabled = false;
+            btn.textContent = currentCompleted ? 'Reopen Series' : 'Mark Completed';
+        });
+    }
+}
 
 /* ============================================================================ */
 /* TIKTOK STYLE FEED & BOLD FOLLOW ICON BADGE */
@@ -519,6 +611,20 @@ function attachVideoSource(videoEl, episode = null) {
     }
 }
 
+function cleanupFeedVideos() {
+    $$('#tiktok-feed video').forEach(video => {
+        try {
+            video.pause();
+            if (video._hls) {
+                video._hls.destroy();
+                video._hls = null;
+            }
+            video.removeAttribute('src');
+            video.load();
+        } catch (e) {}
+    });
+}
+
 let currentlyPlaying = null;
 const feedObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
@@ -597,23 +703,37 @@ async function openSeries(id, options = {}) {
             $$('.nav-item[data-section]').forEach(item => item.classList.toggle('active', item.dataset.section === 'discover'));
             $('#genre-filter')?.closest('.discover-filters')?.classList.remove('hidden');
             $('#save-current')?.classList.add('hidden');
-            if (location.hash.slice(1) !== 'discover') location.hash = 'discover';
+            if (location.hash.slice(1) !== 'discover') {
+                suppressHashSync = true;
+                location.hash = 'discover';
+                setTimeout(() => { suppressHashSync = false; }, 0);
+            }
         }
 
         $$('#section-discover .section-heading').forEach(el => el.classList.add('hidden'));
         const creatorGrid = $('#creator-grid');
         if (creatorGrid) creatorGrid.classList.add('hidden');
 
+        const completed = isSeriesCompleted(seriesInfo);
+        const ownerUserId = seriesInfo.creatorId?.userId?._id || seriesInfo.creatorId?.userId || seriesInfo.userId;
+        const isOwner = Boolean(state.user && ownerUserId && String(ownerUserId) === String(state.user._id));
+
         const featured = $('#featured-series');
         if (featured) {
             featured.innerHTML = `
                 <article class="featured-card" style="background-image: linear-gradient(to top, rgba(17,17,17,1) 0%, rgba(17,17,17,0.4) 100%), url('${image(seriesInfo.coverImage)}')">
-                    <button class="button button-quiet" data-action="back-to-discover" style="margin-bottom: 20px; z-index: 10; position: relative;">← Back to Series</button>
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:20px; position:relative; z-index:10;">
+                        <button class="button button-quiet" data-action="back-to-discover">← Back to Series</button>
+                        ${completed ? '<span style="background:rgba(34,197,94,0.2); border:1px solid #22c55e; color:#22c55e; font-size:12px; font-weight:700; padding:4px 12px; border-radius:999px;">✓ Completed Series</span>' : '<span style="background:rgba(212,160,23,0.16); border:1px solid rgba(212,160,23,0.5); color:#ffd24c; font-size:12px; font-weight:700; padding:4px 12px; border-radius:999px;">● Ongoing Series</span>'}
+                    </div>
                     <p class="eyebrow" style="position: relative; z-index: 10;">${esc(seriesInfo.genre || 'SERIES')}</p>
                     <h2 style="position: relative; z-index: 10;">${esc(seriesInfo.title)}</h2>
                     <p style="position: relative; z-index: 10; max-width: 600px;">${esc(seriesInfo.description || 'No description available.')}</p>
                     <p style="color:#d4a017; margin-top:10px; position: relative; z-index: 10;">${esc(seriesInfo.language || 'English')} &nbsp; · &nbsp; ${esc(seriesInfo.genre || 'Story')} &nbsp; · &nbsp; ${episodes.length} Episode${episodes.length === 1 ? '' : 's'}</p>
-                    ${episodes.length > 0 ? `<button class="button button-primary" data-episode-id="${esc(episodes[0]._id)}" style="margin-top:15px; position: relative; z-index: 10;">Play Episode 1</button>` : ''}
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:15px; position:relative; z-index:10;">
+                        ${episodes.length > 0 ? `<button class="button button-primary" data-episode-id="${esc(episodes[0]._id)}">Play Episode 1</button>` : ''}
+                        ${isOwner ? `<button type="button" class="button button-quiet" data-action="toggle-series-complete" data-series-id="${esc(seriesInfo._id)}" data-completed="${completed ? 'true' : 'false'}">${completed ? 'Reopen Series' : 'Mark Series Completed'}</button>` : ''}
+                    </div>
                 </article>
             `;
         }
@@ -640,10 +760,8 @@ let activeFeedRequestId = 0;
 async function openEpisode(id, preloadedEpisodes = null) {
     const requestId = ++activeFeedRequestId;
     try {
-        if (currentlyPlaying) {
-            currentlyPlaying.pause();
-            currentlyPlaying = null;
-        }
+        cleanupFeedVideos();
+        currentlyPlaying = null;
 
         state.currentEpisode = { _id: id }; 
         setSection('watch');
@@ -905,11 +1023,13 @@ function unlockFeedEpisodeInDOM(episodeId) {
     emitAppEvent('afrostory:episode-unlocked', { episodeId });
 }
 
-let saveProgressTimeout = null;
+const saveProgressTimers = new Map();
 async function saveProgressFeed(episode, video, completed = false, immediate = false) {
     if (!episode || !episode._id || (!completed && video.currentTime === 0)) return;
+    const epKey = String(episode._id);
     
     const sendProgress = async () => {
+        saveProgressTimers.delete(epKey);
         const durationToUse = (video.duration && Number.isFinite(video.duration)) ? video.duration : (Number(episode.duration) || 60);
         const rawPct = completed ? 100 : Math.min(100, Math.round((video.currentTime / durationToUse) * 100));
         const isCompleted = Boolean(completed || rawPct >= 92);
@@ -931,11 +1051,13 @@ async function saveProgressFeed(episode, video, completed = false, immediate = f
         } catch {}
     };
 
-    clearTimeout(saveProgressTimeout);
+    const existingTimer = saveProgressTimers.get(epKey);
+    if (existingTimer) clearTimeout(existingTimer);
+
     if (immediate) {
         await sendProgress();
     } else {
-        saveProgressTimeout = setTimeout(sendProgress, 800);
+        saveProgressTimers.set(epKey, setTimeout(sendProgress, 800));
     }
 }
 
@@ -1347,6 +1469,7 @@ async function loadCreator(preferredSeriesId = null) {
             onboarding.classList.add('hidden');
             pending.classList.add('hidden');
             dashboard.classList.remove('hidden');
+            state.profile = null; // Ensure profile tab reflects approved creator status
 
             if (!sessionStorage.getItem('creatorWelcomeSeen')) {
                 let welcomeScreen = $('#creator-welcome-screen');
@@ -1381,13 +1504,13 @@ async function loadCreator(preferredSeriesId = null) {
 
             const seriesGrid = $('#my-series-grid');
             if (seriesGrid) {
-                seriesGrid.innerHTML = seriesList.map(card).join('') || '<p>Create your first series.</p>'; 
+                seriesGrid.innerHTML = seriesList.map(item => card(item, { showCreatorControls: true })).join('') || '<p>Create your first series.</p>'; 
             }
             
             const uploadSelect = $('#upload-series');
             if (uploadSelect) {
                 const previousVal = preferredSeriesId || uploadSelect.value;
-                uploadSelect.innerHTML = seriesList.map(item => `<option value="${esc(item._id)}">${esc(item.title)}</option>`).join('');
+                uploadSelect.innerHTML = seriesList.map(item => `<option value="${esc(item._id)}">${esc(item.title)}${isSeriesCompleted(item) ? ' (Completed)' : ''}</option>`).join('');
                 if (previousVal && seriesList.some(s => String(s._id) === String(previousVal))) {
                     uploadSelect.value = previousVal;
                 }
@@ -1456,7 +1579,7 @@ function injectCreatorForm(existingBrandName = '', rejectionReason = '') {
 }
 
 /* ============================================================================ */
-/* DIRECT CLOUD UPLOAD WITH LIVE PROGRESS, FILE DETAILS & AUTO-REFRESH SYNC */
+/* DIRECT CLOUD UPLOAD WITH CIRCULAR PROGRESS RING & AUTO-REFRESH SYNC */
 /* ============================================================================ */
 function emitUploadLifecycle(eventName, detail = {}) {
     emitAppEvent(eventName, detail);
@@ -1497,6 +1620,9 @@ function normalizePlayableVideoUrl(rawUrl) {
     return rawUrl;
 }
 
+const UPLOAD_RING_RADIUS = 24;
+const UPLOAD_RING_CIRCUMFERENCE = 2 * Math.PI * UPLOAD_RING_RADIUS;
+
 function ensureUploadTelemetryUI(form, prefix) {
     if (!form) return null;
     let box = form.querySelector(`#${prefix}-telemetry-box`);
@@ -1505,20 +1631,26 @@ function ensureUploadTelemetryUI(form, prefix) {
         box = document.createElement('div');
         box.id = `${prefix}-telemetry-box`;
         box.className = 'hidden';
-        box.style.cssText = 'margin: 14px 0; padding: 12px 14px; background: #141414; border: 1px solid #333; border-radius: 10px; text-align: left;';
+        box.style.cssText = 'margin: 14px 0; padding: 14px; background: rgba(20, 20, 20, 0.92); backdrop-filter: blur(10px); border: 1px solid rgba(212, 160, 23, 0.35); border-radius: 12px; text-align: left;';
         box.innerHTML = `
-            <div id="${prefix}-file-details" style="font-size: 12px; color: #bbb; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;"></div>
-            <div id="${prefix}-progress-wrap" class="hidden">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 12px;">
-                    <span id="${prefix}-stage-text" style="color: #f5f5f5; font-weight: 600;">Preparing upload...</span>
-                    <strong id="${prefix}-percent-text" style="color: #d4a017; font-size: 13px;">0%</strong>
+            <div id="${prefix}-file-details" style="font-size: 12px; color: #bbb; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;"></div>
+            <div id="${prefix}-progress-wrap" class="hidden" style="display: flex; align-items: center; gap: 14px;">
+                <div style="position: relative; width: 60px; height: 60px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                    <svg viewBox="0 0 60 60" width="60" height="60" style="transform: rotate(-90deg);">
+                        <circle cx="30" cy="30" r="${UPLOAD_RING_RADIUS}" stroke="#262626" stroke-width="5" fill="none"></circle>
+                        <circle id="${prefix}-ring-circle" cx="30" cy="30" r="${UPLOAD_RING_RADIUS}" stroke="#d4a017" stroke-width="5" stroke-linecap="round" fill="none" stroke-dasharray="${UPLOAD_RING_CIRCUMFERENCE.toFixed(2)}" stroke-dashoffset="${UPLOAD_RING_CIRCUMFERENCE.toFixed(2)}" style="transition: stroke-dashoffset 0.2s ease, stroke 0.25s ease;"></circle>
+                    </svg>
+                    <strong id="${prefix}-percent-text" style="position: absolute; font-size: 12px; font-weight: 800; color: #ffd24c;">0%</strong>
                 </div>
-                <div style="width: 100%; height: 8px; background: #262626; border-radius: 999px; overflow: hidden;">
-                    <div id="${prefix}-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #b8860b, #d4a017, #f1c40f); border-radius: 999px; transition: width 0.2s ease;"></div>
-                </div>
-                <div id="${prefix}-transfer-stats" style="margin-top: 6px; font-size: 11px; color: #999; display: flex; justify-content: space-between; gap: 8px;">
-                    <span id="${prefix}-bytes-text">0 MB / 0 MB</span>
-                    <span id="${prefix}-speed-text">Calculating speed...</span>
+                <div style="flex: 1; min-width: 0;">
+                    <div id="${prefix}-stage-text" style="font-size: 13px; color: #f5f5f5; font-weight: 700; margin-bottom: 6px;">Preparing upload...</div>
+                    <div style="width: 100%; height: 6px; background: #262626; border-radius: 999px; overflow: hidden; margin-bottom: 6px;">
+                        <div id="${prefix}-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #b8860b, #d4a017, #f1c40f); border-radius: 999px; transition: width 0.2s ease;"></div>
+                    </div>
+                    <div id="${prefix}-transfer-stats" style="font-size: 11px; color: #999; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+                        <span id="${prefix}-bytes-text">0 MB / 0 MB</span>
+                        <span id="${prefix}-speed-text">Calculating speed...</span>
+                    </div>
                 </div>
             </div>
         `;
@@ -1533,6 +1665,7 @@ function ensureUploadTelemetryUI(form, prefix) {
         box,
         fileDetails: box.querySelector(`#${prefix}-file-details`),
         progressWrap: box.querySelector(`#${prefix}-progress-wrap`),
+        ringCircle: box.querySelector(`#${prefix}-ring-circle`),
         stageText: box.querySelector(`#${prefix}-stage-text`),
         percentText: box.querySelector(`#${prefix}-percent-text`),
         progressBar: box.querySelector(`#${prefix}-progress-bar`),
@@ -1541,14 +1674,50 @@ function ensureUploadTelemetryUI(form, prefix) {
     };
 }
 
+function syncNativeAppHtmlRings(form, clampedPercent, stage, isError, isSuccess) {
+    if (!form) return;
+    const modal = form.closest('.modal, .modal-root') || form;
+    const ringContainer = modal.querySelector('[data-upload-ring], #upload-progress-ring, #upload-progress-container');
+    if (ringContainer) ringContainer.classList.remove('hidden');
+
+    const ringStrokeColor = isError ? '#e74c3c' : (isSuccess ? '#2ecc71' : '#d4a017');
+    modal.querySelectorAll('circle[data-ring-progress], .upload-ring-progress, #upload-ring-circle').forEach(circle => {
+        const r = Number(circle.getAttribute('r')) || UPLOAD_RING_RADIUS;
+        const circ = 2 * Math.PI * r;
+        circle.style.strokeDasharray = `${circ.toFixed(2)}`;
+        circle.style.strokeDashoffset = `${(circ * (1 - clampedPercent / 100)).toFixed(2)}`;
+        circle.style.stroke = ringStrokeColor;
+    });
+
+    modal.querySelectorAll('[data-upload-percent], #upload-ring-percent').forEach(el => {
+        el.textContent = `${clampedPercent}%`;
+    });
+
+    if (stage) {
+        modal.querySelectorAll('[data-upload-stage], #upload-ring-stage').forEach(el => {
+            el.textContent = stage;
+        });
+    }
+}
+
 function updateUploadTelemetry(ui, { percent = 0, stage = '', bytesText = '', speedText = '', isError = false, isSuccess = false } = {}) {
     if (!ui) return;
     ui.box.classList.remove('hidden');
     ui.progressWrap.classList.remove('hidden');
+    ui.progressWrap.style.display = 'flex';
 
     const clamped = Math.max(0, Math.min(100, Math.round(percent)));
+    const activeColor = isError ? '#e74c3c' : (isSuccess ? '#2ecc71' : '#d4a017');
+
     ui.percentText.textContent = `${clamped}%`;
-    ui.percentText.style.color = isError ? '#e74c3c' : (isSuccess ? '#2ecc71' : '#d4a017');
+    ui.percentText.style.color = isError ? '#e74c3c' : (isSuccess ? '#2ecc71' : '#ffd24c');
+
+    if (ui.ringCircle) {
+        const offset = UPLOAD_RING_CIRCUMFERENCE * (1 - clamped / 100);
+        ui.ringCircle.style.strokeDashoffset = `${offset.toFixed(2)}`;
+        ui.ringCircle.style.stroke = activeColor;
+    }
+
     ui.progressBar.style.width = `${clamped}%`;
     ui.progressBar.style.background = isError
         ? '#e74c3c'
@@ -1557,6 +1726,8 @@ function updateUploadTelemetry(ui, { percent = 0, stage = '', bytesText = '', sp
     if (stage) ui.stageText.textContent = stage;
     if (bytesText !== undefined) ui.bytesText.textContent = bytesText;
     if (speedText !== undefined) ui.speedText.textContent = speedText;
+
+    syncNativeAppHtmlRings(ui.box.closest('form'), clamped, stage, isError, isSuccess);
 }
 
 function resetUploadTelemetry(form, prefix) {
@@ -1569,7 +1740,12 @@ function resetUploadTelemetry(form, prefix) {
         if (progressWrap) progressWrap.classList.add('hidden');
         const fileDetails = box.querySelector(`#${prefix}-file-details`);
         if (fileDetails) fileDetails.innerHTML = '';
+        const ringCircle = box.querySelector(`#${prefix}-ring-circle`);
+        if (ringCircle) ringCircle.style.strokeDashoffset = `${UPLOAD_RING_CIRCUMFERENCE.toFixed(2)}`;
     }
+    const modal = form.closest('.modal, .modal-root') || form;
+    const ringContainer = modal.querySelector('[data-upload-ring], #upload-progress-ring, #upload-progress-container');
+    if (ringContainer) ringContainer.classList.add('hidden');
 }
 
 async function bindFileSelectionPreviews() {
@@ -1782,7 +1958,7 @@ async function submitSeries(event) {
                 bytesText: `${formatFileSize(p.loaded)} / ${formatFileSize(p.total)}`,
                 speedText: speedLabel
             });
-            emitUploadLifecycle('afrostory:upload-progress', { kind: 'series', percent: p.percent, stage: p.stage });
+            emitUploadLifecycle('afrostory:upload-progress', { kind: 'series', percent: p.percent, stage: p.stage, loaded: p.loaded, total: p.total });
         }); 
 
         updateUploadTelemetry(ui, {
@@ -1792,6 +1968,8 @@ async function submitSeries(event) {
             speedText: 'Saving details...'
         });
         emitUploadLifecycle('afrostory:upload-progress', { kind: 'series', percent: 94, stage: 'Step 3/3 · Creating series...' });
+
+        const isCompleted = values.get('completed') === 'on' || values.get('isCompleted') === 'on';
 
         const createdRes = await api('/series/create', { 
             method: 'POST', 
@@ -1805,7 +1983,9 @@ async function submitSeries(event) {
                 language: values.get('language'), 
                 tags: String(values.get('tags') || '').split(',').map(tag => tag.trim()).filter(Boolean), 
                 isPublished: values.get('publish') === 'on', 
-                isPremiumExclusive: values.get('premium') === 'on' 
+                isPremiumExclusive: values.get('premium') === 'on',
+                isCompleted,
+                status: isCompleted ? 'COMPLETED' : 'ONGOING'
             }) 
         }); 
 
@@ -1888,7 +2068,7 @@ async function submitUpload(event) {
                 bytesText: `${formatFileSize(p.loaded)} / ${formatFileSize(p.total)}`,
                 speedText: speedLabel
             });
-            emitUploadLifecycle('afrostory:upload-progress', { kind: 'episode', percent: p.percent, stage: p.stage });
+            emitUploadLifecycle('afrostory:upload-progress', { kind: 'episode', percent: p.percent, stage: p.stage, loaded: p.loaded, total: p.total });
         }); 
 
         const rawMediaUrl = upload.hlsUrl || upload.mediaUrl || upload.secure_url || upload.url; 
@@ -1904,6 +2084,7 @@ async function submitUpload(event) {
             ? Math.max(0, Number(rawCoinCost))
             : 10;
         const finalDuration = Math.max(1, Math.round(Number(upload.duration) || localDuration || 0));
+        const markSeriesCompleted = values.get('completeSeries') === 'on' || values.get('isSeriesCompleted') === 'on';
 
         updateUploadTelemetry(ui, {
             percent: 95,
@@ -1931,9 +2112,14 @@ async function submitUpload(event) {
                 coinCost, 
                 isFree: false, 
                 adUnlockable: access === 'Ad', 
-                isPublished: values.get('publish') === 'on' 
+                isPublished: values.get('publish') === 'on',
+                completeSeries: markSeriesCompleted
             }) 
         }); 
+
+        if (markSeriesCompleted) {
+            await toggleSeriesCompletion(seriesId, false).catch(() => {});
+        }
 
         const createdEpisode = createdEpRes?.episode || createdEpRes || {};
         updateUploadTelemetry(ui, {
@@ -2107,6 +2293,7 @@ function openProfileEditor() {
     const profile = user?.profile || {};
     if (!user) return;
     
+    const form = $('#profile-form');
     const nameInput = $('#profile-display-name-input');
     if (nameInput) nameInput.value = profile.displayName || user.username || '';
     
@@ -2115,6 +2302,17 @@ function openProfileEditor() {
     
     const emailInput = $('#profile-email');
     if (emailInput) emailInput.value = user.email || '';
+
+    if (form) {
+        const bioField = form.querySelector('[name="bio"]');
+        if (bioField) bioField.value = profile.bio || '';
+        const countryField = form.querySelector('[name="country"]');
+        if (countryField) countryField.value = profile.country || '';
+        const regionField = form.querySelector('[name="region"]');
+        if (regionField) regionField.value = profile.region || '';
+        const langField = form.querySelector('[name="preferredLanguage"]');
+        if (langField) langField.value = profile.preferredLanguage || '';
+    }
     
     const editPanel = $('#profile-edit-panel');
     if (editPanel) {
@@ -2147,11 +2345,11 @@ function rememberDeletedNotificationIds(ids) {
 
 function setNotificationBadgeCount(count) {
     const safeCount = Math.max(0, Math.floor(Number(count) || 0));
-    const badge = $('#notification-badge');
-    if (badge) {
+    $$('#notification-badge, [data-notification-badge]').forEach(badge => {
         badge.textContent = String(safeCount);
         badge.classList.toggle('hidden', safeCount === 0);
-    }
+    });
+    emitAppEvent('afrostory:notifications-updated', { unreadCount: safeCount });
 }
 
 function ensureNotificationClearAllButton() {
@@ -2295,7 +2493,7 @@ async function searchLibrary(event) {
         const resEl = $('#search-results');
         if (resEl) resEl.innerHTML = '<p>Searching...</p>';
         const result = await api(`/search/global?q=${encodeURIComponent(query)}&limit=50`) || {};
-        const seriesHtml = (result.series?.data || []).map(card).join('');
+        const seriesHtml = (result.series?.data || []).map(s => card(s)).join('');
         const episodesHtml = (result.episodes?.data || []).map(ep => episodeCard(ep)).join('');
         if (resEl) resEl.innerHTML = (seriesHtml + episodesHtml) || '<p>No stories matched your search.</p>';
     } catch (error) { toast(error.message, 'error'); }
@@ -2314,7 +2512,7 @@ async function loadFavorites() {
         const result = await api('/favorites') || {};
         const list = result.favorites || result.data || result || [];
         const favEl = $('#favorites-list');
-        if (favEl) favEl.innerHTML = list.map(card).join('') || '<p>Save stories from the player to build your library.</p>';
+        if (favEl) favEl.innerHTML = list.map(s => card(s)).join('') || '<p>Save stories from the player to build your library.</p>';
     } catch (error) { toast(error.message, 'error'); }
 } 
 
@@ -2378,6 +2576,16 @@ document.addEventListener('click', async event => {
 
         if (event.target.id === 'mobile-more-sheet' || event.target.closest('.sheet-item')) {
             $('#mobile-more-sheet')?.classList.add('hidden');
+        }
+
+        const toggleCompleteBtn = event.target.closest('[data-action="toggle-series-complete"]');
+        if (toggleCompleteBtn) {
+            event.preventDefault();
+            event.stopPropagation();
+            const sId = toggleCompleteBtn.dataset.seriesId;
+            const isComp = toggleCompleteBtn.dataset.completed === 'true';
+            await toggleSeriesCompletion(sId, isComp);
+            return;
         }
 
         const section = event.target.closest('[data-section]');          
@@ -2644,7 +2852,6 @@ document.addEventListener('click', async event => {
                         body: JSON.stringify({})
                     })
                 );
-                await loadNotifications(); 
             } catch (error) { toast(error.message, 'error'); } 
         }
         
@@ -2665,7 +2872,6 @@ document.addEventListener('click', async event => {
                         body: JSON.stringify({})
                     })
                 );
-                await loadNotifications(); 
             } catch (error) { toast(error.message, 'error'); } 
         }
 
@@ -2690,6 +2896,12 @@ document.addEventListener('click', async event => {
                     .catch(() => api(`/notifications/${encodeURIComponent(notifId)}/read`, { method: 'PUT' }))
                     .catch(() => {});
             }
+        }
+
+        const unreadRow = event.target.closest('.notification-item.notification-unread');
+        if (unreadRow && !event.target.closest('button')) {
+            const readBtn = unreadRow.querySelector('[data-read-notification]');
+            if (readBtn) readBtn.click();
         }
 
         if (event.target.closest('[data-action="clear-notifications"]')) {
@@ -2750,13 +2962,42 @@ document.addEventListener('click', async event => {
 });
 
 /* ============================================================================ */
-/* ROBINS ADS REWARDED INTERCEPTOR */
+/* ROBINS ADS REWARDED & ANTI-FREEZE LIFECYCLE HANDLERS */
 /* ============================================================================ */
-async function handleRewardedAdComplete(event) {
-    const rawTarget = event.target;
+function pauseFeedForAd() {
+    try {
+        if (currentlyPlaying && !currentlyPlaying.paused) {
+            currentlyPlaying.pause();
+        }
+        $$('#tiktok-feed video').forEach(v => {
+            if (!v.paused) v.pause();
+        });
+    } catch (e) {}
+}
+
+function resetRewardedAdButtons(event) {
+    const rawTarget = event?.target;
     const btn = (rawTarget && typeof rawTarget.closest === 'function')
         ? (rawTarget.closest('[data-robins-rewarded], [data-rs-rewarded]') || rawTarget)
-        : rawTarget;
+        : null;
+
+    const targets = btn ? [btn] : $$('[data-robins-loading], [data-rs-loading]');
+    targets.forEach(el => {
+        delete el.dataset.robinsLoading;
+        delete el.dataset.rsLoading;
+        delete el.dataset.robinsVerifying;
+        el.disabled = false;
+        if (el.dataset.originalHtml) {
+            el.innerHTML = el.dataset.originalHtml;
+        }
+    });
+}
+
+async function handleRewardedAdComplete(event) {
+    const rawTarget = event?.target;
+    const btn = (rawTarget && typeof rawTarget.closest === 'function')
+        ? (rawTarget.closest('[data-robins-rewarded], [data-rs-rewarded]') || rawTarget)
+        : (event?.detail?.button || null);
     if (!btn) return;
 
     if (btn.dataset?.robinsVerifying === 'true') return;
@@ -2831,8 +3072,20 @@ async function handleRewardedAdComplete(event) {
     }
 }
 
-document.addEventListener('robins:rewarded', handleRewardedAdComplete);
-document.addEventListener('rs:rewarded', handleRewardedAdComplete);
+['robins:start', 'rs:start'].forEach(evt => {
+    document.addEventListener(evt, pauseFeedForAd);
+    window.addEventListener(evt, pauseFeedForAd);
+});
+
+['robins:closed', 'rs:closed', 'robins:error', 'rs:error'].forEach(evt => {
+    document.addEventListener(evt, resetRewardedAdButtons);
+    window.addEventListener(evt, resetRewardedAdButtons);
+});
+
+['robins:rewarded', 'rs:rewarded'].forEach(evt => {
+    document.addEventListener(evt, handleRewardedAdComplete);
+    window.addEventListener(evt, handleRewardedAdComplete);
+});
 
 const uploadForm = $('#upload-form');
 if (uploadForm) uploadForm.addEventListener('submit', submitUpload);
@@ -2895,13 +3148,18 @@ if (commentForm) {
 }
 
 /* ============================================================================ */
-/* AUTOMATIC LIVE BACKGROUND & TAB-FOCUS SYNCHRONIZATION */
+/* EVENT-DRIVEN & BACKGROUND SYNCHRONIZATION ENGINE */
 /* ============================================================================ */
+let isSyncingLiveState = false;
+
 async function syncLiveAppState() {
-    if (!state.user || document.visibilityState !== 'visible') return;
+    if (isSyncingLiveState || !state.user || document.visibilityState !== 'visible') return;
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+
     const isUploading = $('#upload-form')?.dataset.uploading === 'true' || $('#series-form')?.dataset.uploading === 'true';
     if (isUploading) return;
 
+    isSyncingLiveState = true;
     try {
         await refreshNotificationBadge();
 
@@ -2921,14 +3179,17 @@ async function syncLiveAppState() {
         } else if (activeSection === 'continue') {
             await loadContinue();
         }
-    } catch (e) {}
+    } catch (e) {
+    } finally {
+        isSyncingLiveState = false;
+    }
 }
 
 setInterval(syncLiveAppState, 25000);
 
-window.addEventListener('focus', () => {
-    syncLiveAppState();
-});
+window.addEventListener('focus', syncLiveAppState);
+window.addEventListener('online', syncLiveAppState);
+window.addEventListener('afrostory:sync-requested', syncLiveAppState);
 
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
@@ -2937,6 +3198,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 window.addEventListener('hashchange', () => {
+    if (suppressHashSync) return;
     const name = location.hash.slice(1);
     if (['discover', 'search', 'watch', 'history', 'wallet', 'rewards', 'creator', 'admin', 'profile', 'trending', 'continue', 'favorites', 'settings'].includes(name)) {
         setSection(name);
