@@ -1,4 +1,4 @@
-const API_BASE = '/api/admin'; 
+const API_BASE = '/api/admin';
 
 // SweetAlert Dark Theme Configuration
 const swalConfig = {
@@ -8,33 +8,45 @@ const swalConfig = {
     cancelButtonColor: '#333'
 };
 
-const $ = selector => document.querySelector(selector); const $$ = selector => [...document.querySelectorAll(selector)];
+const $ = selector => document.querySelector(selector);
+const $$ = selector => [...document.querySelectorAll(selector)];
+
+function getAuthHeaders() {
+    const headers = { 'Content-Type': 'application/json' };
+    const token =
+        localStorage.getItem('token') ||
+        localStorage.getItem('authToken') ||
+        localStorage.getItem('afristory_token');
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+    return headers;
+}
 
 // ============================================================================
-// CORE API WRAPPER (FIXED SILENT NULL RETURNS)
+// CORE API WRAPPER
 // ============================================================================
 async function adminApi(endpoint, method = 'GET', body = null) {
     const options = {
         method,
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
+        headers: getAuthHeaders()
     };
-    
-    // Prevents Fastify "Body cannot be empty" errors on PUT/POST requests
+
     if (body) {
         options.body = JSON.stringify(body);
     } else if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
-        options.body = '{}'; 
+        options.body = '{}';
     }
 
     try {
         const response = await fetch(`${API_BASE}${endpoint}`, options);
-        
+
         if (response.status === 401 || response.status === 403) {
             window.location.replace('/');
             return null;
         }
-        
+
         const contentType = response.headers.get('content-type') || '';
         let result;
 
@@ -48,11 +60,8 @@ async function adminApi(endpoint, method = 'GET', body = null) {
         if (!response.ok || result.success === false) {
             throw new Error(result.message || result.error || `Request failed with HTTP ${response.status}`);
         }
-        
-        // FIX: If backend successfully completes but sends no data (like Reject/Delete), 
-        // return an object so the frontend `if (res)` check doesn't fail silently.
-        return (result.data !== undefined && result.data !== null) ? result.data : { success: true };
 
+        return (result.data !== undefined && result.data !== null) ? result.data : { success: true };
     } catch (error) {
         console.error(`Admin API Error [${method} ${endpoint}]:`, error);
         if (window.Swal) {
@@ -67,8 +76,10 @@ async function adminApi(endpoint, method = 'GET', body = null) {
 // ============================================================================
 async function uploadToCloudinary(file, type) {
     const signRes = await fetch(`/api/upload/sign?type=${type}`, { credentials: 'include' }).then(r => r.json());
-    if (!signRes || !signRes.data || !signRes.data.signature) throw new Error('Failed to secure upload connection');
-    
+    if (!signRes || !signRes.data || !signRes.data.signature) {
+        throw new Error('Failed to secure upload connection');
+    }
+
     const { signature, timestamp, apiKey, cloudName, folder } = signRes.data;
     const url = `https://api.cloudinary.com/v1_1/${cloudName}/${type}/upload`;
 
@@ -84,7 +95,7 @@ async function uploadToCloudinary(file, type) {
         const err = await response.json();
         throw new Error(err.error?.message || 'Cloudinary direct upload failed');
     }
-    
+
     const data = await response.json();
     return data.secure_url;
 }
@@ -94,7 +105,7 @@ async function uploadToCloudinary(file, type) {
 // ============================================================================
 window.loadDashboardStats = async function() {
     const data = await adminApi('/dashboard/stats');
-    if (!data) return; 
+    if (!data) return;
 
     const grid = $('#stats-grid');
     if (!grid) return;
@@ -120,72 +131,148 @@ window.loadFinancialConfig = async function() {
     const vipBody = $('#financial-vip-packages');
     if (!coinBody || !vipBody) return;
 
-    coinBody.innerHTML = Object.entries(data.coinPackages || {}).map(([key, plan]) => `
-        <tr data-coin-package="${key}">
-            <td>${key}</td>
-            <td><input type="number" min="1" step="1" data-field="coins" value="${Number(plan.coins) || 0}"></td>
-            <td><input type="number" min="2" step="2" data-field="naira" value="${Number(plan.naira) || 0}"></td>
-            <td><input type="checkbox" data-field="active" ${plan.active ? 'checked' : ''}></td>
-        </tr>
-    `).join('');
+    coinBody.innerHTML = Object.entries(data.coinPackages || {}).map(([key, plan]) => {
+        const coins = Number(plan.coins) || 0;
+        const naira = Number(plan.naira) || coins * 2;
+        return `
+            <tr data-coin-package="${key}">
+                <td><strong>${key}</strong></td>
+                <td><input type="number" min="1" step="1" data-field="coins" value="${coins}"></td>
+                <td><input type="number" min="2" step="2" data-field="naira" value="${naira}"></td>
+                <td><input type="checkbox" data-field="active" ${plan.active ? 'checked' : ''}></td>
+            </tr>
+        `;
+    }).join('');
+
     vipBody.innerHTML = Object.entries(data.vipPackages || {}).map(([key, plan]) => `
         <tr data-vip-package="${key}">
-            <td>${key}</td>
+            <td><strong>${key}</strong></td>
             <td><input type="number" min="0" step="1" data-field="purchasedCoinPrice" value="${Number(plan.purchasedCoinPrice) || 0}"></td>
             <td><input type="number" min="0" step="1" data-field="vipCreditsGranted" value="${Number(plan.vipCreditsGranted) || 0}"></td>
             <td><input type="checkbox" data-field="active" ${plan.active ? 'checked' : ''}></td>
         </tr>
     `).join('');
+
+    // Keep ₦2 per purchased coin synchronized when coins input changes
+    coinBody.querySelectorAll('tr[data-coin-package]').forEach(row => {
+        const coinsInput = row.querySelector('[data-field="coins"]');
+        const nairaInput = row.querySelector('[data-field="naira"]');
+        coinsInput?.addEventListener('input', () => {
+            const c = Math.max(1, Math.floor(Number(coinsInput.value) || 0));
+            nairaInput.value = String(c * 2);
+        });
+    });
 };
 
 async function saveFinancialConfig() {
-    const coinPackages = {};
-    const vipPackages = {};
-    $$('#financial-coin-packages tr[data-coin-package]').forEach(row => {
-        coinPackages[row.dataset.coinPackage] = {
-            coins: Number(row.querySelector('[data-field="coins"]').value),
-            naira: Number(row.querySelector('[data-field="naira"]').value),
-            promotionalCoins: 0,
-            active: row.querySelector('[data-field="active"]').checked
-        };
-    });
-    $$('#financial-vip-packages tr[data-vip-package]').forEach(row => {
-        vipPackages[row.dataset.vipPackage] = {
-            purchasedCoinPrice: Number(row.querySelector('[data-field="purchasedCoinPrice"]').value),
-            vipCreditsGranted: Number(row.querySelector('[data-field="vipCreditsGranted"]').value),
-            active: row.querySelector('[data-field="active"]').checked
-        };
-    });
-    const result = await adminApi('/financial-config', 'PUT', {
-        coinPackages,
-        vipPackages,
-        promoRewardAmount: 5
-    });
-    if (result) {
-        await loadFinancialConfig();
-        if (window.Swal) Swal.fire('Saved', 'Financial configuration updated.', 'success', swalConfig);
+    const btn = $('#save-financial-config');
+    const originalText = btn ? btn.textContent : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+    }
+
+    try {
+        const coinPackages = {};
+        const vipPackages = {};
+
+        $$('#financial-coin-packages tr[data-coin-package]').forEach(row => {
+            const coins = Math.max(1, Math.floor(Number(row.querySelector('[data-field="coins"]').value) || 0));
+            const naira = Math.max(2, Math.floor(Number(row.querySelector('[data-field="naira"]').value) || coins * 2));
+            coinPackages[row.dataset.coinPackage] = {
+                coins,
+                naira,
+                promotionalCoins: 0,
+                active: row.querySelector('[data-field="active"]').checked
+            };
+        });
+
+        $$('#financial-vip-packages tr[data-vip-package]').forEach(row => {
+            vipPackages[row.dataset.vipPackage] = {
+                purchasedCoinPrice: Math.max(0, Math.floor(Number(row.querySelector('[data-field="purchasedCoinPrice"]').value) || 0)),
+                vipCreditsGranted: Math.max(0, Math.floor(Number(row.querySelector('[data-field="vipCreditsGranted"]').value) || 0)),
+                active: row.querySelector('[data-field="active"]').checked
+            };
+        });
+
+        const result = await adminApi('/financial-config', 'PUT', {
+            coinPackages,
+            vipPackages,
+            promoRewardAmount: 5
+        });
+
+        if (result) {
+            await loadFinancialConfig();
+            if (window.Swal) {
+                Swal.fire({
+                    title: 'Saved',
+                    text: 'Financial configuration updated.',
+                    icon: 'success',
+                    ...swalConfig
+                });
+            }
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
     }
 }
 
 async function reconcileAdRevenue(event) {
     event.preventDefault();
     const form = event.currentTarget;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn ? submitBtn.textContent : '';
+
     const values = new FormData(form);
-    const result = await adminApi('/ad-revenue/reconcile', 'POST', {
-        periodStart: new Date(values.get('periodStart')).toISOString(),
-        periodEnd: new Date(values.get('periodEnd')).toISOString(),
-        providerNetRevenueNaira: Number(values.get('providerNetRevenueNaira')),
-        reference: String(values.get('reference') || '').trim() || undefined
-    });
-    if (result) {
-        form.reset();
+    const startRaw = values.get('periodStart');
+    const endRaw = values.get('periodEnd');
+    const startDate = new Date(startRaw);
+    const endDate = new Date(endRaw);
+
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || endDate <= startDate) {
         if (window.Swal) {
-            Swal.fire(
-                'Reconciled',
-                `Ad revenue batch processed. ${result.promotedCount || 0} creator earnings became available.`,
-                'success',
-                swalConfig
-            );
+            Swal.fire({
+                title: 'Invalid Period',
+                text: 'Please choose a valid start and end date where end is after start.',
+                icon: 'warning',
+                ...swalConfig
+            });
+        }
+        return;
+    }
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Reconciling...';
+    }
+
+    try {
+        const result = await adminApi('/ad-revenue/reconcile', 'POST', {
+            periodStart: startDate.toISOString(),
+            periodEnd: endDate.toISOString(),
+            providerNetRevenueNaira: Number(values.get('providerNetRevenueNaira')),
+            reference: String(values.get('reference') || '').trim() || undefined
+        });
+
+        if (result) {
+            form.reset();
+            loadDashboardStats();
+            if (window.Swal) {
+                Swal.fire({
+                    title: 'Reconciled',
+                    text: `Ad revenue batch processed. ${result.promotedCount || 0} creator earnings became available.`,
+                    icon: 'success',
+                    ...swalConfig
+                });
+            }
+        }
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
         }
     }
 }
@@ -194,7 +281,7 @@ window.loadUsers = async function() {
     const tbody = $('#users-tbody');
     if (!tbody) return;
     tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Loading users...</td></tr>';
-    
+
     const data = await adminApi('/users?limit=50');
     if (!data || !data.users || !data.users.length) {
         tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No users found.</td></tr>';
@@ -208,7 +295,7 @@ window.loadUsers = async function() {
             <td>${user.role || 'USER'}</td>
             <td><span class="badge badge-${user.isActive ? 'active' : 'suspended'}">${user.isActive ? 'Active' : 'Suspended'}</span></td>
             <td class="action-cell">
-                ${user.isActive 
+                ${user.isActive
                     ? `<button class="btn btn-danger" data-action="toggle-user" data-id="${user._id}" data-type="suspend">Suspend</button>`
                     : `<button class="btn btn-success" data-action="toggle-user" data-id="${user._id}" data-type="unsuspend">Unsuspend</button>`
                 }
@@ -221,7 +308,7 @@ window.loadCreators = async function() {
     const tbody = $('#creators-tbody');
     if (!tbody) return;
     tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Loading creators...</td></tr>';
-    
+
     const data = await adminApi('/creators?verified=false');
     if (!data || !data.creators || !data.creators.length) {
         tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No pending creator applications.</td></tr>';
@@ -246,7 +333,7 @@ window.loadSlides = async function() {
     const tbody = $('#image-slides-tbody');
     if (!tbody) return;
     tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Loading image slides...</td></tr>';
-    
+
     const data = await adminApi('/banners?type=IMAGE');
     if (!data || !data.length) {
         tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No active image slides.</td></tr>';
@@ -267,7 +354,7 @@ window.loadVideoAnnouncements = async function() {
     const tbody = $('#video-slides-tbody');
     if (!tbody) return;
     tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Loading video announcements...</td></tr>';
-    
+
     const data = await adminApi('/banners?type=VIDEO');
     if (!data || !data.length) {
         tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No active video announcements.</td></tr>';
@@ -288,7 +375,7 @@ window.loadReports = async function() {
     const tbody = $('#reports-tbody');
     if (!tbody) return;
     tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Loading reports...</td></tr>';
-    
+
     const data = await adminApi('/reports?status=PENDING');
     if (!data || !data.reports || !data.reports.length) {
         tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No pending reports.</td></tr>';
@@ -312,7 +399,7 @@ window.loadPayouts = async function() {
     const tbody = $('#payouts-tbody');
     if (!tbody) return;
     tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Loading withdrawal requests...</td></tr>';
-    
+
     const data = await adminApi('/payouts?status=PENDING');
     if (!data || !data.payouts || !data.payouts.length) {
         tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No pending payouts.</td></tr>';
@@ -321,8 +408,12 @@ window.loadPayouts = async function() {
     tbody.innerHTML = data.payouts.map(tx => `
         <tr>
             <td>${tx.userId?.email || 'N/A'}</td>
-            <td><strong style="color:#2ecc71;">₦${tx.amount}</strong></td>
-            <td>${tx.metadata?.bankName || 'Wallet'}<br><small style="color:#aaa;">${tx.metadata?.accountNumber || ''}</small></td>
+            <td><strong style="color:#2ecc71;">₦${Number(tx.amount || 0).toLocaleString()}</strong></td>
+            <td>
+                ${tx.metadata?.bankName || 'Wallet'}
+                ${tx.metadata?.accountName ? `<br><small style="color:#ddd;">${tx.metadata.accountName}</small>` : ''}
+                <br><small style="color:#aaa;">${tx.metadata?.accountNumber || ''}</small>
+            </td>
             <td><span class="badge badge-pending">Pending Transfer</span></td>
             <td class="action-cell">
                 <button class="btn btn-success" data-action="process-payout" data-id="${tx._id}" data-process="approve">Mark Paid</button>
@@ -342,84 +433,127 @@ document.addEventListener('click', async event => {
         if (toggleUserBtn) {
             const userId = toggleUserBtn.dataset.id;
             const action = toggleUserBtn.dataset.type;
-            const { isConfirmed } = await Swal.fire({ title: 'Are you sure?', text: `Do you want to ${action} this user?`, icon: 'warning', showCancelButton: true, confirmButtonText: `Yes, ${action}`, ...swalConfig });
+            const { isConfirmed } = await Swal.fire({
+                title: 'Are you sure?',
+                text: `Do you want to ${action} this user?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: `Yes, ${action}`,
+                ...swalConfig
+            });
             if (!isConfirmed) return;
             const res = await adminApi(`/users/${userId}/${action}`, 'PUT');
             if (res) loadUsers();
         }
 
-        // Approve Creator 
-        const approveCreatorBtn = event.target.closest('[data-action="approve-creator"]'); 
-        if (approveCreatorBtn) { 
-            const id = approveCreatorBtn.dataset.id; 
-            const { isConfirmed } = await Swal.fire({ title: 'Approve Creator?', text: 'This grants them full publishing rights on AfroStory.', icon: 'question', showCancelButton: true, confirmButtonText: 'Yes, Approve', ...swalConfig }); 
-            if (!isConfirmed) return; 
-            const res = await adminApi(`/creators/${id}/verify`, 'PUT'); 
-            if (res) { 
-                Swal.fire({ title: 'Approved!', text: 'Creator can now upload content.', icon: 'success', ...swalConfig }); 
-                loadCreators(); 
-                loadDashboardStats(); 
-            } 
-        } 
-        
-        // Reject Creator 
-        const rejectCreatorBtn = event.target.closest('[data-action="reject-creator"]'); 
-        if (rejectCreatorBtn) { 
-            const id = rejectCreatorBtn.dataset.id; 
-            const result = await Swal.fire({ title: 'Reject Creator', input: 'text', inputLabel: 'Reason for rejection (this will be sent to the user):', inputPlaceholder: 'e.g. Incomplete profile details', showCancelButton: true, inputValidator: (value) => { if (!value) return 'You need to write a reason!'; }, ...swalConfig }); 
-            if (!result.isConfirmed || !result.value) return; 
-            const res = await adminApi(`/creators/${id}/reject`, 'PUT', { reason: result.value }); 
-            if (res) { 
-                Swal.fire({ title: 'Rejected', text: 'Creator has been removed from the queue.', icon: 'success', ...swalConfig }); 
-                loadCreators(); 
-            } 
-        } 
-        
-        // Delete Banner 
-        const deleteBannerBtn = event.target.closest('[data-action="delete-banner"]'); 
-        if (deleteBannerBtn) { 
-            const id = deleteBannerBtn.dataset.id; 
-            const type = deleteBannerBtn.dataset.type; 
-            const { isConfirmed } = await Swal.fire({ title: 'Remove Banner?', text: "It will be permanently removed from the homepage.", icon: 'warning', showCancelButton: true, confirmButtonText: 'Yes, Delete', ...swalConfig }); 
-            if (!isConfirmed) return; 
-            const res = await adminApi(`/banners/${id}`, 'DELETE'); 
-            if (res) { 
-                Swal.fire({ title: 'Deleted', text: 'Banner removed.', icon: 'success', ...swalConfig }); 
-                type === 'image' ? loadSlides() : loadVideoAnnouncements(); 
-            } 
-        } 
-        
-        // Resolve Report 
-        const resolveReportBtn = event.target.closest('[data-action="resolve-report"]'); 
-        if (resolveReportBtn) { 
-            const id = resolveReportBtn.dataset.id; 
-            const action = resolveReportBtn.dataset.resolve; 
-            const { isConfirmed } = await Swal.fire({ title: 'Confirm Action', text: `Apply action: ${action.replace('_', ' ')}?`, icon: 'warning', showCancelButton: true, confirmButtonText: 'Yes', ...swalConfig }); 
-            if (!isConfirmed) return; 
-            const status = action === 'dismiss' ? 'DISMISSED' : 'RESOLVED'; 
-            const res = await adminApi(`/reports/${id}/resolve`, 'PUT', { status, actionTaken: action }); 
-            if (res) { 
-                Swal.fire({title: 'Resolved', text: 'Report processed successfully.', icon: 'success', ...swalConfig}); 
-                loadReports(); 
-                loadDashboardStats(); 
-            } 
-        } 
-        
-        // Process Payout 
-        const processPayoutBtn = event.target.closest('[data-action="process-payout"]'); 
-        if (processPayoutBtn) { 
-            const id = processPayoutBtn.dataset.id; 
-            const action = processPayoutBtn.dataset.process; 
-            const isApprove = action === 'approve'; 
-            const result = await Swal.fire({ title: isApprove ? 'Mark as Paid' : 'Decline Payout', input: 'text', inputLabel: isApprove ? 'Enter bank transaction reference:' : 'Enter reason for rejection:', showCancelButton: true, inputValidator: (value) => { if (!value) return 'This field is required!'; }, ...swalConfig }); 
-            if (!result.isConfirmed || !result.value) return; 
-            const payload = isApprove ? { payoutReference: result.value } : { reason: result.value }; 
-            const res = await adminApi(`/payouts/${id}/${action}`, 'PUT', payload); 
-            if (res) { 
-                Swal.fire({title: 'Success', text: `Payout ${action}d successfully.`, icon: 'success', ...swalConfig}); 
-                loadPayouts(); 
-                loadDashboardStats(); 
-            } 
+        // Approve Creator
+        const approveCreatorBtn = event.target.closest('[data-action="approve-creator"]');
+        if (approveCreatorBtn) {
+            const id = approveCreatorBtn.dataset.id;
+            const { isConfirmed } = await Swal.fire({
+                title: 'Approve Creator?',
+                text: 'This grants them full publishing rights on AfriStory.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Approve',
+                ...swalConfig
+            });
+            if (!isConfirmed) return;
+            const res = await adminApi(`/creators/${id}/verify`, 'PUT');
+            if (res) {
+                Swal.fire({ title: 'Approved!', text: 'Creator can now upload content.', icon: 'success', ...swalConfig });
+                loadCreators();
+                loadDashboardStats();
+            }
+        }
+
+        // Reject Creator
+        const rejectCreatorBtn = event.target.closest('[data-action="reject-creator"]');
+        if (rejectCreatorBtn) {
+            const id = rejectCreatorBtn.dataset.id;
+            const result = await Swal.fire({
+                title: 'Reject Creator',
+                input: 'text',
+                inputLabel: 'Reason for rejection (this will be sent to the user):',
+                inputPlaceholder: 'e.g. Incomplete profile details',
+                showCancelButton: true,
+                inputValidator: (value) => { if (!value) return 'You need to write a reason!'; },
+                ...swalConfig
+            });
+            if (!result.isConfirmed || !result.value) return;
+            const res = await adminApi(`/creators/${id}/reject`, 'PUT', { reason: result.value });
+            if (res) {
+                Swal.fire({ title: 'Rejected', text: 'Creator has been removed from the queue.', icon: 'success', ...swalConfig });
+                loadCreators();
+            }
+        }
+
+        // Delete Banner
+        const deleteBannerBtn = event.target.closest('[data-action="delete-banner"]');
+        if (deleteBannerBtn) {
+            const id = deleteBannerBtn.dataset.id;
+            const type = deleteBannerBtn.dataset.type;
+            const { isConfirmed } = await Swal.fire({
+                title: 'Remove Banner?',
+                text: 'It will be permanently removed from the homepage.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Delete',
+                ...swalConfig
+            });
+            if (!isConfirmed) return;
+            const res = await adminApi(`/banners/${id}`, 'DELETE');
+            if (res) {
+                Swal.fire({ title: 'Deleted', text: 'Banner removed.', icon: 'success', ...swalConfig });
+                type === 'image' ? loadSlides() : loadVideoAnnouncements();
+            }
+        }
+
+        // Resolve Report
+        const resolveReportBtn = event.target.closest('[data-action="resolve-report"]');
+        if (resolveReportBtn) {
+            const id = resolveReportBtn.dataset.id;
+            const action = resolveReportBtn.dataset.resolve;
+            const { isConfirmed } = await Swal.fire({
+                title: 'Confirm Action',
+                text: `Apply action: ${action.replace('_', ' ')}?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes',
+                ...swalConfig
+            });
+            if (!isConfirmed) return;
+            const status = action === 'dismiss' ? 'DISMISSED' : 'RESOLVED';
+            const res = await adminApi(`/reports/${id}/resolve`, 'PUT', { status, actionTaken: action });
+            if (res) {
+                Swal.fire({ title: 'Resolved', text: 'Report processed successfully.', icon: 'success', ...swalConfig });
+                loadReports();
+                loadDashboardStats();
+            }
+        }
+
+        // Process Payout
+        const processPayoutBtn = event.target.closest('[data-action="process-payout"]');
+        if (processPayoutBtn) {
+            const id = processPayoutBtn.dataset.id;
+            const action = processPayoutBtn.dataset.process;
+            const isApprove = action === 'approve';
+            const result = await Swal.fire({
+                title: isApprove ? 'Mark as Paid' : 'Decline Payout',
+                input: 'text',
+                inputLabel: isApprove ? 'Enter bank transaction reference:' : 'Enter reason for rejection:',
+                showCancelButton: true,
+                inputValidator: (value) => { if (!value) return 'This field is required!'; },
+                ...swalConfig
+            });
+            if (!result.isConfirmed || !result.value) return;
+            const payload = isApprove ? { payoutReference: result.value } : { reason: result.value };
+            const res = await adminApi(`/payouts/${id}/${action}`, 'PUT', payload);
+            if (res) {
+                Swal.fire({ title: 'Success', text: `Payout ${action}d successfully.`, icon: 'success', ...swalConfig });
+                loadPayouts();
+                loadDashboardStats();
+            }
         }
     } catch (e) {
         console.error('Click Handler Error:', e);
@@ -427,20 +561,21 @@ document.addEventListener('click', async event => {
 });
 
 document.addEventListener('submit', async event => {
-    // Handle Image Banner Upload - FIX: Matched form ID to HTML
+    // Handle Image Banner Upload
     if (event.target.id === 'image-slide-form') {
-        event.preventDefault(); // INSTANTLY PREVENT PAGE REFRESH
+        event.preventDefault();
         const form = event.target;
         const btn = form.querySelector('button');
         const originalText = btn.textContent;
-        btn.disabled = true; btn.textContent = 'Uploading Image...';
+        btn.disabled = true;
+        btn.textContent = 'Uploading Image...';
 
         try {
             const fileInput = form.querySelector('[name="imageFile"]');
-            if (!fileInput || !fileInput.files[0]) throw new Error("Please select an image file.");
-            
+            if (!fileInput || !fileInput.files[0]) throw new Error('Please select an image file.');
+
             const mediaUrl = await uploadToCloudinary(fileInput.files[0], 'image');
-            
+
             btn.textContent = 'Saving...';
             const res = await adminApi('/banners', 'POST', {
                 title: form.title.value,
@@ -453,31 +588,33 @@ document.addEventListener('submit', async event => {
             });
 
             if (res) {
-                Swal.fire('Success', 'Image banner added to homepage', 'success', swalConfig);
+                Swal.fire({ title: 'Success', text: 'Image banner added to homepage', icon: 'success', ...swalConfig });
                 form.reset();
                 loadSlides();
             }
         } catch (err) {
-            Swal.fire('Error', err.message, 'error', swalConfig);
+            Swal.fire({ title: 'Error', text: err.message, icon: 'error', ...swalConfig });
         } finally {
-            btn.disabled = false; btn.textContent = originalText;
+            btn.disabled = false;
+            btn.textContent = originalText;
         }
-    } 
+    }
 
     // Handle Video Announcement Upload
     if (event.target.id === 'video-slide-form') {
-        event.preventDefault(); // INSTANTLY PREVENT PAGE REFRESH
+        event.preventDefault();
         const form = event.target;
         const btn = form.querySelector('button');
         const originalText = btn.textContent;
-        btn.disabled = true; btn.textContent = 'Uploading Video...';
+        btn.disabled = true;
+        btn.textContent = 'Uploading Video...';
 
         try {
             const fileInput = form.querySelector('[name="videoFile"]');
-            if (!fileInput || !fileInput.files[0]) throw new Error("Please select a video file.");
-            
+            if (!fileInput || !fileInput.files[0]) throw new Error('Please select a video file.');
+
             const mediaUrl = await uploadToCloudinary(fileInput.files[0], 'video');
-            
+
             btn.textContent = 'Saving...';
             const res = await adminApi('/banners', 'POST', {
                 title: form.title.value,
@@ -489,36 +626,37 @@ document.addEventListener('submit', async event => {
             });
 
             if (res) {
-                Swal.fire('Success', 'Video announcement added', 'success', swalConfig);
+                Swal.fire({ title: 'Success', text: 'Video announcement added', icon: 'success', ...swalConfig });
                 form.reset();
                 loadVideoAnnouncements();
             }
         } catch (err) {
-            Swal.fire('Error', err.message, 'error', swalConfig);
+            Swal.fire({ title: 'Error', text: err.message, icon: 'error', ...swalConfig });
         } finally {
-            btn.disabled = false; btn.textContent = originalText;
+            btn.disabled = false;
+            btn.textContent = originalText;
         }
-    } 
+    }
 });
 
 // ============================================================================
 // BOOT
 // ============================================================================
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener('DOMContentLoaded', async () => {
     try {
         const response = await fetch('/api/auth/me', { credentials: 'include' });
-        if (!response.ok) throw new Error("Not logged in");
+        if (!response.ok) throw new Error('Not logged in');
         const data = await response.json();
         const user = data.data || data.user || data;
-        if (!user || String(user.role).toUpperCase() !== 'ADMIN') throw new Error("Not an admin");
+        if (!user || String(user.role).toUpperCase() !== 'ADMIN') throw new Error('Not an admin');
     } catch (error) {
         window.location.replace('/');
         return;
     }
 
-    const loader = $('#page-loader'); 
-    if (loader) loader.style.display = 'none'; 
-    loadDashboardStats(); 
+    const loader = $('#page-loader');
+    if (loader) loader.style.display = 'none';
+    loadDashboardStats();
     $('#save-financial-config')?.addEventListener('click', saveFinancialConfig);
     $('#ad-revenue-reconcile-form')?.addEventListener('submit', reconcileAdRevenue);
 });
