@@ -4,7 +4,6 @@ import RewardClaim from '../models/RewardClaim.js';
 import RewardAudit from '../models/RewardAudit.js';
 import Wallet from '../models/Wallet.js';
 import Transaction from '../models/Transaction.js';
-import Notification from '../models/Notification.js';
 import User from '../models/User.js';
 import History from '../models/History.js';
 import Favorite from '../models/Favorite.js';
@@ -16,7 +15,11 @@ import { verifyAndConsumeRobinAdsReward } from '../utils/robinAdsService.js';
 import { creditPromotionalCoins } from '../services/ledgerService.js';
 
 const timezone = process.env.REWARD_TIMEZONE || 'Africa/Lagos';
-const periodKey = (date = new Date(), type = 'once') => {
+
+const periodKey = (date = new Date(), type = 'once', uniqueToken = '') => {
+  if (type === 'per_ad' || type === 'unlimited') {
+    return uniqueToken ? `ad:${uniqueToken}` : `ad:${Date.now()}`;
+  }
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: timezone,
     year: 'numeric',
@@ -47,6 +50,34 @@ const activeQuery = () => ({
 const dateDistance = (left, right) =>
   Math.round((new Date(`${left}T12:00:00Z`) - new Date(`${right}T12:00:00Z`)) / 86400000);
 
+function walletBalances(wallet) {
+  if (!wallet) {
+    return {
+      balance: 0,
+      promotionalCoins: 0,
+      purchasedCoins: 0,
+      legacyRestrictedCoins: 0,
+      vipCredits: 0,
+      totalStoryCoins: 0,
+    };
+  }
+  const promotionalCoins = formatDecimal(wallet.promotionalCoins || 0);
+  const purchasedCoins = formatDecimal(wallet.purchasedCoins || 0);
+  const legacyRestrictedCoins = formatDecimal(wallet.legacyRestrictedCoins || 0);
+  const vipCredits = formatDecimal(wallet.vipCredits || 0);
+  const totalStoryCoins = formatDecimal(
+    wallet.storyCoins ?? purchasedCoins + promotionalCoins + legacyRestrictedCoins
+  );
+  return {
+    balance: promotionalCoins,
+    promotionalCoins,
+    purchasedCoins,
+    legacyRestrictedCoins,
+    vipCredits,
+    totalStoryCoins,
+  };
+}
+
 async function ensureDefaultRewards() {
   const defaults = [
     {
@@ -55,6 +86,8 @@ async function ensureDefaultRewards() {
       type: 'ONE_TIME',
       category: 'welcome',
       rewardAmount: 5,
+      recurrenceType: 'once',
+      maxClaimsPerUser: 1,
       metadata: { key: 'welcome' },
     },
     {
@@ -65,23 +98,26 @@ async function ensureDefaultRewards() {
       rewardAmount: 5,
       recurrenceType: 'daily',
       maxClaimsPerUser: null,
-      metadata: { schedule: [5, 5, 5, 5, 5, 5, 5] },
+      metadata: { key: 'daily_checkin', schedule: [5, 5, 5, 5, 5, 5, 5] },
     },
     {
       name: 'Complete Your Profile',
-      description: 'Add the essentials that shape your discoveries.',
+      description: 'Complete your profile and verify a sponsor ad to earn 5 promotional coins.',
       type: 'PROFILE',
       category: 'profile',
       rewardAmount: 5,
-      metadata: { key: 'profile_complete' },
+      recurrenceType: 'once',
+      maxClaimsPerUser: 1,
+      verificationMode: 'ad',
+      metadata: { key: 'profile_complete', requiresAd: true },
     },
     {
       name: 'Watch Ads & Earn Coins',
-      description: 'Complete a verified sponsor ad to earn five promotional coins.',
+      description: 'Complete a verified sponsor ad to earn 5 promotional coins.',
       type: 'DAILY',
       category: 'ads',
       rewardAmount: 5,
-      recurrenceType: 'daily',
+      recurrenceType: 'per_ad',
       maxClaimsPerUser: null,
       verificationMode: 'ad',
       metadata: { key: 'watch_ads', requiresAd: true },
@@ -92,6 +128,8 @@ async function ensureDefaultRewards() {
       type: 'DISCOVERY',
       category: 'discovery',
       rewardAmount: 5,
+      recurrenceType: 'once',
+      maxClaimsPerUser: 1,
       metadata: { key: 'first_save' },
     },
     {
@@ -100,9 +138,12 @@ async function ensureDefaultRewards() {
       type: 'DISCOVERY',
       category: 'discovery',
       rewardAmount: 5,
+      recurrenceType: 'once',
+      maxClaimsPerUser: 1,
       metadata: { key: 'first_favorite' },
     },
   ];
+
   const socialDefaults = [
     ['Facebook', 'https://www.facebook.com/profile.php?id=61579451935484', 5, 'Follow us on Facebook', 'social_facebook'],
     ['Instagram', 'https://www.instagram.com/natergracecode/', 5, 'Follow us on Instagram', 'social_instagram'],
@@ -110,35 +151,51 @@ async function ensureDefaultRewards() {
     ['TikTok', process.env.REWARD_SOCIAL_TIKTOK_URL, 5, 'Follow AfroStory on TikTok', 'social_tiktok'],
     ['X', process.env.REWARD_SOCIAL_X_URL, 5, 'Follow AfroStory on X', 'social_x'],
   ];
+
   socialDefaults.forEach(([platform, targetUrl, rewardAmount, name, taskId]) => {
     if (targetUrl) {
       defaults.push({
         name,
-        description: `Connect with AFROSTORY on ${platform}. Follow the account, then claim this one-time reward. External follow verification is not implemented.`,
+        description: `Connect with AFROSTORY on ${platform}. Follow the account, then claim this one-time reward.`,
         type: 'SOCIAL',
         category: 'social',
         rewardAmount,
+        recurrenceType: 'once',
         verificationMode: 'server',
         maxClaimsPerUser: 1,
-        metadata: { key: taskId, taskId, platform, targetUrl, externalVerification: 'not_implemented' },
+        metadata: { key: taskId, taskId, platform, targetUrl },
       });
     }
   });
+
   for (const item of defaults) {
-    const update = {
-      $set: {
-        rewardAmount: 5,
-        ...(item.type === 'SOCIAL' ? { status: 'ACTIVE', ...item } : {}),
-      },
-      $setOnInsert: { ...item, status: 'ACTIVE', createdAt: new Date() },
+    const enforcedFields = {
+      rewardAmount: 5,
+      ...(item.metadata?.key === 'watch_ads'
+        ? {
+            recurrenceType: 'per_ad',
+            verificationMode: 'ad',
+            'metadata.requiresAd': true,
+          }
+        : {}),
+      ...(item.metadata?.key === 'profile_complete'
+        ? {
+            verificationMode: 'ad',
+            'metadata.requiresAd': true,
+          }
+        : {}),
+      ...(item.metadata?.schedule ? { 'metadata.schedule': [5, 5, 5, 5, 5, 5, 5] } : {}),
+      ...(item.type === 'SOCIAL' ? { status: 'ACTIVE', ...item } : {}),
     };
-    await Reward.updateOne({ 'metadata.key': item.metadata.key }, update, { upsert: true });
-    if (item.metadata?.schedule) {
-      await Reward.updateOne(
-        { 'metadata.key': item.metadata.key },
-        { $set: { 'metadata.schedule': [5, 5, 5, 5, 5, 5, 5] } }
-      );
-    }
+
+    await Reward.updateOne(
+      { 'metadata.key': item.metadata.key },
+      {
+        $set: enforcedFields,
+        $setOnInsert: { ...item, status: 'ACTIVE', createdAt: new Date() },
+      },
+      { upsert: true }
+    );
   }
 }
 
@@ -155,22 +212,27 @@ async function profileEligible(user, reward) {
 }
 
 async function getEligibility(user, reward, claims) {
-  const currentPeriod = periodKey(new Date(), reward.recurrenceType);
-  const claim = claims.find(
-    (item) =>
-      item.rewardId.toString() === reward._id.toString() &&
-      item.status !== 'REJECTED' &&
-      (item.status === 'PENDING' || item.periodKey === currentPeriod)
-  );
-  if (claim) {
-    return {
-      state: claim.status === 'PENDING' ? 'PENDING_VERIFICATION' : 'CLAIMED',
-      reason: claim.status === 'PENDING' ? 'Waiting for verification.' : 'Reward already claimed.',
-    };
+  const isPerAd = reward.recurrenceType === 'per_ad' || reward.recurrenceType === 'unlimited';
+  if (!isPerAd) {
+    const currentPeriod = periodKey(new Date(), reward.recurrenceType);
+    const claim = claims.find(
+      (item) =>
+        item.rewardId.toString() === reward._id.toString() &&
+        item.status !== 'REJECTED' &&
+        (item.status === 'PENDING' || item.periodKey === currentPeriod)
+    );
+    if (claim) {
+      return {
+        state: claim.status === 'PENDING' ? 'PENDING_VERIFICATION' : 'CLAIMED',
+        reason: claim.status === 'PENDING' ? 'Waiting for verification.' : 'Reward already claimed.',
+      };
+    }
   }
+
   if (reward.endAt && reward.endAt <= new Date()) {
     return { state: 'EXPIRED', reason: 'This reward has expired.' };
   }
+
   const key = reward.metadata?.key;
   if (key === 'welcome') {
     return user.isVerified
@@ -189,7 +251,7 @@ async function getEligibility(user, reward, claims) {
   }
   if (key === 'profile_complete') {
     return (await profileEligible(user, reward))
-      ? { state: 'CLAIMABLE', reason: 'Your profile is complete.' }
+      ? { state: 'CLAIMABLE', reason: 'Profile complete. Watch a short ad to claim 5 coins.' }
       : { state: 'LOCKED', reason: 'Complete your profile to unlock this reward.' };
   }
   if (
@@ -227,10 +289,13 @@ async function issueReward({
       : { rewardId: reward._id, userId: user._id, periodKey: period }
   ).session(session);
   if (existing) return { claim: existing, duplicate: true };
+
   if (!(await profileEligible(user, reward))) {
     throw new Error('Reward eligibility requirements are not complete');
   }
-  if (reward.endAt && reward.endAt <= new Date()) throw new Error('Reward has expired');
+  if (reward.endAt && reward.endAt <= new Date()) {
+    throw new Error('Reward has expired');
+  }
   if (
     reward.recurrenceType === 'once' &&
     reward.maxClaimsPerUser &&
@@ -245,6 +310,7 @@ async function issueReward({
   ) {
     throw new Error('Reward claim limit reached');
   }
+
   if (
     !approved &&
     !taskId &&
@@ -271,13 +337,18 @@ async function issueReward({
     );
     return { claim: pending[0], pending: true };
   }
+
   const eligibility = await getEligibility(user, reward, []);
-  if (eligibility.state !== 'CLAIMABLE') throw new Error(eligibility.reason);
+  if (eligibility.state !== 'CLAIMABLE') {
+    throw new Error(eligibility.reason);
+  }
 
   const previousClaims = await RewardClaim.countDocuments({
     rewardId: reward._id,
     userId: user._id,
   }).session(session);
+
+  // Rule 2: Every promotional reward credits strictly 5 promotional coins
   const amount = 5;
 
   if (reward.metadata?.schedule) {
@@ -306,11 +377,13 @@ async function issueReward({
     verified: true,
     metadata: {
       rewardId: reward._id,
+      rewardKey: reward.metadata?.key || null,
       taskId,
       source: adVerification ? 'ROBINADS' : reward.type,
     },
     session,
   });
+
   const mergedMetadata = adVerification
     ? { ...metadata, provider: 'ROBINADS', robinsRewardId: adVerification.rewardId }
     : metadata;
@@ -351,6 +424,7 @@ async function issueReward({
 
   return {
     claim: claim[0],
+    wallet: credit.wallet,
     balance: credit.wallet.totalStoryCoins,
     amount,
     rewardName: reward.name,
@@ -363,6 +437,7 @@ export default async function rewardRoutes(fastify) {
     try {
       if (!(await verifyAuth(request, reply))) return;
       await ensureDefaultRewards();
+
       const rewards = await Reward.find(activeQuery()).sort({ category: 1, createdAt: 1 });
       const claims = await RewardClaim.find({
         userId: request.user._id,
@@ -372,24 +447,27 @@ export default async function rewardRoutes(fastify) {
       const wallet = await Wallet.findOne({ userId: request.user._id });
       const daily = rewards.find((reward) => reward.metadata?.schedule);
       const todayClaim = daily && claimMap.get(`${daily._id}:${periodKey(new Date(), 'daily')}`);
-      const dailyClaims = daily
-        ? await RewardClaim.countDocuments({ rewardId: daily._id, userId: request.user._id })
-        : 0;
-      const dailyAmount = daily?.metadata?.schedule?.length
-        ? daily.metadata.schedule[dailyClaims % daily.metadata.schedule.length]
-        : daily?.rewardAmount;
+      const watchAdsReward = rewards.find((reward) => reward.metadata?.key === 'watch_ads') || null;
+
       const history = await Transaction.find({ userId: request.user._id })
         .sort({ createdAt: -1 })
         .limit(20);
+
       const rewardStates = await Promise.all(
-        rewards.map(async (reward) => ({
-          ...reward.toObject(),
-          rewardAmount: 5,
-          eligibility: await getEligibility(request.user, reward, claims),
-          claimed: Boolean(
-            claimMap.get(`${reward._id}:${periodKey(new Date(), reward.recurrenceType)}`)
-          ),
-        }))
+        rewards.map(async (reward) => {
+          const isPerAd = reward.recurrenceType === 'per_ad' || reward.recurrenceType === 'unlimited';
+          return {
+            ...reward.toObject(),
+            rewardAmount: 5,
+            requiresAd: Boolean(reward.metadata?.requiresAd || reward.verificationMode === 'ad'),
+            eligibility: await getEligibility(request.user, reward, claims),
+            claimed: isPerAd
+              ? false
+              : Boolean(
+                  claimMap.get(`${reward._id}:${periodKey(new Date(), reward.recurrenceType)}`)
+                ),
+          };
+        })
       );
 
       const visibleRewards = rewardStates.filter((r) => {
@@ -398,15 +476,23 @@ export default async function rewardRoutes(fastify) {
         return true;
       });
 
-      sendSuccess(reply, {
-        balance: wallet ? formatDecimal(wallet.promotionalCoins) : 0,
-        totalStoryCoins: wallet ? formatDecimal(wallet.storyCoins) : 0,
-        purchasedCoins: wallet ? formatDecimal(wallet.purchasedCoins) : 0,
+      const balances = walletBalances(wallet);
+
+      return sendSuccess(reply, {
+        ...balances,
         streak: request.user.rewardStats || {},
+        watchAdsReward: watchAdsReward
+          ? {
+              _id: watchAdsReward._id,
+              name: watchAdsReward.name,
+              rewardAmount: 5,
+              requiresAd: true,
+            }
+          : null,
         daily: daily
           ? {
               ...daily.toObject(),
-              rewardAmount: dailyAmount,
+              rewardAmount: 5,
               claimed: Boolean(todayClaim),
               periodKey: periodKey(new Date(), 'daily'),
             }
@@ -419,7 +505,118 @@ export default async function rewardRoutes(fastify) {
       });
     } catch (error) {
       fastify.log.error(error);
-      sendError(reply, 'Failed to load rewards', 500, error.message);
+      return sendError(reply, 'Failed to load rewards', 500, error.message);
+    }
+  });
+
+  // Dedicated endpoint for Wallet & Rewards "Watch Ad & Earn Coins" buttons (always 5 promotional coins)
+  fastify.post('/watch-ad/claim', async (request, reply) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+      if (!(await verifyAuth(request, reply))) {
+        await session.abortTransaction();
+        return;
+      }
+
+      await ensureDefaultRewards();
+      const watchAdsReward = await Reward.findOne({
+        'metadata.key': 'watch_ads',
+        ...activeQuery(),
+      }).session(session);
+
+      if (!watchAdsReward) {
+        await session.abortTransaction();
+        return sendError(reply, 'Watch Ads reward is currently unavailable', 404);
+      }
+
+      const {
+        provider = 'ROBINADS',
+        rewardId: robinsRewardId,
+        transactionId,
+        token,
+        receipt,
+      } = request.body || {};
+
+      const normalizedProvider = String(provider).toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (!['ROBINADS', 'ROBINSADS'].includes(normalizedProvider)) {
+        await session.abortTransaction();
+        return sendError(reply, 'Unsupported ad provider. Expected ROBINADS.', 400);
+      }
+
+      const resolvedRobinsId = String(
+        robinsRewardId ||
+          transactionId ||
+          receipt?.rewardId ||
+          receipt?.transactionId ||
+          receipt?.id ||
+          ''
+      ).trim();
+
+      if (!resolvedRobinsId) {
+        await session.abortTransaction();
+        return sendError(reply, 'You must watch the full ad to earn 5 promotional coins.', 403);
+      }
+
+      const adVerification = await verifyAndConsumeRobinAdsReward({
+        userId: request.user._id,
+        rewardId: resolvedRobinsId,
+        purpose: 'PROMO_REWARD',
+        targetId: String(watchAdsReward._id),
+        token: token || receipt?.token,
+        session,
+      });
+
+      const result = await issueReward({
+        reward: watchAdsReward,
+        user: request.user,
+        request,
+        session,
+        period: periodKey(new Date(), 'per_ad', resolvedRobinsId),
+        adVerification,
+      });
+
+      if (result.duplicate) {
+        await session.abortTransaction();
+        return sendError(reply, 'This ad reward has already been claimed', 409);
+      }
+
+      const updatedWallet = await Wallet.findOne({ userId: request.user._id }).session(session);
+      await session.commitTransaction();
+
+      if (result.claim) {
+        createNotification({
+          userId: request.user._id,
+          type: 'REWARD_EARNED',
+          title: 'You earned 5 Promotional Coins 🎉',
+          message: 'Verified sponsor ad completed.',
+          targetUrl: '#rewards',
+          icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192',
+          data: { rewardId: result.rewardId, claimId: result.claim._id },
+          dedupeKey: `reward_${result.claim._id}`,
+        }).catch((err) => fastify.log.error('Push error:', err));
+      }
+
+      return sendSuccess(
+        reply,
+        {
+          claim: result.claim,
+          amount: 5,
+          ...walletBalances(updatedWallet),
+        },
+        '5 promotional coins credited'
+      );
+    } catch (error) {
+      if (session.inTransaction()) {
+        await session.abortTransaction();
+      }
+      if (error?.code === 11000) {
+        return sendError(reply, 'This ad reward has already been claimed', 409);
+      }
+      fastify.log.error(error);
+      return sendError(reply, error.message || 'Failed to claim ad reward', error.statusCode || 400);
+    } finally {
+      await session.endSession();
     }
   });
 
@@ -456,6 +653,7 @@ export default async function rewardRoutes(fastify) {
         reward.verificationMode === 'ad';
 
       let adVerification = null;
+      let resolvedRobinsId = '';
 
       if (requiresAd) {
         const normalizedProvider = String(provider).toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -464,7 +662,7 @@ export default async function rewardRoutes(fastify) {
           return sendError(reply, 'Unsupported ad provider. Expected ROBINADS.', 400);
         }
 
-        const resolvedRobinsId = String(
+        resolvedRobinsId = String(
           robinsRewardId ||
             transactionId ||
             receipt?.rewardId ||
@@ -481,26 +679,33 @@ export default async function rewardRoutes(fastify) {
         adVerification = await verifyAndConsumeRobinAdsReward({
           userId: request.user._id,
           rewardId: resolvedRobinsId,
-          purpose: 'REWARD_CLAIM',
+          purpose: 'PROMO_REWARD',
           targetId: String(reward._id),
           token: token || receipt?.token,
           session,
         });
       }
 
+      const isPerAd = reward.recurrenceType === 'per_ad' || reward.recurrenceType === 'unlimited';
+      const period = isPerAd
+        ? periodKey(new Date(), 'per_ad', resolvedRobinsId)
+        : periodKey(new Date(), reward.recurrenceType);
+
       const result = await issueReward({
         reward,
         user: request.user,
         request,
         session,
-        period: periodKey(new Date(), reward.recurrenceType),
+        period,
         adVerification,
       });
+
       if (result.duplicate) {
         await session.abortTransaction();
         return sendError(reply, 'Reward already claimed for this period', 409);
       }
 
+      const updatedWallet = await Wallet.findOne({ userId: request.user._id }).session(session);
       await session.commitTransaction();
 
       if (!result.pending && result.claim) {
@@ -516,22 +721,25 @@ export default async function rewardRoutes(fastify) {
         }).catch((err) => fastify.log.error('Push error:', err));
       }
 
-      sendSuccess(
+      return sendSuccess(
         reply,
         {
           claim: result.claim,
-          balance: result.balance || null,
+          amount: result.amount || 5,
+          ...walletBalances(updatedWallet),
           pending: Boolean(result.pending),
         },
         result.pending ? 'Reward submitted for verification' : 'Reward claimed'
       );
     } catch (error) {
-      await session.abortTransaction();
+      if (session.inTransaction()) {
+        await session.abortTransaction();
+      }
       if (error?.code === 11000) return sendError(reply, 'Reward already claimed', 409);
       fastify.log.error(error);
-      sendError(reply, error.message || 'Failed to claim reward', error.statusCode || 400);
+      return sendError(reply, error.message || 'Failed to claim reward', error.statusCode || 400);
     } finally {
-      session.endSession();
+      await session.endSession();
     }
   });
 
@@ -539,9 +747,9 @@ export default async function rewardRoutes(fastify) {
     try {
       if (!(await verifyAdmin(request, reply))) return;
       const rewards = await Reward.find().sort({ createdAt: -1 });
-      sendSuccess(reply, rewards);
+      return sendSuccess(reply, rewards);
     } catch (error) {
-      sendError(reply, 'Failed to fetch rewards', 500, error.message);
+      return sendError(reply, 'Failed to fetch rewards', 500, error.message);
     }
   });
 
@@ -552,9 +760,9 @@ export default async function rewardRoutes(fastify) {
         return sendError(reply, 'Promotional rewards must be exactly 5 coins.', 400);
       }
       const reward = await Reward.create({ ...request.body, createdBy: request.user._id });
-      sendSuccess(reply, reward, 'Reward created', 201);
+      return sendSuccess(reply, reward, 'Reward created', 201);
     } catch (error) {
-      sendError(reply, 'Failed to create reward', 400, error.message);
+      return sendError(reply, 'Failed to create reward', 400, error.message);
     }
   });
 
@@ -580,6 +788,7 @@ export default async function rewardRoutes(fastify) {
         await session.abortTransaction();
         return sendError(reply, 'Reward or user not found', 404);
       }
+
       const result = await issueReward({
         reward,
         user,
@@ -604,6 +813,7 @@ export default async function rewardRoutes(fastify) {
             : {}),
         },
       });
+
       claim.status = 'CLAIMED';
       claim.verifiedAt = new Date();
       await claim.save({ session });
@@ -622,12 +832,14 @@ export default async function rewardRoutes(fastify) {
         }).catch((err) => fastify.log.error('Push error:', err));
       }
 
-      sendSuccess(reply, result, 'Reward claim approved');
+      return sendSuccess(reply, result, 'Reward claim approved');
     } catch (error) {
-      await session.abortTransaction();
-      sendError(reply, 'Failed to approve reward claim', 400, error.message);
+      if (session.inTransaction()) {
+        await session.abortTransaction();
+      }
+      return sendError(reply, 'Failed to approve reward claim', 400, error.message);
     } finally {
-      session.endSession();
+      await session.endSession();
     }
   });
 
@@ -657,6 +869,7 @@ export default async function rewardRoutes(fastify) {
         metadata: { source: 'ADMIN', adminId: request.user._id, reason },
         session,
       });
+
       await RewardAudit.create(
         [
           {
@@ -674,6 +887,8 @@ export default async function rewardRoutes(fastify) {
         ],
         { session }
       );
+
+      const updatedWallet = await Wallet.findOne({ userId }).session(session);
       await session.commitTransaction();
 
       createNotification({
@@ -686,12 +901,14 @@ export default async function rewardRoutes(fastify) {
         dedupeKey: `admin_grant_${referenceId}`,
       }).catch((err) => fastify.log.error('Push error:', err));
 
-      sendSuccess(reply, { balance: credit.wallet.totalStoryCoins }, 'Reward granted');
+      return sendSuccess(reply, walletBalances(updatedWallet), 'Reward granted');
     } catch (error) {
-      await session.abortTransaction();
-      sendError(reply, 'Failed to grant reward', 400, error.message);
+      if (session.inTransaction()) {
+        await session.abortTransaction();
+      }
+      return sendError(reply, 'Failed to grant reward', 400, error.message);
     } finally {
-      session.endSession();
+      await session.endSession();
     }
   });
 }
