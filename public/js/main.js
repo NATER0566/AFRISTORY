@@ -4,7 +4,7 @@ const state = {
     user: null, profile: null, wallet: null, rewards: null, series: [], 
     currentSeries: null, currentEpisode: null, hls: null, 
     recommendedEpisodes: [], feedEpisodes: [],
-    coinRateNaira: 10, // Default Naira equivalent per Story Coin (auto-calibrated from /payment/packages)
+    coinRateNaira: 2,
     viewingSeriesId: null
 };
 
@@ -1155,26 +1155,26 @@ function ensureWalletSummaryBanner(walletInfo) {
         }
     }
 
-    const hasActiveVip = Boolean(state.user?.subscriptionExpiresAt && new Date(state.user.subscriptionExpiresAt) > new Date());
-    const vipText = hasActiveVip
-        ? `VIP Active · Until ${new Date(state.user.subscriptionExpiresAt).toLocaleDateString()}`
-        : 'Standard Pass';
-
     summaryBox.innerHTML = `
         <div style="background: rgba(15, 15, 15, 0.85); border: 1px solid #2b2b2b; border-radius: 10px; padding: 12px 14px;">
-            <span style="display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #999; margin-bottom: 4px;">Available Balance</span>
-            <strong style="display: block; font-size: 20px; font-weight: 800; color: #ffd24c; line-height: 1.2;">${walletInfo.storyCoins.toLocaleString()} <span style="font-size: 12px; font-weight: 600; color: #e5e5e5;">Coins</span></strong>
-            <small style="display: block; margin-top: 4px; font-size: 12px; color: #2ecc71; font-weight: 600;">Value ≈ ${formatNaira(walletInfo.estimatedNaira)}</small>
+            <span style="display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #999; margin-bottom: 4px;">Purchased Story Coins</span>
+            <strong style="display: block; font-size: 20px; font-weight: 800; color: #ffd24c; line-height: 1.2;">${walletInfo.purchasedCoins.toLocaleString()}</strong>
+            <small style="display: block; margin-top: 4px; font-size: 12px; color: #2ecc71; font-weight: 600;">${formatNaira(walletInfo.purchasedCoins * 2)} at ₦2 per coin</small>
         </div>
         <div style="background: rgba(15, 15, 15, 0.85); border: 1px solid #2b2b2b; border-radius: 10px; padding: 12px 14px;">
-            <span style="display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #999; margin-bottom: 4px;">Total Earned</span>
-            <strong style="display: block; font-size: 20px; font-weight: 800; color: #2ecc71; line-height: 1.2;">+${walletInfo.totalEarned.toLocaleString()} <span style="font-size: 12px; font-weight: 600; color: #e5e5e5;">Coins</span></strong>
-            <small style="display: block; margin-top: 4px; font-size: 12px; color: #aaa;">Rewards & Creator Earnings</small>
+            <span style="display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #999; margin-bottom: 4px;">Promotional Story Coins</span>
+            <strong style="display: block; font-size: 20px; font-weight: 800; color: #2ecc71; line-height: 1.2;">${walletInfo.promotionalCoins.toLocaleString()}</strong>
+            <small style="display: block; margin-top: 4px; font-size: 12px; color: #aaa;">No cash value · episode unlocks only</small>
         </div>
         <div style="background: rgba(15, 15, 15, 0.85); border: 1px solid #2b2b2b; border-radius: 10px; padding: 12px 14px;">
-            <span style="display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #999; margin-bottom: 4px;">Total Spent</span>
-            <strong style="display: block; font-size: 20px; font-weight: 800; color: #f5f5f5; line-height: 1.2;">${walletInfo.totalSpent.toLocaleString()} <span style="font-size: 12px; font-weight: 600; color: #aaa;">Coins</span></strong>
-            <small style="display: block; margin-top: 4px; font-size: 12px; color: #d4a017; font-weight: 600;">${esc(vipText)}</small>
+            <span style="display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #999; margin-bottom: 4px;">VIP Unlock Credits</span>
+            <strong style="display: block; font-size: 20px; font-weight: 800; color: #f5f5f5; line-height: 1.2;">${walletInfo.vipCredits.toLocaleString()}</strong>
+            <small style="display: block; margin-top: 4px; font-size: 12px; color: #d4a017; font-weight: 600;">${walletInfo.totalSpent.toLocaleString()} total wallet units spent</small>
+        </div>
+        <div style="background: rgba(15, 15, 15, 0.85); border: 1px solid #2b2b2b; border-radius: 10px; padding: 12px 14px;">
+            <span style="display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #999; margin-bottom: 4px;">Available Creator Earnings</span>
+            <strong style="display: block; font-size: 20px; font-weight: 800; color: #2ecc71; line-height: 1.2;">${formatNaira(walletInfo.availableCreatorEarnings)}</strong>
+            <small style="display: block; margin-top: 4px; font-size: 12px; color: #aaa;">Pending: ${formatNaira(walletInfo.pendingCreatorEarnings)}</small>
         </div>
     `;
 }
@@ -1258,20 +1258,29 @@ async function loadWallet() {
 
         const walletObj = rawWallet?.wallet || rawWallet || {};
         const storyCoins = Number(walletObj.storyCoins ?? walletObj.balance ?? walletObj.coins ?? 0);
+        const purchasedCoins = Number(walletObj.purchasedCoins || 0);
+        const promotionalCoins = Number(walletObj.promotionalCoins || 0);
+        const legacyRestrictedCoins = Number(walletObj.legacyRestrictedCoins || 0);
+        const vipCredits = Number(walletObj.vipCredits || 0);
+        const pendingCreatorEarnings = Number(walletObj.pendingCreatorEarnings || 0);
+        const availableCreatorEarnings = Number(walletObj.availableCreatorEarnings || 0);
         const totalEarned = Number(walletObj.totalEarned ?? walletObj.earned ?? 0);
         const totalSpent = Number(walletObj.totalSpent ?? walletObj.spent ?? 0);
-        const estimatedNaira = Number(walletObj.nairaBalance ?? walletObj.fiatBalance ?? (storyCoins * state.coinRateNaira));
+        const estimatedNaira = purchasedCoins * state.coinRateNaira;
 
-        state.wallet = { storyCoins, totalEarned, totalSpent, estimatedNaira };
+        state.wallet = {
+            storyCoins, purchasedCoins, promotionalCoins, legacyRestrictedCoins, vipCredits,
+            pendingCreatorEarnings, availableCreatorEarnings, totalEarned, totalSpent, estimatedNaira
+        };
 
         const balEl = $('#wallet-balance');
         if (balEl) balEl.textContent = storyCoins.toLocaleString(); 
         
         const earnEl = $('#wallet-earned');
-        if (earnEl) earnEl.textContent = totalEarned.toLocaleString(); 
+        if (earnEl) earnEl.textContent = availableCreatorEarnings.toLocaleString();
 
         const rewardsBalEl = $('#rewards-balance');
-        if (rewardsBalEl) rewardsBalEl.textContent = storyCoins.toLocaleString();
+        if (rewardsBalEl) rewardsBalEl.textContent = promotionalCoins.toLocaleString();
 
         $$('[data-wallet-balance]').forEach(el => { el.textContent = storyCoins.toLocaleString(); });
         $$('[data-wallet-earned]').forEach(el => { el.textContent = totalEarned.toLocaleString(); });
@@ -1302,7 +1311,7 @@ function renderRewardCard(reward) {
     const socialUrl = reward.metadata?.targetUrl;
     let action;
     
-    if (isSocial && (stateVal === 'CLAIMED' || reward.claimed)) { action = '<p>Completed ✓<br>+20 Coins Earned</p>'; } 
+    if (isSocial && (stateVal === 'CLAIMED' || reward.claimed)) { action = '<p>Completed ✓<br>+5 Promotional Coins</p>'; }
     else if (stateVal === 'PENDING_VERIFICATION') { action = '<p>Processing...</p>'; } 
     else if (stateVal === 'LOCKED') { action = `<span class="reward-locked">🔒 ${esc(eligibility.reason)}</span>`; } 
     else if (stateVal === 'EXPIRED') { action = '<p>Expired</p>'; } 
@@ -1321,7 +1330,7 @@ async function loadRewards() {
         if (balEl) balEl.textContent = balanceVal.toLocaleString();
 
         const walletBalEl = $('#wallet-balance');
-        if (walletBalEl) walletBalEl.textContent = balanceVal.toLocaleString();
+        if (walletBalEl) walletBalEl.textContent = Number(state.wallet?.storyCoins || 0).toLocaleString();
         
         const currentStreak = $('#reward-current-streak');
         if (currentStreak) currentStreak.textContent = Number(result.streak?.currentStreak || 0);
@@ -1331,6 +1340,20 @@ async function loadRewards() {
         
         const daily = result.daily;
         const rewards = result.rewards || [];
+        const watchAdsReward = rewards.find(reward => reward.metadata?.key === 'watch_ads');
+        ['#wallet-watch-ad-btn', '#watch-ad-earn-coins-btn'].forEach(selector => {
+            const button = $(selector);
+            if (!button) return;
+            if (watchAdsReward && watchAdsReward.eligibility?.state === 'CLAIMABLE') {
+                button.dataset.rewardId = watchAdsReward._id;
+                button.dataset.purpose = 'PROMO_REWARD';
+                button.dataset.targetId = watchAdsReward._id;
+                button.disabled = false;
+            } else {
+                delete button.dataset.rewardId;
+                button.disabled = true;
+            }
+        });
         
         const dailyCard = $('#daily-reward-card');
         if (dailyCard) {
@@ -2157,7 +2180,10 @@ async function submitUpload(event) {
 async function showPackages() { 
     try { 
         const plans = await api('/payment/packages') || {}; 
-        const choices = Object.entries(plans).map(([key, plan]) => `<button class="plan-option" data-package="${key}"><strong>${key}</strong><span>${plan.coins} coins · ₦${Number(plan.naira).toLocaleString()}</span></button>`).join(''); 
+        const choices = Object.entries(plans)
+            .filter(([, plan]) => plan.active)
+            .map(([key, plan]) => `<button class="plan-option" data-package="${key}"><strong>${key}</strong><span>${plan.coins} coins · ₦${Number(plan.naira).toLocaleString()}</span></button>`)
+            .join('');
         
         const root = $('#modal-root');
         if (root) {
@@ -2170,11 +2196,14 @@ async function showPackages() {
 async function showSubscriptionPlans() { 
     try { 
         const plans = await api('/vip/plans') || {}; 
-        const choices = Object.entries(plans).map(([tier, plan]) => `<button class="plan-option" data-tier="${tier}"><strong>${tier}</strong><span>${plan.price} coins · ${plan.duration} day${plan.duration === 1 ? '' : 's'}</span></button>`).join(''); 
+        const choices = Object.entries(plans)
+            .filter(([, plan]) => plan.active)
+            .map(([tier, plan]) => `<button class="plan-option" data-tier="${tier}"><strong>${tier.replaceAll('_', ' ')}</strong><span>${plan.purchasedCoinPrice} purchased coins · ${plan.vipCreditsGranted} VIP credits</span></button>`)
+            .join('');
         
         const root = $('#modal-root');
         if (root) {
-            root.innerHTML = `<div class="modal"><div class="modal-header"><div><p class="eyebrow">UNLOCK EVERY STORY</p><h2>Choose a pass</h2></div><button class="modal-close" data-action="close-modal">×</button></div><div class="plan-grid">${choices}</div></div>`; 
+            root.innerHTML = `<div class="modal"><div class="modal-header"><div><p class="eyebrow">FIXED EPISODE ACCESS</p><h2>Choose VIP credits</h2></div><button class="modal-close" data-action="close-modal">×</button></div><div class="plan-grid">${choices || '<p>No VIP credit packages are currently available.</p>'}</div></div>`;
             root.classList.remove('hidden'); 
         }
     } catch (error) { toast(error.message, 'error'); } 
@@ -2943,16 +2972,10 @@ document.addEventListener('click', async event => {
         const tierButton = event.target.closest('[data-tier]');
         if (tierButton) {
             try {
-                const res = await api('/vip/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tier: tierButton.dataset.tier, paymentMethod: 'wallet' }) });
-                if (res && state.user) state.user.subscriptionExpiresAt = res.expiresAt;
+                const res = await api('/vip/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ packageKey: tierButton.dataset.tier, paymentMethod: 'wallet' }) });
                 const root = $('#modal-root');
                 if (root) root.classList.add('hidden');
-                toast('Gate Pass activated! You can now watch freely.', 'success');
-
-                // Automatically unlock all loaded feed videos in-place and sync wallet
-                state.feedEpisodes.forEach(ep => {
-                    if (!ep.hasAccess) unlockFeedEpisodeInDOM(ep._id);
-                });
+                toast(`${Number(res?.vipCreditsGranted || 0).toLocaleString()} VIP Unlock Credits added.`, 'success');
                 await Promise.all([loadWallet(), loadRewards(), refreshNotificationBadge()]);
             } catch (error) { toast(error.message, 'error'); }
         }
@@ -3261,7 +3284,8 @@ async function boot() {
         // Pre-warm wallet & notification badge immediately on boot so values are ready instantly
         Promise.allSettled([
             refreshNotificationBadge(),
-            state.user ? loadWallet() : Promise.resolve()
+            state.user ? loadWallet() : Promise.resolve(),
+            state.user ? loadRewards() : Promise.resolve()
         ]);
         setupLazyLoading();
         window.AfroStoryAds?.refresh?.().catch?.(() => {});

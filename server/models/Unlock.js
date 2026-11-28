@@ -19,9 +19,17 @@ const unlockSchema = new mongoose.Schema(
     },
     method: {
       type: String,
-      enum: ['COIN', 'AD', 'VIP', 'FREE'],
+      enum: ['COIN', 'AD', 'VIP', 'FREE', 'PURCHASED', 'PROMOTIONAL', 'VIP_CREDIT', 'DIRECT_AD'],
       required: true,
     },
+    source: {
+      type: String,
+      enum: ['PURCHASED', 'PROMOTIONAL', 'VIP_CREDIT', 'DIRECT_AD', 'LEGACY_RESTRICTED'],
+      default: null,
+    },
+    creatorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Creator', default: null },
+    lotRefs: [{ type: mongoose.Schema.Types.ObjectId, ref: 'CoinLot' }],
+    sourceAdIds: [{ type: String, trim: true }],
     provider: {
       type: String,
       trim: true,

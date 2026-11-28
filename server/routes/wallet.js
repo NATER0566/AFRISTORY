@@ -1,34 +1,33 @@
-import Wallet from '../models/Wallet.js';
+import mongoose from 'mongoose';
 import Transaction from '../models/Transaction.js';
 import Unlock from '../models/Unlock.js';
-import Episode from '../models/Episode.js';
-import Creator from '../models/Creator.js';
 import User from '../models/User.js';
+import Episode from '../models/Episode.js';
 import Series from '../models/Series.js';
+import Wallet from '../models/Wallet.js';
 import { verifyAuth } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
-import { generateReference, formatDecimal, paginate } from '../utils/helpers.js';
+import { formatDecimal, paginate } from '../utils/helpers.js';
+import { unlockEpisode as unlockEpisodeWithLedger } from '../services/ledgerService.js';
 import { verifyAndConsumeRobinAdsReward } from '../utils/robinAdsService.js';
-import mongoose from 'mongoose';
 
-export default async function walletRoutes(fastify, opts) {
-  // Get wallet
+export default async function walletRoutes(fastify) {
   fastify.get('/me/balance', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
-
-      if (!request.user) {
-        return sendError(reply, 'Unauthorized', 401);
-      }
-
+      if (!request.user) return sendError(reply, 'Unauthorized', 401);
       const wallet = await Wallet.findOne({ userId: request.user._id });
-
-      if (!wallet) {
-        return sendError(reply, 'Wallet not found', 404);
-      }
-
+      if (!wallet) return sendError(reply, 'Wallet not found', 404);
       sendSuccess(reply, {
         storyCoins: formatDecimal(wallet.storyCoins),
+        purchasedCoins: formatDecimal(wallet.purchasedCoins),
+        promotionalCoins: formatDecimal(wallet.promotionalCoins),
+        legacyRestrictedCoins: formatDecimal(wallet.legacyRestrictedCoins),
+        vipCredits: formatDecimal(wallet.vipCredits),
+        pendingCreatorEarnings: formatDecimal(wallet.pendingCreatorEarnings),
+        availableCreatorEarnings: formatDecimal(wallet.availableCreatorEarnings),
+        withdrawnCreatorEarnings: formatDecimal(wallet.withdrawnCreatorEarnings),
+        totalSpent: formatDecimal(wallet.totalSpent),
         lockedEarnings: formatDecimal(wallet.lockedEarnings),
         totalWithdrawn: formatDecimal(wallet.totalWithdrawn),
         totalEarned: formatDecimal(wallet.totalEarned),
@@ -39,41 +38,33 @@ export default async function walletRoutes(fastify, opts) {
     }
   });
 
-  // Get transactions
   fastify.get('/me/transactions', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
-
-      if (!request.user) {
-        return sendError(reply, 'Unauthorized', 401);
-      }
-
+      if (!request.user) return sendError(reply, 'Unauthorized', 401);
       const { page = 1, limit = 10 } = request.query;
-      const { skip, limit: l, page: p } = paginate(page, limit);
-
+      const { skip, limit: pageLimit, page: currentPage } = paginate(page, limit);
       const wallet = await Wallet.findOne({ userId: request.user._id });
-
-      if (!wallet) {
-        return sendError(reply, 'Wallet not found', 404);
-      }
-
+      if (!wallet) return sendError(reply, 'Wallet not found', 404);
       const transactions = await Transaction.find({ walletId: wallet._id })
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(l);
-
+        .limit(pageLimit);
       const total = await Transaction.countDocuments({ walletId: wallet._id });
-
       sendSuccess(reply, {
-        transactions: transactions.map((t) => ({
-          ...t.toObject(),
-          amount: formatDecimal(t.amount),
+        transactions: transactions.map((item) => ({
+          ...item.toObject(),
+          amount: formatDecimal(item.amount),
+          grossNaira: formatDecimal(item.grossNaira),
+          creatorShareNaira: formatDecimal(item.creatorShareNaira),
+          platformShareNaira: formatDecimal(item.platformShareNaira),
+          providerFeeNaira: formatDecimal(item.providerFeeNaira),
         })),
         pagination: {
-          page: p,
-          limit: l,
+          page: currentPage,
+          limit: pageLimit,
           total,
-          pages: Math.ceil(total / l),
+          pages: Math.ceil(total / pageLimit),
         },
       });
     } catch (error) {
@@ -82,14 +73,11 @@ export default async function walletRoutes(fastify, opts) {
     }
   });
 
-  // Unlock episode with coins OR Robins Ads
   fastify.post('/unlock-episode', async (request, reply) => {
     const session = await mongoose.startSession();
     session.startTransaction();
-
     try {
       await verifyAuth(request, reply);
-
       if (!request.user) {
         await session.abortTransaction();
         return sendError(reply, 'Unauthorized', 401);
@@ -97,214 +85,99 @@ export default async function walletRoutes(fastify, opts) {
 
       const {
         episodeId,
-        method = 'COIN',
-        provider = 'ROBINADS',
+        method = 'PURCHASED',
         rewardId,
         transactionId,
         receipt,
       } = request.body || {};
-
       if (!episodeId) {
         await session.abortTransaction();
         return sendError(reply, 'Episode ID is required', 400);
       }
 
-      const user = await User.findById(request.user._id).session(session);
-
-      // --- VIP GATE PASS PROTECTION ---
-      if (user.subscriptionExpiresAt && new Date(user.subscriptionExpiresAt) > new Date()) {
-        await session.abortTransaction();
-        return sendError(reply, 'You already have an active Gate Pass. No need to unlock!', 400);
-      }
-
-      const episode = await Episode.findById(episodeId).session(session);
-
-      if (!episode) {
-        await session.abortTransaction();
-        return sendError(reply, 'Episode not found', 404);
-      }
-
-      if (episode.isFree) {
-        await session.abortTransaction();
-        return sendError(reply, 'Episode is already free', 400);
-      }
-
-      // Check if already unlocked
-      const existingUnlock = await Unlock.findOne({
+      const existing = await Unlock.findOne({
         userId: request.user._id,
         episodeId,
         isActive: true,
       }).session(session);
-
-      if (existingUnlock) {
+      if (existing) {
         await session.abortTransaction();
-        return sendError(reply, 'Episode is already unlocked', 400);
+        return sendSuccess(reply, { unlocked: true, replay: true, method: existing.method });
       }
 
-      // ============================================
-      // LOGIC 1: UNLOCK USING ROBINS ADS (SERVER-VERIFIED)
-      // ============================================
-      if (String(method).toUpperCase() === 'AD') {
-        if (episode.adUnlockable === false) {
+      const user = await User.findById(request.user._id).session(session);
+      if (
+        user?.subscriptionExpiresAt &&
+        new Date(user.subscriptionExpiresAt) > new Date()
+      ) {
+        await session.abortTransaction();
+        return sendError(reply, 'You already have an active legacy Gate Pass.', 409);
+      }
+
+      const normalizedMethod = String(method).toUpperCase();
+      const mappedMethod = {
+        COIN: 'PURCHASED',
+        PURCHASED: 'PURCHASED',
+        PROMOTIONAL: 'PROMOTIONAL',
+        VIP_CREDIT: 'VIP_CREDIT',
+        AD: 'DIRECT_AD',
+        DIRECT_AD: 'DIRECT_AD',
+      }[normalizedMethod];
+      if (!mappedMethod) {
+        await session.abortTransaction();
+        return sendError(reply, 'Invalid episode unlock method.', 400);
+      }
+
+      const resolvedRewardId = String(
+        rewardId || transactionId || receipt?.rewardId || receipt?.transactionId || receipt?.id || ''
+      ).trim();
+      if (mappedMethod === 'DIRECT_AD' && receipt?.token) {
+        const episode = await Episode.findById(episodeId).session(session);
+        const series = episode ? await Series.findById(episode.seriesId).session(session) : null;
+        if (!episode || !series) {
           await session.abortTransaction();
-          return sendError(reply, 'This episode requires Story Coins or VIP pass.', 403);
+          return sendError(reply, 'Episode or creator not found.', 404);
         }
-
-        const normalizedProvider = String(provider).toUpperCase().replace(/[^A-Z0-9]/g, '');
-        if (!['ROBINADS', 'ROBINSADS'].includes(normalizedProvider)) {
-          await session.abortTransaction();
-          return sendError(reply, 'Unsupported ad provider. Expected ROBINADS.', 400);
-        }
-
-        const resolvedRewardId = String(
-          rewardId ||
-            transactionId ||
-            receipt?.rewardId ||
-            receipt?.transactionId ||
-            receipt?.id ||
-            ''
-        ).trim();
-
-        if (!resolvedRewardId) {
-          await session.abortTransaction();
-          return sendError(reply, 'Missing Robins Ads reward session ID.', 400);
-        }
-
-        // Verify directly against Robins Ads Reward API & mark session CONSUMED atomically
-        const verifiedAd = await verifyAndConsumeRobinAdsReward({
+        await verifyAndConsumeRobinAdsReward({
           userId: request.user._id,
           rewardId: resolvedRewardId,
-          purpose: 'EPISODE_UNLOCK',
+          token: receipt.token,
+          purpose: 'DIRECT_EPISODE_UNLOCK',
           targetId: String(episode._id),
+          creatorId: series.creatorId,
           session,
         });
-
-        // Create permanent unlock record in MongoDB
-        const unlock = new Unlock({
-          userId: request.user._id,
-          episodeId,
-          seriesId: episode.seriesId,
-          method: 'AD',
-          provider: 'ROBINADS',
-          transactionId: verifiedAd.rewardId,
-        });
-        await unlock.save({ session });
-
-        // Update episode stats
-        episode.totalUnlocks += 1;
-        await episode.save({ session });
-
-        await session.commitTransaction();
-        fastify.log.info(
-          `[AD_UNLOCKED] User ${request.user._id} unlocked episode ${episodeId} via Robins Ads (${verifiedAd.rewardId}).`
-        );
-        return sendSuccess(
-          reply,
-          { unlocked: true, method: 'AD', provider: 'ROBINADS', rewardId: verifiedAd.rewardId },
-          'Episode unlocked successfully with Ad'
-        );
       }
-
-      // ============================================
-      // LOGIC 2: UNLOCK USING COINS
-      // ============================================
-      const userWallet = await Wallet.findOne({ userId: request.user._id }).session(session);
-
-      if (!userWallet) {
-        await session.abortTransaction();
-        return sendError(reply, 'Wallet not found', 404);
-      }
-
-      const coinCost = Number(episode.coinCost);
-      const userBalance = Number(userWallet.storyCoins.toString());
-
-      if (!Number.isFinite(coinCost) || coinCost <= 0 || userBalance < coinCost) {
-        await session.abortTransaction();
-        return sendError(reply, 'Insufficient coins', 400);
-      }
-
-      // Deduct coins from user
-      userWallet.storyCoins = mongoose.Types.Decimal128.fromString((userBalance - coinCost).toFixed(2));
-      await userWallet.save({ session });
-
-      // Award 60% to creator
-      const creatorReward = coinCost * 0.6;
-      const series = await Series.findById(episode.seriesId).session(session);
-
-      if (!series) {
-        await session.abortTransaction();
-        return sendError(reply, 'Series not found', 404);
-      }
-      const creator = await Creator.findById(series.creatorId).session(session);
-      if (!creator) {
-        await session.abortTransaction();
-        return sendError(reply, 'Creator not found', 404);
-      }
-      const creatorWallet = await Wallet.findOne({ userId: creator.userId }).session(session);
-      if (!creatorWallet) {
-        await session.abortTransaction();
-        return sendError(reply, 'Creator wallet not found', 404);
-      }
-      creatorWallet.lockedEarnings = mongoose.Types.Decimal128.fromString(
-        (Number(creatorWallet.lockedEarnings.toString()) + creatorReward).toFixed(2)
-      );
-      creatorWallet.totalEarned = mongoose.Types.Decimal128.fromString(
-        (Number(creatorWallet.totalEarned.toString()) + creatorReward).toFixed(2)
-      );
-      await creatorWallet.save({ session });
-
-      // Create unlock record
-      const unlock = new Unlock({
+      const result = await unlockEpisodeWithLedger({
         userId: request.user._id,
         episodeId,
-        seriesId: episode.seriesId,
-        method: 'COIN',
+        method: mappedMethod,
+        rewardId: resolvedRewardId || null,
+        session,
       });
-      await unlock.save({ session });
-
-      // Update episode stats
-      episode.totalUnlocks += 1;
-      await episode.save({ session });
-
-      // Create transaction record
-      const reference = generateReference('UNLOCK');
-      const transaction = new Transaction({
-        walletId: userWallet._id,
-        userId: request.user._id,
-        type: 'SPEND',
-        provider: 'WALLET',
-        amount: mongoose.Types.Decimal128.fromString(coinCost.toFixed(2)),
-        reference,
-        description: `Unlocked episode: ${episode.title}`,
-        status: 'SUCCESS',
-      });
-      await transaction.save({ session });
-
       await session.commitTransaction();
-
-      sendSuccess(reply, { unlocked: true, method: 'COIN' }, 'Episode unlocked successfully with Coins');
+      return sendSuccess(
+        reply,
+        { unlocked: true, replay: Boolean(result.replay), method: mappedMethod, rewardId: resolvedRewardId || null },
+        result.replay ? 'Episode already unlocked' : 'Episode unlocked successfully'
+      );
     } catch (error) {
       await session.abortTransaction();
       fastify.log.error(error);
-      sendError(reply, error.message || 'Failed to unlock episode', error.statusCode || 500);
+      return sendError(reply, error.message || 'Failed to unlock episode', error.statusCode || 500);
     } finally {
-      session.endSession();
+      await session.endSession();
     }
   });
 
-  // Add funds (placeholder - Paystack integration in payment routes)
   fastify.post('/add-funds', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
-
-      if (!request.user) {
-        return sendError(reply, 'Unauthorized', 401);
-      }
-
-      sendError(reply, 'Use /api/payment/initialize-transaction', 400);
+      if (!request.user) return sendError(reply, 'Unauthorized', 401);
+      return sendError(reply, 'Use /api/payment/initialize-transaction', 400);
     } catch (error) {
       fastify.log.error(error);
-      sendError(reply, 'Failed to add funds', 500, error.message);
+      return sendError(reply, 'Failed to add funds', 500, error.message);
     }
   });
 }

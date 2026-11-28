@@ -57,6 +57,14 @@ export default async function userRoutes(fastify, opts) {
         wallet: wallet
           ? {
               storyCoins: formatDecimal(wallet.storyCoins),
+              purchasedCoins: formatDecimal(wallet.purchasedCoins),
+              promotionalCoins: formatDecimal(wallet.promotionalCoins),
+              legacyRestrictedCoins: formatDecimal(wallet.legacyRestrictedCoins),
+              vipCredits: formatDecimal(wallet.vipCredits),
+              pendingCreatorEarnings: formatDecimal(wallet.pendingCreatorEarnings),
+              availableCreatorEarnings: formatDecimal(wallet.availableCreatorEarnings),
+              withdrawnCreatorEarnings: formatDecimal(wallet.withdrawnCreatorEarnings),
+              totalSpent: formatDecimal(wallet.totalSpent),
               lockedEarnings: formatDecimal(wallet.lockedEarnings),
               totalWithdrawn: formatDecimal(wallet.totalWithdrawn),
               totalEarned: formatDecimal(wallet.totalEarned),

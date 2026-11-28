@@ -8,10 +8,40 @@ import Wallet from '../models/Wallet.js';
 import Transaction from '../models/Transaction.js';
 import Unlock from '../models/Unlock.js';
 import AdRewardSession from '../models/AdRewardSession.js';
+import FinancialConfig from '../models/FinancialConfig.js';
 import { verifyAdmin } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { paginate, formatDecimal } from '../utils/helpers.js';
 import { createNotification } from '../utils/notificationService.js';
+import { reconcileAdRevenueBatch } from '../services/ledgerService.js';
+
+const DEFAULT_COIN_PACKAGES = {
+  STARTER: { coins: 100, naira: 200, promotionalCoins: 0, active: true },
+  PLUS: { coins: 300, naira: 600, promotionalCoins: 0, active: true },
+  PREMIUM: { coins: 1000, naira: 2000, promotionalCoins: 0, active: true },
+  ELITE: { coins: 3000, naira: 6000, promotionalCoins: 0, active: true },
+};
+
+const DEFAULT_VIP_PACKAGES = {
+  VIP_STARTER: { purchasedCoinPrice: 0, vipCreditsGranted: 0, active: false },
+  VIP_PLUS: { purchasedCoinPrice: 0, vipCreditsGranted: 0, active: false },
+  VIP_PREMIUM: { purchasedCoinPrice: 0, vipCreditsGranted: 0, active: false },
+};
+
+async function getFinancialConfig() {
+  return FinancialConfig.findOneAndUpdate(
+    { key: 'default' },
+    {
+      $setOnInsert: {
+        key: 'default',
+        coinPackages: DEFAULT_COIN_PACKAGES,
+        vipPackages: DEFAULT_VIP_PACKAGES,
+        promoRewardAmount: 5,
+      },
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
+}
 
 // =========================================================================
 // DYNAMIC BANNER SCHEMA (For the new index.html Image/Video Slideshow)
@@ -54,12 +84,12 @@ export default async function adminRoutes(fastify, opts) {
         Series.countDocuments(),
         Episode.countDocuments(),
         Report.countDocuments({ status: 'PENDING' }),
-        Transaction.countDocuments({ type: 'WITHDRAWAL', status: 'PENDING' }),
+        Transaction.countDocuments({ type: 'PAYOUT', status: 'PENDING' }),
       ]);
 
       const revenueAggregate = await Transaction.aggregate([
-        { $match: { status: 'COMPLETED', type: { $in: ['COIN_PURCHASE', 'PAYOUT', 'UNLOCK'] } } },
-        { $group: { _id: null, totalVolume: { $sum: '$amount' } } },
+        { $match: { status: 'SUCCESS', type: 'COIN_PURCHASE' } },
+        { $group: { _id: null, totalVolume: { $sum: '$grossNaira' } } },
       ]);
 
       const totalVolume = revenueAggregate[0]?.totalVolume || 0;
@@ -98,7 +128,7 @@ export default async function adminRoutes(fastify, opts) {
         User.countDocuments({ createdAt: dateFilter }),
         Series.countDocuments({ createdAt: dateFilter }),
         Episode.countDocuments({ createdAt: dateFilter }),
-        Transaction.countDocuments({ createdAt: dateFilter, status: 'COMPLETED' }),
+        Transaction.countDocuments({ createdAt: dateFilter, status: 'SUCCESS' }),
       ]);
 
       sendSuccess(reply, {
@@ -134,11 +164,11 @@ export default async function adminRoutes(fastify, opts) {
         recentSessions,
       ] = await Promise.all([
         AdRewardSession.countDocuments({ provider: 'ROBINADS' }),
-        AdRewardSession.countDocuments({ provider: 'ROBINADS', status: { $in: ['VERIFIED', 'CONSUMED'] } }),
+        AdRewardSession.countDocuments({ provider: 'ROBINADS', status: { $in: ['COMPLETED', 'CONSUMED'] } }),
         AdRewardSession.countDocuments({ provider: 'ROBINADS', status: 'CONSUMED' }),
         AdRewardSession.countDocuments({ provider: 'ROBINADS', status: 'EXPIRED' }),
         AdRewardSession.countDocuments({ provider: 'ROBINADS', createdAt: { $gte: last24h } }),
-        Unlock.countDocuments({ method: 'AD', provider: 'ROBINADS', isActive: true }),
+        Unlock.countDocuments({ method: { $in: ['AD', 'DIRECT_AD'] }, provider: 'ROBINADS', isActive: true }),
         AdRewardSession.find({ provider: 'ROBINADS' })
           .populate('userId', 'username email')
           .sort({ createdAt: -1 })
@@ -158,6 +188,95 @@ export default async function adminRoutes(fastify, opts) {
     } catch (error) {
       fastify.log.error(error);
       sendError(reply, 'Failed to fetch Robins Ads stats', 500, error.message);
+    }
+  });
+
+  fastify.get('/financial-config', async (request, reply) => {
+    try {
+      if (!(await verifyAdmin(request, reply))) return;
+      const config = await getFinancialConfig();
+      sendSuccess(reply, config);
+    } catch (error) {
+      fastify.log.error(error);
+      sendError(reply, 'Failed to fetch financial configuration', 500, error.message);
+    }
+  });
+
+  fastify.put('/financial-config', async (request, reply) => {
+    try {
+      if (!(await verifyAdmin(request, reply))) return;
+      const { coinPackages, vipPackages, promoRewardAmount = 5 } = request.body || {};
+      if (Number(promoRewardAmount) !== 5) {
+        return sendError(reply, 'Promotional rewards must be exactly 5 coins.', 400);
+      }
+
+      const expectedCoinKeys = Object.keys(DEFAULT_COIN_PACKAGES).sort();
+      const expectedVipKeys = Object.keys(DEFAULT_VIP_PACKAGES).sort();
+      if (
+        !coinPackages ||
+        JSON.stringify(Object.keys(coinPackages).sort()) !== JSON.stringify(expectedCoinKeys) ||
+        !vipPackages ||
+        JSON.stringify(Object.keys(vipPackages).sort()) !== JSON.stringify(expectedVipKeys)
+      ) {
+        return sendError(reply, 'All supported coin and VIP package definitions are required.', 400);
+      }
+
+      for (const [key, plan] of Object.entries(coinPackages)) {
+        const coins = Number(plan?.coins);
+        const naira = Number(plan?.naira);
+        if (
+          !Number.isSafeInteger(coins) ||
+          coins <= 0 ||
+          !Number.isFinite(naira) ||
+          naira !== coins * 2 ||
+          Number(plan?.promotionalCoins || 0) !== 0
+        ) {
+          return sendError(reply, `${key} must use ₦2 per coin and include no promotional coins.`, 400);
+        }
+      }
+
+      for (const [key, plan] of Object.entries(vipPackages)) {
+        const price = Number(plan?.purchasedCoinPrice);
+        const credits = Number(plan?.vipCreditsGranted);
+        if (
+          !Number.isSafeInteger(price) ||
+          price < 0 ||
+          !Number.isSafeInteger(credits) ||
+          credits < 0 ||
+          (plan?.active && (price === 0 || credits === 0))
+        ) {
+          return sendError(reply, `${key} must have valid whole-number coin and credit quantities.`, 400);
+        }
+      }
+
+      const config = await getFinancialConfig();
+      config.coinPackages = coinPackages;
+      config.vipPackages = vipPackages;
+      config.promoRewardAmount = 5;
+      config.updatedBy = request.user._id;
+      await config.save();
+      sendSuccess(reply, config, 'Financial configuration updated');
+    } catch (error) {
+      fastify.log.error(error);
+      sendError(reply, 'Failed to update financial configuration', 400, error.message);
+    }
+  });
+
+  fastify.post('/ad-revenue/reconcile', async (request, reply) => {
+    try {
+      if (!(await verifyAdmin(request, reply))) return;
+      const { periodStart, periodEnd, providerNetRevenueNaira, reference } = request.body || {};
+      const result = await reconcileAdRevenueBatch({
+        periodStart,
+        periodEnd,
+        providerNetRevenueNaira,
+        reconciledBy: request.user._id,
+        reference,
+      });
+      sendSuccess(reply, result, result.duplicate ? 'Ad revenue batch already reconciled' : 'Ad revenue batch reconciled');
+    } catch (error) {
+      fastify.log.error(error);
+      sendError(reply, error.message || 'Failed to reconcile ad revenue', error.statusCode || 400);
     }
   });
 
@@ -605,7 +724,7 @@ export default async function adminRoutes(fastify, opts) {
       const { page = 1, limit = 10, status = 'PENDING' } = request.query;
       const { skip, limit: l, page: p } = paginate(page, limit);
 
-      const query = { type: 'WITHDRAWAL', status };
+      const query = { type: 'PAYOUT', status };
 
       const [payouts, total] = await Promise.all([
         Transaction.find(query)
@@ -639,7 +758,7 @@ export default async function adminRoutes(fastify, opts) {
       const { payoutReference, notes } = request.body || {};
 
       const tx = await Transaction.findById(transactionId);
-      if (!tx || tx.type !== 'WITHDRAWAL') {
+      if (!tx || tx.type !== 'PAYOUT') {
         return sendError(reply, 'Withdrawal transaction not found', 404);
       }
 
@@ -647,7 +766,7 @@ export default async function adminRoutes(fastify, opts) {
         return sendError(reply, `Transaction is already ${tx.status}`, 400);
       }
 
-      tx.status = 'COMPLETED';
+      tx.status = 'SUCCESS';
       tx.adminNotes = notes || '';
       tx.payoutReference = payoutReference || 'MANUAL_DISBURSEMENT';
       tx.processedAt = new Date();
@@ -677,7 +796,7 @@ export default async function adminRoutes(fastify, opts) {
       const { reason } = request.body || {};
 
       const tx = await Transaction.findById(transactionId);
-      if (!tx || tx.type !== 'WITHDRAWAL') {
+      if (!tx || tx.type !== 'PAYOUT') {
         return sendError(reply, 'Withdrawal transaction not found', 404);
       }
 
@@ -690,7 +809,10 @@ export default async function adminRoutes(fastify, opts) {
       tx.processedAt = new Date();
       await tx.save();
 
-      await Wallet.findOneAndUpdate({ userId: tx.userId }, { $inc: { balance: tx.amount } });
+      await Wallet.findOneAndUpdate(
+        { userId: tx.userId },
+        { $inc: { availableCreatorEarnings: tx.amount } }
+      );
 
       createNotification({
         userId: tx.userId,

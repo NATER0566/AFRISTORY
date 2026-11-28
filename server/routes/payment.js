@@ -1,6 +1,7 @@
 import paystackClient from '../config/paystack.js';
 import Transaction from '../models/Transaction.js';
 import Wallet from '../models/Wallet.js';
+import FinancialConfig from '../models/FinancialConfig.js';
 import User from '../models/User.js';
 import { verifyAuth } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
@@ -8,20 +9,58 @@ import { generateReference, formatDecimal } from '../utils/helpers.js';
 import mongoose from 'mongoose';
 import crypto from 'crypto';
 import { createNotification } from '../utils/notificationService.js'; // NEW: Central notification service
+import { creditPurchasedCoins } from '../services/ledgerService.js';
 
-// Coin packages
-const COIN_PACKAGES = {
-  STARTER: { coins: 100, price: 10.0, naira: 4750 },
-  GROWTH: { coins: 300, price: 25.0, naira: 12000 },
-  PREMIUM: { coins: 1000, price: 75.0, naira: 35000 },
-  ELITE: { coins: 3000, price: 200.0, naira: 95000 },
+const DEFAULT_COIN_PACKAGES = {
+  STARTER: { coins: 100, naira: 200, promotionalCoins: 0, active: true },
+  PLUS: { coins: 300, naira: 600, promotionalCoins: 0, active: true },
+  PREMIUM: { coins: 1000, naira: 2000, promotionalCoins: 0, active: true },
+  ELITE: { coins: 3000, naira: 6000, promotionalCoins: 0, active: true },
 };
+
+const LEGACY_COIN_PACKAGES = {
+  STARTER: { coins: 100, naira: 4750 },
+  GROWTH: { coins: 300, naira: 12000 },
+  PREMIUM: { coins: 1000, naira: 35000 },
+  ELITE: { coins: 3000, naira: 95000 },
+};
+
+function expectedPackagePrice(existingTransaction, currentPackage, legacyPackage) {
+  return (
+    existingTransaction?.metadata?.expectedNaira ??
+    (existingTransaction ? legacyPackage?.naira ?? currentPackage?.naira : currentPackage?.naira ?? legacyPackage?.naira)
+  );
+}
+
+async function getCoinPackages() {
+  const config = await FinancialConfig.findOneAndUpdate(
+    { key: 'default' },
+    {
+      $setOnInsert: {
+        key: 'default',
+        coinPackages: DEFAULT_COIN_PACKAGES,
+        vipPackages: {
+          VIP_STARTER: { purchasedCoinPrice: 0, vipCreditsGranted: 0, active: false },
+          VIP_PLUS: { purchasedCoinPrice: 0, vipCreditsGranted: 0, active: false },
+          VIP_PREMIUM: { purchasedCoinPrice: 0, vipCreditsGranted: 0, active: false },
+        },
+        promoRewardAmount: 5,
+      },
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
+  return config.coinPackages;
+}
+
+function decimal(value) {
+  return mongoose.Types.Decimal128.fromString(Number(value).toFixed(2));
+}
 
 export default async function paymentRoutes(fastify, opts) {
   // Get coin packages
   fastify.get('/packages', async (request, reply) => {
     try {
-      sendSuccess(reply, COIN_PACKAGES);
+      sendSuccess(reply, await getCoinPackages());
     } catch (error) {
       fastify.log.error(error);
       sendError(reply, 'Failed to fetch packages', 500, error.message);
@@ -38,12 +77,13 @@ export default async function paymentRoutes(fastify, opts) {
       }
 
       const { packageKey } = request.body || {};
+      const coinPackages = await getCoinPackages();
 
-      if (!packageKey || !COIN_PACKAGES[packageKey]) {
+      if (!packageKey || !coinPackages[packageKey]?.active) {
         return sendError(reply, 'Invalid coin package', 400);
       }
 
-      const coinPackage = COIN_PACKAGES[packageKey];
+      const coinPackage = coinPackages[packageKey];
       const reference = generateReference('PAY');
 
       const user = await User.findById(request.user._id);
@@ -51,6 +91,20 @@ export default async function paymentRoutes(fastify, opts) {
       if (!user) {
         return sendError(reply, 'User not found', 404);
       }
+
+      const wallet = await Wallet.findOne({ userId: request.user._id });
+      if (!wallet) return sendError(reply, 'Wallet not found', 404);
+      await Transaction.create({
+        walletId: wallet._id,
+        userId: request.user._id,
+        type: 'COIN_PURCHASE',
+        source: 'PURCHASED',
+        amount: decimal(coinPackage.coins),
+        reference,
+        grossNaira: decimal(coinPackage.naira),
+        status: 'PENDING',
+        metadata: { packageKey, expectedNaira: coinPackage.naira },
+      });
 
       try {
         const response = await paystackClient.post('/transaction/initialize', {
@@ -76,9 +130,11 @@ export default async function paymentRoutes(fastify, opts) {
             'Payment initialized successfully'
           );
         } else {
+          await Transaction.updateOne({ reference, status: 'PENDING' }, { $set: { status: 'FAILED' } });
           sendError(reply, 'Payment initialization failed', 400);
         }
       } catch (error) {
+        await Transaction.updateOne({ reference, status: 'PENDING' }, { $set: { status: 'FAILED' } });
         fastify.log.error('Paystack API error:', error.response?.data || error.message);
         sendError(reply, 'Payment service error', 500, error.message);
       }
@@ -90,21 +146,16 @@ export default async function paymentRoutes(fastify, opts) {
 
   // Verify payment and credit coins
   fastify.post('/verify-transaction', async (request, reply) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
     try {
       await verifyAuth(request, reply);
 
       if (!request.user) {
-        await session.abortTransaction();
         return sendError(reply, 'Unauthorized', 401);
       }
 
       const { reference } = request.body || {};
 
       if (!reference) {
-        await session.abortTransaction();
         return sendError(reply, 'Reference is required', 400);
       }
 
@@ -112,67 +163,56 @@ export default async function paymentRoutes(fastify, opts) {
         const response = await paystackClient.get(`/transaction/verify/${reference}`);
 
         if (response.data.status === false) {
-          await session.abortTransaction();
           return sendError(reply, 'Payment verification failed', 400);
         }
 
         const transaction = response.data.data;
 
         if (transaction.status !== 'success') {
-          await session.abortTransaction();
           return sendError(reply, 'Payment was not successful', 400);
         }
 
         // Check if metadata is valid
         if (!transaction.metadata || transaction.metadata.userId !== request.user._id.toString()) {
-          await session.abortTransaction();
           return sendError(reply, 'Invalid transaction metadata', 400);
         }
 
-        // Check if already processed (idempotency)
-        const existingTransaction = await Transaction.findOne({
-          reference,
-        }).session(session);
+        const existingTransaction = await Transaction.findOne({ reference });
 
-        if (existingTransaction) {
-          await session.abortTransaction();
+        if (existingTransaction?.status === 'SUCCESS') {
           return sendSuccess(reply, null, 'Payment already processed');
         }
 
-        // Credit coins to user wallet
-        const coins = Number(transaction.metadata.coins);
-        if (!Number.isFinite(coins) || coins <= 0) {
-          await session.abortTransaction();
+        const packageKey = transaction.metadata.packageKey;
+        const currentPackage = (await getCoinPackages())[packageKey];
+        const legacyPackage = LEGACY_COIN_PACKAGES[packageKey];
+        const expected = expectedPackagePrice(existingTransaction, currentPackage, legacyPackage);
+        const coins = Number(existingTransaction?.amount ?? transaction.metadata.coins);
+        const paidNaira = Number(transaction.amount) / 100;
+        if (
+          !Number.isSafeInteger(coins) ||
+          coins <= 0 ||
+          !Number.isFinite(expected) ||
+          paidNaira !== Number(expected) ||
+          transaction.currency !== 'NGN' ||
+          Number(transaction.metadata.coins) !== coins
+        ) {
           return sendError(reply, 'Invalid transaction amount', 400);
         }
-        const wallet = await Wallet.findOne({ userId: request.user._id }).session(session);
-
-        if (!wallet) {
-          await session.abortTransaction();
-          return sendError(reply, 'Wallet not found', 404);
-        }
-
-        wallet.storyCoins = mongoose.Types.Decimal128.fromString((Number(wallet.storyCoins.toString()) + coins).toFixed(2));
-        await wallet.save({ session });
-
-        // Create transaction record
-        const txn = new Transaction({
-          walletId: wallet._id,
+        const result = await creditPurchasedCoins({
           userId: request.user._id,
-          type: 'FUND',
-          amount: mongoose.Types.Decimal128.fromString(coins.toFixed(2)),
+          coins,
           reference,
-          description: `Purchased ${transaction.metadata.coins} coins`,
-          status: 'SUCCESS',
+          grossNaira: paidNaira,
+          providerFeeNaira: Number(transaction.fees || 0) / 100,
+          paystackTransactionId: transaction.id,
           metadata: {
-            paystackTransactionId: transaction.id,
+            packageKey,
             paystackReference: transaction.reference,
+            currency: transaction.currency,
           },
         });
-
-        await txn.save({ session });
-
-        await session.commitTransaction();
+        const wallet = result.wallet || await Wallet.findOne({ userId: request.user._id });
 
         // NEW: Notify user of successful payment asynchronously + BEAUTIFUL BRANDING
         createNotification({
@@ -190,24 +230,17 @@ export default async function paymentRoutes(fastify, opts) {
           newBalance: formatDecimal(wallet.storyCoins),
         });
       } catch (error) {
-        await session.abortTransaction();
         fastify.log.error('Paystack verification error:', error.response?.data || error.message);
         sendError(reply, 'Payment verification failed', 500, error.message);
       }
     } catch (error) {
-      await session.abortTransaction();
       fastify.log.error(error);
       sendError(reply, 'Failed to verify payment', 500, error.message);
-    } finally {
-      session.endSession();
     }
   });
 
   // Paystack webhook for payment confirmation
   fastify.post('/webhook/paystack', async (request, reply) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
     try {
       const hash = crypto
         .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY)
@@ -216,14 +249,12 @@ export default async function paymentRoutes(fastify, opts) {
 
       const signature = request.headers['x-paystack-signature'];
       if (!signature || hash.length !== signature.length || !crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(signature))) {
-        await session.abortTransaction();
         return sendError(reply, 'Invalid signature', 401);
       }
 
       const event = request.body;
 
       if (event.event !== 'charge.success') {
-        await session.abortTransaction();
         return sendSuccess(reply, null, 'Event ignored');
       }
 
@@ -231,48 +262,47 @@ export default async function paymentRoutes(fastify, opts) {
       const reference = transaction.reference;
 
       // Check if already processed
-      const existingTransaction = await Transaction.findOne({
-        reference,
-      }).session(session);
+      const existingTransaction = await Transaction.findOne({ reference });
 
-      if (existingTransaction) {
-        await session.abortTransaction();
+      if (existingTransaction?.status === 'SUCCESS') {
         return sendSuccess(reply, null, 'Already processed');
       }
 
       // Credit coins
       const userId = transaction.metadata.userId;
-      const coins = Number(transaction.metadata?.coins);
+      const coinPackages = await getCoinPackages();
+      const packageKey = transaction.metadata?.packageKey;
+      const currentPackage = coinPackages[packageKey];
+      const legacyPackage = LEGACY_COIN_PACKAGES[packageKey];
+      const expected = expectedPackagePrice(existingTransaction, currentPackage, legacyPackage);
+      const coins = Number(existingTransaction?.amount ?? transaction.metadata?.coins);
+      const paidNaira = Number(transaction.amount) / 100;
       if (!transaction.metadata?.userId || !Number.isFinite(coins) || coins <= 0) {
-        await session.abortTransaction();
         return sendError(reply, 'Invalid transaction metadata', 400);
       }
-      const wallet = await Wallet.findOne({ userId }).session(session);
-
-      if (!wallet) {
-        await session.abortTransaction();
-        return sendError(reply, 'Wallet not found', 404);
+      if (
+        !Number.isFinite(expected) ||
+        paidNaira !== Number(expected) ||
+        transaction.currency !== 'NGN' ||
+        transaction.status !== 'success' ||
+        Number(transaction.metadata?.coins) !== coins
+      ) {
+        return sendError(reply, 'Payment amount does not match the selected coin package', 400);
       }
 
-      wallet.storyCoins = mongoose.Types.Decimal128.fromString((Number(wallet.storyCoins.toString()) + coins).toFixed(2));
-      await wallet.save({ session });
-
-      const txn = new Transaction({
-        walletId: wallet._id,
+      await creditPurchasedCoins({
         userId,
-        type: 'FUND',
-        amount: mongoose.Types.Decimal128.fromString(coins.toFixed(2)),
+        coins,
         reference,
-        description: `Purchased ${transaction.metadata.coins} coins via webhook`,
-        status: 'SUCCESS',
+        grossNaira: paidNaira,
+        providerFeeNaira: Number(transaction.fees || 0) / 100,
+        paystackTransactionId: transaction.id,
         metadata: {
-          paystackTransactionId: transaction.id,
+          packageKey,
+          paystackReference: reference,
+          currency: transaction.currency,
         },
       });
-
-      await txn.save({ session });
-
-      await session.commitTransaction();
 
       // NEW: Notify user of successful payment via webhook asynchronously + BEAUTIFUL BRANDING
       createNotification({
@@ -287,11 +317,8 @@ export default async function paymentRoutes(fastify, opts) {
 
       sendSuccess(reply, null, 'Webhook processed');
     } catch (error) {
-      await session.abortTransaction();
       fastify.log.error(error);
       sendError(reply, 'Webhook processing failed', 500, error.message);
-    } finally {
-      session.endSession();
     }
   });
 

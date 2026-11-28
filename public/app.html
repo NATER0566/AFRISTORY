@@ -2615,8 +2615,8 @@
           <div><p class="eyebrow">YOUR STORY ECONOMY</p><h1>Wallet</h1></div>
           <div style="display:flex; flex-wrap:wrap; gap:10px;">
             <button class="button button-primary" data-action="buy-coins">Get coins <span>↗</span></button>
-            <button id="wallet-watch-ad-btn" class="button button-accent" type="button" data-robins-rewarded="wallet-earn-coins" data-action="watch-rewarded-ad">▶ Watch Ad (+Coins)</button>
-            <button class="button button-quiet" data-action="buy-pass">Get VIP pass</button>
+            <button id="wallet-watch-ad-btn" class="button button-accent" type="button" data-robins-rewarded="wallet-earn-coins" data-action="watch-rewarded-ad" disabled>▶ Watch Ad (+5 Coins)</button>
+            <button class="button button-quiet" data-action="buy-pass">Get VIP credits</button>
             <button id="withdraw-earnings-btn" class="button button-quiet hidden" data-action="withdraw-earnings">Withdraw</button>
           </div>
         </div>
@@ -2625,7 +2625,7 @@
           <div class="balance-card">
             <span class="eyebrow">AVAILABLE STORY COINS</span>
             <strong style="display: inline-flex; align-items: center; gap: 8px;"><span style="color: #f3ca52; font-size: 0.92em;">◈</span><span id="wallet-balance">0</span></strong>
-            <span class="balance-caption" id="wallet-coin-rate-note">Unlock single episodes (10–25+ coins each) permanently, or activate a VIP Binge Pass for unlimited 24h–30d access.</span>
+            <span class="balance-caption" id="wallet-coin-rate-note">Purchased and promotional Story Coins are tracked separately. VIP packages add a fixed number of episode unlock credits.</span>
           </div>
           <div class="wallet-stat">
             <span class="eyebrow">TOTAL EARNED (NAIRA)</span>
@@ -2659,9 +2659,9 @@
           <div class="editorial-showcase-header">
             <div>
               <p class="eyebrow">HOW YOUR WALLET WORKS</p>
-              <h3>Single-Episode Unlocks vs. VIP Binge Passes</h3>
+              <h3>Single-Episode Unlocks vs. VIP Credits</h3>
             </div>
-            <p class="editorial-lead">Choose between unlocking individual episodes permanently or getting an all-access VIP pass for nonstop bingeing.</p>
+            <p class="editorial-lead">Choose a coin source for each episode, or spend fixed VIP Unlock Credits. Replays of unlocked episodes are free.</p>
           </div>
           <div class="editorial-grid-3">
             <div class="editorial-card">
@@ -2672,9 +2672,9 @@
             </div>
             <div class="editorial-card">
               <span class="editorial-card-badge">✦ VIP Gate Passes</span>
-              <h4>All-Access Binge Passes</h4>
-              <p>Get a <strong>24-Hour Day Pass (150 Coins)</strong>, <strong>7-Day Weekly VIP Pass (600 Coins)</strong>, or <strong>30-Day Monthly VIP Pass (1,800 Coins)</strong> to watch every premium episode freely while active.</p>
-              <div class="editorial-card-meta"><span>Unlimited Catalog Access</span><span>Best for Bingeing</span></div>
+              <h4>Fixed VIP Unlock Credits</h4>
+              <p>VIP packages exchange purchased Story Coins for a configurable number of episode unlock credits. Promotional coins cannot purchase VIP packages.</p>
+              <div class="editorial-card-meta"><span>Spend per episode</span><span>No time-based access</span></div>
             </div>
             <div class="editorial-card">
               <span class="editorial-card-badge">₦ Creator Revenue</span>
@@ -2708,15 +2708,15 @@
             <div class="ad-earn-spotlight-icon" aria-hidden="true">▶</div>
             <div class="ad-earn-spotlight-copy">
               <span class="editorial-card-badge" style="margin-bottom:4px;">Instant Coin Top-Up</span>
-              <h3>Watch Partner Ad &amp; Earn Story Coins</h3>
-              <p>Need extra coins to unlock an episode? Watch a short partner ad and Story Coins will be added directly to your Wallet balance. You can repeat this to build up your coins.</p>
+              <h3>Watch Partner Ad &amp; Earn Promotional Coins</h3>
+              <p>Complete a verified sponsor ad to receive exactly 5 promotional Story Coins. Promotional coins can unlock episodes but cannot buy VIP packages.</p>
             </div>
           </div>
           <div class="ad-earn-spotlight-actions">
-            <button id="watch-ad-earn-coins-btn" class="button button-primary" type="button" data-robins-rewarded="earn-coins" data-action="watch-rewarded-ad">
-              <span>▶ Watch Ad &amp; Earn Coins</span>
+            <button id="watch-ad-earn-coins-btn" class="button button-primary" type="button" data-robins-rewarded="earn-coins" data-action="watch-rewarded-ad" disabled>
+              <span>▶ Watch Ad &amp; Earn 5 Coins</span>
             </button>
-            <small id="rewarded-ad-status-note">Credits straight to your Wallet</small>
+            <small id="rewarded-ad-status-note">Requires verified ad completion</small>
           </div>
         </div>
 

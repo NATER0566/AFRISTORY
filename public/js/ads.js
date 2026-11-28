@@ -208,13 +208,14 @@ export async function launchRewardedAd(options = {}) {
   const purpose =
     options.purpose ||
     trigger?.dataset?.purpose ||
-    (trigger?.dataset?.episodeId ? 'UNLOCK_EPISODE' : 'EARN_COINS');
+    (trigger?.dataset?.episodeId ? 'DIRECT_EPISODE_UNLOCK' : 'PROMO_REWARD');
   const targetId =
     options.targetId ||
     trigger?.dataset?.episodeId ||
     trigger?.dataset?.targetId ||
+    trigger?.dataset?.rewardId ||
     null;
-  const coins = Number(options.coins || trigger?.dataset?.coins || 0);
+  const coins = 5;
 
   setTriggerStatus(trigger, 'Starting sponsor ad...');
 

@@ -10,7 +10,6 @@ const adRewardSessionSchema = new mongoose.Schema(
     rewardId: {
       type: String,
       trim: true,
-      index: true,
     },
     provider: {
       type: String,
@@ -27,11 +26,19 @@ const adRewardSessionSchema = new mongoose.Schema(
     },
     purpose: {
       type: String,
+      enum: ['PROMO_REWARD', 'DIRECT_EPISODE_UNLOCK'],
+      required: true,
       trim: true,
     },
     targetId: {
       type: String,
+      required: true,
       trim: true,
+    },
+    creatorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Creator',
+      default: null,
     },
     amount: {
       type: Number,
@@ -67,11 +74,22 @@ const adRewardSessionSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.Mixed,
       default: {},
     },
+    reconciledRevenueNaira: {
+      type: mongoose.Decimal128,
+      default: null,
+    },
+    revenueBatchId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'AdRevenueBatch',
+      default: null,
+    },
   },
   {
     timestamps: true,
   }
 );
+
+adRewardSessionSchema.index({ rewardId: 1 }, { unique: true, sparse: true });
 
 const AdRewardSession =
   mongoose.models.AdRewardSession ||

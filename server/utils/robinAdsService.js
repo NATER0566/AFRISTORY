@@ -25,6 +25,17 @@ function createHttpError(message, statusCode = 400) {
   return err;
 }
 
+function normalizePurpose(purpose) {
+  const normalized = String(purpose || '').toUpperCase();
+  if (['REWARD', 'EARN_COINS', 'REWARD_CLAIM', 'PROMO_REWARD'].includes(normalized)) {
+    return 'PROMO_REWARD';
+  }
+  if (['EPISODE_UNLOCK', 'UNLOCK_EPISODE', 'DIRECT_EPISODE_UNLOCK'].includes(normalized)) {
+    return 'DIRECT_EPISODE_UNLOCK';
+  }
+  throw createHttpError('Reward purpose is invalid.', 400);
+}
+
 export function getRobinAdsPublicConfig() {
   return {
     provider: 'ROBINADS',
@@ -44,10 +55,13 @@ export async function createRobinAdsRewardSession({
   userId,
   purpose = 'REWARD',
   targetId = null,
+  creatorId = null,
   coins = 0,
   ipAddress = null,
   userAgent = null,
 }) {
+  const normalizedPurpose = normalizePurpose(purpose);
+  if (!targetId) throw createHttpError('A reward or episode target is required.', 400);
   const apiKey = getRobinsApiKey();
   if (!apiKey) {
     throw createHttpError(
@@ -66,7 +80,7 @@ export async function createRobinAdsRewardSession({
       website_id: ROBINS_WEBSITE_ID,
       metadata: {
         user_id: String(userId),
-        purpose: String(purpose || 'REWARD'),
+        purpose: normalizedPurpose,
         target_id: targetId ? String(targetId) : null,
         coins: Number(coins || 0),
       },
@@ -98,8 +112,9 @@ export async function createRobinAdsRewardSession({
         rewardId: payload.id,
         provider: 'ROBINADS',
         websiteId: payload.website_id || ROBINS_WEBSITE_ID,
-        purpose: String(purpose || 'REWARD'),
+        purpose: normalizedPurpose,
         targetId: targetId ? String(targetId) : null,
+        creatorId,
         amount: Number(coins || 0),
         status: 'PENDING',
         ipAddress,
@@ -130,7 +145,7 @@ export async function createRobinAdsRewardSession({
  * Polls GET https://robinsads.com/api/v1/rewards/:id until status is
  * "verified", "expired", or "rejected".
  */
-export async function checkAndFulfillRobinAdsReward({ userId, rewardId }) {
+export async function checkAndFulfillRobinAdsReward({ userId, rewardId, session: dbSession = null }) {
   const cleanId = String(rewardId || '').trim();
   if (!cleanId) {
     throw createHttpError('Reward ID is required.', 400);
@@ -144,7 +159,7 @@ export async function checkAndFulfillRobinAdsReward({ userId, rewardId }) {
   const session = await AdRewardSession.findOne({
     rewardId: cleanId,
     ...(userId ? { userId } : {}),
-  });
+  }).session(dbSession);
 
   if (!session) {
     throw createHttpError('Reward session not found for this account.', 404);
@@ -203,7 +218,7 @@ export async function checkAndFulfillRobinAdsReward({ userId, rewardId }) {
       robins_reward_id: reward.reward_id || null,
       verified_at: reward.verified_at || session.verifiedAt.toISOString(),
     };
-    await session.save();
+    await session.save({ session: dbSession });
 
     return {
       id: session.rewardId,
@@ -217,7 +232,7 @@ export async function checkAndFulfillRobinAdsReward({ userId, rewardId }) {
 
   if (remoteStatus === 'expired') {
     session.status = 'EXPIRED';
-    await session.save();
+    await session.save({ session: dbSession });
     return {
       id: session.rewardId,
       rewardId: session.rewardId,
@@ -228,7 +243,7 @@ export async function checkAndFulfillRobinAdsReward({ userId, rewardId }) {
 
   if (remoteStatus === 'rejected') {
     session.status = 'FAILED';
-    await session.save();
+    await session.save({ session: dbSession });
     return {
       id: session.rewardId,
       rewardId: session.rewardId,
@@ -255,6 +270,8 @@ async function verifyInterstitialCallbackToken({
   userId,
   purpose,
   targetId,
+  creatorId,
+  session: dbSession = null,
 }) {
   const cleanImpressionId = String(impressionId || '').trim();
   const cleanToken = String(token || '').trim();
@@ -262,9 +279,17 @@ async function verifyInterstitialCallbackToken({
     throw createHttpError('Missing Robins Ads interstitial impressionId or token.', 400);
   }
 
-  const existing = await AdRewardSession.findOne({ rewardId: cleanImpressionId });
+  const existing = await AdRewardSession.findOne({ rewardId: cleanImpressionId }).session(dbSession);
   if (existing && existing.status === 'CONSUMED') {
     throw createHttpError('This ad reward has already been claimed.', 409);
+  }
+  if (
+    existing &&
+    (existing.userId?.toString() !== userId?.toString() ||
+      existing.purpose !== normalizePurpose(purpose) ||
+      existing.targetId !== String(targetId))
+  ) {
+    throw createHttpError('Ad session does not match this user and target.', 409);
   }
 
   const response = await fetch(ROBINS_LEGACY_VERIFY_URL, {
@@ -289,14 +314,16 @@ async function verifyInterstitialCallbackToken({
         rewardId: cleanImpressionId,
         provider: 'ROBINADS',
         websiteId: ROBINS_WEBSITE_ID,
-        purpose: String(purpose || 'INTERSTITIAL'),
+        purpose: normalizePurpose(purpose),
         targetId: targetId ? String(targetId) : null,
+        creatorId: creatorId || null,
         status: 'CONSUMED',
         verifiedAt: new Date(),
         consumedAt: new Date(),
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000),
       },
     },
-    { upsert: true, new: true }
+    { upsert: true, new: true, session: dbSession }
   );
 
   return {
@@ -324,6 +351,8 @@ export async function verifyAndConsumeRobinAdsReward(arg1, arg2, arg3) {
     userId,
     purpose = 'REWARD',
     targetId = null,
+    creatorId = null,
+    session: dbSession = null,
   } = params;
 
   const cleanId = String(rewardId || transactionId || '').trim();
@@ -331,32 +360,49 @@ export async function verifyAndConsumeRobinAdsReward(arg1, arg2, arg3) {
     throw createHttpError('Missing Robins Ads rewardId.', 400);
   }
 
-  // Global duplicate replay check across all ledger collections
+  const normalizedPurpose = normalizePurpose(purpose);
+  if (!targetId) throw createHttpError('A reward or episode target is required.', 400);
+
+  // Global duplicate replay check across all ledger collections.
   const [alreadyUnlocked, alreadyTx, alreadyClaimed] = await Promise.all([
-    Unlock.exists({ adTransactionId: cleanId }).catch(() => null),
-    Transaction.exists({ reference: cleanId }).catch(() => null),
-    RewardClaim.exists({ reference: cleanId }).catch(() => null),
+    Unlock.exists({ transactionId: cleanId }).session(dbSession),
+    Transaction.exists({ sourceAdIds: cleanId }).session(dbSession),
+    RewardClaim.exists({ 'metadata.robinsRewardId': cleanId }).session(dbSession),
   ]);
 
   if (alreadyUnlocked || alreadyTx || alreadyClaimed) {
     throw createHttpError('This ad reward has already been used.', 409);
   }
 
-  // If completed via in-app RobinAds.showInterstitial() (Telegram / popup-blocked fallback)
   if (token) {
     return verifyInterstitialCallbackToken({
       impressionId: cleanId,
       token,
       userId,
-      purpose,
+      purpose: normalizedPurpose,
       targetId,
+      creatorId,
+      session: dbSession,
     });
+  }
+
+  const adSession = await AdRewardSession.findOne({
+    rewardId: cleanId,
+    ...(userId ? { userId } : {}),
+    purpose: normalizedPurpose,
+    targetId: String(targetId),
+    ...(creatorId ? { creatorId } : {}),
+    status: { $in: ['PENDING', 'COMPLETED'] },
+  }).session(dbSession);
+  if (!adSession || (adSession.expiresAt && adSession.expiresAt <= new Date())) {
+    throw createHttpError('Ad session is missing, expired, or not bound to this target.', 409);
   }
 
   // Primary Section 3 Reward API verification against GET https://robinsads.com/api/v1/rewards/:id
   const statusResult = await checkAndFulfillRobinAdsReward({
     userId,
     rewardId: cleanId,
+    session: dbSession,
   });
 
   if (!statusResult.verified) {
@@ -375,6 +421,8 @@ export async function verifyAndConsumeRobinAdsReward(arg1, arg2, arg3) {
     {
       rewardId: cleanId,
       ...(userId ? { userId } : {}),
+      purpose: normalizedPurpose,
+      targetId: String(targetId),
       status: 'COMPLETED',
     },
     {
@@ -383,7 +431,7 @@ export async function verifyAndConsumeRobinAdsReward(arg1, arg2, arg3) {
         consumedAt: new Date(),
       },
     },
-    { new: true }
+    { new: true, session: dbSession }
   );
 
   if (!consumed) {

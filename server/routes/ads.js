@@ -1,5 +1,7 @@
-import crypto from 'node:crypto';
 import Unlock from '../models/Unlock.js';
+import Episode from '../models/Episode.js';
+import Series from '../models/Series.js';
+import Reward from '../models/Reward.js';
 import { verifyAuth } from '../middleware/auth.js';
 import * as robinAdsService from '../utils/robinAdsService.js';
 
@@ -50,35 +52,43 @@ export default async function adsRoutes(fastify) {
 
     try {
       const { purpose, targetId } = request.body || {};
-
-      if (typeof robinAdsService.createRobinAdsRewardSession === 'function') {
-        const session = await robinAdsService.createRobinAdsRewardSession({
-          userId: request.user._id,
-          purpose,
-          targetId,
-          ipAddress: request.ip,
-          userAgent: request.headers['user-agent'] || null,
-        });
-
-        return reply.send({
-          success: true,
-          data: session,
+      const normalizedPurpose = String(purpose || '').toUpperCase();
+      if (!targetId || !['PROMO_REWARD', 'DIRECT_EPISODE_UNLOCK'].includes(normalizedPurpose)) {
+        return reply.status(400).send({
+          success: false,
+          message: 'A supported purpose and target are required.',
         });
       }
 
-      const rewardId = `robins_${crypto.randomUUID()}`;
+      let creatorId = null;
+      if (normalizedPurpose === 'DIRECT_EPISODE_UNLOCK') {
+        const episode = await Episode.findById(targetId);
+        if (!episode) {
+          return reply.status(404).send({ success: false, message: 'Episode not found.' });
+        }
+        const series = await Series.findById(episode.seriesId).select('creatorId');
+        if (!series) {
+          return reply.status(404).send({ success: false, message: 'Episode creator not found.' });
+        }
+        creatorId = series.creatorId;
+      } else {
+        const reward = await Reward.findById(targetId).select('status');
+        if (!reward || reward.status !== 'ACTIVE') {
+          return reply.status(404).send({ success: false, message: 'Reward task is unavailable.' });
+        }
+      }
+
       return reply.send({
         success: true,
-        data: {
-          provider: 'ROBINADS',
-          websiteId: ROBINS_WEBSITE_ID,
-          zoneId: ROBINS_ZONE_ID,
-          rewardId,
-          transactionId: rewardId,
-          purpose: purpose || null,
-          targetId: targetId || null,
-          status: 'pending',
-        },
+        data: await robinAdsService.createRobinAdsRewardSession({
+          userId: request.user._id,
+          purpose: normalizedPurpose,
+          targetId,
+          creatorId,
+          coins: 5,
+          ipAddress: request.ip,
+          userAgent: request.headers['user-agent'] || null,
+        }),
       });
     } catch (error) {
       return reply.status(error.statusCode || 400).send({

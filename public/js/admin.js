@@ -113,6 +113,83 @@ window.loadDashboardStats = async function() {
     `;
 };
 
+window.loadFinancialConfig = async function() {
+    const data = await adminApi('/financial-config');
+    if (!data) return;
+    const coinBody = $('#financial-coin-packages');
+    const vipBody = $('#financial-vip-packages');
+    if (!coinBody || !vipBody) return;
+
+    coinBody.innerHTML = Object.entries(data.coinPackages || {}).map(([key, plan]) => `
+        <tr data-coin-package="${key}">
+            <td>${key}</td>
+            <td><input type="number" min="1" step="1" data-field="coins" value="${Number(plan.coins) || 0}"></td>
+            <td><input type="number" min="2" step="2" data-field="naira" value="${Number(plan.naira) || 0}"></td>
+            <td><input type="checkbox" data-field="active" ${plan.active ? 'checked' : ''}></td>
+        </tr>
+    `).join('');
+    vipBody.innerHTML = Object.entries(data.vipPackages || {}).map(([key, plan]) => `
+        <tr data-vip-package="${key}">
+            <td>${key}</td>
+            <td><input type="number" min="0" step="1" data-field="purchasedCoinPrice" value="${Number(plan.purchasedCoinPrice) || 0}"></td>
+            <td><input type="number" min="0" step="1" data-field="vipCreditsGranted" value="${Number(plan.vipCreditsGranted) || 0}"></td>
+            <td><input type="checkbox" data-field="active" ${plan.active ? 'checked' : ''}></td>
+        </tr>
+    `).join('');
+};
+
+async function saveFinancialConfig() {
+    const coinPackages = {};
+    const vipPackages = {};
+    $$('#financial-coin-packages tr[data-coin-package]').forEach(row => {
+        coinPackages[row.dataset.coinPackage] = {
+            coins: Number(row.querySelector('[data-field="coins"]').value),
+            naira: Number(row.querySelector('[data-field="naira"]').value),
+            promotionalCoins: 0,
+            active: row.querySelector('[data-field="active"]').checked
+        };
+    });
+    $$('#financial-vip-packages tr[data-vip-package]').forEach(row => {
+        vipPackages[row.dataset.vipPackage] = {
+            purchasedCoinPrice: Number(row.querySelector('[data-field="purchasedCoinPrice"]').value),
+            vipCreditsGranted: Number(row.querySelector('[data-field="vipCreditsGranted"]').value),
+            active: row.querySelector('[data-field="active"]').checked
+        };
+    });
+    const result = await adminApi('/financial-config', 'PUT', {
+        coinPackages,
+        vipPackages,
+        promoRewardAmount: 5
+    });
+    if (result) {
+        await loadFinancialConfig();
+        if (window.Swal) Swal.fire('Saved', 'Financial configuration updated.', 'success', swalConfig);
+    }
+}
+
+async function reconcileAdRevenue(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const values = new FormData(form);
+    const result = await adminApi('/ad-revenue/reconcile', 'POST', {
+        periodStart: new Date(values.get('periodStart')).toISOString(),
+        periodEnd: new Date(values.get('periodEnd')).toISOString(),
+        providerNetRevenueNaira: Number(values.get('providerNetRevenueNaira')),
+        reference: String(values.get('reference') || '').trim() || undefined
+    });
+    if (result) {
+        form.reset();
+        if (window.Swal) {
+            Swal.fire(
+                'Reconciled',
+                `Ad revenue batch processed. ${result.promotedCount || 0} creator earnings became available.`,
+                'success',
+                swalConfig
+            );
+        }
+    }
+}
+
 window.loadUsers = async function() {
     const tbody = $('#users-tbody');
     if (!tbody) return;
@@ -442,4 +519,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const loader = $('#page-loader'); 
     if (loader) loader.style.display = 'none'; 
     loadDashboardStats(); 
+    $('#save-financial-config')?.addEventListener('click', saveFinancialConfig);
+    $('#ad-revenue-reconcile-form')?.addEventListener('submit', reconcileAdRevenue);
 });

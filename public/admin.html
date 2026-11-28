@@ -144,6 +144,7 @@
         <div class="sidebar-category">Operations</div>
         <button class="nav-item" onclick="switchTab('moderation'); loadReports();">Moderation</button>
         <button class="nav-item" onclick="switchTab('payouts'); loadPayouts();">Financial Payouts</button>
+        <button class="nav-item" onclick="switchTab('financial-config'); loadFinancialConfig();">Financial Configuration</button>
         
         <button class="nav-item" onclick="window.location.href='/'" style="margin-top: 30px; border-top: 1px solid var(--border);">Exit to App</button>
     </div>
@@ -301,6 +302,36 @@
                     </thead>
                     <tbody id="payouts-tbody"></tbody>
                 </table>
+            </div>
+        </div>
+
+        <div id="financial-config" class="view-section">
+            <h2>Financial Configuration</h2>
+            <p style="color:#999;">Coin package prices are enforced at ₦2 per purchased coin. Promotional rewards remain fixed at 5 coins.</p>
+            <div class="table-container">
+                <h3>Purchased Coin Packages</h3>
+                <table>
+                    <thead><tr><th>Package</th><th>Coins</th><th>Price (₦)</th><th>Active</th></tr></thead>
+                    <tbody id="financial-coin-packages"></tbody>
+                </table>
+            </div>
+            <div class="table-container" style="margin-top:20px;">
+                <h3>VIP Unlock Credit Packages</h3>
+                <table>
+                    <thead><tr><th>Package</th><th>Purchased Coin Price</th><th>VIP Credits</th><th>Active</th></tr></thead>
+                    <tbody id="financial-vip-packages"></tbody>
+                </table>
+            </div>
+            <button id="save-financial-config" class="button button-primary" type="button" style="margin-top:16px;">Save financial configuration</button>
+            <div class="table-container" style="margin-top:28px;">
+                <h3>Reconcile Robins Ads Revenue</h3>
+                <form id="ad-revenue-reconcile-form">
+                    <label>Period start <input name="periodStart" type="datetime-local" required></label>
+                    <label>Period end <input name="periodEnd" type="datetime-local" required></label>
+                    <label>Actual net revenue (₦) <input name="providerNetRevenueNaira" type="number" min="0" step="0.01" required></label>
+                    <label>Batch reference (optional) <input name="reference" type="text"></label>
+                    <button class="button button-primary" type="submit">Reconcile period</button>
+                </form>
             </div>
         </div>
 

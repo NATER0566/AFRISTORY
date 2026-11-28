@@ -13,6 +13,7 @@ import { sendSuccess, sendError } from '../utils/response.js';
 import { generateReference, formatDecimal } from '../utils/helpers.js';
 import { createNotification } from '../utils/notificationService.js';
 import { verifyAndConsumeRobinAdsReward } from '../utils/robinAdsService.js';
+import { creditPromotionalCoins } from '../services/ledgerService.js';
 
 const timezone = process.env.REWARD_TIMEZONE || 'Africa/Lagos';
 const periodKey = (date = new Date(), type = 'once') => {
@@ -53,7 +54,7 @@ async function ensureDefaultRewards() {
       description: 'A one-time welcome gift for verified members.',
       type: 'ONE_TIME',
       category: 'welcome',
-      rewardAmount: 20,
+      rewardAmount: 5,
       metadata: { key: 'welcome' },
     },
     {
@@ -64,15 +65,26 @@ async function ensureDefaultRewards() {
       rewardAmount: 5,
       recurrenceType: 'daily',
       maxClaimsPerUser: null,
-      metadata: { schedule: [5, 5, 10, 10, 15, 15, 30] },
+      metadata: { schedule: [5, 5, 5, 5, 5, 5, 5] },
     },
     {
       name: 'Complete Your Profile',
       description: 'Add the essentials that shape your discoveries.',
       type: 'PROFILE',
       category: 'profile',
-      rewardAmount: 20,
+      rewardAmount: 5,
       metadata: { key: 'profile_complete' },
+    },
+    {
+      name: 'Watch Ads & Earn Coins',
+      description: 'Complete a verified sponsor ad to earn five promotional coins.',
+      type: 'DAILY',
+      category: 'ads',
+      rewardAmount: 5,
+      recurrenceType: 'daily',
+      maxClaimsPerUser: null,
+      verificationMode: 'ad',
+      metadata: { key: 'watch_ads', requiresAd: true },
     },
     {
       name: 'First Story Saved',
@@ -92,11 +104,11 @@ async function ensureDefaultRewards() {
     },
   ];
   const socialDefaults = [
-    ['Facebook', 'https://www.facebook.com/profile.php?id=61579451935484', 20, 'Follow us on Facebook', 'social_facebook'],
-    ['Instagram', 'https://www.instagram.com/natergracecode/', 20, 'Follow us on Instagram', 'social_instagram'],
-    ['YouTube', process.env.REWARD_SOCIAL_YOUTUBE_URL, 25, 'Subscribe to AfroStory on YouTube', 'social_youtube'],
-    ['TikTok', process.env.REWARD_SOCIAL_TIKTOK_URL, 20, 'Follow AfroStory on TikTok', 'social_tiktok'],
-    ['X', process.env.REWARD_SOCIAL_X_URL, 20, 'Follow AfroStory on X', 'social_x'],
+    ['Facebook', 'https://www.facebook.com/profile.php?id=61579451935484', 5, 'Follow us on Facebook', 'social_facebook'],
+    ['Instagram', 'https://www.instagram.com/natergracecode/', 5, 'Follow us on Instagram', 'social_instagram'],
+    ['YouTube', process.env.REWARD_SOCIAL_YOUTUBE_URL, 5, 'Subscribe to AfroStory on YouTube', 'social_youtube'],
+    ['TikTok', process.env.REWARD_SOCIAL_TIKTOK_URL, 5, 'Follow AfroStory on TikTok', 'social_tiktok'],
+    ['X', process.env.REWARD_SOCIAL_X_URL, 5, 'Follow AfroStory on X', 'social_x'],
   ];
   socialDefaults.forEach(([platform, targetUrl, rewardAmount, name, taskId]) => {
     if (targetUrl) {
@@ -113,11 +125,20 @@ async function ensureDefaultRewards() {
     }
   });
   for (const item of defaults) {
-    const update =
-      item.type === 'SOCIAL'
-        ? { $set: { ...item, status: 'ACTIVE' }, $setOnInsert: { createdAt: new Date() } }
-        : { $setOnInsert: { ...item, status: 'ACTIVE' } };
+    const update = {
+      $set: {
+        rewardAmount: 5,
+        ...(item.type === 'SOCIAL' ? { status: 'ACTIVE', ...item } : {}),
+      },
+      $setOnInsert: { ...item, status: 'ACTIVE', createdAt: new Date() },
+    };
     await Reward.updateOne({ 'metadata.key': item.metadata.key }, update, { upsert: true });
+    if (item.metadata?.schedule) {
+      await Reward.updateOne(
+        { 'metadata.key': item.metadata.key },
+        { $set: { 'metadata.schedule': [5, 5, 5, 5, 5, 5, 5] } }
+      );
+    }
   }
 }
 
@@ -134,8 +155,12 @@ async function profileEligible(user, reward) {
 }
 
 async function getEligibility(user, reward, claims) {
+  const currentPeriod = periodKey(new Date(), reward.recurrenceType);
   const claim = claims.find(
-    (item) => item.rewardId.toString() === reward._id.toString() && item.status !== 'REJECTED'
+    (item) =>
+      item.rewardId.toString() === reward._id.toString() &&
+      item.status !== 'REJECTED' &&
+      (item.status === 'PENDING' || item.periodKey === currentPeriod)
   );
   if (claim) {
     return {
@@ -227,16 +252,19 @@ async function issueReward({
       reward.verificationMode === 'manual_claim' ||
       reward.verificationMode === 'admin_verified')
   ) {
+    const pendingMetadata = adVerification
+      ? { ...metadata, provider: 'ROBINADS', robinsRewardId: adVerification.rewardId }
+      : metadata;
     const pending = await RewardClaim.create(
       [
         {
           rewardId: reward._id,
           userId: user._id,
-          amount: reward.rewardAmount,
+          amount: 5,
           periodKey: period,
           referenceId: generateReference('PENDING'),
           status: 'PENDING',
-          metadata,
+          metadata: pendingMetadata,
         },
       ],
       { session }
@@ -246,24 +274,11 @@ async function issueReward({
   const eligibility = await getEligibility(user, reward, []);
   if (eligibility.state !== 'CLAIMABLE') throw new Error(eligibility.reason);
 
-  const wallet = await Wallet.findOne({ userId: user._id }).session(session);
-  if (!wallet) throw new Error('Wallet not found');
-  const before = Number(wallet.storyCoins.toString());
   const previousClaims = await RewardClaim.countDocuments({
     rewardId: reward._id,
     userId: user._id,
   }).session(session);
-  const schedule =
-    Array.isArray(reward.metadata?.schedule) && reward.metadata.schedule.length
-      ? reward.metadata.schedule
-      : null;
-  const amount = schedule ? Number(schedule[previousClaims % schedule.length]) : reward.rewardAmount;
-  const after = before + amount;
-  wallet.storyCoins = mongoose.Types.Decimal128.fromString(after.toFixed(2));
-  wallet.totalEarned = mongoose.Types.Decimal128.fromString(
-    (Number(wallet.totalEarned.toString()) + amount).toFixed(2)
-  );
-  await wallet.save({ session });
+  const amount = 5;
 
   if (reward.metadata?.schedule) {
     const today = periodKey(new Date(), 'daily');
@@ -283,6 +298,19 @@ async function issueReward({
   }
 
   const referenceId = generateReference('REWARD');
+  const credit = await creditPromotionalCoins({
+    userId: user._id,
+    reference: referenceId,
+    rewardAdId: adVerification?.rewardId || null,
+    rewardTargetId: String(reward._id),
+    verified: true,
+    metadata: {
+      rewardId: reward._id,
+      taskId,
+      source: adVerification ? 'ROBINADS' : reward.type,
+    },
+    session,
+  });
   const mergedMetadata = adVerification
     ? { ...metadata, provider: 'ROBINADS', robinsRewardId: adVerification.rewardId }
     : metadata;
@@ -298,30 +326,6 @@ async function issueReward({
         referenceId,
         verifiedAt: reward.verificationMode === 'server' || adVerification ? new Date() : null,
         metadata: mergedMetadata,
-      },
-    ],
-    { session }
-  );
-
-  await Transaction.create(
-    [
-      {
-        walletId: wallet._id,
-        userId: user._id,
-        type: adVerification ? 'AD_REWARD' : 'BONUS',
-        provider: adVerification ? 'ROBINADS' : 'SYSTEM',
-        amount: mongoose.Types.Decimal128.fromString(amount.toFixed(2)),
-        reference: referenceId,
-        ...(adVerification ? { externalReference: adVerification.rewardId } : {}),
-        description: reward.name,
-        status: 'SUCCESS',
-        balanceBefore: mongoose.Types.Decimal128.fromString(before.toFixed(2)),
-        balanceAfter: mongoose.Types.Decimal128.fromString(after.toFixed(2)),
-        metadata: {
-          source: adVerification ? 'ROBINADS' : reward.type,
-          rewardId: reward._id,
-          ...(adVerification ? { robinsRewardId: adVerification.rewardId } : {}),
-        },
       },
     ],
     { session }
@@ -345,7 +349,13 @@ async function issueReward({
     { session }
   );
 
-  return { claim: claim[0], balance: after, amount, rewardName: reward.name, rewardId: reward._id };
+  return {
+    claim: claim[0],
+    balance: credit.wallet.totalStoryCoins,
+    amount,
+    rewardName: reward.name,
+    rewardId: reward._id,
+  };
 }
 
 export default async function rewardRoutes(fastify) {
@@ -374,6 +384,7 @@ export default async function rewardRoutes(fastify) {
       const rewardStates = await Promise.all(
         rewards.map(async (reward) => ({
           ...reward.toObject(),
+          rewardAmount: 5,
           eligibility: await getEligibility(request.user, reward, claims),
           claimed: Boolean(
             claimMap.get(`${reward._id}:${periodKey(new Date(), reward.recurrenceType)}`)
@@ -388,7 +399,9 @@ export default async function rewardRoutes(fastify) {
       });
 
       sendSuccess(reply, {
-        balance: wallet ? formatDecimal(wallet.storyCoins) : 0,
+        balance: wallet ? formatDecimal(wallet.promotionalCoins) : 0,
+        totalStoryCoins: wallet ? formatDecimal(wallet.storyCoins) : 0,
+        purchasedCoins: wallet ? formatDecimal(wallet.purchasedCoins) : 0,
         streak: request.user.rewardStats || {},
         daily: daily
           ? {
@@ -424,6 +437,7 @@ export default async function rewardRoutes(fastify) {
         provider = 'ROBINADS',
         rewardId: robinsRewardId,
         transactionId,
+        token,
         receipt,
       } = request.body || {};
 
@@ -469,6 +483,7 @@ export default async function rewardRoutes(fastify) {
           rewardId: resolvedRobinsId,
           purpose: 'REWARD_CLAIM',
           targetId: String(reward._id),
+          token: token || receipt?.token,
           session,
         });
       }
@@ -533,6 +548,9 @@ export default async function rewardRoutes(fastify) {
   fastify.post('/admin', async (request, reply) => {
     try {
       if (!(await verifyAdmin(request, reply))) return;
+      if (Number(request.body?.rewardAmount) !== 5) {
+        return sendError(reply, 'Promotional rewards must be exactly 5 coins.', 400);
+      }
       const reward = await Reward.create({ ...request.body, createdBy: request.user._id });
       sendSuccess(reply, reward, 'Reward created', 201);
     } catch (error) {
@@ -569,7 +587,22 @@ export default async function rewardRoutes(fastify) {
         session,
         period: `${claim.periodKey}:approved`,
         approved: true,
-        metadata: { approvedClaimId: claim._id },
+        adVerification: claim.metadata?.robinsRewardId
+          ? {
+              rewardId: claim.metadata.robinsRewardId,
+              provider: 'ROBINADS',
+              verified: true,
+            }
+          : null,
+        metadata: {
+          approvedClaimId: claim._id,
+          ...(claim.metadata?.robinsRewardId
+            ? {
+                provider: 'ROBINADS',
+                robinsRewardId: claim.metadata.robinsRewardId,
+              }
+            : {}),
+        },
       });
       claim.status = 'CLAIMED';
       claim.verifiedAt = new Date();
@@ -607,51 +640,28 @@ export default async function rewardRoutes(fastify) {
         return;
       }
       const { userId, amount, reason = 'Administrative reward' } = request.body || {};
-      if (!userId || !Number.isInteger(Number(amount)) || Number(amount) <= 0) {
+      if (!userId || Number(amount) !== 5) {
         await session.abortTransaction();
-        return sendError(reply, 'User and positive amount are required', 400);
+        return sendError(reply, 'User and exactly 5 promotional coins are required', 400);
       }
       const user = await User.findById(userId).session(session);
       if (!user) {
         await session.abortTransaction();
         return sendError(reply, 'User not found', 404);
       }
-      const wallet = await Wallet.findOne({ userId }).session(session);
-      if (!wallet) {
-        await session.abortTransaction();
-        return sendError(reply, 'Wallet not found', 404);
-      }
-      const before = Number(wallet.storyCoins.toString());
-      const after = before + Number(amount);
       const referenceId = generateReference('ADMIN');
-      wallet.storyCoins = mongoose.Types.Decimal128.fromString(after.toFixed(2));
-      wallet.totalEarned = mongoose.Types.Decimal128.fromString(
-        (Number(wallet.totalEarned.toString()) + Number(amount)).toFixed(2)
-      );
-      await wallet.save({ session });
-      await Transaction.create(
-        [
-          {
-            walletId: wallet._id,
-            userId,
-            type: 'BONUS',
-            provider: 'SYSTEM',
-            amount: mongoose.Types.Decimal128.fromString(Number(amount).toFixed(2)),
-            reference: referenceId,
-            description: reason,
-            status: 'SUCCESS',
-            balanceBefore: before,
-            balanceAfter: after,
-            metadata: { source: 'ADMIN', adminId: request.user._id },
-          },
-        ],
-        { session }
-      );
+      const credit = await creditPromotionalCoins({
+        userId,
+        reference: referenceId,
+        verified: true,
+        metadata: { source: 'ADMIN', adminId: request.user._id, reason },
+        session,
+      });
       await RewardAudit.create(
         [
           {
             userId,
-            amount: Number(amount),
+            amount: 5,
             source: 'ADMIN',
             action: 'ISSUED',
             status: 'SUCCESS',
@@ -669,14 +679,14 @@ export default async function rewardRoutes(fastify) {
       createNotification({
         userId,
         type: 'REWARD_EARNED',
-        title: `You received ${amount} coins 🪙`,
+        title: 'You received 5 promotional coins 🪙',
         message: reason,
         targetUrl: '#wallet',
         icon: 'https://ui-avatars.com/api/?name=AfriStory&background=d4a017&color=fff&size=192',
         dedupeKey: `admin_grant_${referenceId}`,
       }).catch((err) => fastify.log.error('Push error:', err));
 
-      sendSuccess(reply, { balance: after }, 'Reward granted');
+      sendSuccess(reply, { balance: credit.wallet.totalStoryCoins }, 'Reward granted');
     } catch (error) {
       await session.abortTransaction();
       sendError(reply, 'Failed to grant reward', 400, error.message);
