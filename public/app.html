@@ -1920,7 +1920,7 @@
     .profile-cover{background:linear-gradient(120deg,#2b2114,#171717 52%,#222);border:1px solid #343434;border-radius:20px;min-height:230px;padding:28px 32px;position:relative;overflow:hidden}.profile-cover[style]{background-position:center;background-size:cover}.profile-header{align-items:flex-end;display:flex;gap:22px;min-height:174px}.profile-avatar{align-items:center;background:#d4a017;color:#111;display:flex;flex:0 0 104px;font-family:Georgia,serif;font-size:48px;height:104px;justify-content:center;overflow:hidden;border-radius:50%;}.profile-avatar img{height:100%;object-fit:cover;width:100%}.profile-identity{max-width:650px}.profile-identity h1{font-size:clamp(30px,4vw,52px)}.profile-handle{margin:4px 0 10px}.profile-bio{color:#ddd;margin:0}.profile-location{color:#d4a017;font-size:13px;margin-top:10px}.profile-actions{display:flex;gap:10px;margin-left:auto}.profile-tabs{border-bottom:1px solid #343434;display:flex;gap:24px;overflow:auto;padding:0 4px}.profile-tab{background:none;border:0;border-bottom:2px solid transparent;color:#999;padding:16px 4px;white-space:nowrap;transition:color 0.2s, border-color 0.2s}.profile-tab.active,.profile-tab:hover{border-color:#d4a017;color:#f5f5f5}.profile-panel{padding-top:30px}.profile-summary-grid{display:grid;gap:30px;grid-template-columns:1fr 1fr}.profile-section-heading{align-items:end;display:flex;justify-content:space-between;margin:28px 0 18px}.profile-section-heading h2{font-size:24px}.profile-list{display:grid;gap:10px}.profile-list-row{align-items:center;background:#1b1b1b;border:1px solid #343434;border-radius:12px;display:flex;gap:14px;padding:12px}.profile-list-row strong{display:block}.profile-list-row p{color:#999;font-size:13px;margin:2px 0 0}.profile-list-row .progress{background:#343434;height:4px;margin-top:8px;width:180px}.profile-list-row .progress i{background:#d4a017;display:block;height:100%}.profile-story-grid{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-story-grid .series-card{min-width:0}.interest-list{display:flex;flex-wrap:wrap;gap:8px}.interest-chip{background:#242424;border:1px solid #4a4a4a;border-radius:999px;color:#f5f5f5;padding:7px 13px}.profile-about{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr));max-width:680px}.profile-about div{background:#1b1b1b;border-bottom:1px solid #343434;border-radius:12px;padding:14px}.profile-about span{color:#999;display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase}.profile-edit-panel{border-top:1px solid #343434;margin-top:30px;padding-top:24px}.profile-edit-grid{display:grid;gap:14px;grid-template-columns:repeat(2,minmax(0,1fr))}.profile-form label{color:#bbb;display:grid;font-size:12px;gap:6px}.profile-form input,.profile-form textarea,.profile-form select{background:#111;border:1px solid #444;border-radius:10px;color:#f5f5f5;padding:11px;transition:border-color 0.2s, box-shadow 0.2s}.profile-form input:focus,.profile-form textarea:focus,.profile-form select:focus{outline:none;border-color:#d4a017;box-shadow:0 0 0 3px rgba(212,160,23,0.16)}.profile-form select[multiple]{min-height:130px}.profile-privacy{display:flex;flex-wrap:wrap;gap:18px;margin:16px 0}.profile-privacy label{display:flex;gap:8px}.profile-empty{border:1px dashed #444;border-radius:14px;color:#999;padding:24px}.profile-empty button{margin-top:12px}@media(max-width:700px){.profile-cover{padding:22px 18px}.profile-header{align-items:flex-start;flex-wrap:wrap}.profile-avatar{flex-basis:78px;font-size:36px;height:78px}.profile-actions{margin-left:0;width:100%}.profile-actions .button{flex:1}.profile-summary-grid,.profile-about,.profile-edit-grid{grid-template-columns:1fr}.profile-tabs{gap:16px}.profile-story-grid{grid-template-columns:1fr 1fr}}
 
     /* ==============================================================
-       12. CREATOR STUDIO PORTABLE CARDS & ONE-TIME WELCOME BANNER
+       12. CREATOR STUDIO PORTABLE CARDS & ONE-TIME WELCOME CARD
     ============================================================== */
     .creator-portable-card {
       background: linear-gradient(145deg, rgba(26, 26, 30, 0.92) 0%, rgba(16, 16, 19, 0.96) 100%);
@@ -1945,18 +1945,21 @@
       margin: 0 0 16px;
     }
 
+    /* Compact One-Time Creator Approval Card (Not full-width, auto-dismisses & never repeats) */
     .creator-welcome-banner {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
-      background: linear-gradient(135deg, rgba(212, 160, 23, 0.15) 0%, rgba(22, 22, 26, 0.96) 65%);
+      gap: 12px;
+      width: 100%;
+      max-width: 560px;
+      background: linear-gradient(135deg, rgba(212, 160, 23, 0.16) 0%, rgba(22, 22, 26, 0.96) 72%);
       border: 1px solid rgba(212, 160, 23, 0.45);
-      border-radius: 16px;
-      padding: 15px 18px;
-      margin: 0 0 18px 0;
-      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
-      animation: fadeInOverlay 0.25s ease-out;
+      border-radius: 14px;
+      padding: 11px 14px;
+      margin: 0 0 16px 0;
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+      animation: fadeInOverlay 0.22s ease-out;
     }
     .creator-welcome-banner.hidden {
       display: none !important;
@@ -1964,50 +1967,51 @@
     .creator-welcome-left {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       min-width: 0;
     }
     .creator-welcome-badge {
-      width: 38px;
-      height: 38px;
-      border-radius: 10px;
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
       background: rgba(212, 160, 23, 0.2);
       border: 1px solid rgba(212, 160, 23, 0.5);
       color: #f0c44d;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
+      font-size: 15px;
       flex-shrink: 0;
     }
     .creator-welcome-text strong {
       display: block;
       color: #fff;
-      font-size: 14.5px;
+      font-size: 13.5px;
       font-family: 'Space Grotesk', sans-serif;
-      margin-bottom: 2px;
+      margin-bottom: 1px;
     }
     .creator-welcome-text span {
       display: block;
-      color: #bbb;
-      font-size: 12.5px;
-      line-height: 1.4;
+      color: #c2c2cc;
+      font-size: 12px;
+      line-height: 1.35;
     }
     .creator-welcome-actions {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       flex-shrink: 0;
     }
     .creator-welcome-actions .button {
-      padding: 8px 14px;
-      font-size: 12.5px;
-      border-radius: 9px;
+      padding: 6px 11px;
+      font-size: 11.5px;
+      border-radius: 8px !important;
+      white-space: nowrap;
     }
-    @media (max-width: 640px) {
+    @media (max-width: 560px) {
       .creator-welcome-banner {
-        flex-direction: column;
-        align-items: flex-start;
+        flex-wrap: wrap;
+        padding: 11px 12px;
       }
       .creator-welcome-actions {
         width: 100%;
@@ -2265,7 +2269,6 @@
       padding: 2px 4px 6px 2px !important;
       background: transparent !important;
     }
-    /* Force EVERY notification item (whether .notif-card-item or .data-row) into its own standalone card */
     #notification-list > *:not(#empty-notifications),
     #notification-list .notif-card-item,
     #notification-list .data-row {
@@ -2793,17 +2796,17 @@
 
         <!-- Approved Creator Dashboard -->
         <div id="creator-dashboard" class="hidden">
-          <!-- One-Time Portable Approval Congratulations Card -->
+          <!-- Compact One-Time Approval Card (Shown once, auto-dismisses & never repeats) -->
           <div id="creator-welcome-banner" class="creator-welcome-banner hidden">
             <div class="creator-welcome-left">
               <div class="creator-welcome-badge" aria-hidden="true">✦</div>
               <div class="creator-welcome-text">
-                <strong>Creator Studio Unlocked</strong>
-                <span>Your creator profile is approved. Create a series or upload your first episode now.</span>
+                <strong>Creator Studio Approved</strong>
+                <span>You can now create a series and upload episodes.</span>
               </div>
             </div>
             <div class="creator-welcome-actions">
-              <button class="button button-primary" type="button" id="creator-welcome-start-btn">Start uploading</button>
+              <button class="button button-primary" type="button" id="creator-welcome-start-btn">Upload</button>
               <button class="button button-quiet" type="button" id="creator-welcome-dismiss-btn">Got it</button>
             </div>
           </div>
@@ -3477,41 +3480,116 @@
       });
 
       // ==============================================================
-      // E. ONE-TIME CREATOR STUDIO APPROVAL WELCOME BANNER
+      // E. ONE-TIME CREATOR STUDIO APPROVAL WELCOME CARD
+      //    - Appears ONLY once when an approved creator first enters Studio
+      //    - Auto-hides after 10s, on any click/entry action, or on leaving
+      //    - Blocked from re-appearing on future visits even if main.js unhides it
       // ==============================================================
-      const CREATOR_WELCOME_KEY = 'afristory_creator_welcome_seen_v1';
+      const CREATOR_WELCOME_BASE_KEY = 'afristory_creator_welcome_seen_v2';
+      const creatorSection = document.getElementById('section-creator');
       const creatorDashboard = document.getElementById('creator-dashboard');
       const creatorWelcomeBanner = document.getElementById('creator-welcome-banner');
+      let creatorWelcomeShownThisVisit = false;
+      let creatorWelcomeAutoTimer = null;
 
-      function markCreatorWelcomeSeen() {
-        try { localStorage.setItem(CREATOR_WELCOME_KEY, '1'); } catch (_) {}
-        if (creatorWelcomeBanner) creatorWelcomeBanner.classList.add('hidden');
+      function getCreatorWelcomeKeys() {
+        const keys = [CREATOR_WELCOME_BASE_KEY, 'afristory_creator_welcome_seen_v1'];
+        const handleText = (document.getElementById('profile-handle')?.textContent || '').trim().toLowerCase();
+        const emailVal = (document.getElementById('profile-email')?.value || '').trim().toLowerCase();
+        if (handleText && handleText !== '@username') keys.push(`${CREATOR_WELCOME_BASE_KEY}_${handleText}`);
+        if (emailVal) keys.push(`${CREATOR_WELCOME_BASE_KEY}_${emailVal}`);
+        return keys;
+      }
+
+      function isCreatorWelcomeSeen() {
+        try {
+          return getCreatorWelcomeKeys().some((k) => localStorage.getItem(k) === '1');
+        } catch (_) {
+          return false;
+        }
+      }
+
+      function persistCreatorWelcomeSeen() {
+        try {
+          getCreatorWelcomeKeys().forEach((k) => localStorage.setItem(k, '1'));
+        } catch (_) {}
+      }
+
+      function dismissCreatorWelcomeCard() {
+        if (creatorWelcomeAutoTimer) {
+          clearTimeout(creatorWelcomeAutoTimer);
+          creatorWelcomeAutoTimer = null;
+        }
+        persistCreatorWelcomeSeen();
+        if (creatorWelcomeBanner) {
+          creatorWelcomeBanner.classList.add('hidden');
+        }
       }
 
       function syncCreatorWelcomeBanner() {
         if (!creatorDashboard || !creatorWelcomeBanner) return;
-        if (creatorDashboard.classList.contains('hidden')) return;
-        let alreadySeen = false;
-        try { alreadySeen = localStorage.getItem(CREATOR_WELCOME_KEY) === '1'; } catch (_) {}
-        if (alreadySeen) {
+
+        // If the user left Studio or dashboard is hidden, hide banner and lock it seen if already displayed
+        const studioHidden = !creatorSection || creatorSection.classList.contains('hidden');
+        const dashboardHidden = creatorDashboard.classList.contains('hidden');
+        if (studioHidden || dashboardHidden) {
+          if (creatorWelcomeShownThisVisit) {
+            dismissCreatorWelcomeCard();
+          } else {
+            creatorWelcomeBanner.classList.add('hidden');
+          }
+          return;
+        }
+
+        // If already seen previously, strictly keep hidden
+        if (isCreatorWelcomeSeen() && !creatorWelcomeShownThisVisit) {
           creatorWelcomeBanner.classList.add('hidden');
-        } else {
+          return;
+        }
+
+        // First-ever approved visit: show once, persist seen immediately, and auto-dismiss after 10s
+        if (!creatorWelcomeShownThisVisit) {
+          creatorWelcomeShownThisVisit = true;
+          persistCreatorWelcomeSeen();
           creatorWelcomeBanner.classList.remove('hidden');
-          try { localStorage.setItem(CREATOR_WELCOME_KEY, '1'); } catch (_) {}
+          creatorWelcomeAutoTimer = setTimeout(dismissCreatorWelcomeCard, 10000);
         }
       }
 
-      if (creatorDashboard) {
-        new MutationObserver(syncCreatorWelcomeBanner).observe(creatorDashboard, {
+      // Observe both #section-creator and #creator-dashboard for visibility changes
+      [creatorSection, creatorDashboard].forEach((el) => {
+        if (el) {
+          new MutationObserver(syncCreatorWelcomeBanner).observe(el, {
+            attributes: true,
+            attributeFilter: ['class']
+          });
+        }
+      });
+
+      // Guard #creator-welcome-banner itself so main.js cannot force it visible after dismissal
+      if (creatorWelcomeBanner) {
+        new MutationObserver(() => {
+          if (!creatorWelcomeBanner.classList.contains('hidden') && isCreatorWelcomeSeen() && !creatorWelcomeShownThisVisit) {
+            creatorWelcomeBanner.classList.add('hidden');
+          }
+        }).observe(creatorWelcomeBanner, {
           attributes: true,
-          attributeFilter: ['class']
+          attributeFilter: ['class', 'style']
         });
       }
 
-      document.getElementById('creator-welcome-dismiss-btn')?.addEventListener('click', markCreatorWelcomeSeen);
+      document.getElementById('creator-welcome-dismiss-btn')?.addEventListener('click', dismissCreatorWelcomeCard);
       document.getElementById('creator-welcome-start-btn')?.addEventListener('click', () => {
-        markCreatorWelcomeSeen();
+        dismissCreatorWelcomeCard();
         document.querySelector('[data-action="open-upload"]')?.click();
+      });
+
+      // Clicking any Studio action or card ("click and enter the page") dismisses it permanently
+      creatorDashboard?.addEventListener('click', (e) => {
+        if (e.target.closest('#creator-welcome-banner')) return;
+        if (creatorWelcomeShownThisVisit || isCreatorWelcomeSeen()) {
+          dismissCreatorWelcomeCard();
+        }
       });
 
       // ==============================================================
@@ -3653,7 +3731,7 @@
 
       document.addEventListener('click', (e) => {
         if (e.target.closest('[data-action="open-upload"]')) {
-          markCreatorWelcomeSeen();
+          dismissCreatorWelcomeCard();
           activeUploadState.userMinimized = false;
           if (activeUploadState.active) {
             uploadModal?.classList.remove('hidden');
