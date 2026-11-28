@@ -1,364 +1,662 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AfroStory | Admin Portal</title>
-    <!-- SweetAlert2 for beautiful popups -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <style>
-        /* AFROSTORY EXACT DARK THEME */
-        :root { 
-            --bg: #111111; 
-            --dark: #0a0a0a; 
-            --card-bg: #1b1b1b;
-            --text: #f5f5f5; 
-            --muted: #999999;
-            --primary: #d4a017; 
-            --border: #333333; 
-            --success: #2ecc71; 
-            --danger: #e74c3c; 
-        }
-        
-        body { 
-            margin: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; 
-            background: var(--bg); color: var(--text); 
-            display: flex; height: 100vh; overflow: hidden; 
-        }
-        
-        /* Mobile Header */
-        .mobile-header {
-            display: none; background: var(--dark); color: #fff;
-            padding: 15px 20px; align-items: center; justify-content: space-between;
-            position: fixed; top: 0; left: 0; right: 0; z-index: 998;
-            border-bottom: 1px solid var(--border);
-        }
-        .mobile-header-brand { font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: 1px; display: flex; gap: 8px; align-items: center; }
-        .mobile-header-brand span { color: var(--primary); }
-        .mobile-menu-btn { background: transparent; border: none; color: #fff; font-size: 26px; cursor: pointer; padding: 0; }
+const API_BASE = '/api/admin';
 
-        /* Sidebar Navigation */
-        .sidebar { 
-            width: 260px; background: var(--dark); color: #fff; 
-            display: flex; flex-direction: column; padding-top: 20px;
-            transition: transform 0.3s ease-in-out;
-            z-index: 1000; border-right: 1px solid var(--border);
-            overflow-y: auto;
-        }
-        .sidebar-brand { font-size: 24px; font-weight: 900; text-align: center; color: var(--text); margin-bottom: 30px; letter-spacing: 1px; }
-        .sidebar-brand span { color: var(--primary); }
-        
-        .sidebar-category { font-size: 11px; text-transform: uppercase; color: #666; letter-spacing: 1.5px; padding: 10px 25px 5px; font-weight: 700; margin-top: 10px; }
-        .nav-item { padding: 14px 25px; cursor: pointer; border-left: 3px solid transparent; transition: 0.2s; color: var(--muted); display: block; width: 100%; text-align: left; background: none; font-size: 14px; font-family: inherit; font-weight: 600; border-top:none; border-right:none; border-bottom:none; }
-        .nav-item:hover, .nav-item.active { background: var(--card-bg); border-left-color: var(--primary); color: #fff; }
-        
-        .sidebar-close-btn { display: none; position: absolute; top: 15px; right: 15px; background: transparent; border: none; color: #fff; font-size: 28px; cursor: pointer; }
-        
-        /* Main content */
-        .main-content { flex: 1; padding: 40px; overflow-y: auto; background: var(--bg); }
-        .view-section { display: none; }
-        .view-section.active { display: block; animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        h2 { margin-top: 0; font-size: 26px; color: #fff; margin-bottom: 24px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+// SweetAlert Dark Theme Configuration
+const swalConfig = {
+    background: '#1b1b1b',
+    color: '#f5f5f5',
+    confirmButtonColor: '#d4a017',
+    cancelButtonColor: '#333'
+};
 
-        /* Dashboard Cards */
-        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .card { background: var(--card-bg); padding: 25px; border-radius: 12px; border: 1px solid var(--border); }
-        .card h3 { margin: 0 0 10px 0; font-size: 12px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.5px; }
-        .card p { margin: 0; font-size: 32px; font-weight: 800; color: var(--primary); }
-        
-        /* Tables */
-        .table-container { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); overflow-x: auto; margin-bottom: 30px; }
-        table { width: 100%; border-collapse: collapse; text-align: left; min-width: 600px; }
-        th, td { padding: 18px 20px; border-bottom: 1px solid var(--border); font-size: 14px; }
-        th { background: #151515; font-weight: 600; color: #888; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
-        tr:hover td { background: rgba(255,255,255,0.02); }
-        tr:last-child td { border-bottom: none; }
-        
-        /* Forms */
-        .admin-form { background: var(--card-bg); padding: 25px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 30px; }
-        .form-group { margin-bottom: 18px; }
-        .form-group label { display: block; color: #bbb; font-size: 13px; margin-bottom: 8px; font-weight: 600; }
-        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 12px; background: #111; border: 1px solid #444; color: #fff; border-radius: 6px; box-sizing: border-box; font-family: inherit; }
-        .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); }
-        
-        /* Buttons & Badges */
-        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-        .btn-success { background: rgba(46, 204, 113, 0.15); color: var(--success); border: 1px solid var(--success); }
-        .btn-success:hover { background: var(--success); color: #111; }
-        .btn-danger { background: rgba(231, 76, 60, 0.15); color: var(--danger); border: 1px solid var(--danger); }
-        .btn-danger:hover { background: var(--danger); color: #fff; }
-        .btn-primary { background: var(--primary); color: #111; border: 1px solid var(--primary); padding: 10px 20px; }
-        .btn-primary:hover { background: #b8860b; border-color: #b8860b; }
-        
-        .badge { padding: 5px 10px; border-radius: 12px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
-        .badge-pending { background: rgba(212, 160, 23, 0.15); color: var(--primary); border: 1px solid rgba(212, 160, 23, 0.5); }
-        .badge-active { background: rgba(46, 204, 113, 0.15); color: var(--success); border: 1px solid rgba(46, 204, 113, 0.5); }
-        
-        .empty-state { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; border: 1px dashed #333; border-radius: 8px; }
-        .action-cell { display: flex; gap: 8px; }
+const $ = selector => document.querySelector(selector);
+const $$ = selector => [...document.querySelectorAll(selector)];
 
-        /* Initial Loader */
-        #page-loader { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; font-weight: bold; color: var(--primary); font-size: 18px; letter-spacing: 1px; }
+function getAuthHeaders() {
+    const headers = { 'Content-Type': 'application/json' };
+    const token =
+        localStorage.getItem('token') ||
+        localStorage.getItem('authToken') ||
+        localStorage.getItem('afristory_token');
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+    return headers;
+}
 
-        /* Responsive */
-        @media (max-width: 800px) {
-            .mobile-header { display: flex; }
-            .main-content { padding-top: 80px; padding-left: 20px; padding-right: 20px; }
-            .sidebar { position: fixed; top: 0; left: 0; height: 100%; width: 280px; transform: translateX(-100%); }
-            .sidebar.open { transform: translateX(0); box-shadow: 5px 0 25px rgba(0,0,0,0.8); }
-            .sidebar-close-btn { display: block; }
-            .sidebar-brand { margin-top: 10px; }
-            .card-grid { grid-template-columns: 1fr; }
-        }
-    </style>
-</head>
-<body>
+// ============================================================================
+// CORE API WRAPPER
+// ============================================================================
+async function adminApi(endpoint, method = 'GET', body = null) {
+    const options = {
+        method,
+        credentials: 'include',
+        headers: getAuthHeaders()
+    };
 
-    <!-- Security Loader -->
-    <div id="page-loader">Verifying Admin Access...</div>
+    if (body) {
+        options.body = JSON.stringify(body);
+    } else if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
+        options.body = '{}';
+    }
 
-    <!-- Mobile Header -->
-    <div class="mobile-header">
-        <div class="mobile-header-brand">AFRO<span>STORY</span></div>
-        <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
-    </div>
+    try {
+        const response = await fetch(`${API_BASE}${endpoint}`, options);
 
-    <!-- Sidebar Navigation -->
-    <div class="sidebar" id="admin-sidebar">
-        <button class="sidebar-close-btn" onclick="toggleSidebar()">×</button>
-        <div class="sidebar-brand">AFRO<span>STORY</span></div>
-        
-        <div class="sidebar-category">Overview</div>
-        <button class="nav-item active" onclick="switchTab('dashboard')">Dashboard</button>
-        
-        <div class="sidebar-category">Community & Creators</div>
-        <button class="nav-item" onclick="switchTab('users'); loadUsers();">User Management</button>
-        <button class="nav-item" onclick="switchTab('creators'); loadCreators();">Creator Approvals</button>
-        
-        <div class="sidebar-category">Homepage Content</div>
-        <button class="nav-item" onclick="switchTab('image-slides'); loadSlides();">Promo Image Slides</button>
-        <button class="nav-item" onclick="switchTab('video-announcements'); loadVideoAnnouncements();">Video Announcements</button>
-        
-        <div class="sidebar-category">Operations</div>
-        <button class="nav-item" onclick="switchTab('moderation'); loadReports();">Moderation</button>
-        <button class="nav-item" onclick="switchTab('payouts'); loadPayouts();">Financial Payouts</button>
-        <button class="nav-item" onclick="switchTab('financial-config'); loadFinancialConfig();">Financial Configuration</button>
-        
-        <button class="nav-item" onclick="window.location.href='/'" style="margin-top: 30px; border-top: 1px solid var(--border);">Exit to App</button>
-    </div>
-
-    <!-- Main Content Area -->
-    <div class="main-content">
-        
-        <!-- ================= DASHBOARD TAB ================= -->
-        <div id="dashboard" class="view-section active">
-            <h2>Platform Overview</h2>
-            <div class="card-grid" id="stats-grid">
-                <div class="card"><h3>Total Users</h3><p id="stat-users">-</p></div>
-                <div class="card"><h3>Active Creators</h3><p id="stat-creators">-</p></div>
-                <div class="card"><h3>Pending Approvals</h3><p id="stat-pending">-</p></div>
-            </div>
-        </div>
-
-        <!-- ================= USERS TAB ================= -->
-        <div id="users" class="view-section">
-            <h2>User Management</h2>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr><th>User</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr>
-                    </thead>
-                    <tbody id="users-tbody"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ================= CREATOR APPROVALS TAB ================= -->
-        <div id="creators" class="view-section">
-            <h2>Pending Creator Applications</h2>
-            <p style="color: #999; margin-bottom: 20px;">Review applications from users requesting Creator Studio access.</p>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>User Details</th>
-                            <th>Brand / Pen Name</th>
-                            <th>Bio</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="creators-tbody">
-                        <tr><td colspan="5"><div class="empty-state">Loading applications...</div></td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ================= PROMO IMAGE SLIDESHOW TAB ================= -->
-        <div id="image-slides" class="view-section">
-            <h2>Manage Promotional Images</h2>
-            <p style="color: #999; margin-bottom: 20px;">These images appear in the "Discover AfroStory" carousel section on the homepage.</p>
-            
-            <form id="image-slide-form" class="admin-form">
-                <h3 style="margin-top:0; color:#fff;">Add New Image Slide</h3>
-                <div class="form-group">
-                    <label>Main Headline</label>
-                    <input type="text" name="title" placeholder="e.g. Explore African Stories" required>
-                </div>
-                <div class="form-group">
-                    <label>Sub-Description</label>
-                    <textarea name="description" rows="2" placeholder="Join our community to explore original content..." required></textarea>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                    <div class="form-group">
-                        <label>Button Text</label>
-                        <input type="text" name="buttonText" placeholder="e.g. Join the Community">
-                    </div>
-                    <div class="form-group">
-                        <label>Button Target URL</label>
-                        <input type="text" name="targetUrl" placeholder="e.g. /register or #discover">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Upload High-Res Background Image (Landscape)</label>
-                    <input type="file" name="imageFile" accept="image/jpeg,image/png,image/webp" required>
-                </div>
-                <button type="submit" class="btn btn-primary">Upload Image Slide</button>
-            </form>
-
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr><th>Preview</th><th>Headline</th><th>Button</th><th>Status</th><th>Actions</th></tr>
-                    </thead>
-                    <tbody id="image-slides-tbody">
-                        <tr><td colspan="5"><div class="empty-state">Loading image slides...</div></td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ================= FEATURED VIDEO ANNOUNCEMENTS TAB ================= -->
-        <div id="video-announcements" class="view-section">
-            <h2>Manage Video Announcements</h2>
-            <p style="color: #999; margin-bottom: 20px;">These videos play automatically in the "Featured Announcements" player on the homepage.</p>
-            
-            <form id="video-slide-form" class="admin-form">
-                <h3 style="margin-top:0; color:#fff;">Add New Video Announcement</h3>
-                <div class="form-group">
-                    <label>Title</label>
-                    <input type="text" name="title" placeholder="e.g. New Stories Added Weekly" required>
-                </div>
-                <div class="form-group">
-                    <label>Short Description</label>
-                    <input type="text" name="description" placeholder="Check out our latest original content drops." required>
-                </div>
-                <div class="form-group">
-                    <label>Top Badge Text</label>
-                    <input type="text" name="badgeText" placeholder="e.g. PLATFORM UPDATE" value="PLATFORM UPDATE" required>
-                </div>
-                <div class="form-group">
-                    <label>Upload Video (MP4)</label>
-                    <input type="file" name="videoFile" accept="video/mp4,video/webm" required>
-                </div>
-                <button type="submit" class="btn btn-primary">Upload Video Announcement</button>
-            </form>
-
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr><th>Video File</th><th>Badge</th><th>Title</th><th>Status</th><th>Actions</th></tr>
-                    </thead>
-                    <tbody id="video-slides-tbody">
-                        <tr><td colspan="5"><div class="empty-state">Loading video announcements...</div></td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ================= MODERATION TAB ================= -->
-        <div id="moderation" class="view-section">
-            <h2>Content Moderation</h2>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr><th>Reported By</th><th>Target Type</th><th>Reason</th><th>Status</th><th>Actions</th></tr>
-                    </thead>
-                    <tbody id="reports-tbody"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ================= PAYOUTS TAB ================= -->
-        <div id="payouts" class="view-section">
-            <h2>Creator Withdrawal Requests</h2>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr><th>Creator Email</th><th>Amount</th><th>Method/Bank</th><th>Status</th><th>Actions</th></tr>
-                    </thead>
-                    <tbody id="payouts-tbody"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div id="financial-config" class="view-section">
-            <h2>Financial Configuration</h2>
-            <p style="color:#999;">Coin package prices are enforced at ₦2 per purchased coin. Promotional rewards remain fixed at 5 coins.</p>
-            <div class="table-container">
-                <h3>Purchased Coin Packages</h3>
-                <table>
-                    <thead><tr><th>Package</th><th>Coins</th><th>Price (₦)</th><th>Active</th></tr></thead>
-                    <tbody id="financial-coin-packages"></tbody>
-                </table>
-            </div>
-            <div class="table-container" style="margin-top:20px;">
-                <h3>VIP Unlock Credit Packages</h3>
-                <table>
-                    <thead><tr><th>Package</th><th>Purchased Coin Price</th><th>VIP Credits</th><th>Active</th></tr></thead>
-                    <tbody id="financial-vip-packages"></tbody>
-                </table>
-            </div>
-            <button id="save-financial-config" class="button button-primary" type="button" style="margin-top:16px;">Save financial configuration</button>
-            <div class="table-container" style="margin-top:28px;">
-                <h3>Reconcile Robins Ads Revenue</h3>
-                <form id="ad-revenue-reconcile-form">
-                    <label>Period start <input name="periodStart" type="datetime-local" required></label>
-                    <label>Period end <input name="periodEnd" type="datetime-local" required></label>
-                    <label>Actual net revenue (₦) <input name="providerNetRevenueNaira" type="number" min="0" step="0.01" required></label>
-                    <label>Batch reference (optional) <input name="reference" type="text"></label>
-                    <button class="button button-primary" type="submit">Reconcile period</button>
-                </form>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- UI Toggle Script -->
-    <script>
-        function toggleSidebar() {
-            const sidebar = document.getElementById('admin-sidebar');
-            sidebar.classList.toggle('open');
+        if (response.status === 401 || response.status === 403) {
+            window.location.replace('/');
+            return null;
         }
 
-        // Simple tab switcher for UI
-        function switchTab(tabId) {
-            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            
-            document.getElementById(tabId).classList.add('active');
-            event.target.classList.add('active');
+        const contentType = response.headers.get('content-type') || '';
+        let result;
 
-            if (window.innerWidth <= 800) {
-                document.getElementById('admin-sidebar').classList.remove('open');
+        if (contentType.includes('application/json')) {
+            result = await response.json();
+        } else {
+            const text = await response.text();
+            throw new Error(`Server returned ${response.status}: ${text || 'Empty response'}`);
+        }
+
+        if (!response.ok || result.success === false) {
+            throw new Error(result.message || result.error || `Request failed with HTTP ${response.status}`);
+        }
+
+        return (result.data !== undefined && result.data !== null) ? result.data : { success: true };
+    } catch (error) {
+        console.error(`Admin API Error [${method} ${endpoint}]:`, error);
+        if (window.Swal) {
+            Swal.fire({ title: 'Error', text: error.message, icon: 'error', ...swalConfig });
+        }
+        return null;
+    }
+}
+
+// ============================================================================
+// DIRECT CLOUDINARY UPLOAD
+// ============================================================================
+async function uploadToCloudinary(file, type) {
+    const signRes = await fetch(`/api/upload/sign?type=${type}`, { credentials: 'include' }).then(r => r.json());
+    if (!signRes || !signRes.data || !signRes.data.signature) {
+        throw new Error('Failed to secure upload connection');
+    }
+
+    const { signature, timestamp, apiKey, cloudName, folder } = signRes.data;
+    const url = `https://api.cloudinary.com/v1_1/${cloudName}/${type}/upload`;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('api_key', apiKey);
+    formData.append('timestamp', timestamp);
+    formData.append('signature', signature);
+    formData.append('folder', folder);
+
+    const response = await fetch(url, { method: 'POST', body: formData });
+    if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error?.message || 'Cloudinary direct upload failed');
+    }
+
+    const data = await response.json();
+    return data.secure_url;
+}
+
+// ============================================================================
+// DATA LOADERS
+// ============================================================================
+window.loadDashboardStats = async function() {
+    const data = await adminApi('/dashboard/stats');
+    if (!data) return;
+
+    const grid = $('#stats-grid');
+    if (!grid) return;
+
+    grid.innerHTML = `
+        <div class="card"><h3>Total Users</h3><p>${(data.totalUsers || 0).toLocaleString()}</p></div>
+        <div class="card"><h3>Verified Creators</h3><p>${(data.totalCreators || 0).toLocaleString()}</p></div>
+        <div class="card"><h3>Total Episodes</h3><p>${(data.totalEpisodes || 0).toLocaleString()}</p></div>
+        <div class="card"><h3>Total Transaction Vol</h3><p>₦${(data.totalVolume || 0).toLocaleString()}</p></div>
+        <div class="card" style="border-left: 4px solid #e74c3c;">
+            <h3>Pending Reports</h3><p>${data.pendingReports || 0}</p>
+        </div>
+        <div class="card" style="border-left: 4px solid #d4a017;">
+            <h3>Pending Payouts</h3><p>${data.pendingPayouts || 0}</p>
+        </div>
+    `;
+};
+
+window.loadFinancialConfig = async function() {
+    const data = await adminApi('/financial-config');
+    if (!data) return;
+    const coinBody = $('#financial-coin-packages');
+    const vipBody = $('#financial-vip-packages');
+    if (!coinBody || !vipBody) return;
+
+    coinBody.innerHTML = Object.entries(data.coinPackages || {}).map(([key, plan]) => {
+        const coins = Number(plan.coins) || 0;
+        const naira = Number(plan.naira) || coins * 2;
+        return `
+            <tr data-coin-package="${key}">
+                <td><strong>${key}</strong></td>
+                <td><input type="number" min="1" step="1" data-field="coins" value="${coins}"></td>
+                <td><input type="number" min="2" step="2" data-field="naira" value="${naira}"></td>
+                <td><input type="checkbox" data-field="active" ${plan.active ? 'checked' : ''}></td>
+            </tr>
+        `;
+    }).join('');
+
+    vipBody.innerHTML = Object.entries(data.vipPackages || {}).map(([key, plan]) => `
+        <tr data-vip-package="${key}">
+            <td><strong>${key}</strong></td>
+            <td><input type="number" min="0" step="1" data-field="purchasedCoinPrice" value="${Number(plan.purchasedCoinPrice) || 0}"></td>
+            <td><input type="number" min="0" step="1" data-field="vipCreditsGranted" value="${Number(plan.vipCreditsGranted) || 0}"></td>
+            <td><input type="checkbox" data-field="active" ${plan.active ? 'checked' : ''}></td>
+        </tr>
+    `).join('');
+
+    // Keep ₦2 per purchased coin synchronized when coins input changes
+    coinBody.querySelectorAll('tr[data-coin-package]').forEach(row => {
+        const coinsInput = row.querySelector('[data-field="coins"]');
+        const nairaInput = row.querySelector('[data-field="naira"]');
+        coinsInput?.addEventListener('input', () => {
+            const c = Math.max(1, Math.floor(Number(coinsInput.value) || 0));
+            nairaInput.value = String(c * 2);
+        });
+    });
+};
+
+async function saveFinancialConfig() {
+    const btn = $('#save-financial-config');
+    const originalText = btn ? btn.textContent : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+    }
+
+    try {
+        const coinPackages = {};
+        const vipPackages = {};
+
+        $$('#financial-coin-packages tr[data-coin-package]').forEach(row => {
+            const coins = Math.max(1, Math.floor(Number(row.querySelector('[data-field="coins"]').value) || 0));
+            const naira = Math.max(2, Math.floor(Number(row.querySelector('[data-field="naira"]').value) || coins * 2));
+            coinPackages[row.dataset.coinPackage] = {
+                coins,
+                naira,
+                promotionalCoins: 0,
+                active: row.querySelector('[data-field="active"]').checked
+            };
+        });
+
+        $$('#financial-vip-packages tr[data-vip-package]').forEach(row => {
+            vipPackages[row.dataset.vipPackage] = {
+                purchasedCoinPrice: Math.max(0, Math.floor(Number(row.querySelector('[data-field="purchasedCoinPrice"]').value) || 0)),
+                vipCreditsGranted: Math.max(0, Math.floor(Number(row.querySelector('[data-field="vipCreditsGranted"]').value) || 0)),
+                active: row.querySelector('[data-field="active"]').checked
+            };
+        });
+
+        const result = await adminApi('/financial-config', 'PUT', {
+            coinPackages,
+            vipPackages,
+            promoRewardAmount: 5
+        });
+
+        if (result) {
+            await loadFinancialConfig();
+            if (window.Swal) {
+                Swal.fire({
+                    title: 'Saved',
+                    text: 'Financial configuration updated.',
+                    icon: 'success',
+                    ...swalConfig
+                });
             }
         }
-    </script>
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    }
+}
 
-    <!-- External Admin JS File -->
-    <script src="/js/admin.js"></script>
-</body>
-</html>
+async function reconcileAdRevenue(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn ? submitBtn.textContent : '';
+
+    const values = new FormData(form);
+    const startRaw = values.get('periodStart');
+    const endRaw = values.get('periodEnd');
+    const startDate = new Date(startRaw);
+    const endDate = new Date(endRaw);
+
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || endDate <= startDate) {
+        if (window.Swal) {
+            Swal.fire({
+                title: 'Invalid Period',
+                text: 'Please choose a valid start and end date where end is after start.',
+                icon: 'warning',
+                ...swalConfig
+            });
+        }
+        return;
+    }
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Reconciling...';
+    }
+
+    try {
+        const result = await adminApi('/ad-revenue/reconcile', 'POST', {
+            periodStart: startDate.toISOString(),
+            periodEnd: endDate.toISOString(),
+            providerNetRevenueNaira: Number(values.get('providerNetRevenueNaira')),
+            reference: String(values.get('reference') || '').trim() || undefined
+        });
+
+        if (result) {
+            form.reset();
+            loadDashboardStats();
+            if (window.Swal) {
+                Swal.fire({
+                    title: 'Reconciled',
+                    text: `Ad revenue batch processed. ${result.promotedCount || 0} creator earnings became available.`,
+                    icon: 'success',
+                    ...swalConfig
+                });
+            }
+        }
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        }
+    }
+}
+
+window.loadUsers = async function() {
+    const tbody = $('#users-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Loading users...</td></tr>';
+
+    const data = await adminApi('/users?limit=50');
+    if (!data || !data.users || !data.users.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No users found.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = data.users.map(user => `
+        <tr>
+            <td><strong>${user.username || 'Unknown'}</strong></td>
+            <td>${user.email || 'No email'}</td>
+            <td>${user.role || 'USER'}</td>
+            <td><span class="badge badge-${user.isActive ? 'active' : 'suspended'}">${user.isActive ? 'Active' : 'Suspended'}</span></td>
+            <td class="action-cell">
+                ${user.isActive
+                    ? `<button class="btn btn-danger" data-action="toggle-user" data-id="${user._id}" data-type="suspend">Suspend</button>`
+                    : `<button class="btn btn-success" data-action="toggle-user" data-id="${user._id}" data-type="unsuspend">Unsuspend</button>`
+                }
+            </td>
+        </tr>
+    `).join('');
+};
+
+window.loadCreators = async function() {
+    const tbody = $('#creators-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Loading creators...</td></tr>';
+
+    const data = await adminApi('/creators?verified=false');
+    if (!data || !data.creators || !data.creators.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No pending creator applications.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = data.creators.map(c => `
+        <tr>
+            <td>${c.userId?.username || 'N/A'}<br><small style="color:#aaa;">${c.userId?.email || ''}</small></td>
+            <td><strong>${c.brandName || c.penName || 'N/A'}</strong></td>
+            <td style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color:#aaa;">${c.bio || 'No bio provided'}</td>
+            <td><span class="badge badge-pending">Pending Review</span></td>
+            <td class="action-cell">
+                <button class="btn btn-success" data-action="approve-creator" data-id="${c._id}">Approve</button>
+                <button class="btn btn-danger" data-action="reject-creator" data-id="${c._id}">Reject</button>
+            </td>
+        </tr>
+    `).join('');
+};
+
+window.loadSlides = async function() {
+    const tbody = $('#image-slides-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Loading image slides...</td></tr>';
+
+    const data = await adminApi('/banners?type=IMAGE');
+    if (!data || !data.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No active image slides.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = data.map(slide => `
+        <tr>
+            <td><img src="${slide.mediaUrl}" style="width: 80px; height: 45px; object-fit: cover; border-radius: 4px; border: 1px solid #444;"></td>
+            <td><strong style="color:#fff;">${slide.title}</strong><br><small style="color:#aaa;">${slide.description || ''}</small></td>
+            <td><a href="${slide.targetUrl || '#'}" target="_blank" style="color:#d4a017; text-decoration:none;">${slide.buttonText || 'Link'}</a></td>
+            <td><span class="badge badge-active">Live</span></td>
+            <td><button class="btn btn-danger" data-action="delete-banner" data-id="${slide._id}" data-type="image">Delete</button></td>
+        </tr>
+    `).join('');
+};
+
+window.loadVideoAnnouncements = async function() {
+    const tbody = $('#video-slides-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Loading video announcements...</td></tr>';
+
+    const data = await adminApi('/banners?type=VIDEO');
+    if (!data || !data.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No active video announcements.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = data.map(slide => `
+        <tr>
+            <td><video src="${slide.mediaUrl}" style="width: 80px; height: 45px; object-fit: cover; border-radius: 4px; border: 1px solid #444;" muted></video></td>
+            <td><span class="badge badge-pending">${slide.badgeText || 'UPDATE'}</span></td>
+            <td><strong style="color:#fff;">${slide.title}</strong><br><small style="color:#aaa;">${slide.description || ''}</small></td>
+            <td><span class="badge badge-active">Live</span></td>
+            <td><button class="btn btn-danger" data-action="delete-banner" data-id="${slide._id}" data-type="video">Delete</button></td>
+        </tr>
+    `).join('');
+};
+
+window.loadReports = async function() {
+    const tbody = $('#reports-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Loading reports...</td></tr>';
+
+    const data = await adminApi('/reports?status=PENDING');
+    if (!data || !data.reports || !data.reports.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No pending reports.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = data.reports.map(r => `
+        <tr>
+            <td>${r.reportedBy?.username || 'Unknown'}</td>
+            <td><strong style="color:#fff;">${r.targetType}</strong><br><small style="color:#aaa;">ID: ${r.targetId}</small></td>
+            <td>${r.reason}<br><small style="color:#aaa;">${r.description || ''}</small></td>
+            <td><span class="badge badge-pending">Action Required</span></td>
+            <td class="action-cell">
+                <button class="btn btn-danger" data-action="resolve-report" data-id="${r._id}" data-resolve="remove_content">Takedown</button>
+                <button class="btn btn-primary" data-action="resolve-report" data-id="${r._id}" data-resolve="dismiss">Dismiss</button>
+            </td>
+        </tr>
+    `).join('');
+};
+
+window.loadPayouts = async function() {
+    const tbody = $('#payouts-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Loading withdrawal requests...</td></tr>';
+
+    const data = await adminApi('/payouts?status=PENDING');
+    if (!data || !data.payouts || !data.payouts.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No pending payouts.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = data.payouts.map(tx => `
+        <tr>
+            <td>${tx.userId?.email || 'N/A'}</td>
+            <td><strong style="color:#2ecc71;">₦${Number(tx.amount || 0).toLocaleString()}</strong></td>
+            <td>
+                ${tx.metadata?.bankName || 'Wallet'}
+                ${tx.metadata?.accountName ? `<br><small style="color:#ddd;">${tx.metadata.accountName}</small>` : ''}
+                <br><small style="color:#aaa;">${tx.metadata?.accountNumber || ''}</small>
+            </td>
+            <td><span class="badge badge-pending">Pending Transfer</span></td>
+            <td class="action-cell">
+                <button class="btn btn-success" data-action="process-payout" data-id="${tx._id}" data-process="approve">Mark Paid</button>
+                <button class="btn btn-danger" data-action="process-payout" data-id="${tx._id}" data-process="reject">Decline</button>
+            </td>
+        </tr>
+    `).join('');
+};
+
+// ============================================================================
+// GLOBAL EVENT DELEGATION (CLICKS & FORMS)
+// ============================================================================
+document.addEventListener('click', async event => {
+    try {
+        // Toggle User Status
+        const toggleUserBtn = event.target.closest('[data-action="toggle-user"]');
+        if (toggleUserBtn) {
+            const userId = toggleUserBtn.dataset.id;
+            const action = toggleUserBtn.dataset.type;
+            const { isConfirmed } = await Swal.fire({
+                title: 'Are you sure?',
+                text: `Do you want to ${action} this user?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: `Yes, ${action}`,
+                ...swalConfig
+            });
+            if (!isConfirmed) return;
+            const res = await adminApi(`/users/${userId}/${action}`, 'PUT');
+            if (res) loadUsers();
+        }
+
+        // Approve Creator
+        const approveCreatorBtn = event.target.closest('[data-action="approve-creator"]');
+        if (approveCreatorBtn) {
+            const id = approveCreatorBtn.dataset.id;
+            const { isConfirmed } = await Swal.fire({
+                title: 'Approve Creator?',
+                text: 'This grants them full publishing rights on AfriStory.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Approve',
+                ...swalConfig
+            });
+            if (!isConfirmed) return;
+            const res = await adminApi(`/creators/${id}/verify`, 'PUT');
+            if (res) {
+                Swal.fire({ title: 'Approved!', text: 'Creator can now upload content.', icon: 'success', ...swalConfig });
+                loadCreators();
+                loadDashboardStats();
+            }
+        }
+
+        // Reject Creator
+        const rejectCreatorBtn = event.target.closest('[data-action="reject-creator"]');
+        if (rejectCreatorBtn) {
+            const id = rejectCreatorBtn.dataset.id;
+            const result = await Swal.fire({
+                title: 'Reject Creator',
+                input: 'text',
+                inputLabel: 'Reason for rejection (this will be sent to the user):',
+                inputPlaceholder: 'e.g. Incomplete profile details',
+                showCancelButton: true,
+                inputValidator: (value) => { if (!value) return 'You need to write a reason!'; },
+                ...swalConfig
+            });
+            if (!result.isConfirmed || !result.value) return;
+            const res = await adminApi(`/creators/${id}/reject`, 'PUT', { reason: result.value });
+            if (res) {
+                Swal.fire({ title: 'Rejected', text: 'Creator has been removed from the queue.', icon: 'success', ...swalConfig });
+                loadCreators();
+            }
+        }
+
+        // Delete Banner
+        const deleteBannerBtn = event.target.closest('[data-action="delete-banner"]');
+        if (deleteBannerBtn) {
+            const id = deleteBannerBtn.dataset.id;
+            const type = deleteBannerBtn.dataset.type;
+            const { isConfirmed } = await Swal.fire({
+                title: 'Remove Banner?',
+                text: 'It will be permanently removed from the homepage.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Delete',
+                ...swalConfig
+            });
+            if (!isConfirmed) return;
+            const res = await adminApi(`/banners/${id}`, 'DELETE');
+            if (res) {
+                Swal.fire({ title: 'Deleted', text: 'Banner removed.', icon: 'success', ...swalConfig });
+                type === 'image' ? loadSlides() : loadVideoAnnouncements();
+            }
+        }
+
+        // Resolve Report
+        const resolveReportBtn = event.target.closest('[data-action="resolve-report"]');
+        if (resolveReportBtn) {
+            const id = resolveReportBtn.dataset.id;
+            const action = resolveReportBtn.dataset.resolve;
+            const { isConfirmed } = await Swal.fire({
+                title: 'Confirm Action',
+                text: `Apply action: ${action.replace('_', ' ')}?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes',
+                ...swalConfig
+            });
+            if (!isConfirmed) return;
+            const status = action === 'dismiss' ? 'DISMISSED' : 'RESOLVED';
+            const res = await adminApi(`/reports/${id}/resolve`, 'PUT', { status, actionTaken: action });
+            if (res) {
+                Swal.fire({ title: 'Resolved', text: 'Report processed successfully.', icon: 'success', ...swalConfig });
+                loadReports();
+                loadDashboardStats();
+            }
+        }
+
+        // Process Payout
+        const processPayoutBtn = event.target.closest('[data-action="process-payout"]');
+        if (processPayoutBtn) {
+            const id = processPayoutBtn.dataset.id;
+            const action = processPayoutBtn.dataset.process;
+            const isApprove = action === 'approve';
+            const result = await Swal.fire({
+                title: isApprove ? 'Mark as Paid' : 'Decline Payout',
+                input: 'text',
+                inputLabel: isApprove ? 'Enter bank transaction reference:' : 'Enter reason for rejection:',
+                showCancelButton: true,
+                inputValidator: (value) => { if (!value) return 'This field is required!'; },
+                ...swalConfig
+            });
+            if (!result.isConfirmed || !result.value) return;
+            const payload = isApprove ? { payoutReference: result.value } : { reason: result.value };
+            const res = await adminApi(`/payouts/${id}/${action}`, 'PUT', payload);
+            if (res) {
+                Swal.fire({ title: 'Success', text: `Payout ${action}d successfully.`, icon: 'success', ...swalConfig });
+                loadPayouts();
+                loadDashboardStats();
+            }
+        }
+    } catch (e) {
+        console.error('Click Handler Error:', e);
+    }
+});
+
+document.addEventListener('submit', async event => {
+    // Handle Image Banner Upload
+    if (event.target.id === 'image-slide-form') {
+        event.preventDefault();
+        const form = event.target;
+        const btn = form.querySelector('button');
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Uploading Image...';
+
+        try {
+            const fileInput = form.querySelector('[name="imageFile"]');
+            if (!fileInput || !fileInput.files[0]) throw new Error('Please select an image file.');
+
+            const mediaUrl = await uploadToCloudinary(fileInput.files[0], 'image');
+
+            btn.textContent = 'Saving...';
+            const res = await adminApi('/banners', 'POST', {
+                title: form.title.value,
+                description: form.description.value,
+                buttonText: form.buttonText.value,
+                targetUrl: form.targetUrl.value,
+                mediaUrl: mediaUrl,
+                mediaType: 'IMAGE',
+                category: 'PROMO_IMAGE'
+            });
+
+            if (res) {
+                Swal.fire({ title: 'Success', text: 'Image banner added to homepage', icon: 'success', ...swalConfig });
+                form.reset();
+                loadSlides();
+            }
+        } catch (err) {
+            Swal.fire({ title: 'Error', text: err.message, icon: 'error', ...swalConfig });
+        } finally {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    }
+
+    // Handle Video Announcement Upload
+    if (event.target.id === 'video-slide-form') {
+        event.preventDefault();
+        const form = event.target;
+        const btn = form.querySelector('button');
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Uploading Video...';
+
+        try {
+            const fileInput = form.querySelector('[name="videoFile"]');
+            if (!fileInput || !fileInput.files[0]) throw new Error('Please select a video file.');
+
+            const mediaUrl = await uploadToCloudinary(fileInput.files[0], 'video');
+
+            btn.textContent = 'Saving...';
+            const res = await adminApi('/banners', 'POST', {
+                title: form.title.value,
+                description: form.description.value,
+                badgeText: form.badgeText.value,
+                mediaUrl: mediaUrl,
+                mediaType: 'VIDEO',
+                category: 'PROMO_VIDEO'
+            });
+
+            if (res) {
+                Swal.fire({ title: 'Success', text: 'Video announcement added', icon: 'success', ...swalConfig });
+                form.reset();
+                loadVideoAnnouncements();
+            }
+        } catch (err) {
+            Swal.fire({ title: 'Error', text: err.message, icon: 'error', ...swalConfig });
+        } finally {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    }
+});
+
+// ============================================================================
+// BOOT
+// ============================================================================
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const response = await fetch('/api/auth/me', { credentials: 'include' });
+        if (!response.ok) throw new Error('Not logged in');
+        const data = await response.json();
+        const user = data.data || data.user || data;
+        if (!user || String(user.role).toUpperCase() !== 'ADMIN') throw new Error('Not an admin');
+    } catch (error) {
+        window.location.replace('/');
+        return;
+    }
+
+    const loader = $('#page-loader');
+    if (loader) loader.style.display = 'none';
+    loadDashboardStats();
+    $('#save-financial-config')?.addEventListener('click', saveFinancialConfig);
+    $('#ad-revenue-reconcile-form')?.addEventListener('submit', reconcileAdRevenue);
+});
