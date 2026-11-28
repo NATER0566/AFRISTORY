@@ -1,31 +1,32 @@
+import mongoose from 'mongoose';
 import Notification from '../models/Notification.js';
-import WebpushrSubscriber from '../models/WebpushrSubscriber.js'; // NEW: Added Webpushr model
+import WebpushrSubscriber from '../models/WebpushrSubscriber.js';
 import { verifyAuth } from '../middleware/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { paginate } from '../utils/helpers.js';
-import { createNotification } from '../utils/notificationService.js'; // NEW: Added central service
+import { createNotification } from '../utils/notificationService.js';
 
 export default async function notificationRoutes(fastify, opts) {
-  
-  // NEW: Securely link a Webpushr SID to the authenticated user
+  // Securely link a Webpushr SID to the authenticated user
   fastify.post('/push/register', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
+      if (reply.sent) return;
       if (!request.user) {
-        console.log(`[WEBPUSHR_REGISTER] FAILED reason=authentication_failed`);
+        console.log('[WEBPUSHR_REGISTER] FAILED reason=authentication_failed');
         return sendError(reply, 'Unauthorized', 401);
       }
 
-      const { sid } = request.body || {};
-      if (!sid) {
+      const cleanSid = typeof request.body?.sid === 'string' ? request.body.sid.trim() : '';
+      if (!cleanSid) {
         console.log(`[WEBPUSHR_REGISTER] FAILED user=${request.user._id} reason=missing_sid`);
         return sendError(reply, 'Subscriber ID is required', 400);
       }
 
-      const maskedSid = `${sid.substring(0, 8)}***`;
+      const maskedSid = cleanSid.length > 8 ? `${cleanSid.substring(0, 8)}***` : '***';
       console.log(`[WEBPUSHR_REGISTER] request received user=${request.user._id} SID=${maskedSid}`);
 
-      const existing = await WebpushrSubscriber.findOne({ webpushrSid: sid });
+      const existing = await WebpushrSubscriber.findOne({ webpushrSid: cleanSid });
 
       if (existing) {
         let reassigned = false;
@@ -43,11 +44,11 @@ export default async function notificationRoutes(fastify, opts) {
 
       const subscriber = await WebpushrSubscriber.create({
         userId: request.user._id,
-        webpushrSid: sid,
-        active: true
+        webpushrSid: cleanSid,
+        active: true,
       });
 
-      console.log(`[WEBPUSHR_REGISTER] subscriber created SUCCESS`);
+      console.log('[WEBPUSHR_REGISTER] subscriber created SUCCESS');
       sendSuccess(reply, subscriber, 'Push subscription registered', 201);
     } catch (error) {
       console.log(`[WEBPUSHR_REGISTER] FAILED reason=database_error message="${error.message}"`);
@@ -60,6 +61,7 @@ export default async function notificationRoutes(fastify, opts) {
   fastify.get('/me', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
+      if (reply.sent) return;
 
       if (!request.user) {
         return sendError(reply, 'Unauthorized', 401);
@@ -68,18 +70,19 @@ export default async function notificationRoutes(fastify, opts) {
       const { page = 1, limit = 10, read } = request.query;
       const { skip, limit: l, page: p } = paginate(page, limit);
 
-      let query = { userId: request.user._id };
+      const query = { userId: request.user._id };
 
       if (read !== undefined) {
         query.read = read === 'true';
       }
 
-      const notifications = await Notification.find(query)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(l);
-
-      const total = await Notification.countDocuments(query);
+      const [notifications, total] = await Promise.all([
+        Notification.find(query)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(l),
+        Notification.countDocuments(query),
+      ]);
 
       sendSuccess(reply, {
         notifications,
@@ -100,6 +103,7 @@ export default async function notificationRoutes(fastify, opts) {
   fastify.get('/me/unread-count', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
+      if (reply.sent) return;
 
       if (!request.user) {
         return sendError(reply, 'Unauthorized', 401);
@@ -117,42 +121,11 @@ export default async function notificationRoutes(fastify, opts) {
     }
   });
 
-  // Mark as read
-  fastify.put('/:notificationId/read', async (request, reply) => {
-    try {
-      await verifyAuth(request, reply);
-
-      if (!request.user) {
-        return sendError(reply, 'Unauthorized', 401);
-      }
-
-      const { notificationId } = request.params;
-
-      const notification = await Notification.findById(notificationId);
-
-      if (!notification) {
-        return sendError(reply, 'Notification not found', 404);
-      }
-
-      if (notification.userId.toString() !== request.user._id.toString()) {
-        return sendError(reply, 'Forbidden', 403);
-      }
-
-      notification.read = true;
-      notification.readAt = new Date();
-      await notification.save();
-
-      sendSuccess(reply, notification, 'Notification marked as read');
-    } catch (error) {
-      fastify.log.error(error);
-      sendError(reply, 'Failed to mark notification as read', 500, error.message);
-    }
-  });
-
   // Mark all as read
   fastify.put('/me/read-all', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
+      if (reply.sent) return;
 
       if (!request.user) {
         return sendError(reply, 'Unauthorized', 401);
@@ -176,16 +149,56 @@ export default async function notificationRoutes(fastify, opts) {
     }
   });
 
-  // Delete notification
-  fastify.delete('/:notificationId', async (request, reply) => {
+  // Mark single notification as read
+  fastify.put('/:notificationId/read', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
+      if (reply.sent) return;
 
       if (!request.user) {
         return sendError(reply, 'Unauthorized', 401);
       }
 
       const { notificationId } = request.params;
+      if (!mongoose.Types.ObjectId.isValid(notificationId)) {
+        return sendError(reply, 'Notification not found', 404);
+      }
+
+      const notification = await Notification.findById(notificationId);
+
+      if (!notification) {
+        return sendError(reply, 'Notification not found', 404);
+      }
+
+      if (notification.userId.toString() !== request.user._id.toString()) {
+        return sendError(reply, 'Forbidden', 403);
+      }
+
+      notification.read = true;
+      notification.readAt = new Date();
+      await notification.save();
+
+      sendSuccess(reply, notification, 'Notification marked as read');
+    } catch (error) {
+      fastify.log.error(error);
+      sendError(reply, 'Failed to mark notification as read', 500, error.message);
+    }
+  });
+
+  // Delete notification
+  fastify.delete('/:notificationId', async (request, reply) => {
+    try {
+      await verifyAuth(request, reply);
+      if (reply.sent) return;
+
+      if (!request.user) {
+        return sendError(reply, 'Unauthorized', 401);
+      }
+
+      const { notificationId } = request.params;
+      if (!mongoose.Types.ObjectId.isValid(notificationId)) {
+        return sendError(reply, 'Notification not found', 404);
+      }
 
       const notification = await Notification.findById(notificationId);
 
@@ -206,10 +219,10 @@ export default async function notificationRoutes(fastify, opts) {
     }
   });
 
-  // Create notification (internal use)
+  // Create notification (internal admin use)
   fastify.post('/internal/create', { preHandler: verifyAuth }, async (request, reply) => {
     try {
-      if (request.user.role !== 'ADMIN') {
+      if (String(request.user?.role || '').toUpperCase() !== 'ADMIN') {
         return sendError(reply, 'Forbidden', 403);
       }
       const { userId, type, title, message, data, targetUrl } = request.body || {};
@@ -218,14 +231,17 @@ export default async function notificationRoutes(fastify, opts) {
         return sendError(reply, 'Missing required fields', 400);
       }
 
-      // NEW: Use the central service to handle DB save + Push routing
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        return sendError(reply, 'Invalid userId', 400);
+      }
+
       await createNotification({
         userId,
         type,
         title,
         message,
         data,
-        targetUrl
+        targetUrl,
       });
 
       sendSuccess(reply, null, 'Notification processed successfully', 201);
@@ -235,17 +251,21 @@ export default async function notificationRoutes(fastify, opts) {
     }
   });
 
-  // NEW: Admin Safe Diagnostics Endpoint
+  // Admin safe diagnostics endpoint
   fastify.get('/admin/diagnostics/push', async (request, reply) => {
     try {
       await verifyAuth(request, reply);
-      if (!request.user || request.user.role !== 'ADMIN') {
+      if (reply.sent) return;
+
+      if (!request.user || String(request.user.role || '').toUpperCase() !== 'ADMIN') {
         return sendError(reply, 'Forbidden', 403);
       }
 
-      const activeCount = await WebpushrSubscriber.countDocuments({ active: true });
-      const totalCount = await WebpushrSubscriber.countDocuments();
-      
+      const [activeCount, totalCount] = await Promise.all([
+        WebpushrSubscriber.countDocuments({ active: true }),
+        WebpushrSubscriber.countDocuments(),
+      ]);
+
       sendSuccess(reply, {
         webpushrConfiguration: {
           apiKeyPresent: !!process.env.WEBPUSHR_API_KEY,
@@ -253,11 +273,12 @@ export default async function notificationRoutes(fastify, opts) {
         },
         subscribers: {
           active: activeCount,
-          total: totalCount
+          total: totalCount,
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
+      fastify.log.error(error);
       sendError(reply, 'Diagnostics failed', 500, error.message);
     }
   });
