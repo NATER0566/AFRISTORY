@@ -2,6 +2,7 @@ const API = '/api';
 const PREVIEW_LIMIT = 5; // Seconds of gripping hook preview before the video locks
 const state = { 
     user: null, profile: null, wallet: null, rewards: null, series: [], 
+    creatorSeries: [],
     currentSeries: null, currentEpisode: null, hls: null, 
     recommendedEpisodes: [], feedEpisodes: [],
     coinRateNaira: 2,
@@ -14,6 +15,18 @@ const $$ = selector => [...document.querySelectorAll(selector)];
 function emitAppEvent(name, detail = {}) {
     try {
         window.dispatchEvent(new CustomEvent(name, { detail }));
+        if (name.startsWith('afrostory:')) {
+            window.dispatchEvent(new CustomEvent(name.replace(/^afrostory:/, 'afristory:'), { detail }));
+        } else if (name.startsWith('afristory:')) {
+            window.dispatchEvent(new CustomEvent(name.replace(/^afristory:/, 'afrostory:'), { detail }));
+        }
+    } catch (e) {}
+}
+
+function refreshAdsBridge() {
+    try {
+        window.AfriStoryAds?.refresh?.().catch?.(() => {});
+        window.AfroStoryAds?.refresh?.().catch?.(() => {});
     } catch (e) {}
 }
 
@@ -343,7 +356,7 @@ function setSection(name) {
     if (name === 'trending') loadTrending();
     if (name === 'settings') loadSettings();
 
-    window.AfroStoryAds?.refresh?.().catch?.(() => {});
+    refreshAdsBridge();
 }
 
 const episodeGenres = ['Action', 'Drama', 'Comedy', 'Romance', 'Thriller', 'Horror', 'Adventure', 'Family', 'Historical', 'Traditional', 'Documentary', 'Educational', 'Faith', 'Mystery', 'Other'];
@@ -376,7 +389,7 @@ function card(series, opts = {}) {
         ? `<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #262626; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                 <span style="font-size: 11px; font-weight: 700; color: ${completed ? '#22c55e' : '#d4a017'};">${completed ? '● Completed Series' : '● Ongoing Series'}</span>
                 <button type="button" class="button button-quiet" data-action="toggle-series-complete" data-series-id="${esc(series._id)}" data-completed="${completed ? 'true' : 'false'}" style="padding: 5px 10px; font-size: 11px; border-color: ${completed ? '#444' : '#d4a017'}; color: ${completed ? '#ccc' : '#ffd24c'};">
-                    ${completed ? 'Reopen Series' : 'Mark Completed'}
+                    ${completed ? 'Restore' : 'Mark Series Complete'}
                 </button>
            </div>`
         : '';
@@ -462,30 +475,87 @@ async function loadDiscover() {
 } 
 
 /* ============================================================================ */
-/* SERIES COMPLETION / STATUS MANAGEMENT */
+/* SERIES COMPLETION / STATUS MANAGEMENT & ARCHIVE DRAWER SYNC */
 /* ============================================================================ */
-async function toggleSeriesCompletion(seriesId, currentCompleted) {
+function renderSeriesArchiveDrawer(seriesList = state.creatorSeries) {
+    const drawer = $('#series-archived-drawer');
+    if (!drawer) return;
+
+    const completedList = (Array.isArray(seriesList) ? seriesList : []).filter(isSeriesCompleted);
+    const listTarget = drawer.querySelector('[data-archived-series-list], #archived-series-list, .archived-series-list') || drawer;
+
+    if (completedList.length === 0) {
+        listTarget.innerHTML = '<p style="color:#888; font-size:13px; margin:8px 0;">No completed series yet. Completed series move here so your upload dropdown stays focused on active stories.</p>';
+        return;
+    }
+
+    listTarget.innerHTML = completedList.map(series => `
+        <div class="data-row" data-archived-series-id="${esc(series._id)}" style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; border:1px solid #292929; border-radius:10px; background:rgba(255,255,255,0.02); margin-bottom:8px;">
+            <div style="display:flex; align-items:center; gap:10px; min-width:0; flex:1;">
+                <div style="width:44px; height:44px; border-radius:8px; background:#222 url('${image(series.coverImage)}') center/cover no-repeat; flex-shrink:0;"></div>
+                <div style="min-width:0; flex:1;">
+                    <strong style="display:block; color:#f5f5f5; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(series.title)}</strong>
+                    <span style="font-size:12px; color:#22c55e; font-weight:600;">✓ Completed · ${esc(series.genre || 'Series')}</span>
+                </div>
+            </div>
+            <button type="button" class="button button-quiet" data-action="toggle-series-complete" data-series-id="${esc(series._id)}" data-completed="true" style="padding:6px 12px; font-size:12px; flex-shrink:0;">
+                Restore
+            </button>
+        </div>
+    `).join('');
+}
+
+function syncUploadSeriesDropdown(seriesList = state.creatorSeries, preferredSeriesId = null) {
+    const uploadSelect = $('#upload-series');
+    if (!uploadSelect) return;
+
+    const allSeries = Array.isArray(seriesList) ? seriesList : [];
+    const activeSeries = allSeries.filter(item => !isSeriesCompleted(item));
+    const listToRender = activeSeries.length > 0 ? activeSeries : allSeries;
+    const previousVal = preferredSeriesId || uploadSelect.value;
+
+    if (listToRender.length === 0) {
+        uploadSelect.innerHTML = '<option value="">Create a series first</option>';
+        return;
+    }
+
+    uploadSelect.innerHTML = listToRender.map(item => {
+        const completedSuffix = isSeriesCompleted(item) ? ' (Completed — Restore to add episodes)' : '';
+        return `<option value="${esc(item._id)}">${esc(item.title)}${completedSuffix}</option>`;
+    }).join('');
+
+    if (previousVal && listToRender.some(s => String(s._id) === String(previousVal))) {
+        uploadSelect.value = previousVal;
+    }
+}
+
+async function setSeriesCompletionStatus(seriesId, nextCompleted) {
     if (!seriesId) return;
-    const nextCompleted = !Boolean(currentCompleted);
-    const nextStatus = nextCompleted ? 'COMPLETED' : 'ONGOING';
+    const targetCompleted = Boolean(nextCompleted);
+    const nextStatus = targetCompleted ? 'COMPLETED' : 'ONGOING';
 
     $$(`[data-action="toggle-series-complete"][data-series-id="${seriesId}"]`).forEach(btn => {
         btn.disabled = true;
-        btn.textContent = 'Updating...';
+        btn.textContent = targetCompleted ? 'Completing...' : 'Restoring...';
     });
 
     try {
         const payload = {
-            isCompleted: nextCompleted,
-            completed: nextCompleted,
+            isCompleted: targetCompleted,
+            completed: targetCompleted,
             status: nextStatus
         };
 
-        const updatedRes = await api(`/series/${encodeURIComponent(seriesId)}/complete`, {
-            method: 'PATCH',
+        const updatedRes = await api(`/series/${encodeURIComponent(seriesId)}/update`, {
+            method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         })
+        .catch(() => api(`/series/${encodeURIComponent(seriesId)}/complete`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }))
         .catch(() => api(`/series/${encodeURIComponent(seriesId)}/status`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
@@ -502,19 +572,39 @@ async function toggleSeriesCompletion(seriesId, currentCompleted) {
             state.currentSeries = { ...state.currentSeries, ...payload, ...updatedSeries };
         }
         state.series = state.series.map(s => String(s._id) === String(seriesId) ? { ...s, ...payload, ...updatedSeries } : s);
+        state.creatorSeries = state.creatorSeries.map(s => String(s._id) === String(seriesId) ? { ...s, ...payload, ...updatedSeries } : s);
 
-        emitAppEvent('afrostory:series-updated', { seriesId, isCompleted: nextCompleted, status: nextStatus });
-        toast(nextCompleted ? 'Series marked as Completed!' : 'Series reopened as Ongoing!', 'success');
+        syncUploadSeriesDropdown(state.creatorSeries);
+        renderSeriesArchiveDrawer(state.creatorSeries);
+
+        emitAppEvent('afristory:series-updated', { seriesId, isCompleted: targetCompleted, status: nextStatus });
+        toast(targetCompleted ? 'Series marked as Completed!' : 'Series restored to Active!', 'success');
 
         await syncAfterContentMutation({ seriesId });
     } catch (error) {
         toast(error.message || 'Could not update series status', 'error');
         $$(`[data-action="toggle-series-complete"][data-series-id="${seriesId}"]`).forEach(btn => {
             btn.disabled = false;
-            btn.textContent = currentCompleted ? 'Reopen Series' : 'Mark Completed';
+            btn.textContent = targetCompleted ? 'Mark Series Complete' : 'Restore';
         });
     }
 }
+
+async function toggleSeriesCompletion(seriesId, currentCompleted) {
+    return setSeriesCompletionStatus(seriesId, !Boolean(currentCompleted));
+}
+
+['afristory:set-series-status', 'afrostory:set-series-status'].forEach(evtName => {
+    window.addEventListener(evtName, (event) => {
+        const detail = event?.detail || {};
+        const seriesId = detail.seriesId || detail.id;
+        if (!seriesId) return;
+        const nextCompleted = typeof detail.isCompleted === 'boolean'
+            ? detail.isCompleted
+            : String(detail.status || '').toUpperCase() === 'COMPLETED';
+        setSeriesCompletionStatus(seriesId, nextCompleted);
+    });
+});
 
 /* ============================================================================ */
 /* TIKTOK STYLE FEED & BOLD FOLLOW ICON BADGE */
@@ -732,7 +822,7 @@ async function openSeries(id, options = {}) {
                     <p style="color:#d4a017; margin-top:10px; position: relative; z-index: 10;">${esc(seriesInfo.language || 'English')} &nbsp; · &nbsp; ${esc(seriesInfo.genre || 'Story')} &nbsp; · &nbsp; ${episodes.length} Episode${episodes.length === 1 ? '' : 's'}</p>
                     <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:15px; position:relative; z-index:10;">
                         ${episodes.length > 0 ? `<button class="button button-primary" data-episode-id="${esc(episodes[0]._id)}">Play Episode 1</button>` : ''}
-                        ${isOwner ? `<button type="button" class="button button-quiet" data-action="toggle-series-complete" data-series-id="${esc(seriesInfo._id)}" data-completed="${completed ? 'true' : 'false'}">${completed ? 'Reopen Series' : 'Mark Series Completed'}</button>` : ''}
+                        ${isOwner ? `<button type="button" class="button button-quiet" data-action="toggle-series-complete" data-series-id="${esc(seriesInfo._id)}" data-completed="${completed ? 'true' : 'false'}">${completed ? 'Restore Series' : 'Mark Series Complete'}</button>` : ''}
                     </div>
                 </article>
             `;
@@ -873,7 +963,7 @@ async function openEpisode(id, preloadedEpisodes = null) {
                     <p>You've reached the end of the free preview. Unlock now to watch the full episode from the beginning.</p> 
                     
                     <div style="display:flex; flex-direction:column; gap:12px; width: 85%; max-width: 300px;">
-                        <button type="button" id="waterfall-ad-btn-${episode._id}" data-robins-rewarded data-action="waterfall-ad-unlock" data-episode-id="${episode._id}" class="button button-accent" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px;">
+                        <button type="button" id="waterfall-ad-btn-${episode._id}" data-robins-rewarded data-action="waterfall-ad-unlock" data-episode-id="${episode._id}" data-purpose="EPISODE_UNLOCK" data-target-id="${episode._id}" class="button button-accent" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px;">
                             <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> 
                             <span>Watch Ad to Unlock</span>
                         </button>
@@ -996,7 +1086,9 @@ async function openEpisode(id, preloadedEpisodes = null) {
             
             feedContainer.appendChild(cardEl); 
             feedObserver.observe(cardEl); 
-        }); 
+        });
+
+        refreshAdsBridge();
     } catch (error) {
         logFrontendError('open_episode_failed', error.message, error.stack);
         toast('Failed to load feed', 'error');
@@ -1020,7 +1112,7 @@ function unlockFeedEpisodeInDOM(episodeId) {
             safePlay(videoEl);
         }
     }
-    emitAppEvent('afrostory:episode-unlocked', { episodeId });
+    emitAppEvent('afristory:episode-unlocked', { episodeId });
 }
 
 const saveProgressTimers = new Map();
@@ -1288,6 +1380,7 @@ async function loadWallet() {
         $$('[data-wallet-naira]').forEach(el => { el.textContent = formatNaira(estimatedNaira); });
 
         ensureWalletSummaryBanner(state.wallet);
+        syncPayoutStatusBadge(walletObj);
         
         const txArray = Array.isArray(rawTransactions)
             ? rawTransactions
@@ -1300,7 +1393,7 @@ async function loadWallet() {
                 : '<p style="color:#999; padding: 14px 0;">No transactions yet. Claim daily rewards or top up coins to get started.</p>'; 
         }
 
-        emitAppEvent('afrostory:wallet-updated', state.wallet);
+        emitAppEvent('afristory:wallet-updated', state.wallet);
     } catch (error) { toast(error.message, 'error'); } 
 } 
 
@@ -1320,11 +1413,20 @@ function renderRewardCard(reward) {
     return `<article class="reward-card reward-state-${stateVal.toLowerCase()}"><p class="eyebrow">${esc(reward.category || 'MISSION')}</p><h3>${esc(reward.name)}</h3><p class="muted">${esc(reward.description || '')}</p><div class="reward-meta">+${Number(reward.rewardAmount).toLocaleString()} Coins</div><div class="reward-state-label">${isSocial ? (stateVal === 'CLAIMED' ? 'COMPLETED' : 'AVAILABLE') : esc(stateVal.replaceAll('_', ' '))}</div>${action}</article>`;
 }
 
+function findWatchAdsReward(rewards = []) {
+    return (Array.isArray(rewards) ? rewards : []).find(reward => {
+        const key = String(reward?.metadata?.key || '').toLowerCase();
+        const type = String(reward?.type || '').toUpperCase();
+        const name = String(reward?.name || '').toLowerCase();
+        return key === 'watch_ads' || key === 'watch_ad' || type === 'AD' || name.includes('watch ad');
+    }) || null;
+}
+
 async function loadRewards() {
     try {
         const result = await api('/rewards/me') || {};
         state.rewards = result;
-        const balanceVal = Number(result.balance ?? state.wallet?.storyCoins ?? 0);
+        const balanceVal = Number(result.balance ?? state.wallet?.promotionalCoins ?? state.wallet?.storyCoins ?? 0);
         
         const balEl = $('#rewards-balance');
         if (balEl) balEl.textContent = balanceVal.toLocaleString();
@@ -1340,20 +1442,28 @@ async function loadRewards() {
         
         const daily = result.daily;
         const rewards = result.rewards || [];
-        const watchAdsReward = rewards.find(reward => reward.metadata?.key === 'watch_ads');
+        const watchAdsReward = findWatchAdsReward(rewards);
+        const adRewardState = String(watchAdsReward?.eligibility?.state || '').toUpperCase();
+        const isAdRewardBlocked = Boolean(watchAdsReward && (adRewardState === 'CLAIMED' || adRewardState === 'EXPIRED' || adRewardState === 'LOCKED'));
+
         ['#wallet-watch-ad-btn', '#watch-ad-earn-coins-btn'].forEach(selector => {
             const button = $(selector);
             if (!button) return;
-            if (watchAdsReward && watchAdsReward.eligibility?.state === 'CLAIMABLE') {
+            if (watchAdsReward && !isAdRewardBlocked) {
                 button.dataset.rewardId = watchAdsReward._id;
                 button.dataset.purpose = 'PROMO_REWARD';
                 button.dataset.targetId = watchAdsReward._id;
+                button.disabled = false;
+            } else if (!watchAdsReward) {
+                button.dataset.purpose = 'PROMO_REWARD';
                 button.disabled = false;
             } else {
                 delete button.dataset.rewardId;
                 button.disabled = true;
             }
         });
+
+        refreshAdsBridge();
         
         const dailyCard = $('#daily-reward-card');
         if (dailyCard) {
@@ -1421,6 +1531,39 @@ async function loadFollowersList() {
         const root = $('#modal-root');
         if (root) root.classList.add('hidden');
     }
+}
+
+/* ============================================================================ */
+/* PAYOUT SETUP STATUS & VERIFICATION BADGE SYNC */
+/* ============================================================================ */
+function hasVerifiedPayoutDetails(source = null) {
+    const candidates = [
+        source,
+        source?.payoutDetails,
+        source?.bankDetails,
+        source?.bankAccount,
+        state.user?.payoutDetails,
+        state.user?.bankDetails,
+        state.wallet?.payoutDetails
+    ].filter(Boolean);
+
+    return candidates.some(item => {
+        if (item.payoutVerified === true || item.isPayoutVerified === true || item.verified === true) return true;
+        const status = String(item.payoutStatus || item.status || '').toUpperCase();
+        if (status === 'VERIFIED' || status === 'ACTIVE' || status === 'APPROVED' || status === 'READY') return true;
+        const accountNum = String(item.accountNumber || item.bankAccountNumber || '').trim();
+        const bankCode = String(item.bankCode || item.bankName || '').trim();
+        return accountNum.length >= 6 && bankCode.length >= 2;
+    });
+}
+
+function syncPayoutStatusBadge(source = null) {
+    const isVerified = hasVerifiedPayoutDetails(source);
+    $$('#payout-setup-status-badge, [data-payout-status-badge]').forEach(badge => {
+        badge.classList.toggle('is-verified', isVerified);
+        badge.textContent = isVerified ? 'Verified' : 'Action Required';
+    });
+    return isVerified;
 }
 
 /* ============================================================================ */
@@ -1494,6 +1637,12 @@ async function loadCreator(preferredSeriesId = null) {
             dashboard.classList.remove('hidden');
             state.profile = null; // Ensure profile tab reflects approved creator status
 
+            if (!syncPayoutStatusBadge(creator)) {
+                api('/creators/me/payout').then(payoutRes => {
+                    if (payoutRes) syncPayoutStatusBadge(payoutRes);
+                }).catch(() => {});
+            }
+
             if (!sessionStorage.getItem('creatorWelcomeSeen')) {
                 let welcomeScreen = $('#creator-welcome-screen');
                 if (!welcomeScreen) {
@@ -1513,6 +1662,8 @@ async function loadCreator(preferredSeriesId = null) {
 
             const series = await api(`/creators/${creator._id}/series?limit=100`) || {}; 
             const seriesList = series.series || [];
+            state.creatorSeries = seriesList;
+
             const statsContainer = $('#creator-stats');
             if (statsContainer) {
                 statsContainer.innerHTML = [
@@ -1530,16 +1681,10 @@ async function loadCreator(preferredSeriesId = null) {
                 seriesGrid.innerHTML = seriesList.map(item => card(item, { showCreatorControls: true })).join('') || '<p>Create your first series.</p>'; 
             }
             
-            const uploadSelect = $('#upload-series');
-            if (uploadSelect) {
-                const previousVal = preferredSeriesId || uploadSelect.value;
-                uploadSelect.innerHTML = seriesList.map(item => `<option value="${esc(item._id)}">${esc(item.title)}${isSeriesCompleted(item) ? ' (Completed)' : ''}</option>`).join('');
-                if (previousVal && seriesList.some(s => String(s._id) === String(previousVal))) {
-                    uploadSelect.value = previousVal;
-                }
-            }
+            syncUploadSeriesDropdown(seriesList, preferredSeriesId);
+            renderSeriesArchiveDrawer(seriesList);
 
-            emitAppEvent('afrostory:creator-updated', { creator, seriesCount: seriesList.length });
+            emitAppEvent('afristory:creator-updated', { creator, seriesCount: seriesList.length });
         }
     } catch (error) { 
         const dashboard = $('#creator-dashboard');
@@ -1698,6 +1843,16 @@ function ensureUploadTelemetryUI(form, prefix) {
 }
 
 function syncNativeAppHtmlRings(form, clampedPercent, stage, isError, isSuccess) {
+    try {
+        if (window.AfriStoryUploadUI) {
+            if (isError || isSuccess) {
+                window.AfriStoryUploadUI.finish?.(!isError, stage || (isError ? 'Upload failed' : 'Upload complete'));
+            } else {
+                window.AfriStoryUploadUI.progress?.(clampedPercent, stage);
+            }
+        }
+    } catch (e) {}
+
     if (!form) return;
     const modal = form.closest('.modal, .modal-root') || form;
     const ringContainer = modal.querySelector('[data-upload-ring], #upload-progress-ring, #upload-progress-container');
@@ -1962,13 +2117,14 @@ async function submitSeries(event) {
     form.dataset.uploading = 'true';
     submit.disabled = true; 
     submit.textContent = 'Uploading series...';
+    window.AfriStoryUploadUI?.start?.('Uploading series cover...');
     updateUploadTelemetry(ui, {
         percent: 2,
         stage: 'Step 1/3 · Preparing series upload...',
         bytesText: `0 MB / ${formatFileSize(cover.size)}`,
         speedText: 'Starting...'
     });
-    emitUploadLifecycle('afrostory:upload-progress', { kind: 'series', percent: 2, stage: 'Step 1/3 · Preparing series upload...' });
+    emitUploadLifecycle('afristory:upload-progress', { kind: 'series', percent: 2, stage: 'Step 1/3 · Preparing series upload...' });
     
     try { 
         const upload = await uploadAsset('/upload/image', cover, (p) => {
@@ -1981,7 +2137,7 @@ async function submitSeries(event) {
                 bytesText: `${formatFileSize(p.loaded)} / ${formatFileSize(p.total)}`,
                 speedText: speedLabel
             });
-            emitUploadLifecycle('afrostory:upload-progress', { kind: 'series', percent: p.percent, stage: p.stage, loaded: p.loaded, total: p.total });
+            emitUploadLifecycle('afristory:upload-progress', { kind: 'series', percent: p.percent, stage: p.stage, loaded: p.loaded, total: p.total });
         }); 
 
         updateUploadTelemetry(ui, {
@@ -1990,7 +2146,7 @@ async function submitSeries(event) {
             bytesText: `${formatFileSize(cover.size)} / ${formatFileSize(cover.size)}`,
             speedText: 'Saving details...'
         });
-        emitUploadLifecycle('afrostory:upload-progress', { kind: 'series', percent: 94, stage: 'Step 3/3 · Creating series...' });
+        emitUploadLifecycle('afristory:upload-progress', { kind: 'series', percent: 94, stage: 'Step 3/3 · Creating series...' });
 
         const isCompleted = values.get('completed') === 'on' || values.get('isCompleted') === 'on';
 
@@ -2020,7 +2176,7 @@ async function submitSeries(event) {
             speedText: 'Complete',
             isSuccess: true
         });
-        emitUploadLifecycle('afrostory:upload-complete', { kind: 'series', series: createdSeries });
+        emitUploadLifecycle('afristory:upload-complete', { kind: 'series', series: createdSeries });
         
         const modal = $('#series-modal');
         if (modal) modal.classList.add('hidden'); 
@@ -2035,7 +2191,7 @@ async function submitSeries(event) {
             speedText: 'Stopped',
             isError: true
         });
-        emitUploadLifecycle('afrostory:upload-error', { kind: 'series', message: error.message });
+        emitUploadLifecycle('afristory:upload-error', { kind: 'series', message: error.message });
         toast(error.message, 'error'); 
     } finally { 
         delete form.dataset.uploading;
@@ -2072,13 +2228,14 @@ async function submitUpload(event) {
     form.dataset.uploading = 'true';
     submit.disabled = true; 
     submit.textContent = 'Uploading episode...'; 
+    window.AfriStoryUploadUI?.start?.('Uploading episode...');
     updateUploadTelemetry(ui, {
         percent: 2,
         stage: 'Step 1/3 · Securing cloud upload...',
         bytesText: `0 MB / ${formatFileSize(file.size)}`,
         speedText: 'Starting...'
     });
-    emitUploadLifecycle('afrostory:upload-progress', { kind: 'episode', percent: 2, stage: 'Step 1/3 · Securing cloud upload...' });
+    emitUploadLifecycle('afristory:upload-progress', { kind: 'episode', percent: 2, stage: 'Step 1/3 · Securing cloud upload...' });
     
     try { 
         const upload = await uploadAsset('/upload/video', file, (p) => {
@@ -2091,7 +2248,7 @@ async function submitUpload(event) {
                 bytesText: `${formatFileSize(p.loaded)} / ${formatFileSize(p.total)}`,
                 speedText: speedLabel
             });
-            emitUploadLifecycle('afrostory:upload-progress', { kind: 'episode', percent: p.percent, stage: p.stage, loaded: p.loaded, total: p.total });
+            emitUploadLifecycle('afristory:upload-progress', { kind: 'episode', percent: p.percent, stage: p.stage, loaded: p.loaded, total: p.total });
         }); 
 
         const rawMediaUrl = upload.hlsUrl || upload.mediaUrl || upload.secure_url || upload.url; 
@@ -2115,7 +2272,7 @@ async function submitUpload(event) {
             bytesText: `${formatFileSize(file.size)} / ${formatFileSize(file.size)}`,
             speedText: 'Saving episode...'
         });
-        emitUploadLifecycle('afrostory:upload-progress', { kind: 'episode', percent: 95, stage: 'Step 3/3 · Saving episode...' });
+        emitUploadLifecycle('afristory:upload-progress', { kind: 'episode', percent: 95, stage: 'Step 3/3 · Saving episode...' });
         
         const createdEpRes = await api(`/episodes/series/${encodeURIComponent(seriesId)}/create`, { 
             method: 'POST', 
@@ -2141,7 +2298,7 @@ async function submitUpload(event) {
         }); 
 
         if (markSeriesCompleted) {
-            await toggleSeriesCompletion(seriesId, false).catch(() => {});
+            await setSeriesCompletionStatus(seriesId, true).catch(() => {});
         }
 
         const createdEpisode = createdEpRes?.episode || createdEpRes || {};
@@ -2152,7 +2309,7 @@ async function submitUpload(event) {
             speedText: 'Complete',
             isSuccess: true
         });
-        emitUploadLifecycle('afrostory:upload-complete', { kind: 'episode', seriesId, episode: createdEpisode });
+        emitUploadLifecycle('afristory:upload-complete', { kind: 'episode', seriesId, episode: createdEpisode });
         
         const modal = $('#upload-modal');
         if (modal) modal.classList.add('hidden'); 
@@ -2168,7 +2325,7 @@ async function submitUpload(event) {
             speedText: 'Stopped',
             isError: true
         });
-        emitUploadLifecycle('afrostory:upload-error', { kind: 'episode', message: error.message });
+        emitUploadLifecycle('afristory:upload-error', { kind: 'episode', message: error.message });
         toast(error.message, 'error'); 
     } finally { 
         delete form.dataset.uploading;
@@ -2378,15 +2535,17 @@ function setNotificationBadgeCount(count) {
         badge.textContent = String(safeCount);
         badge.classList.toggle('hidden', safeCount === 0);
     });
-    emitAppEvent('afrostory:notifications-updated', { unreadCount: safeCount });
+    emitAppEvent('afristory:notifications-updated', { unreadCount: safeCount });
 }
 
 function ensureNotificationClearAllButton() {
+    if ($('#clear-all-notifications-btn')) return;
     const readAllBtn = $('#notification-modal [data-action="read-all"]');
     if (!readAllBtn) return;
     const parent = readAllBtn.parentElement;
     if (parent && !parent.querySelector('[data-action="clear-notifications"]')) {
         const clearBtn = document.createElement('button');
+        clearBtn.id = 'clear-all-notifications-btn';
         clearBtn.type = 'button';
         clearBtn.className = 'text-button';
         clearBtn.dataset.action = 'clear-notifications';
@@ -2394,6 +2553,23 @@ function ensureNotificationClearAllButton() {
         clearBtn.textContent = 'Clear all';
         readAllBtn.insertAdjacentElement('afterend', clearBtn);
     }
+}
+
+async function clearAllNotifications() {
+    const allIds = $$('#notification-list [data-notification-id]').map(el => el.dataset.notificationId).filter(Boolean);
+    if (allIds.length > 0) {
+        rememberDeletedNotificationIds(allIds);
+    }
+    const listEl = $('#notification-list');
+    if (listEl) listEl.innerHTML = '<p>No new notifications</p>';
+    setNotificationBadgeCount(0);
+
+    await api('/notifications/me/all', { method: 'DELETE' })
+        .catch(() => api('/notifications/me', { method: 'DELETE' }))
+        .catch(() => api('/notifications/all', { method: 'DELETE' }))
+        .catch(() => api('/notifications/me/read-all', { method: 'PUT' }))
+        .catch(() => {});
+    toast('Notifications cleared', 'success');
 }
 
 async function loadNotifications() { 
@@ -2621,7 +2797,7 @@ document.addEventListener('click', async event => {
         if (section) setSection(section.dataset.section);                  
         
         const series = event.target.closest('[data-series-id]');          
-        if (series) openSeries(series.dataset.seriesId);                  
+        if (series && !event.target.closest('button, a, input, select')) openSeries(series.dataset.seriesId);                  
         
         const episodeRow = event.target.closest('[data-episode-id]');          
         if (episodeRow && !episodeRow.closest('.feed-video-card')) openEpisode(episodeRow.dataset.episodeId);          
@@ -2746,7 +2922,7 @@ document.addEventListener('click', async event => {
                         }
                     });
 
-                    emitAppEvent('afrostory:follow-updated', { creatorId, isFollowing: true });
+                    emitAppEvent('afristory:follow-updated', { creatorId, isFollowing: true });
                     loadCreator().catch(() => {});
                 } catch (error) { 
                     toast(error.message, 'error'); 
@@ -2844,6 +3020,7 @@ document.addEventListener('click', async event => {
 
         if (event.target.closest('[data-action="logout"]')) {
             try { 
+                localStorage.removeItem('token');
                 await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); 
             } catch(err) { 
                 console.warn("Logout request failed silently"); 
@@ -2933,21 +3110,9 @@ document.addEventListener('click', async event => {
             if (readBtn) readBtn.click();
         }
 
-        if (event.target.closest('[data-action="clear-notifications"]')) {
+        if (event.target.closest('#clear-all-notifications-btn, [data-action="clear-notifications"]')) {
             event.preventDefault();
-            const allIds = $$('#notification-list [data-notification-id]').map(el => el.dataset.notificationId).filter(Boolean);
-            if (allIds.length > 0) {
-                rememberDeletedNotificationIds(allIds);
-            }
-            const listEl = $('#notification-list');
-            if (listEl) listEl.innerHTML = '<p>No new notifications</p>';
-            setNotificationBadgeCount(0);
-
-            api('/notifications/me/all', { method: 'DELETE' })
-                .catch(() => api('/notifications/all', { method: 'DELETE' }))
-                .catch(() => api('/notifications/me/read-all', { method: 'PUT' }))
-                .catch(() => {});
-            toast('Notifications cleared', 'success');
+            await clearAllNotifications();
         }
 
         const historyLink = event.target.closest('[data-history-episode]');
@@ -3065,8 +3230,20 @@ async function handleRewardedAdComplete(event) {
             return;
         }
 
-        // 2. Reward Claim Logic
-        if (btn.dataset?.rewardId) {
+        // 2. Reward Claim Logic (Rewards Tab & Wallet Watch-Ad Buttons)
+        const isWalletOrPromoAdBtn = btn.id === 'wallet-watch-ad-btn' || btn.id === 'watch-ad-earn-coins-btn' || btn.dataset?.purpose === 'PROMO_REWARD';
+        let rewardId = btn.dataset?.rewardId || btn.dataset?.targetId || '';
+
+        if (!rewardId && isWalletOrPromoAdBtn) {
+            const latestRewards = state.rewards || (await api('/rewards/me').catch(() => null));
+            const matchedReward = findWatchAdsReward(latestRewards?.rewards || []);
+            if (matchedReward?._id) {
+                rewardId = matchedReward._id;
+                btn.dataset.rewardId = rewardId;
+            }
+        }
+
+        if (rewardId || isWalletOrPromoAdBtn) {
             const originalHtml = btn.dataset.originalHtml || btn.innerHTML;
             btn.dataset.originalHtml = originalHtml;
 
@@ -3076,16 +3253,21 @@ async function handleRewardedAdComplete(event) {
             btn.textContent = 'Verifying ad...';
             
             try {
-                await api(`/rewards/${encodeURIComponent(btn.dataset.rewardId)}/claim`, { 
+                const claimPath = rewardId
+                    ? `/rewards/${encodeURIComponent(rewardId)}/claim`
+                    : '/rewards/watch-ad/claim';
+
+                await api(claimPath, { 
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/json' }, 
                     body: JSON.stringify({ method: 'AD', provider: 'ROBINS_ADS', receipt }) 
                 });
                 
-                toast('Reward verified and added to your wallet!', 'success'); 
+                toast('+5 Promotional Coins verified and added to your wallet!', 'success'); 
+                btn.innerHTML = originalHtml;
                 await Promise.all([loadRewards(), loadWallet(), refreshNotificationBadge()]); 
             } catch (error) { 
-                toast('Ad verification failed. You must watch the full ad to claim.', 'error');
+                toast(error.message || 'Ad verification failed. You must watch the full ad to claim.', 'error');
                 btn.disabled = false; 
                 btn.innerHTML = originalHtml; 
             }
@@ -3141,6 +3323,41 @@ if (profileForm) profileForm.addEventListener('submit', saveProfile);
 
 const settingsForm = $('#settings-form');
 if (settingsForm) settingsForm.addEventListener('submit', saveSettings);
+
+const payoutForm = $('#payout-form');
+if (payoutForm) {
+    payoutForm.addEventListener('submit', async event => {
+        event.preventDefault();
+        const form = event.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const values = Object.fromEntries(new FormData(form).entries());
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving payout details...';
+        }
+        try {
+            const saved = await api('/creators/me/payout', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(values)
+            }).catch(() => api('/creators/me/payout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(values)
+            }));
+            syncPayoutStatusBadge({ ...values, ...(saved || {}), verified: true });
+            emitAppEvent('afristory:payout-updated', { verified: true });
+            toast('Payout setup verified!', 'success');
+        } catch (error) {
+            toast(error.message || 'Could not save payout details', 'error');
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Payout Details';
+            }
+        }
+    });
+}
 
 const commentForm = $('#comment-form');
 if (commentForm) {
@@ -3212,6 +3429,7 @@ setInterval(syncLiveAppState, 25000);
 
 window.addEventListener('focus', syncLiveAppState);
 window.addEventListener('online', syncLiveAppState);
+window.addEventListener('afristory:sync-requested', syncLiveAppState);
 window.addEventListener('afrostory:sync-requested', syncLiveAppState);
 
 document.addEventListener('visibilitychange', () => {
@@ -3288,7 +3506,7 @@ async function boot() {
             state.user ? loadRewards() : Promise.resolve()
         ]);
         setupLazyLoading();
-        window.AfroStoryAds?.refresh?.().catch?.(() => {});
+        refreshAdsBridge();
         return true; 
     } catch (error) {
         logFrontendError('boot_failure', error.message, error.stack);
